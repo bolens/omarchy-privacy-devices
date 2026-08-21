@@ -7,7 +7,7 @@ import "Model.js" as Model
 
 Panel {
   id: root
-  moduleName: "privacy-devices"
+  moduleName: "io.github.bolens.privacy-devices"
 
   readonly property var privacyService: bar && bar.shell ? bar.shell.serviceFor(moduleName) : null
   readonly property var configuredOrder: Model.arraySetting(setting("order", []), Model.KINDS)
