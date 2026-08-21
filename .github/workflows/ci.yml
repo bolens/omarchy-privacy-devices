@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  plugin:
+    name: Plugin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out plugin
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check out Omarchy validator and shell imports
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: basecamp/omarchy
+          path: .omarchy
+
+      - name: Install validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes jq shellcheck qt6-declarative-dev-tools
+
+      - name: Validate plugin manifest
+        run: .omarchy/bin/omarchy-plugin-validate .
+
+      - name: Lint QML
+        run: |
+          qmllint_path=$(command -v qmllint || find /usr/lib/qt6/bin -name qmllint -type f -print -quit)
+          test -n "$qmllint_path"
+          "$qmllint_path" -I .omarchy/shell BarWidget.qml Service.qml
+
+      - name: Check shell scripts
+        run: shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
+
+      - name: Run model tests
+        run: node tests/model.test.js
+
+      - name: Run security tests
+        run: node tests/security.test.js
+
+  repository:
+    name: Repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install document validators
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libxml2-utils ruby tidy
+
+      - name: Validate issue forms
+        run: ruby scripts/validate-issue-forms.rb
+
+      - name: Validate HTML and XML
+        run: |
+          tidy -errors -quiet docs/index.html docs/404.html 2>&1 | tee /tmp/tidy-output
+          ! grep -E "Error:" /tmp/tidy-output
+          xmllint --noout docs/favicon.svg docs/sitemap.xml
+
+      - name: Check links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --no-progress
+            --accept 200,204,206,429
+            './**/*.md'
+            './docs/**/*.html'
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
