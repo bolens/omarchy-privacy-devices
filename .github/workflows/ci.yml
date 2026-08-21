@@ -72,14 +72,6 @@ jobs:
       - name: Validate issue forms
         run: ruby scripts/validate-issue-forms.rb
 
-      - name: Install site test dependencies
-        run: npm ci
-
-      - name: Build and test site
-        run: |
-          npm run build:site
-          npm run test:site
-
       - name: Validate HTML and XML
         run: |
           tidy -errors -quiet docs/index.html docs/404.html 2>&1 | tee /tmp/tidy-output
@@ -97,6 +89,14 @@ jobs:
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install site test dependencies
+        run: npm ci
+
+      - name: Build and test site
+        run: |
+          npm run build:site
+          npm run test:site
 
       - name: Audit site accessibility
         run: |
