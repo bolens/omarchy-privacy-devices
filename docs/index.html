@@ -17,7 +17,14 @@
     <link rel="canonical" href="https://bolens.github.io/omarchy-privacy-devices/">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <title>Privacy Devices for Omarchy</title>
-    <script>document.documentElement.classList.replace("no-js", "js");</script>
+    <script>
+      document.documentElement.classList.replace("no-js", "js");
+      try {
+        const savedTheme = localStorage.getItem("privacy-devices-theme");
+        const requestedTheme = new URLSearchParams(location.search).get("theme");
+        document.documentElement.dataset.theme = requestedTheme || savedTheme || "privacy";
+      } catch {}
+    </script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -49,6 +56,66 @@
         --border: #2c322b;
       }
 
+      [data-theme="tokyo-night"] {
+        --background: #1a1b26;
+        --surface: #16161e;
+        --surface-light: #24283b;
+        --text: #c0caf5;
+        --muted: #9aa5ce;
+        --accent: #7aa2f7;
+        --border: #414868;
+      }
+
+      [data-theme="catppuccin"] {
+        --background: #1e1e2e;
+        --surface: #181825;
+        --surface-light: #313244;
+        --text: #cdd6f4;
+        --muted: #a6adc8;
+        --accent: #a6e3a1;
+        --border: #45475a;
+      }
+
+      [data-theme="gruvbox"] {
+        --background: #282828;
+        --surface: #1d2021;
+        --surface-light: #3c3836;
+        --text: #ebdbb2;
+        --muted: #a89984;
+        --accent: #b8bb26;
+        --border: #504945;
+      }
+
+      [data-theme="nord"] {
+        --background: #2e3440;
+        --surface: #3b4252;
+        --surface-light: #434c5e;
+        --text: #eceff4;
+        --muted: #d8dee9;
+        --accent: #88c0d0;
+        --border: #4c566a;
+      }
+
+      [data-theme="rose-pine"] {
+        --background: #191724;
+        --surface: #1f1d2e;
+        --surface-light: #26233a;
+        --text: #e0def4;
+        --muted: #908caa;
+        --accent: #9ccfd8;
+        --border: #403d52;
+      }
+
+      [data-theme="everforest"] {
+        --background: #2d353b;
+        --surface: #232a2e;
+        --surface-light: #343f44;
+        --text: #d3c6aa;
+        --muted: #9da9a0;
+        --accent: #a7c080;
+        --border: #475258;
+      }
+
       * { box-sizing: border-box; }
 
       html { scroll-behavior: smooth; }
@@ -63,7 +130,7 @@
         padding: 0.65rem 0.85rem;
         border-radius: 7px;
         background: var(--accent);
-        color: #17200f;
+        color: var(--background);
         font-weight: 700;
         transform: translateY(-150%);
       }
@@ -85,7 +152,7 @@
       body {
         margin: 0;
         background:
-          radial-gradient(circle at 80% 0%, rgba(185, 242, 124, 0.09), transparent 30rem),
+          radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 30rem),
           var(--background);
         color: var(--text);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -141,6 +208,24 @@
       nav a { color: var(--muted); text-decoration: none; }
       nav a { transition: color 160ms ease; }
       nav a:hover { color: var(--text); }
+
+      .theme-picker {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .theme-picker select {
+        max-width: 9.5rem;
+        padding: 0.35rem 1.8rem 0.35rem 0.55rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+      }
 
       .hero {
         display: grid;
@@ -209,7 +294,7 @@
       .button.primary {
         border-color: var(--accent);
         background: var(--accent);
-        color: #17200f;
+        color: var(--background);
         font-weight: 700;
       }
 
@@ -261,7 +346,7 @@
       }
 
       .card:hover {
-        border-color: #45503f;
+        border-color: var(--muted);
         background: var(--surface-light);
         transform: translateY(-4px);
       }
@@ -398,7 +483,7 @@
         transition: border-color 180ms ease, transform 180ms ease;
       }
 
-      .requirement-list li:hover { border-color: #45503f; transform: translateX(3px); }
+      .requirement-list li:hover { border-color: var(--muted); transform: translateX(3px); }
 
       .requirement-list span { color: var(--muted); text-align: right; }
 
@@ -530,6 +615,7 @@
       @media (max-width: 760px) {
         nav { flex-wrap: wrap; gap: 0.5rem 1rem; padding: 0.8rem 0; }
         nav ul { gap: 0.7rem; font-size: 0.8rem; }
+        .theme-picker { width: 100%; }
         .hero { grid-template-columns: 1fr; padding-top: 3.5rem; }
         .preview { max-width: 440px; }
         .features { grid-template-columns: 1fr; }
@@ -554,6 +640,18 @@
           <li><a href="#install">Install</a></li>
           <li><a href="https://github.com/bolens/omarchy-privacy-devices">GitHub</a></li>
         </ul>
+        <label class="theme-picker">
+          <span>Theme</span>
+          <select id="theme-select" aria-label="Site color theme">
+            <option value="privacy">Privacy Devices</option>
+            <option value="tokyo-night">Tokyo Night</option>
+            <option value="catppuccin">Catppuccin</option>
+            <option value="gruvbox">Gruvbox</option>
+            <option value="nord">Nord</option>
+            <option value="rose-pine">Rosé Pine</option>
+            <option value="everforest">Everforest</option>
+          </select>
+        </label>
       </nav>
     </header>
 
@@ -758,6 +856,27 @@
     <div id="copy-status" class="visually-hidden" role="status" aria-live="polite"></div>
     <script>
       const copyStatus = document.querySelector("#copy-status");
+      const themeSelect = document.querySelector("#theme-select");
+      const themeColor = document.querySelector('meta[name="theme-color"]');
+      const availableThemes = Array.from(themeSelect.options, (option) => option.value);
+
+      if (!availableThemes.includes(document.documentElement.dataset.theme)) {
+        document.documentElement.dataset.theme = "privacy";
+      }
+
+      themeSelect.value = document.documentElement.dataset.theme;
+
+      const syncThemeColor = () => {
+        themeColor.content = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
+      };
+
+      syncThemeColor();
+
+      themeSelect.addEventListener("change", () => {
+        document.documentElement.dataset.theme = themeSelect.value;
+        try { localStorage.setItem("privacy-devices-theme", themeSelect.value); } catch {}
+        syncThemeColor();
+      });
 
       const revealElements = document.querySelectorAll(".reveal");
 
