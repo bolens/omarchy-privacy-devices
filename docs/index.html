@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Privacy Devices is an Omarchy Shell plugin for monitoring and controlling microphone, camera, location, screen-sharing, screenshot, and recording activity.">
-    <meta name="theme-color" content="#111310">
+    <meta name="theme-color" content="#1a1b26">
     <meta property="og:title" content="Privacy Devices for Omarchy">
     <meta property="og:description" content="Unified privacy indicators and controls for Omarchy Shell.">
     <meta property="og:type" content="website">
@@ -22,7 +22,7 @@
       try {
         const savedTheme = localStorage.getItem("privacy-devices-theme");
         const requestedTheme = new URLSearchParams(location.search).get("theme");
-        document.documentElement.dataset.theme = requestedTheme || savedTheme || "privacy";
+        document.documentElement.dataset.theme = requestedTheme || savedTheme || "tokyo-night";
       } catch {}
     </script>
     <script type="application/ld+json">
@@ -47,21 +47,11 @@
     <style>
       :root {
         color-scheme: dark;
-        --background: #0c0e0c;
-        --surface: #151815;
-        --surface-light: #1c201c;
-        --text: #f2f4ed;
-        --muted: #a8afa2;
-        --accent: #b9f27c;
-        --border: #2c322b;
-      }
-
-      [data-theme="tokyo-night"] {
         --background: #1a1b26;
-        --surface: #16161e;
+        --surface: #13141c;
         --surface-light: #24283b;
         --text: #c0caf5;
-        --muted: #9aa5ce;
+        --muted: #a9b1d6;
         --accent: #7aa2f7;
         --border: #414868;
       }
@@ -643,8 +633,7 @@
         <label class="theme-picker">
           <span>Theme</span>
           <select id="theme-select" aria-label="Site color theme">
-            <option value="privacy">Privacy Devices</option>
-            <option value="tokyo-night">Tokyo Night</option>
+            <option value="tokyo-night">Tokyo Night (default)</option>
             <option value="catppuccin">Catppuccin</option>
             <option value="gruvbox">Gruvbox</option>
             <option value="nord">Nord</option>
@@ -861,7 +850,7 @@
       const availableThemes = Array.from(themeSelect.options, (option) => option.value);
 
       if (!availableThemes.includes(document.documentElement.dataset.theme)) {
-        document.documentElement.dataset.theme = "privacy";
+        document.documentElement.dataset.theme = "tokyo-night";
       }
 
       themeSelect.value = document.documentElement.dataset.theme;
