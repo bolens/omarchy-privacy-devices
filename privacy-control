@@ -3,20 +3,12 @@ set -eu
 
 action=${1:-}
 kind=${2:-}
-camera_module=${3:-uvcvideo}
-
-case "$camera_module" in
-  *[!A-Za-z0-9_-]*|'') exit 12 ;;
-esac
 
 state_camera() {
-  if [ "$camera_module" = uvcvideo ]; then
-    for interface in /sys/bus/usb/drivers/uvcvideo/*:*; do
-      [ -e "$interface" ] && exit 10
-    done
-    exit 11
-  fi
-  if grep -q "^${camera_module} " /proc/modules; then exit 10; else exit 11; fi
+  for interface in /sys/bus/usb/drivers/uvcvideo/*:*; do
+    [ -e "$interface" ] && exit 10
+  done
+  exit 11
 }
 
 unbind_uvc_cameras() {
@@ -64,17 +56,11 @@ fi
 [ "$action" = toggle ] || exit 12
 case "$kind" in
   camera)
-    if [ "$camera_module" = uvcvideo ]; then
-      camera_is_bound=false
-      for interface in /sys/bus/usb/drivers/uvcvideo/*:*; do
-        if [ -e "$interface" ]; then camera_is_bound=true; break; fi
-      done
-      if [ "$camera_is_bound" = true ]; then unbind_uvc_cameras; else bind_uvc_cameras; fi
-    elif grep -q "^${camera_module} " /proc/modules; then
-      pkexec /usr/bin/modprobe -r "$camera_module"
-    else
-      pkexec /usr/bin/modprobe "$camera_module"
-    fi
+    camera_is_bound=false
+    for interface in /sys/bus/usb/drivers/uvcvideo/*:*; do
+      if [ -e "$interface" ]; then camera_is_bound=true; break; fi
+    done
+    if [ "$camera_is_bound" = true ]; then unbind_uvc_cameras; else bind_uvc_cameras; fi
     ;;
   location)
     if systemctl is-enabled geoclue.service 2>/dev/null | grep -q '^masked'; then

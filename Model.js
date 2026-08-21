@@ -88,6 +88,18 @@ function unique(values) {
   return result
 }
 
+// Shared Omarchy bar controls render strings with Text.AutoText. Replace the
+// metacharacters that can make attacker-controlled names look like rich text
+// before passing them across that boundary. Plugin-owned Text items also set
+// Text.PlainText explicitly; this helper is for shared components we cannot
+// configure from a plugin.
+function autoTextSafe(value) {
+  return String(value === undefined || value === null ? "" : value)
+    .replace(/&/g, "＆")
+    .replace(/</g, "＜")
+    .replace(/>/g, "＞")
+}
+
 function volumeMuted(output) {
   return /\[MUTED\]|Mute:\s*yes/i.test(String(output || ""))
 }

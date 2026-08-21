@@ -4,15 +4,47 @@ set -eu
 action=${1:-}
 backend=${2:-}
 
+runtime_base=${XDG_RUNTIME_DIR:-"/run/user/$(id -u)"}
+case "$runtime_base" in
+  /*) ;;
+  *) exit 2 ;;
+esac
+[ -d "$runtime_base" ] || exit 2
+[ "$(stat -c %u -- "$runtime_base")" = "$(id -u)" ] || exit 2
+case "$(stat -c %a -- "$runtime_base")" in *00) ;; *) exit 2 ;; esac
+
+umask 077
+state_dir="$runtime_base/omarchy-privacy-devices"
+mkdir -p -- "$state_dir"
+chmod 700 -- "$state_dir"
+pid_file="$state_dir/wf-recorder.pid"
+
+managed_recorder() {
+  pid=$1
+  case "$pid" in *[!0-9]*|'') return 1 ;; esac
+  [ -r "/proc/$pid/status" ] || return 1
+  [ "$(awk '/^Uid:/{print $2; exit}' "/proc/$pid/status")" = "$(id -u)" ] || return 1
+  [ "$(basename -- "$(readlink -f "/proc/$pid/exe")")" = wf-recorder ] || return 1
+}
+
 case "$backend:$action" in
   wf-recorder:start)
     output_dir=${XDG_VIDEOS_DIR:-"$HOME/Videos"}
-    mkdir -p "$output_dir"
+    case "$output_dir" in /*) ;; *) output_dir="$HOME/Videos" ;; esac
+    mkdir -p -- "$output_dir"
+    if [ ! -L "$pid_file" ] && [ -f "$pid_file" ] && managed_recorder "$(cat -- "$pid_file")"; then exit 0; fi
+    rm -f -- "$pid_file"
     geometry=$(slurp) || exit 0
     wf-recorder -g "$geometry" -f "$output_dir/screenrecording-$(date +%Y-%m-%d_%H-%M-%S).mp4" >/dev/null 2>&1 &
+    recorder_pid=$!
+    printf '%s\n' "$recorder_pid" >"$pid_file.new"
+    mv -f -- "$pid_file.new" "$pid_file"
     ;;
   wf-recorder:stop)
-    pkill -SIGINT -x wf-recorder
+    [ ! -L "$pid_file" ] && [ -f "$pid_file" ] || exit 0
+    recorder_pid=$(cat -- "$pid_file")
+    if managed_recorder "$recorder_pid"; then kill -INT "$recorder_pid"; fi
+    rm -f -- "$pid_file"
     ;;
   *) exit 2 ;;
 esac

@@ -27,7 +27,7 @@ controls check their own dependencies and show **Install** only when needed:
 | Control | Required packages or commands |
 | --- | --- |
 | Microphone and audio output | `libpulse` (`pactl`) or `wireplumber` (`wpctl`) |
-| Camera blocking | `polkit`; custom kernel modules also require `kmod` |
+| Camera blocking | `polkit` and a UVC-compatible USB camera |
 | Location blocking | `geoclue` and `polkit` |
 | Screen-share blocking | `xdg-desktop-portal-hyprland` |
 | Omarchy screenshots | Omarchy capture command |
@@ -98,17 +98,18 @@ omarchy plugin remove io.github.bolens.privacy-devices
 ```
 
 Runtime service masks clear on reboot, and UVC cameras normally rebind on
-reboot. If a custom camera module remains unloaded, restore it with
-`sudo modprobe MODULE_NAME`.
+reboot.
 
 ## Privacy and security
 
 The plugin monitors local PipeWire metadata and selected local process state; it
 does not send data over the network. UVC camera and GeoClue controls request
-Polkit authorization. Camera blocking binds or unbinds USB video interfaces
-(with a kernel-module fallback for custom drivers), location blocking applies a
-runtime GeoClue mask, and screen-share blocking applies a user-level runtime
-portal mask. Runtime masks disappear after reboot.
+Polkit authorization. Camera blocking only binds or unbinds discovered UVC USB
+video interfaces; it never accepts a configurable kernel module. Location
+blocking applies a runtime GeoClue mask, and screen-share blocking applies a
+user-level runtime portal mask. Runtime masks disappear after reboot. The
+wf-recorder backend records its PID only under the owner-only runtime directory
+and verifies process ownership and executable identity before stopping it.
 
 Custom screenshot and recording commands run unsandboxed as your user. Review
 them before saving them.
@@ -120,6 +121,7 @@ omarchy plugin validate .
 qmllint -I "$OMARCHY_PATH/shell" BarWidget.qml Service.qml
 shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
 node tests/model.test.js
+node tests/security.test.js
 ```
 
 ## License

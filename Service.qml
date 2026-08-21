@@ -113,7 +113,7 @@ Item {
 
   function dependencyDescription(kind) {
     if (kind === "microphone" || kind === "audio-output") return "Audio controls require pactl (libpulse) or wpctl"
-    if (kind === "camera") return "Camera blocking requires kmod and Polkit"
+    if (kind === "camera") return "Camera blocking requires Polkit"
     if (kind === "location") return "Location blocking requires GeoClue and Polkit"
     if (kind === "screen-share") return "Screen sharing requires xdg-desktop-portal-hyprland"
     if (kind === "screenshot") return "Screenshots require grim and slurp"
@@ -194,18 +194,13 @@ Item {
       privacyStateQueue = []
       if (privacyStateProc.running) privacyStateProc.running = false
       setAllowed(kind, !controlEnabled(kind))
-      privacyControlProc.command = [helperPath(), "toggle", kind, cameraModule()]
+      privacyControlProc.command = [helperPath(), "toggle", kind]
       privacyControlProc.running = true
     }
   }
 
   function helperPath() {
     return String(Qt.resolvedUrl("privacy-control")).replace(/^file:\/\//, "")
-  }
-
-  function cameraModule() {
-    var value = String(settings.cameraKernelModule || "uvcvideo")
-    return /^[A-Za-z0-9_-]+$/.test(value) ? value : "uvcvideo"
   }
 
   function setAllowed(kind, allowed) {
@@ -224,7 +219,7 @@ Item {
 
   function backendFor(kind) {
     if (kind === "microphone" || kind === "audio-output") return "Audio control: " + audioControlBackend() + "; activity: PipeWire"
-    if (kind === "camera") return "Kernel module " + cameraModule()
+    if (kind === "camera") return "UVC USB driver interface binding"
     if (kind === "screen-share") return "xdg-desktop-portal-hyprland user service"
     if (kind === "location") return "GeoClue system service"
     if (kind === "screen-recording") return "Recorder process detection (" + recordingBackend() + ")"
@@ -253,7 +248,7 @@ Item {
   }
 
   function notify(title, body) {
-    Quickshell.execDetached(["notify-send", "--app-name=Omarchy Privacy", title, body])
+    Quickshell.execDetached(["notify-send", "--app-name=Omarchy Privacy", "--", Model.autoTextSafe(title), Model.autoTextSafe(body)])
   }
 
   function checkActivityNotifications() {
@@ -292,7 +287,7 @@ Item {
   function runNextPrivacyState() {
     if (privacyStateQueue.length === 0 || privacyStateProc.running) return
     privacyStateKind = privacyStateQueue.shift()
-    privacyStateProc.command = [helperPath(), "status", privacyStateKind, cameraModule()]
+    privacyStateProc.command = [helperPath(), "status", privacyStateKind]
     privacyStateProc.running = true
   }
 

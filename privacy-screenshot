@@ -6,7 +6,8 @@ backend=${2:-}
 [ "$action" = capture ] || exit 2
 
 output_dir=${XDG_PICTURES_DIR:-"$HOME/Pictures"}
-mkdir -p "$output_dir"
+case "$output_dir" in /*) ;; *) output_dir="$HOME/Pictures" ;; esac
+mkdir -p -- "$output_dir"
 output="$output_dir/screenshot-$(date +%Y-%m-%d_%H-%M-%S).png"
 
 case "$backend" in
@@ -20,7 +21,7 @@ case "$backend" in
     grim -g "$geometry" - | satty --filename - --output-filename "$output" --copy-command wl-copy
     ;;
   hyprshot)
-    exec hyprshot --freeze -m region -o "$output_dir" -f "$(basename "$output")"
+    exec hyprshot --freeze -m region -o "$output_dir" -f "$(basename -- "$output")"
     ;;
   flameshot)
     exec env QT_QPA_PLATFORM=wayland flameshot gui -p "$output_dir"

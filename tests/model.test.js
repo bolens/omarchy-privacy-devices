@@ -33,4 +33,8 @@ if (context.mutedFromExitCode(11, true)) throw new Error("unmuted exit state")
 if (!context.mutedFromExitCode(12, true)) throw new Error("failed probe preserves state")
 if (context.shouldAcceptControlProbe("camera", "camera")) throw new Error("pending probe rejection")
 if (!context.shouldAcceptControlProbe("location", "camera")) throw new Error("unrelated probe acceptance")
+const hostileText = '<img src="https://attacker.invalid/pixel"> & camera'
+const safeText = context.autoTextSafe(hostileText)
+if (/[<>&]/.test(safeText)) throw new Error("shared AutoText metacharacters remain")
+if (safeText !== '＜img src="https://attacker.invalid/pixel"＞ ＆ camera') throw new Error("shared AutoText sanitization")
 console.log("model tests passed")

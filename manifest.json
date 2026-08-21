@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.bolens.privacy-devices",
   "name": "Privacy Devices",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "bolens",
   "license": "MIT",
   "description": "Unified, configurable privacy indicators for microphones, audio playback, cameras, screen sharing, screenshots, screen recording, and location access.",
@@ -29,7 +29,6 @@
       "unmutedColorRole": "foreground",
       "showControls": true,
       "blockableKinds": ["camera", "screen-share", "location"],
-      "cameraKernelModule": "uvcvideo",
       "itemColorRoles": {},
       "itemIdleVisibility": {},
       "itemIdleOpacity": {},
@@ -181,13 +180,6 @@
           {"value": "screen-share", "label": "Screen sharing"},
           {"value": "location", "label": "Location"}
         ]
-      },
-      {
-        "key": "cameraKernelModule",
-        "type": "string",
-        "label": "Camera kernel module",
-        "description": "Kernel module toggled by the camera blocker; this machine uses uvcvideo.",
-        "defaultValue": "uvcvideo"
       },
       {
         "key": "idleOpacity",

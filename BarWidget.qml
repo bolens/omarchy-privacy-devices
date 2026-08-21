@@ -260,6 +260,10 @@ Panel {
     return icons[kind] !== undefined ? String(icons[kind]) : String(defaults[kind] || "")
   }
 
+  function sharedText(value) {
+    return Model.autoTextSafe(value)
+  }
+
   function barText() {
     if (displayMode === "active-count") return activeCount > 0 ? "󰒃 " + activeCount : (showIdle ? "󰒃" : "")
     var items = displayMode === "active-only" ? activeItems() : visibleItems
@@ -269,14 +273,15 @@ Panel {
   function tooltip() {
     if (activeCount === 0) return "Privacy devices idle"
     return activeItems().map(function(entry) {
-      return entry.label + (entry.apps.length ? ": " + entry.apps.join(", ") : " in use")
+      return sharedText(entry.label) + (entry.apps.length ? ": " + entry.apps.map(sharedText).join(", ") : " in use")
     }).join("\n")
   }
 
   function itemTooltip(entry) {
     if (entry.kind === "summary") return tooltip()
+    var label = sharedText(entry.label)
     var state = entry.active
-      ? (entry.apps.length ? entry.apps.join(", ") : "In use")
+      ? (entry.apps.length ? entry.apps.map(sharedText).join(", ") : "In use")
       : "Idle"
     var action = !entry.dependenciesReady
       ? "Left click to install requirements"
@@ -289,9 +294,9 @@ Panel {
           ? (entry.controlEnabled ? "Left click to mute" : "Left click to unmute")
           : (entry.controlEnabled ? "Left click to block" : "Left click to allow"))
       : "Left click for details"
-    return entry.label + " · " + state
+    return label + " · " + state
       + "\n" + action
-      + "\nMiddle click for " + entry.label.toLowerCase() + " settings"
+      + "\nMiddle click for " + label.toLowerCase() + " settings"
       + "\nRight click for privacy details"
   }
 
@@ -333,7 +338,7 @@ Panel {
         delegate: WidgetButton {
           required property var modelData
           bar: root.bar
-          text: modelData.icon
+          text: root.sharedText(modelData.icon)
           active: modelData.active
           dimmed: false
           foreground: root.itemColor(modelData)
@@ -373,6 +378,7 @@ Panel {
           Layout.fillWidth: true
           Text {
             text: "Privacy activity"
+            textFormat: Text.PlainText
             color: Color.popups.text
             font.family: Style.font.family
             font.pixelSize: Style.font.title
@@ -381,6 +387,7 @@ Panel {
           Item { Layout.fillWidth: true }
           Text {
             text: root.activeCount > 0 ? root.activeCount + " active" : "All idle"
+            textFormat: Text.PlainText
             color: root.activeCount > 0 ? root.activeThemeColor : root.inactiveThemeColor
             font.family: Style.font.family
             font.pixelSize: Style.font.bodySmall
@@ -402,6 +409,7 @@ Panel {
             Text {
               Layout.fillWidth: true
               text: Model.label(root.editingKind) + " settings"
+              textFormat: Text.PlainText
               color: Color.popups.text
               font.family: Style.font.family
               font.pixelSize: Style.font.title
@@ -420,6 +428,7 @@ Panel {
               anchors.margins: Style.spacing.md
               Text {
                 text: root.iconFor(root.editingKind)
+                textFormat: Text.PlainText
                 color: root.itemColor(root.item(root.editingKind))
                 font.family: Style.font.family
                 font.pixelSize: Style.font.icon
@@ -427,6 +436,7 @@ Panel {
               Text {
                 Layout.fillWidth: true
                 text: root.labelFor(root.editingKind)
+                textFormat: Text.PlainText
                 color: Color.popups.text
                 font.family: Style.font.family
                 font.pixelSize: Style.font.body
@@ -543,9 +553,9 @@ Panel {
           }
 
           PanelSectionHeader {
-            visible: root.editingKind === "screen-recording" || root.editingKind === "screenshot" || root.isAudioControl({kind: root.editingKind}) || root.editingKind === "camera"
+            visible: root.editingKind === "screen-recording" || root.editingKind === "screenshot" || root.isAudioControl({kind: root.editingKind})
             Layout.fillWidth: true
-            text: root.editingKind === "camera" ? "Device control" : "Backend"
+            text: "Backend"
           }
 
           Dropdown {
@@ -561,6 +571,7 @@ Panel {
             visible: root.editingKind === "screen-recording"
             Layout.fillWidth: true
             text: "Omarchy follows the system capture command. Explicit and custom choices keep dependency checks and activity detection tied to that backend."
+            textFormat: Text.PlainText
             color: Color.muted
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
@@ -580,6 +591,7 @@ Panel {
             visible: root.editingKind === "screenshot"
             Layout.fillWidth: true
             text: "Omarchy uses its smart flow. Grim and Hyprshot capture regions; Grim + Satty and Flameshot add annotation."
+            textFormat: Text.PlainText
             color: Color.muted
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
@@ -676,29 +688,11 @@ Panel {
             visible: root.isAudioControl({kind: root.editingKind})
             Layout.fillWidth: true
             text: "Auto prefers pactl and falls back to wpctl. This changes mute control only; activity detection remains PipeWire-native."
+            textFormat: Text.PlainText
             color: Color.muted
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             wrapMode: Text.WordWrap
-          }
-
-          RowLayout {
-            visible: root.editingKind === "camera"
-            Layout.fillWidth: true
-            TextField {
-              id: cameraModuleEditor
-              Layout.fillWidth: true
-              placeholderText: "Kernel module"
-              text: String(root.setting("cameraKernelModule", "uvcvideo"))
-              foreground: Color.popups.text
-              accent: root.activeThemeColor
-              font.family: Style.font.family
-              onAccepted: root.persistSettings({cameraKernelModule: text})
-            }
-            Button {
-              text: "Save module"
-              onClicked: root.persistSettings({cameraKernelModule: cameraModuleEditor.text})
-            }
           }
 
           PanelSectionHeader {
@@ -723,6 +717,7 @@ Panel {
               anchors.fill: parent
               anchors.margins: Style.spacing.md
               text: root.diagnosticText(root.editingKind)
+              textFormat: Text.PlainText
               color: Color.muted
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
@@ -782,6 +777,7 @@ Panel {
 
               Text {
                 text: modelData.icon
+                textFormat: Text.PlainText
                 color: root.itemColor(modelData)
                 opacity: modelData.active ? 1 : root.itemIdleOpacity(modelData.kind)
                 font.family: Style.font.family
@@ -793,6 +789,7 @@ Panel {
                 Text {
                   Layout.fillWidth: true
                   text: modelData.label
+                  textFormat: Text.PlainText
                   color: Color.popups.text
                   font.family: Style.font.family
                   font.pixelSize: Style.font.body
@@ -801,6 +798,7 @@ Panel {
                 Text {
                   Layout.fillWidth: true
                   text: modelData.active ? (modelData.apps.length ? modelData.apps.join(", ") : "In use") : "Idle"
+                  textFormat: Text.PlainText
                   color: modelData.active ? Color.popups.text : root.inactiveThemeColor
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
@@ -810,6 +808,7 @@ Panel {
               Text {
                 visible: !root.showControls || !modelData.controllable || modelData.kind === "screenshot" || !modelData.dependenciesReady
                 text: !modelData.dependenciesReady ? "INSTALL" : (modelData.kind === "screenshot" ? "CAPTURE" : (modelData.active ? "ACTIVE" : "IDLE"))
+                textFormat: Text.PlainText
                 color: root.itemColor(modelData)
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
@@ -834,6 +833,7 @@ Panel {
           visible: root.editingKind === ""
           Layout.fillWidth: true
           text: "PipeWire activity updates live. Location and recorder detection use bounded fallback polling. Middle-click an item for settings."
+          textFormat: Text.PlainText
           color: Color.muted
           font.family: Style.font.family
           font.pixelSize: Style.font.caption

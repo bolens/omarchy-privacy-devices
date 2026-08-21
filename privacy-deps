@@ -17,7 +17,7 @@ ready() {
         *) return 1 ;;
       esac
       ;;
-    camera) command -v modprobe >/dev/null 2>&1 && command -v pkexec >/dev/null 2>&1 ;;
+    camera) command -v pkexec >/dev/null 2>&1 ;;
     location) command -v pkexec >/dev/null 2>&1 && test -x /usr/lib/geoclue ;;
     screen-share) test -x /usr/lib/xdg-desktop-portal-hyprland ;;
     screenshot)
@@ -58,7 +58,7 @@ case "$kind" in
       *) exit 2 ;;
     esac
     ;;
-  camera) packages="kmod polkit" ;;
+  camera) packages="polkit" ;;
   location) packages="geoclue polkit" ;;
   screen-share) packages="xdg-desktop-portal-hyprland" ;;
   screenshot)
