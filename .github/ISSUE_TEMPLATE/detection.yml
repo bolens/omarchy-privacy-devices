@@ -1,7 +1,7 @@
 name: Detection or classification problem
 description: Report missing, incorrect, or misclassified privacy activity.
 title: "[Detection]: "
-labels: [bug]
+labels: [bug, detection]
 body:
   - type: markdown
     attributes:
@@ -87,4 +87,3 @@ body:
     attributes:
       label: Diagnostics or screenshots
       description: Add relevant PipeWire output, screenshots, or logs after removing sensitive information.
-

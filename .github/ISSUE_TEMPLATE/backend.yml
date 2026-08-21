@@ -1,7 +1,7 @@
 name: Backend or dependency problem
 description: Report installation, screenshot, recording, audio, or control backend failures.
 title: "[Backend]: "
-labels: [bug]
+labels: [bug, backend]
 body:
   - type: checkboxes
     id: checks
@@ -81,4 +81,3 @@ body:
     attributes:
       label: Additional context
       description: Include backend selection, relevant configuration, and screenshots if useful.
-
