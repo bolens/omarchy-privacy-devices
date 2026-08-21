@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Privacy Devices is an Omarchy Shell plugin for monitoring and controlling microphone, camera, location, screen-sharing, screenshot, and recording activity.">
+    <meta name="theme-color" content="#111310">
+    <title>Privacy Devices for Omarchy</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --background: #0c0e0c;
+        --surface: #151815;
+        --surface-light: #1c201c;
+        --text: #f2f4ed;
+        --muted: #a8afa2;
+        --accent: #b9f27c;
+        --border: #2c322b;
+      }
+
+      * { box-sizing: border-box; }
+
+      html { scroll-behavior: smooth; }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 80% 0%, rgba(185, 242, 124, 0.09), transparent 30rem),
+          var(--background);
+        color: var(--text);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        line-height: 1.6;
+      }
+
+      a { color: inherit; }
+
+      .shell {
+        width: min(1080px, calc(100% - 2rem));
+        margin: 0 auto;
+      }
+
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 72px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .brand {
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        text-decoration: none;
+      }
+
+      .brand::before { content: "● "; color: var(--accent); }
+
+      nav ul {
+        display: flex;
+        gap: 1.25rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      nav a { color: var(--muted); text-decoration: none; }
+      nav a:hover { color: var(--text); }
+
+      .hero {
+        display: grid;
+        grid-template-columns: 1.25fr 0.75fr;
+        gap: clamp(2rem, 7vw, 6rem);
+        align-items: center;
+        min-height: 610px;
+        padding: 5rem 0;
+      }
+
+      .eyebrow {
+        color: var(--accent);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 780px;
+        margin: 0.8rem 0 1.25rem;
+        font-size: clamp(3rem, 8vw, 6.5rem);
+        line-height: 0.98;
+        letter-spacing: -0.075em;
+      }
+
+      .intro {
+        max-width: 670px;
+        margin: 0;
+        color: var(--muted);
+        font-family: system-ui, sans-serif;
+        font-size: clamp(1.05rem, 2vw, 1.3rem);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+        margin-top: 2rem;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 1.1rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        text-decoration: none;
+      }
+
+      .button.primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #17200f;
+        font-weight: 700;
+      }
+
+      .preview {
+        position: relative;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: linear-gradient(145deg, var(--surface-light), var(--surface));
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+      }
+
+      .preview img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+      }
+
+      section { padding: 5rem 0; border-top: 1px solid var(--border); }
+
+      h2 {
+        margin: 0 0 2rem;
+        font-size: clamp(2rem, 4vw, 3.4rem);
+        line-height: 1.08;
+        letter-spacing: -0.055em;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+      }
+
+      .card {
+        min-height: 190px;
+        padding: 1.4rem;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+      }
+
+      .card span { color: var(--accent); font-size: 1.4rem; }
+      .card h3 { margin: 1.4rem 0 0.5rem; }
+      .card p { margin: 0; color: var(--muted); font-family: system-ui, sans-serif; }
+
+      .install-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2rem;
+        padding: clamp(1.5rem, 4vw, 3rem);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--surface);
+      }
+
+      .install-box h2 { margin-bottom: 0.75rem; }
+      .install-box p { margin: 0; color: var(--muted); font-family: system-ui, sans-serif; }
+
+      footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 2rem 0 3rem;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      @media (max-width: 760px) {
+        nav ul { display: none; }
+        .hero { grid-template-columns: 1fr; padding-top: 3.5rem; }
+        .preview { max-width: 440px; }
+        .features { grid-template-columns: 1fr; }
+        .install-box { align-items: flex-start; flex-direction: column; }
+        footer { flex-direction: column; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="shell">
+      <nav aria-label="Main navigation">
+        <a class="brand" href="#">Privacy Devices</a>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#install">Install</a></li>
+          <li><a href="https://github.com/bolens/omarchy-privacy-devices">GitHub</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <div class="shell hero">
+        <div>
+          <div class="eyebrow">Omarchy Shell plugin · v0.1.1</div>
+          <h1>Know what your devices are doing.</h1>
+          <p class="intro">Unified privacy indicators and controls for your microphone, camera, location, screen sharing, screenshots, recording, and audio output.</p>
+          <div class="actions">
+            <a class="button primary" href="https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices">Get the plugin</a>
+            <a class="button" href="https://github.com/bolens/omarchy-privacy-devices">View source ↗</a>
+          </div>
+        </div>
+        <div class="preview">
+          <img src="https://raw.githubusercontent.com/bolens/omarchy-privacy-devices/main/preview.png" alt="Privacy Devices popup showing device activity and controls" width="440" height="436">
+        </div>
+      </div>
+
+      <section id="features">
+        <div class="shell">
+          <div class="eyebrow">One glance. Direct control.</div>
+          <h2>Your privacy state,<br>right in the bar.</h2>
+          <div class="features">
+            <article class="card">
+              <span aria-hidden="true">◉</span>
+              <h3>Live activity</h3>
+              <p>See which applications are using privacy-sensitive devices as it happens.</p>
+            </article>
+            <article class="card">
+              <span aria-hidden="true">⌁</span>
+              <h3>Inline controls</h3>
+              <p>Mute audio, manage recording, and block supported devices from one popup.</p>
+            </article>
+            <article class="card">
+              <span aria-hidden="true">◇</span>
+              <h3>Made to fit</h3>
+              <p>Customize monitored activity, ordering, colors, visibility, actions, and backends.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="install">
+        <div class="shell">
+          <div class="install-box">
+            <div>
+              <div class="eyebrow">Official Omarchy plugin</div>
+              <h2>Ready for your bar.</h2>
+              <p>Install Privacy Devices from the Omarchy Plugins directory.</p>
+            </div>
+            <a class="button primary" href="https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices">Open plugin page →</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="shell">
+      <span>Privacy Devices · MIT licensed</span>
+      <span>Built for Omarchy Quattro</span>
+    </footer>
+  </body>
+</html>
