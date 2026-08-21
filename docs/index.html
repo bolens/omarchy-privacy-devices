@@ -270,6 +270,99 @@
       .card h3 { margin: 1.4rem 0 0.5rem; }
       .card p { margin: 0; color: var(--muted); font-family: system-ui, sans-serif; }
 
+      .section-intro {
+        max-width: 700px;
+        margin: -1rem 0 2.5rem;
+        color: var(--muted);
+        font-family: system-ui, sans-serif;
+        font-size: 1.05rem;
+      }
+
+      .guide-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+
+      .guide-card {
+        padding: 1.4rem;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+      }
+
+      .guide-card h3 { margin: 0 0 0.55rem; }
+      .guide-card p { margin: 0; color: var(--muted); font-family: system-ui, sans-serif; }
+      .guide-card code { color: var(--text); }
+
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+
+      table { width: 100%; border-collapse: collapse; background: var(--surface); }
+      th, td { padding: 1rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+      th { color: var(--accent); font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; }
+      td { color: var(--muted); font-family: system-ui, sans-serif; }
+      td:first-child { color: var(--text); font-family: inherit; font-weight: 700; }
+      tr:last-child td { border-bottom: 0; }
+
+      .notice {
+        margin-top: 1rem;
+        padding: 1rem 1.2rem;
+        border-left: 3px solid var(--accent);
+        background: var(--surface);
+        color: var(--muted);
+        font-family: system-ui, sans-serif;
+      }
+
+      .notice strong { color: var(--text); }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: steps;
+      }
+
+      .steps li {
+        padding: 1.4rem;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--muted);
+        font-family: system-ui, sans-serif;
+        counter-increment: steps;
+      }
+
+      .steps li::before {
+        content: "0" counter(steps);
+        display: block;
+        margin-bottom: 1.2rem;
+        color: var(--accent);
+        font: 700 0.85rem/1 ui-monospace, monospace;
+      }
+
+      .steps strong { display: block; margin-bottom: 0.35rem; color: var(--text); }
+
+      .faq { display: grid; gap: 0.75rem; }
+
+      details {
+        padding: 1rem 1.2rem;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+      }
+
+      summary { color: var(--text); cursor: pointer; font-weight: 700; }
+      details p { margin: 0.8rem 0 0; color: var(--muted); font-family: system-ui, sans-serif; }
+      details code { color: var(--text); }
+      details a { color: var(--text); text-underline-offset: 0.2em; }
+
       .requirements {
         display: grid;
         grid-template-columns: 0.8fr 1.2fr;
@@ -394,6 +487,8 @@
       .js .reveal.is-visible { opacity: 1; transform: translateY(0); }
 
       .js .reveal .card,
+      .js .reveal .guide-card,
+      .js .reveal .steps li,
       .js .reveal .requirement-list li,
       .js .reveal .commands > div {
         opacity: 0;
@@ -402,12 +497,17 @@
       }
 
       .js .reveal.is-visible .card,
+      .js .reveal.is-visible .guide-card,
+      .js .reveal.is-visible .steps li,
       .js .reveal.is-visible .requirement-list li,
       .js .reveal.is-visible .commands > div { opacity: 1; transform: translateY(0); }
 
       .js .reveal.is-visible :is(.card, .requirement-list li, .commands > div):nth-child(2) { transition-delay: 90ms; }
       .js .reveal.is-visible :is(.card, .requirement-list li, .commands > div):nth-child(3) { transition-delay: 180ms; }
       .js .reveal.is-visible :is(.card, .requirement-list li, .commands > div):nth-child(4) { transition-delay: 270ms; }
+      .js .reveal.is-visible :is(.guide-card, .steps li):nth-child(2) { transition-delay: 90ms; }
+      .js .reveal.is-visible :is(.guide-card, .steps li):nth-child(3) { transition-delay: 180ms; }
+      .js .reveal.is-visible :is(.guide-card, .steps li):nth-child(4) { transition-delay: 270ms; }
 
       @media (prefers-reduced-motion: reduce) {
         html { scroll-behavior: auto; }
@@ -421,6 +521,8 @@
         .preview,
         .reveal,
         .reveal .card,
+        .reveal .guide-card,
+        .reveal .steps li,
         .reveal .requirement-list li,
         .reveal .commands > div { opacity: 1; transform: none; }
       }
@@ -431,6 +533,7 @@
         .hero { grid-template-columns: 1fr; padding-top: 3.5rem; }
         .preview { max-width: 440px; }
         .features { grid-template-columns: 1fr; }
+        .guide-grid, .steps { grid-template-columns: 1fr; }
         .requirements { grid-template-columns: 1fr; }
         .requirement-list li { display: grid; }
         .requirement-list span { text-align: left; }
@@ -447,7 +550,7 @@
         <a class="brand" href="./">Privacy Devices</a>
         <ul>
           <li><a href="#features">Features</a></li>
-          <li><a href="#requirements">Requirements</a></li>
+          <li><a href="#usage">Guide</a></li>
           <li><a href="#install">Install</a></li>
           <li><a href="https://github.com/bolens/omarchy-privacy-devices">GitHub</a></li>
         </ul>
@@ -495,18 +598,27 @@
       </section>
 
       <section id="requirements" class="reveal">
-        <div class="shell requirements">
-          <div>
-            <div class="eyebrow">Compatibility</div>
-            <h2>Built for Omarchy.</h2>
-            <p class="requirements-copy">Optional controls check their own dependencies and offer to install only what they need. See the <a href="https://github.com/bolens/omarchy-privacy-devices#requirements">full requirements table</a> for backend-specific packages.</p>
+        <div class="shell">
+          <div class="eyebrow">Compatibility</div>
+          <h2>Built for Omarchy.</h2>
+          <p class="section-intro">Privacy Devices requires Omarchy Quattro with Omarchy Shell, Quickshell, Hyprland, and PipeWire. Optional controls detect their own dependencies and show <strong>Install</strong> only when needed.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Control or backend</th><th>Required package or command</th></tr></thead>
+              <tbody>
+                <tr><td>Microphone and audio output</td><td><code>libpulse</code> (<code>pactl</code>) or <code>wireplumber</code> (<code>wpctl</code>)</td></tr>
+                <tr><td>Camera blocking</td><td><code>polkit</code> and a UVC-compatible USB camera</td></tr>
+                <tr><td>Location blocking</td><td><code>geoclue</code> and <code>polkit</code></td></tr>
+                <tr><td>Screen-share blocking</td><td><code>xdg-desktop-portal-hyprland</code></td></tr>
+                <tr><td>Omarchy screenshots</td><td>Omarchy capture command</td></tr>
+                <tr><td>Grim / Grim + Satty</td><td><code>grim</code>, <code>slurp</code>; plus <code>satty</code> and <code>wl-clipboard</code> for Satty</td></tr>
+                <tr><td>Hyprshot / Flameshot</td><td><code>hyprshot</code>; or <code>flameshot</code>, <code>grim</code>, and the Hyprland portal</td></tr>
+                <tr><td>Omarchy / GPU recording</td><td><code>gpu-screen-recorder</code></td></tr>
+                <tr><td>wf-recorder</td><td><code>wf-recorder</code> and <code>slurp</code></td></tr>
+              </tbody>
+            </table>
           </div>
-          <ul class="requirement-list">
-            <li><strong>Desktop</strong><span>Omarchy Quattro</span></li>
-            <li><strong>Shell</strong><span>Omarchy Shell + Quickshell</span></li>
-            <li><strong>Session</strong><span>Hyprland + PipeWire</span></li>
-            <li><strong>Optional tools</strong><span>Installed per control</span></li>
-          </ul>
+          <p class="notice"><strong>Custom commands are user-managed.</strong> The plugin never installs their dependencies. Activity notifications use <code>notify-send</code> when available.</p>
         </div>
       </section>
 
@@ -534,6 +646,13 @@
                 </div>
               </div>
               <div>
+                <span class="command-label">Disable without uninstalling</span>
+                <div class="command">
+                  <code>omarchy plugin disable io.github.bolens.privacy-devices</code>
+                  <button class="copy-button" type="button" data-copy="omarchy plugin disable io.github.bolens.privacy-devices" aria-label="Copy disable command">Copy</button>
+                </div>
+              </div>
+              <div>
                 <span class="command-label">Uninstall</span>
                 <div class="command">
                   <code>omarchy plugin remove io.github.bolens.privacy-devices</code>
@@ -543,8 +662,89 @@
             </div>
             <div class="install-actions">
               <a class="button primary" href="https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices">Open plugin page →</a>
-              <a class="button" href="https://github.com/bolens/omarchy-privacy-devices#configuration">Configuration guide ↗</a>
+              <a class="button" href="#configuration">Configuration guide</a>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="usage" class="reveal">
+        <div class="shell">
+          <div class="eyebrow">Using the widget</div>
+          <h2>Fast from the bar.</h2>
+          <p class="section-intro">Add or move Privacy Devices through <strong>Setup → Bar</strong>. Its icons show current activity; the combined widget opens the full activity panel.</p>
+          <ol class="steps">
+            <li><strong>Left-click</strong>Run the icon’s control, or open details for status-only items.</li>
+            <li><strong>Middle-click</strong>Open settings for a bar icon or popup row.</li>
+            <li><strong>Right-click</strong>Open the activity panel from an individual icon.</li>
+          </ol>
+          <p class="notice">Toggle controllable rows directly in the popup. Blocking the Hyprland screen-sharing portal also suspends other features supplied by that portal until it is re-enabled.</p>
+        </div>
+      </section>
+
+      <section id="controls" class="reveal">
+        <div class="shell">
+          <div class="eyebrow">Supported activity</div>
+          <h2>Seven signals. One panel.</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Activity</th><th>What you see</th><th>Available control</th></tr></thead>
+              <tbody>
+                <tr><td>Microphone</td><td>Live PipeWire applications</td><td>Mute or unmute the default input</td></tr>
+                <tr><td>Audio output</td><td>Applications playing audio</td><td>Mute or unmute the default output</td></tr>
+                <tr><td>Camera</td><td>Detected camera streams</td><td>Allow or block UVC USB camera interfaces</td></tr>
+                <tr><td>Location</td><td>GeoClue activity</td><td>Enable or runtime-mask GeoClue</td></tr>
+                <tr><td>Screen sharing</td><td>Portal and capture streams</td><td>Enable or runtime-mask the Hyprland portal</td></tr>
+                <tr><td>Screenshot</td><td>Selected capture backend</td><td>Launch a screenshot</td></tr>
+                <tr><td>Screen recording</td><td>Active recorder state</td><td>Start or stop the selected recorder</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="configuration" class="reveal">
+        <div class="shell">
+          <div class="eyebrow">Configuration</div>
+          <h2>Make it yours.</h2>
+          <p class="section-intro">Open <strong>Setup → Plugins → Privacy Devices</strong>. Advanced users can edit the widget entry in <code>~/.config/omarchy/shell.json</code>.</p>
+          <div class="guide-grid">
+            <article class="guide-card"><h3>Activity and order</h3><p>Choose monitored kinds, reorder icons, hide selected idle items, and tune idle opacity.</p></article>
+            <article class="guide-card"><h3>Appearance</h3><p>Select icons, labels, display mode, tooltips, click actions, and theme color roles for every state.</p></article>
+            <article class="guide-card"><h3>Notifications</h3><p>Choose which activity starts produce notifications and whether control changes are announced.</p></article>
+            <article class="guide-card"><h3>Audio</h3><p>Prefer <code>pactl</code>, <code>wpctl</code>, or automatic backend selection.</p></article>
+            <article class="guide-card"><h3>Capture backends</h3><p>Use Omarchy, Grim, Grim + Satty, Hyprshot, Flameshot, GPU Screen Recorder, wf-recorder, or custom commands.</p></article>
+            <article class="guide-card"><h3>Classification</h3><p>Exclude noisy apps and extend camera or screen-share keywords for unusual drivers and capture clients.</p></article>
+          </div>
+          <p class="notice">Unrecognized active video-input streams are treated as screen shares by default. Add unusual camera drivers to <code>cameraKeywords</code> to classify them correctly.</p>
+        </div>
+      </section>
+
+      <section id="privacy" class="reveal">
+        <div class="shell">
+          <div class="eyebrow">Privacy and security</div>
+          <h2>Local by design.</h2>
+          <div class="guide-grid">
+            <article class="guide-card"><h3>No telemetry</h3><p>The plugin reads local PipeWire metadata and selected local process state. It sends no activity data over the network.</p></article>
+            <article class="guide-card"><h3>Explicit authorization</h3><p>UVC camera and GeoClue controls request Polkit authorization before changing system state.</p></article>
+            <article class="guide-card"><h3>Runtime blocking</h3><p>Location and portal masks disappear after reboot. UVC cameras normally rebind after reboot as well.</p></article>
+            <article class="guide-card"><h3>Safer recorder handling</h3><p>wf-recorder PIDs stay in the owner-only runtime directory and are checked for ownership and executable identity before stopping.</p></article>
+          </div>
+          <p class="notice"><strong>Review custom commands before saving them.</strong> Custom screenshot and recording commands run unsandboxed as your user.</p>
+        </div>
+      </section>
+
+      <section id="troubleshooting" class="reveal">
+        <div class="shell">
+          <div class="eyebrow">Troubleshooting and FAQ</div>
+          <h2>Common questions.</h2>
+          <div class="faq">
+            <details><summary>Why is a control unavailable?</summary><p>Open its settings and look for <strong>Install</strong>. Optional controls remain unavailable until their required package or command is present.</p></details>
+            <details><summary>Why is my camera shown as screen sharing?</summary><p>Add a distinctive driver or application term to <code>cameraKeywords</code>. Unknown video-input streams default to screen sharing.</p></details>
+            <details><summary>Why did screen sharing elsewhere stop working?</summary><p>The preventative screen-share control masks <code>xdg-desktop-portal-hyprland</code>. Re-enable it from the popup to restore all features supplied by that portal.</p></details>
+            <details><summary>How do I restore blocked services?</summary><p>Re-enable the camera, location, or screen-share control in the popup. Runtime masks clear after reboot, and UVC cameras normally rebind after reboot.</p></details>
+            <details><summary>How do I change screenshot or recording tools?</summary><p>Open plugin settings and choose a supported backend. Custom start, stop, or capture commands are available for user-managed tools.</p></details>
+            <details><summary>Where should I report a bug?</summary><p>Open a <a href="https://github.com/bolens/omarchy-privacy-devices/issues/new">GitHub issue</a> with your Omarchy version, selected backend, and the behavior you observed.</p></details>
           </div>
         </div>
       </section>
@@ -552,6 +752,7 @@
 
     <footer class="shell">
       <span><a href="https://github.com/bolens/omarchy-privacy-devices/blob/main/LICENSE">Privacy Devices · MIT licensed</a></span>
+      <span><a href="https://github.com/bolens/omarchy-privacy-devices/issues/new">Report an issue ↗</a></span>
       <span><a href="https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices">Official plugin listing ↗</a></span>
     </footer>
     <div id="copy-status" class="visually-hidden" role="status" aria-live="polite"></div>
