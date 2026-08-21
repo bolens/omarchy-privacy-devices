@@ -52,6 +52,29 @@ is missing, only that row changes to **Install**; clicking it opens an Omarchy
 terminal and installs the smallest package group for that control with
 `omarchy pkg add`. All unrelated privacy indicators and controls remain available.
 
+## Dependencies
+
+Omarchy Shell, Quickshell, Hyprland, and PipeWire are runtime assumptions. The
+widget checks optional control dependencies independently:
+
+| Control | Required packages or commands |
+| --- | --- |
+| Microphone and audio output | `libpulse` (`pactl`) or `wireplumber` (`wpctl`) |
+| Camera blocking | `kmod` and `polkit` |
+| Location blocking | `geoclue` and `polkit` |
+| Screen-share blocking | `xdg-desktop-portal-hyprland` |
+| Omarchy screenshots | Omarchy capture command |
+| Grim screenshots | `grim` and `slurp` |
+| Grim + Satty screenshots | `grim`, `slurp`, `satty`, and `wl-clipboard` |
+| Hyprshot screenshots | `hyprshot` |
+| Flameshot screenshots | `flameshot`, `grim`, and `xdg-desktop-portal-hyprland` |
+| Omarchy or GPU recording | `gpu-screen-recorder` |
+| wf-recorder recording | `wf-recorder` and `slurp` |
+
+Custom screenshot and recording commands are user-managed and are never
+installed automatically. Activity notifications use `notify-send` when it is
+available.
+
 Screen recording can follow Omarchy's current recorder (the default), explicitly
 select `gpu-screen-recorder`, select `wf-recorder`, or use custom start/stop
 commands plus a process-name substring for activity detection. Dependency checks
