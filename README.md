@@ -4,6 +4,8 @@ A unified Omarchy shell widget for microphone capture, audio playback, camera
 access, portal screen sharing, screenshots, screen recording, and GeoClue
 location access.
 
+![Privacy Devices popup](preview.png)
+
 ## Install
 
 ```sh
