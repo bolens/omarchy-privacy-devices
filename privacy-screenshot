@@ -1,0 +1,29 @@
+#!/bin/sh
+set -eu
+
+action=${1:-}
+backend=${2:-}
+[ "$action" = capture ] || exit 2
+
+output_dir=${XDG_PICTURES_DIR:-"$HOME/Pictures"}
+mkdir -p "$output_dir"
+output="$output_dir/screenshot-$(date +%Y-%m-%d_%H-%M-%S).png"
+
+case "$backend" in
+  grim)
+    geometry=$(slurp) || exit 0
+    grim -g "$geometry" "$output"
+    command -v wl-copy >/dev/null 2>&1 && wl-copy --type image/png <"$output"
+    ;;
+  grim-satty)
+    geometry=$(slurp) || exit 0
+    grim -g "$geometry" - | satty --filename - --output-filename "$output" --copy-command wl-copy
+    ;;
+  hyprshot)
+    exec hyprshot --freeze -m region -o "$output_dir" -f "$(basename "$output")"
+    ;;
+  flameshot)
+    exec env QT_QPA_PLATFORM=wayland flameshot gui -p "$output_dir"
+    ;;
+  *) exit 2 ;;
+esac

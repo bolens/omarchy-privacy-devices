@@ -1,0 +1,88 @@
+#!/bin/sh
+set -eu
+
+action=${1:-check}
+kind=${2:-}
+backend=${3:-omarchy}
+audio_backend=${4:-auto}
+screenshot_backend=${5:-omarchy}
+
+ready() {
+  case "$kind" in
+    microphone|audio-output)
+      case "$audio_backend" in
+        auto) command -v pactl >/dev/null 2>&1 || command -v wpctl >/dev/null 2>&1 ;;
+        pactl) command -v pactl >/dev/null 2>&1 ;;
+        wpctl) command -v wpctl >/dev/null 2>&1 ;;
+        *) return 1 ;;
+      esac
+      ;;
+    camera) command -v modprobe >/dev/null 2>&1 && command -v pkexec >/dev/null 2>&1 ;;
+    location) command -v pkexec >/dev/null 2>&1 && test -x /usr/lib/geoclue ;;
+    screen-share) test -x /usr/lib/xdg-desktop-portal-hyprland ;;
+    screenshot)
+      case "$screenshot_backend" in
+        omarchy) command -v omarchy-capture-screenshot >/dev/null 2>&1 ;;
+        grim) command -v grim >/dev/null 2>&1 && command -v slurp >/dev/null 2>&1 ;;
+        grim-satty) command -v grim >/dev/null 2>&1 && command -v slurp >/dev/null 2>&1 && command -v satty >/dev/null 2>&1 && command -v wl-copy >/dev/null 2>&1 ;;
+        hyprshot) command -v hyprshot >/dev/null 2>&1 ;;
+        flameshot) command -v flameshot >/dev/null 2>&1 && test -x /usr/lib/xdg-desktop-portal-hyprland ;;
+        custom) return 0 ;;
+        *) return 1 ;;
+      esac
+      ;;
+    screen-recording)
+      case "$backend" in
+        omarchy) command -v omarchy-capture-screenrecording >/dev/null 2>&1 ;;
+        gpu-screen-recorder) command -v gpu-screen-recorder >/dev/null 2>&1 ;;
+        wf-recorder) command -v wf-recorder >/dev/null 2>&1 ;;
+        custom) return 0 ;;
+        *) return 1 ;;
+      esac
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+if [ "$action" = check ]; then
+  ready
+  exit $?
+fi
+
+[ "$action" = install ] || exit 2
+case "$kind" in
+  microphone|audio-output)
+    case "$audio_backend" in
+      auto|pactl) packages="libpulse" ;;
+      wpctl) packages="wireplumber" ;;
+      *) exit 2 ;;
+    esac
+    ;;
+  camera) packages="kmod polkit" ;;
+  location) packages="geoclue polkit" ;;
+  screen-share) packages="xdg-desktop-portal-hyprland" ;;
+  screenshot)
+    case "$screenshot_backend" in
+      omarchy|grim) packages="grim slurp" ;;
+      grim-satty) packages="grim slurp satty wl-clipboard" ;;
+      hyprshot) packages="hyprshot" ;;
+      flameshot) packages="flameshot grim xdg-desktop-portal-hyprland" ;;
+      custom) echo "Custom backends must be installed by their provider."; exit 0 ;;
+      *) exit 2 ;;
+    esac
+    ;;
+  screen-recording)
+    case "$backend" in
+      omarchy) packages="gpu-screen-recorder" ;;
+      gpu-screen-recorder) packages="gpu-screen-recorder" ;;
+      wf-recorder) packages="wf-recorder slurp" ;;
+      custom) echo "Custom backends must be installed by their provider."; exit 0 ;;
+      *) exit 2 ;;
+    esac
+    ;;
+  *) exit 2 ;;
+esac
+
+# Intentional word splitting: packages is a fixed internal allowlist.
+# shellcheck disable=SC2086
+omarchy pkg add $packages

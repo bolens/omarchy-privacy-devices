@@ -1,0 +1,62 @@
+#!/bin/sh
+set -eu
+
+action=${1:-}
+kind=${2:-}
+camera_module=${3:-uvcvideo}
+
+case "$camera_module" in
+  *[!A-Za-z0-9_-]*|'') exit 12 ;;
+esac
+
+state_camera() {
+  if grep -q "^${camera_module} " /proc/modules; then exit 10; else exit 11; fi
+}
+
+state_unit() {
+  scope=$1
+  unit=$2
+  if [ "$scope" = user ]; then
+    enabled=$(systemctl --user is-enabled "$unit" 2>/dev/null || true)
+  else
+    enabled=$(systemctl is-enabled "$unit" 2>/dev/null || true)
+  fi
+  if printf '%s\n' "$enabled" | grep -q '^masked'; then exit 11; else exit 10; fi
+}
+
+if [ "$action" = status ]; then
+  case "$kind" in
+    camera) state_camera ;;
+    location) state_unit system geoclue.service ;;
+    screen-share) state_unit user xdg-desktop-portal-hyprland.service ;;
+    *) exit 12 ;;
+  esac
+fi
+
+[ "$action" = toggle ] || exit 12
+case "$kind" in
+  camera)
+    if grep -q "^${camera_module} " /proc/modules; then
+      pkexec /usr/bin/modprobe -r "$camera_module"
+    else
+      pkexec /usr/bin/modprobe "$camera_module"
+    fi
+    ;;
+  location)
+    if systemctl is-enabled geoclue.service 2>/dev/null | grep -q '^masked'; then
+      pkexec /usr/bin/systemctl unmask --runtime geoclue.service
+      pkexec /usr/bin/systemctl start geoclue.service
+    else
+      pkexec /usr/bin/systemctl mask --runtime --now geoclue.service
+    fi
+    ;;
+  screen-share)
+    if systemctl --user is-enabled xdg-desktop-portal-hyprland.service 2>/dev/null | grep -q '^masked'; then
+      systemctl --user unmask --runtime xdg-desktop-portal-hyprland.service
+      systemctl --user start xdg-desktop-portal-hyprland.service
+    else
+      systemctl --user mask --runtime --now xdg-desktop-portal-hyprland.service
+    fi
+    ;;
+  *) exit 12 ;;
+esac

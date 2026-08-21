@@ -1,0 +1,309 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.bolens.privacy-devices",
+  "name": "Privacy Devices",
+  "version": "0.1.0",
+  "author": "bolens",
+  "license": "MIT",
+  "description": "Unified, configurable privacy indicators for microphones, audio playback, cameras, screen sharing, screenshots, screen recording, and location access.",
+  "kinds": ["service", "bar-widget"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Privacy Devices",
+    "description": "Unified live privacy-device activity with per-application details.",
+    "category": "Status",
+    "allowMultiple": false,
+    "defaultSection": "center",
+    "defaults": {
+      "enabledKinds": ["microphone", "audio-output", "camera", "screen-share", "screenshot", "screen-recording", "location"],
+      "order": ["screen-recording", "screenshot", "screen-share", "camera", "microphone", "audio-output", "location"],
+      "showIdle": true,
+      "displayMode": "icons",
+      "activeColorRole": "bar-active",
+      "inactiveColorRole": "muted",
+      "mutedColorRole": "urgent",
+      "unmutedColorRole": "foreground",
+      "showControls": true,
+      "blockableKinds": ["camera", "screen-share", "location"],
+      "cameraKernelModule": "uvcvideo",
+      "itemColorRoles": {},
+      "itemIdleVisibility": {},
+      "itemIdleOpacity": {},
+      "itemLabels": {},
+      "notifyOnActivity": true,
+      "notifyOnControlChanges": true,
+      "notificationKinds": ["microphone", "camera", "screen-share", "screen-recording", "location"],
+      "idleOpacity": 0.45,
+      "deduplicateApps": true,
+      "excludedApps": ["cava"],
+      "cameraKeywords": ["camera", "webcam", "v4l2", "libcamera", "kamera"],
+      "screenShareKeywords": ["portal", "screencast", "screen cast", "screen share", "desktop capture", "monitor"],
+      "locationPollSeconds": 15,
+      "recordingPollSeconds": 2,
+      "recordingBackend": "omarchy",
+      "audioControlBackend": "auto",
+      "screenshotBackend": "omarchy",
+      "screenshotCustomCommand": "",
+      "screenshotProcessName": "",
+      "recordingProcessName": "",
+      "recordingCustomStartCommand": "",
+      "recordingCustomStopCommand": "",
+      "icons": {
+        "microphone": "󰍬",
+        "audio-output": "󰓃",
+        "camera": "󰄀",
+        "screen-share": "󰍹",
+        "screenshot": "󰹑",
+        "screen-recording": "󰻂",
+        "location": "󰋽"
+      }
+    },
+    "schema": [
+      {
+        "key": "enabledKinds",
+        "type": "multiselect",
+        "label": "Monitored activity",
+        "description": "Choose the privacy activity represented by this widget.",
+        "defaultValue": ["microphone", "audio-output", "camera", "screen-share", "screenshot", "screen-recording", "location"],
+        "options": [
+          {"value": "microphone", "label": "Microphone"},
+          {"value": "audio-output", "label": "Audio output"},
+          {"value": "camera", "label": "Camera"},
+          {"value": "screen-share", "label": "Screen sharing"},
+          {"value": "screenshot", "label": "Screenshot"},
+          {"value": "screen-recording", "label": "Screen recording"},
+          {"value": "location", "label": "Location"}
+        ]
+      },
+      {
+        "key": "showIdle",
+        "type": "boolean",
+        "label": "Show idle devices",
+        "description": "Keep enabled device icons visible when they are not in use.",
+        "defaultValue": true
+      },
+      {
+        "key": "displayMode",
+        "type": "enum",
+        "label": "Bar presentation",
+        "options": ["icons", "active-count", "active-only"],
+        "defaultValue": "icons"
+      },
+      {
+        "key": "activeColorRole",
+        "type": "enum",
+        "label": "Active theme color",
+        "options": ["bar-active", "urgent", "accent", "foreground"],
+        "defaultValue": "bar-active"
+      },
+      {
+        "key": "inactiveColorRole",
+        "type": "enum",
+        "label": "Inactive theme color",
+        "options": ["muted", "foreground", "accent"],
+        "defaultValue": "muted"
+      },
+      {
+        "key": "mutedColorRole",
+        "type": "enum",
+        "label": "Muted theme color",
+        "description": "Icon color for muted microphone and audio output controls.",
+        "options": [
+          "urgent",
+          "muted",
+          "bar-active",
+          "accent",
+          "foreground"
+        ],
+        "defaultValue": "urgent"
+      },
+      {
+        "key": "unmutedColorRole",
+        "type": "enum",
+        "label": "Unmuted theme color",
+        "description": "Icon color for available microphone and audio output controls.",
+        "options": [
+          "foreground",
+          "bar-active",
+          "accent",
+          "muted",
+          "urgent"
+        ],
+        "defaultValue": "foreground"
+      },
+      {
+        "key": "showControls",
+        "type": "boolean",
+        "label": "Show privacy controls",
+        "description": "Make controllable activity rows clickable and show their inline switches.",
+        "defaultValue": true
+      },
+      {
+        "key": "notifyOnActivity",
+        "type": "boolean",
+        "label": "Notify when privacy activity starts",
+        "defaultValue": true
+      },
+      {
+        "key": "notifyOnControlChanges",
+        "type": "boolean",
+        "label": "Notify after privacy control changes",
+        "defaultValue": true
+      },
+      {
+        "key": "notificationKinds",
+        "type": "multiselect",
+        "label": "Activity notifications",
+        "description": "Choose activity that should produce start notifications.",
+        "defaultValue": ["microphone", "camera", "screen-share", "screen-recording", "location"],
+        "options": [
+          {"value": "microphone", "label": "Microphone"},
+          {"value": "audio-output", "label": "Audio output"},
+          {"value": "camera", "label": "Camera"},
+          {"value": "screen-share", "label": "Screen sharing"},
+          {"value": "screenshot", "label": "Screenshot"},
+          {"value": "screen-recording", "label": "Screen recording"},
+          {"value": "location", "label": "Location"}
+        ]
+      },
+      {
+        "key": "blockableKinds",
+        "type": "multiselect",
+        "label": "Preventative controls",
+        "description": "Choose devices that can be proactively allowed or blocked.",
+        "defaultValue": ["camera", "screen-share", "location"],
+        "options": [
+          {"value": "camera", "label": "Camera"},
+          {"value": "screen-share", "label": "Screen sharing"},
+          {"value": "location", "label": "Location"}
+        ]
+      },
+      {
+        "key": "cameraKernelModule",
+        "type": "string",
+        "label": "Camera kernel module",
+        "description": "Kernel module toggled by the camera blocker; this machine uses uvcvideo.",
+        "defaultValue": "uvcvideo"
+      },
+      {
+        "key": "idleOpacity",
+        "type": "number",
+        "label": "Idle icon opacity",
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05,
+        "defaultValue": 0.45
+      },
+      {
+        "key": "deduplicateApps",
+        "type": "boolean",
+        "label": "Deduplicate applications",
+        "defaultValue": true
+      },
+      {
+        "key": "excludedApps",
+        "type": "string-list",
+        "label": "Ignored applications",
+        "description": "Case-insensitive exact or substring matches, such as cava.",
+        "defaultValue": ["cava"]
+      },
+      {
+        "key": "cameraKeywords",
+        "type": "string-list",
+        "label": "Camera classification keywords",
+        "defaultValue": ["camera", "webcam", "v4l2", "libcamera", "kamera"]
+      },
+      {
+        "key": "screenShareKeywords",
+        "type": "string-list",
+        "label": "Screen-share classification keywords",
+        "defaultValue": ["portal", "screencast", "screen cast", "screen share", "desktop capture", "monitor"]
+      },
+      {
+        "key": "locationPollSeconds",
+        "type": "integer",
+        "label": "Location refresh interval",
+        "min": 5,
+        "max": 300,
+        "step": 5,
+        "defaultValue": 15
+      },
+      {
+        "key": "recordingPollSeconds",
+        "type": "integer",
+        "label": "Recorder refresh interval",
+        "min": 1,
+        "max": 60,
+        "step": 1,
+        "defaultValue": 2
+      },
+      {
+        "key": "recordingBackend",
+        "type": "enum",
+        "label": "Screen-recording backend",
+        "description": "Follow Omarchy's recorder, explicitly use gpu-screen-recorder, use wf-recorder, or provide custom commands.",
+        "options": ["omarchy", "gpu-screen-recorder", "wf-recorder", "custom"],
+        "defaultValue": "omarchy"
+      },
+      {
+        "key": "audioControlBackend",
+        "type": "enum",
+        "label": "Audio control backend",
+        "description": "Auto prefers pactl and falls back to wpctl. PipeWire activity detection is unchanged.",
+        "options": ["auto", "pactl", "wpctl"],
+        "defaultValue": "auto"
+      },
+      {
+        "key": "screenshotBackend",
+        "type": "enum",
+        "label": "Screenshot backend",
+        "description": "Use Omarchy capture, direct Grim region capture, Grim with Satty annotation, or a custom command.",
+        "options": ["omarchy", "grim", "grim-satty", "hyprshot", "flameshot", "custom"],
+        "defaultValue": "omarchy"
+      },
+      {
+        "key": "screenshotCustomCommand",
+        "type": "string",
+        "label": "Custom screenshot command",
+        "defaultValue": ""
+      },
+      {
+        "key": "screenshotProcessName",
+        "type": "string",
+        "label": "Custom screenshot process",
+        "description": "Optional process command substring used while a custom screenshot UI is active.",
+        "defaultValue": ""
+      },
+      {
+        "key": "recordingProcessName",
+        "type": "string",
+        "label": "Custom recorder process",
+        "description": "Process command substring used to detect activity for a custom recording backend.",
+        "defaultValue": ""
+      },
+      {
+        "key": "recordingCustomStartCommand",
+        "type": "string",
+        "label": "Custom recorder start command",
+        "defaultValue": ""
+      },
+      {
+        "key": "recordingCustomStopCommand",
+        "type": "string",
+        "label": "Custom recorder stop command",
+        "defaultValue": ""
+      },
+      {"key": "icons.microphone", "type": "string", "label": "Microphone icon"},
+      {"key": "icons.audio-output", "type": "string", "label": "Audio output icon"},
+      {"key": "icons.camera", "type": "string", "label": "Camera icon"},
+      {"key": "icons.screen-share", "type": "string", "label": "Screen-share icon"},
+      {"key": "icons.screenshot", "type": "string", "label": "Screenshot icon"},
+      {"key": "icons.screen-recording", "type": "string", "label": "Screen-recording icon"},
+      {"key": "icons.location", "type": "string", "label": "Location icon"}
+    ]
+  }
+}
