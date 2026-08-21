@@ -6,6 +6,7 @@
     <meta name="description" content="Privacy Devices is an Omarchy Shell plugin for monitoring and controlling microphone, camera, location, screen-sharing, screenshot, and recording activity.">
     <meta name="theme-color" content="#1a1b26">
     <meta property="og:title" content="Privacy Devices for Omarchy">
+    <meta property="og:site_name" content="Privacy Devices">
     <meta property="og:description" content="Unified privacy indicators and controls for Omarchy Shell.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://bolens.github.io/omarchy-privacy-devices/">
@@ -14,6 +15,10 @@
     <meta property="og:image:height" content="910">
     <meta property="og:image:alt" content="Privacy Devices activity popup in Omarchy Shell">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Privacy Devices for Omarchy">
+    <meta name="twitter:description" content="Unified privacy indicators and controls for Omarchy Shell.">
+    <meta name="twitter:image" content="https://bolens.github.io/omarchy-privacy-devices/social-card.png">
+    <meta name="twitter:image:alt" content="Privacy Devices activity popup in Omarchy Shell">
     <link rel="canonical" href="https://bolens.github.io/omarchy-privacy-devices/">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <title>Privacy Devices for Omarchy</title>
@@ -33,6 +38,7 @@
         "description": "Unified privacy indicators and controls for Omarchy Shell.",
         "applicationCategory": "UtilitiesApplication",
         "operatingSystem": "Linux",
+        "softwareVersion": "__PLUGIN_VERSION__",
         "license": "https://github.com/bolens/omarchy-privacy-devices/blob/main/LICENSE",
         "url": "https://bolens.github.io/omarchy-privacy-devices/",
         "downloadUrl": "https://github.com/bolens/omarchy-privacy-devices",
@@ -745,7 +751,7 @@
           </div>
           <div class="release-status">
             <span class="status-label">Stable</span>
-            <span id="plugin-version">Latest release</span>
+            <span id="plugin-version">v__PLUGIN_VERSION__</span>
             <a href="https://github.com/bolens/omarchy-privacy-devices/releases">Release notes ↗</a>
           </div>
         </div>
@@ -925,7 +931,7 @@
             <details><summary>Why did screen sharing elsewhere stop working?</summary><p>The preventative screen-share control masks <code>xdg-desktop-portal-hyprland</code>. Re-enable it from the popup to restore all features supplied by that portal.</p></details>
             <details><summary>How do I restore blocked services?</summary><p>Re-enable the camera, location, or screen-share control in the popup. Runtime masks clear after reboot, and UVC cameras normally rebind after reboot.</p></details>
             <details><summary>How do I change screenshot or recording tools?</summary><p>Open plugin settings and choose a supported backend. Custom start, stop, or capture commands are available for user-managed tools.</p></details>
-            <details><summary>Where should I report a bug?</summary><p>Open a <a href="https://github.com/bolens/omarchy-privacy-devices/issues/new">GitHub issue</a> with your Omarchy version, selected backend, and the behavior you observed.</p></details>
+            <details><summary>Where should I report a bug?</summary><p>Choose the matching form on the <a href="https://github.com/bolens/omarchy-privacy-devices/issues/new/choose">GitHub issue page</a>, or review the <a href="https://github.com/bolens/omarchy-privacy-devices/blob/main/SUPPORT.md">support guide</a>.</p></details>
           </div>
         </div>
       </section>
@@ -933,7 +939,7 @@
 
     <footer class="shell">
       <span><a href="https://github.com/bolens/omarchy-privacy-devices/blob/main/LICENSE">Privacy Devices · MIT licensed</a></span>
-      <span><a href="https://github.com/bolens/omarchy-privacy-devices/issues/new">Report an issue ↗</a></span>
+      <span><a href="https://github.com/bolens/omarchy-privacy-devices/issues/new/choose">Report an issue ↗</a></span>
       <span><a href="https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices">Official plugin listing ↗</a></span>
     </footer>
     <div id="copy-status" class="visually-hidden" role="status" aria-live="polite"></div>

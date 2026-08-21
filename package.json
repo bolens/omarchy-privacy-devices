@@ -1,0 +1,12 @@
+{
+  "name": "omarchy-privacy-devices-site",
+  "private": true,
+  "scripts": {
+    "build:site": "bash scripts/build-site.sh",
+    "test:site": "node tests/site.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "30.0.1",
+    "lighthouse": "13.4.1"
+  }
+}
