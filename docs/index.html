@@ -9,11 +9,33 @@
     <meta property="og:description" content="Unified privacy indicators and controls for Omarchy Shell.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://bolens.github.io/omarchy-privacy-devices/">
-    <meta property="og:image" content="https://raw.githubusercontent.com/bolens/omarchy-privacy-devices/main/preview.png">
+    <meta property="og:image" content="https://bolens.github.io/omarchy-privacy-devices/social-card.png">
+    <meta property="og:image:width" content="1729">
+    <meta property="og:image:height" content="910">
     <meta property="og:image:alt" content="Privacy Devices activity popup in Omarchy Shell">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="canonical" href="https://bolens.github.io/omarchy-privacy-devices/">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <title>Privacy Devices for Omarchy</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Privacy Devices",
+        "description": "Unified privacy indicators and controls for Omarchy Shell.",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Linux",
+        "license": "https://github.com/bolens/omarchy-privacy-devices/blob/main/LICENSE",
+        "url": "https://bolens.github.io/omarchy-privacy-devices/",
+        "downloadUrl": "https://github.com/bolens/omarchy-privacy-devices",
+        "image": "https://bolens.github.io/omarchy-privacy-devices/social-card.png",
+        "author": {
+          "@type": "Person",
+          "name": "bolens",
+          "url": "https://github.com/bolens"
+        }
+      }
+    </script>
     <style>
       :root {
         color-scheme: dark;
@@ -46,6 +68,18 @@
       }
 
       .skip-link:focus { transform: translateY(0); }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
 
       body {
         margin: 0;
@@ -197,6 +231,42 @@
       .card h3 { margin: 1.4rem 0 0.5rem; }
       .card p { margin: 0; color: var(--muted); font-family: system-ui, sans-serif; }
 
+      .requirements {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: clamp(2rem, 7vw, 6rem);
+        align-items: start;
+      }
+
+      .requirements h2 { margin-bottom: 1rem; }
+
+      .requirements-copy {
+        color: var(--muted);
+        font-family: system-ui, sans-serif;
+      }
+
+      .requirements-copy a { color: var(--text); text-underline-offset: 0.2em; }
+
+      .requirement-list {
+        display: grid;
+        gap: 0.75rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .requirement-list li {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+      }
+
+      .requirement-list span { color: var(--muted); text-align: right; }
+
       .install-box {
         display: grid;
         gap: 2.5rem;
@@ -282,6 +352,9 @@
         .hero { grid-template-columns: 1fr; padding-top: 3.5rem; }
         .preview { max-width: 440px; }
         .features { grid-template-columns: 1fr; }
+        .requirements { grid-template-columns: 1fr; }
+        .requirement-list li { display: grid; }
+        .requirement-list span { text-align: left; }
         .command { grid-template-columns: 1fr; }
         .copy-button { justify-self: start; }
         footer { flex-direction: column; }
@@ -295,6 +368,7 @@
         <a class="brand" href="./">Privacy Devices</a>
         <ul>
           <li><a href="#features">Features</a></li>
+          <li><a href="#requirements">Requirements</a></li>
           <li><a href="#install">Install</a></li>
           <li><a href="https://github.com/bolens/omarchy-privacy-devices">GitHub</a></li>
         </ul>
@@ -313,7 +387,7 @@
           </div>
         </div>
         <div class="preview">
-          <img src="https://raw.githubusercontent.com/bolens/omarchy-privacy-devices/main/preview.png" alt="Privacy Devices popup showing device activity and controls" width="440" height="436">
+          <img src="preview.png" alt="Privacy Devices popup showing device activity and controls" width="440" height="436" decoding="async" fetchpriority="high">
         </div>
       </div>
 
@@ -341,6 +415,22 @@
         </div>
       </section>
 
+      <section id="requirements">
+        <div class="shell requirements">
+          <div>
+            <div class="eyebrow">Compatibility</div>
+            <h2>Built for Omarchy.</h2>
+            <p class="requirements-copy">Optional controls check their own dependencies and offer to install only what they need. See the <a href="https://github.com/bolens/omarchy-privacy-devices#requirements">full requirements table</a> for backend-specific packages.</p>
+          </div>
+          <ul class="requirement-list">
+            <li><strong>Desktop</strong><span>Omarchy Quattro</span></li>
+            <li><strong>Shell</strong><span>Omarchy Shell + Quickshell</span></li>
+            <li><strong>Session</strong><span>Hyprland + PipeWire</span></li>
+            <li><strong>Optional tools</strong><span>Installed per control</span></li>
+          </ul>
+        </div>
+      </section>
+
       <section id="install">
         <div class="shell">
           <div class="install-box">
@@ -355,6 +445,13 @@
                 <div class="command">
                   <code>omarchy plugin add https://github.com/bolens/omarchy-privacy-devices.git --enable</code>
                   <button class="copy-button" type="button" data-copy="omarchy plugin add https://github.com/bolens/omarchy-privacy-devices.git --enable" aria-label="Copy install command">Copy</button>
+                </div>
+              </div>
+              <div>
+                <span class="command-label">Update</span>
+                <div class="command">
+                  <code>omarchy plugin update io.github.bolens.privacy-devices</code>
+                  <button class="copy-button" type="button" data-copy="omarchy plugin update io.github.bolens.privacy-devices" aria-label="Copy update command">Copy</button>
                 </div>
               </div>
               <div>
@@ -378,7 +475,10 @@
       <span><a href="https://github.com/bolens/omarchy-privacy-devices/blob/main/LICENSE">Privacy Devices · MIT licensed</a></span>
       <span><a href="https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices">Official plugin listing ↗</a></span>
     </footer>
+    <div id="copy-status" class="visually-hidden" role="status" aria-live="polite"></div>
     <script>
+      const copyStatus = document.querySelector("#copy-status");
+
       document.querySelectorAll("[data-copy]").forEach((button) => {
         button.addEventListener("click", async () => {
           const originalLabel = button.textContent;
@@ -399,9 +499,11 @@
           }
 
           button.dataset.state = "copied";
+          copyStatus.textContent = `Copied ${button.getAttribute("aria-label").replace("Copy ", "")} to clipboard`;
           window.setTimeout(() => {
             button.textContent = originalLabel;
             delete button.dataset.state;
+            copyStatus.textContent = "";
           }, 1600);
         });
       });
