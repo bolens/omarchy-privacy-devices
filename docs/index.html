@@ -847,6 +847,7 @@
       const copyStatus = document.querySelector("#copy-status");
       const themeSelect = document.querySelector("#theme-select");
       const themeColor = document.querySelector('meta[name="theme-color"]');
+      const favicon = document.querySelector('link[rel="icon"]');
       const availableThemes = Array.from(themeSelect.options, (option) => option.value);
 
       if (!availableThemes.includes(document.documentElement.dataset.theme)) {
@@ -855,16 +856,23 @@
 
       themeSelect.value = document.documentElement.dataset.theme;
 
-      const syncThemeColor = () => {
-        themeColor.content = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
+      const syncThemeAssets = () => {
+        const styles = getComputedStyle(document.documentElement);
+        const background = styles.getPropertyValue("--surface").trim();
+        const accent = styles.getPropertyValue("--accent").trim();
+        const pageBackground = styles.getPropertyValue("--background").trim();
+        const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${background}"/><path d="M32 8 52 16v14c0 13-8.5 22-20 27C20.5 52 12 43 12 30V16l20-8Z" fill="${accent}"/><circle cx="32" cy="29" r="8" fill="${background}"/><path d="M28 36h8v10h-8z" fill="${background}"/></svg>`;
+
+        themeColor.content = pageBackground;
+        favicon.href = `data:image/svg+xml,${encodeURIComponent(icon)}`;
       };
 
-      syncThemeColor();
+      syncThemeAssets();
 
       themeSelect.addEventListener("change", () => {
         document.documentElement.dataset.theme = themeSelect.value;
         try { localStorage.setItem("privacy-devices-theme", themeSelect.value); } catch {}
-        syncThemeColor();
+        syncThemeAssets();
       });
 
       const revealElements = document.querySelectorAll(".reveal");
