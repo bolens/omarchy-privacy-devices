@@ -325,6 +325,29 @@
         margin-top: 2rem;
       }
 
+      .release-status {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem 1rem;
+        align-items: center;
+        margin-top: 1rem;
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .release-status a { text-underline-offset: 0.2em; }
+
+      .status-label::before {
+        content: "";
+        display: inline-block;
+        width: 0.5rem;
+        height: 0.5rem;
+        margin-right: 0.45rem;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0.65rem color-mix(in srgb, var(--accent) 55%, transparent);
+      }
+
       .button {
         display: inline-flex;
         align-items: center;
@@ -720,6 +743,11 @@
             <a class="button primary" href="#install">Install the plugin</a>
             <a class="button" href="https://github.com/bolens/omarchy-privacy-devices">View source ↗</a>
           </div>
+          <div class="release-status">
+            <span class="status-label">Stable</span>
+            <span id="plugin-version">Latest release</span>
+            <a href="https://github.com/bolens/omarchy-privacy-devices/releases">Release notes ↗</a>
+          </div>
         </div>
         <div class="preview">
           <img src="preview.png" alt="Privacy Devices popup showing device activity and controls" width="440" height="436" decoding="async" fetchpriority="high">
@@ -911,6 +939,7 @@
     <div id="copy-status" class="visually-hidden" role="status" aria-live="polite"></div>
     <script>
       const copyStatus = document.querySelector("#copy-status");
+      const pluginVersion = document.querySelector("#plugin-version");
       const themeSelect = document.querySelector("#theme-select");
       const themeColor = document.querySelector('meta[name="theme-color"]');
       const favicon = document.querySelector('link[rel="icon"]');
@@ -940,6 +969,18 @@
         try { localStorage.setItem("privacy-devices-theme", themeSelect.value); } catch {}
         syncThemeAssets();
       });
+
+      fetch("manifest.json")
+        .then((response) => {
+          if (!response.ok) throw new Error("manifest unavailable");
+          return response.json();
+        })
+        .then((manifest) => {
+          if (typeof manifest.version === "string" && /^\d+\.\d+\.\d+/.test(manifest.version)) {
+            pluginVersion.textContent = `v${manifest.version}`;
+          }
+        })
+        .catch(() => {});
 
       const revealElements = document.querySelectorAll(".reveal");
 
