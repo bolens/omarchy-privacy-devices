@@ -6,7 +6,8 @@ screenshots, and screen recording.
 
 [Website and user guide](https://bolens.github.io/omarchy-privacy-devices/) ·
 [Official plugin listing](https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices) ·
-[Report an issue](https://github.com/bolens/omarchy-privacy-devices/issues/new)
+[Get support](SUPPORT.md) ·
+[Report an issue](https://github.com/bolens/omarchy-privacy-devices/issues/new/choose)
 
 ![Privacy Devices popup](preview.png)
 

@@ -37,7 +37,13 @@ node tests/model.test.js
 node tests/security.test.js
 tidy -errors -quiet docs/index.html docs/404.html
 xmllint --noout docs/favicon.svg docs/sitemap.xml
+npm ci
+npm run build:site
+npm run test:site
+npx lighthouse http://127.0.0.1:4173/ --only-categories=accessibility
 ```
+
+See [RELEASING.md](RELEASING.md) for the maintainer release checklist.
 
 ## Change expectations
 
@@ -54,4 +60,3 @@ xmllint --noout docs/favicon.svg docs/sitemap.xml
 Explain the problem, the chosen behavior, and how you tested it. CI must pass
 before merge. Maintainers may ask for changes that keep controls reversible or
 reduce privilege and process-management risk.
-

@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Support and report routing
+    url: https://github.com/bolens/omarchy-privacy-devices/blob/main/SUPPORT.md
+    about: Choose the right report form and learn what information to include.
   - name: User guide and troubleshooting
     url: https://bolens.github.io/omarchy-privacy-devices/#troubleshooting
     about: Check setup, configuration, privacy behavior, and common fixes first.
