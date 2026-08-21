@@ -5,14 +5,17 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   plugin:
     name: Plugin
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
       - name: Check out plugin
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,6 +57,9 @@ jobs:
   repository:
     name: Repository
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -66,10 +72,18 @@ jobs:
       - name: Validate issue forms
         run: ruby scripts/validate-issue-forms.rb
 
+      - name: Install site test dependencies
+        run: npm ci
+
+      - name: Build and test site
+        run: |
+          npm run build:site
+          npm run test:site
+
       - name: Validate HTML and XML
         run: |
           tidy -errors -quiet docs/index.html docs/404.html 2>&1 | tee /tmp/tidy-output
-          ! grep -E "Error:" /tmp/tidy-output
+          if grep -E "Error:" /tmp/tidy-output; then exit 1; fi
           xmllint --noout docs/favicon.svg docs/sitemap.xml
 
       - name: Check links
@@ -83,3 +97,11 @@ jobs:
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Audit site accessibility
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory _site >/tmp/privacy-devices-site.log 2>&1 &
+          site_server=$!
+          trap 'kill "$site_server" 2>/dev/null || true' EXIT
+          npx lighthouse http://127.0.0.1:4173/ --only-categories=accessibility --chrome-flags="--headless --no-sandbox" --output=json --output-path=/tmp/lighthouse.json
+          node -e 'const report = require("/tmp/lighthouse.json"); const score = report.categories.accessibility.score; console.log("accessibility score:", score); process.exit(score >= 0.95 ? 0 : 1)'

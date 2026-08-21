@@ -5,13 +5,22 @@ on:
     tags:
       - v*.*.*
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
+  validate:
+    name: Validate
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
   release:
     name: Publish
+    needs: validate
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -21,7 +30,19 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: test "$RELEASE_TAG" = "v$(jq -r .version manifest.json)"
 
+      - name: Build release archive
+        run: |
+          version=$(jq -r .version manifest.json)
+          archive="privacy-devices-$version.tar.gz"
+          git archive --prefix="privacy-devices-$version/" -o "$archive" HEAD
+          sha256sum "$archive" > "$archive.sha256"
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
+        run: >-
+          gh release create "$GITHUB_REF_NAME"
+          "privacy-devices-${GITHUB_REF_NAME#v}.tar.gz"
+          "privacy-devices-${GITHUB_REF_NAME#v}.tar.gz.sha256"
+          --generate-notes
+          --verify-tag
