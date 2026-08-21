@@ -26,7 +26,7 @@ jobs:
       - name: Install validation tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes jq shellcheck qt6-declarative-dev-tools
+          sudo apt-get install --yes jq shellcheck
 
       - name: Validate plugin manifest
         run: |
@@ -36,9 +36,11 @@ jobs:
 
       - name: Lint QML
         run: |
-          qmllint_path=$(command -v qmllint || find /usr/lib/qt6/bin -name qmllint -type f -print -quit)
-          test -n "$qmllint_path"
-          "$qmllint_path" -I .omarchy/shell BarWidget.qml Service.qml
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            --workdir /workspace \
+            archlinux@sha256:4bf33b21a715aac0b48ce6e9eaed4782a898eae96f88f5da3635572129c2584a \
+            bash -lc 'pacman -Syu --noconfirm quickshell qt6-declarative >/dev/null && /usr/lib/qt6/bin/qmllint -I .omarchy/shell BarWidget.qml Service.qml'
 
       - name: Check shell scripts
         run: shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
@@ -76,7 +78,7 @@ jobs:
           args: >-
             --no-progress
             --accept 200,204,206,429
-            --exclude '^/omarchy-privacy-devices/'
+            --base-url https://bolens.github.io
             './**/*.md'
             './docs/**/*.html'
           fail: true
