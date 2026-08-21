@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html class="no-js" lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,6 +17,7 @@
     <link rel="canonical" href="https://bolens.github.io/omarchy-privacy-devices/">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <title>Privacy Devices for Omarchy</title>
+    <script>document.documentElement.classList.replace("no-js", "js");</script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -91,6 +92,21 @@
         line-height: 1.6;
       }
 
+      @keyframes rise-in {
+        from { transform: translateY(18px); }
+        to { transform: translateY(0); }
+      }
+
+      @keyframes preview-in {
+        from { transform: translateY(24px) scale(0.98); }
+        to { transform: translateY(0) scale(1); }
+      }
+
+      @keyframes ambient-float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-7px); }
+      }
+
       a { color: inherit; }
 
       .shell {
@@ -123,6 +139,7 @@
       }
 
       nav a { color: var(--muted); text-decoration: none; }
+      nav a { transition: color 160ms ease; }
       nav a:hover { color: var(--text); }
 
       .hero {
@@ -133,6 +150,14 @@
         min-height: 610px;
         padding: 5rem 0;
       }
+
+      .hero > div:first-child > * {
+        animation: rise-in 620ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+      }
+
+      .hero > div:first-child > :nth-child(2) { animation-delay: 80ms; }
+      .hero > div:first-child > :nth-child(3) { animation-delay: 160ms; }
+      .hero > div:first-child > :nth-child(4) { animation-delay: 240ms; }
 
       .eyebrow {
         color: var(--accent);
@@ -175,7 +200,11 @@
         border-radius: 8px;
         background: var(--surface);
         text-decoration: none;
+        transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
       }
+
+      .button:hover { border-color: var(--muted); transform: translateY(-2px); }
+      .button:active { transform: translateY(0); }
 
       .button.primary {
         border-color: var(--accent);
@@ -191,6 +220,9 @@
         border-radius: 18px;
         background: linear-gradient(145deg, var(--surface-light), var(--surface));
         box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+        animation:
+          preview-in 700ms 180ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards,
+          ambient-float 7s 1s ease-in-out infinite;
       }
 
       .preview img {
@@ -225,6 +257,13 @@
         border: 1px solid var(--border);
         border-radius: 12px;
         background: var(--surface);
+        transition: transform 200ms ease, border-color 200ms ease, background-color 200ms ease;
+      }
+
+      .card:hover {
+        border-color: #45503f;
+        background: var(--surface-light);
+        transform: translateY(-4px);
       }
 
       .card span { color: var(--accent); font-size: 1.4rem; }
@@ -263,7 +302,10 @@
         border: 1px solid var(--border);
         border-radius: 9px;
         background: var(--surface);
+        transition: border-color 180ms ease, transform 180ms ease;
       }
+
+      .requirement-list li:hover { border-color: #45503f; transform: translateX(3px); }
 
       .requirement-list span { color: var(--muted); text-align: right; }
 
@@ -315,10 +357,11 @@
         cursor: pointer;
         font: inherit;
         font-size: 0.8rem;
+        transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
       }
 
       .copy-button:hover,
-      .copy-button:focus-visible { border-color: var(--accent); }
+      .copy-button:focus-visible { border-color: var(--accent); transform: translateY(-1px); }
 
       .copy-button[data-state="copied"] {
         border-color: var(--accent);
@@ -342,8 +385,44 @@
 
       footer a { text-underline-offset: 0.2em; }
 
+      .js .reveal {
+        opacity: 0;
+        transform: translateY(24px);
+        transition: opacity 600ms ease, transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1);
+      }
+
+      .js .reveal.is-visible { opacity: 1; transform: translateY(0); }
+
+      .js .reveal .card,
+      .js .reveal .requirement-list li,
+      .js .reveal .commands > div {
+        opacity: 0;
+        transform: translateY(12px);
+        transition: opacity 480ms ease, transform 480ms ease;
+      }
+
+      .js .reveal.is-visible .card,
+      .js .reveal.is-visible .requirement-list li,
+      .js .reveal.is-visible .commands > div { opacity: 1; transform: translateY(0); }
+
+      .js .reveal.is-visible :is(.card, .requirement-list li, .commands > div):nth-child(2) { transition-delay: 90ms; }
+      .js .reveal.is-visible :is(.card, .requirement-list li, .commands > div):nth-child(3) { transition-delay: 180ms; }
+      .js .reveal.is-visible :is(.card, .requirement-list li, .commands > div):nth-child(4) { transition-delay: 270ms; }
+
       @media (prefers-reduced-motion: reduce) {
         html { scroll-behavior: auto; }
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+        .hero > div:first-child > *,
+        .preview,
+        .reveal,
+        .reveal .card,
+        .reveal .requirement-list li,
+        .reveal .commands > div { opacity: 1; transform: none; }
       }
 
       @media (max-width: 760px) {
@@ -391,7 +470,7 @@
         </div>
       </div>
 
-      <section id="features">
+      <section id="features" class="reveal">
         <div class="shell">
           <div class="eyebrow">One glance. Direct control.</div>
           <h2>Your privacy state,<br>right in the bar.</h2>
@@ -415,7 +494,7 @@
         </div>
       </section>
 
-      <section id="requirements">
+      <section id="requirements" class="reveal">
         <div class="shell requirements">
           <div>
             <div class="eyebrow">Compatibility</div>
@@ -431,7 +510,7 @@
         </div>
       </section>
 
-      <section id="install">
+      <section id="install" class="reveal">
         <div class="shell">
           <div class="install-box">
             <div>
@@ -478,6 +557,22 @@
     <div id="copy-status" class="visually-hidden" role="status" aria-live="polite"></div>
     <script>
       const copyStatus = document.querySelector("#copy-status");
+
+      const revealElements = document.querySelectorAll(".reveal");
+
+      if ("IntersectionObserver" in window) {
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          });
+        }, { threshold: 0.12 });
+
+        revealElements.forEach((element) => revealObserver.observe(element));
+      } else {
+        revealElements.forEach((element) => element.classList.add("is-visible"));
+      }
 
       document.querySelectorAll("[data-copy]").forEach((button) => {
         button.addEventListener("click", async () => {
