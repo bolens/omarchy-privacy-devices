@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Privacy Devices is an Omarchy Shell plugin for monitoring and controlling microphone, camera, location, screen-sharing, screenshot, and recording activity.">
     <meta name="theme-color" content="#111310">
+    <meta property="og:title" content="Privacy Devices for Omarchy">
+    <meta property="og:description" content="Unified privacy indicators and controls for Omarchy Shell.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bolens.github.io/omarchy-privacy-devices/">
+    <meta property="og:image" content="https://raw.githubusercontent.com/bolens/omarchy-privacy-devices/main/preview.png">
+    <link rel="canonical" href="https://bolens.github.io/omarchy-privacy-devices/">
     <title>Privacy Devices for Omarchy</title>
     <style>
       :root {
@@ -169,10 +175,8 @@
       .card p { margin: 0; color: var(--muted); font-family: system-ui, sans-serif; }
 
       .install-box {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 2rem;
+        display: grid;
+        gap: 2.5rem;
         padding: clamp(1.5rem, 4vw, 3rem);
         border: 1px solid var(--border);
         border-radius: 16px;
@@ -181,6 +185,53 @@
 
       .install-box h2 { margin-bottom: 0.75rem; }
       .install-box p { margin: 0; color: var(--muted); font-family: system-ui, sans-serif; }
+
+      .commands { display: grid; gap: 1rem; }
+
+      .command-label {
+        display: block;
+        margin-bottom: 0.4rem;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .command {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.8rem 0.8rem 0.8rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--background);
+      }
+
+      .command code {
+        overflow-x: auto;
+        color: var(--text);
+        white-space: nowrap;
+      }
+
+      .copy-button {
+        min-width: 5.5rem;
+        min-height: 38px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface-light);
+        color: var(--text);
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.8rem;
+      }
+
+      .copy-button:hover,
+      .copy-button:focus-visible { border-color: var(--accent); }
+
+      .install-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+      }
 
       footer {
         display: flex;
@@ -196,7 +247,8 @@
         .hero { grid-template-columns: 1fr; padding-top: 3.5rem; }
         .preview { max-width: 440px; }
         .features { grid-template-columns: 1fr; }
-        .install-box { align-items: flex-start; flex-direction: column; }
+        .command { grid-template-columns: 1fr; }
+        .copy-button { justify-self: start; }
         footer { flex-direction: column; }
       }
     </style>
@@ -204,9 +256,9 @@
   <body>
     <header class="shell">
       <nav aria-label="Main navigation">
-        <a class="brand" href="#">Privacy Devices</a>
+        <a class="brand" href="./">Privacy Devices</a>
         <ul>
-          <li><a href="#features">Features</a></li>
+          <li><a href="./#features">Features</a></li>
           <li><a href="https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices">Install</a></li>
           <li><a href="https://github.com/bolens/omarchy-privacy-devices">GitHub</a></li>
         </ul>
@@ -259,17 +311,60 @@
             <div>
               <div class="eyebrow">Official Omarchy plugin</div>
               <h2>Ready for your bar.</h2>
-              <p>Install Privacy Devices from the Omarchy Plugins directory.</p>
+              <p>Install Privacy Devices from the terminal, or browse its listing in the official Omarchy Plugins directory.</p>
             </div>
-            <a class="button primary" href="https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices">Open plugin page →</a>
+            <div class="commands">
+              <div>
+                <span class="command-label">Install and enable</span>
+                <div class="command">
+                  <code>omarchy plugin add https://github.com/bolens/omarchy-privacy-devices.git --enable</code>
+                  <button class="copy-button" type="button" data-copy="omarchy plugin add https://github.com/bolens/omarchy-privacy-devices.git --enable">Copy</button>
+                </div>
+              </div>
+              <div>
+                <span class="command-label">Uninstall</span>
+                <div class="command">
+                  <code>omarchy plugin remove io.github.bolens.privacy-devices</code>
+                  <button class="copy-button" type="button" data-copy="omarchy plugin remove io.github.bolens.privacy-devices">Copy</button>
+                </div>
+              </div>
+            </div>
+            <div class="install-actions">
+              <a class="button primary" href="https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices">Open plugin page →</a>
+              <a class="button" href="https://github.com/bolens/omarchy-privacy-devices#configuration">Configuration guide ↗</a>
+            </div>
           </div>
         </div>
       </section>
     </main>
 
     <footer class="shell">
-      <span>Privacy Devices · MIT licensed</span>
+      <span><a href="https://github.com/bolens/omarchy-privacy-devices/blob/main/LICENSE">Privacy Devices · MIT licensed</a></span>
       <span>Built for Omarchy Quattro</span>
     </footer>
+    <script>
+      document.querySelectorAll("[data-copy]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const originalLabel = button.textContent;
+
+          try {
+            await navigator.clipboard.writeText(button.dataset.copy);
+            button.textContent = "Copied!";
+          } catch {
+            const input = document.createElement("textarea");
+            input.value = button.dataset.copy;
+            input.style.position = "fixed";
+            input.style.opacity = "0";
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand("copy");
+            input.remove();
+            button.textContent = "Copied!";
+          }
+
+          window.setTimeout(() => { button.textContent = originalLabel; }, 1600);
+        });
+      });
+    </script>
   </body>
 </html>
