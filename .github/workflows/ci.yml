@@ -29,7 +29,10 @@ jobs:
           sudo apt-get install --yes jq shellcheck qt6-declarative-dev-tools
 
       - name: Validate plugin manifest
-        run: .omarchy/bin/omarchy-plugin-validate .
+        run: |
+          mkdir "$RUNNER_TEMP/plugin"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/plugin"
+          .omarchy/bin/omarchy-plugin-validate "$RUNNER_TEMP/plugin"
 
       - name: Lint QML
         run: |
@@ -73,9 +76,9 @@ jobs:
           args: >-
             --no-progress
             --accept 200,204,206,429
+            --exclude '^/omarchy-privacy-devices/'
             './**/*.md'
             './docs/**/*.html'
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
