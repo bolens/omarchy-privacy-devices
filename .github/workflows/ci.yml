@@ -78,7 +78,6 @@ jobs:
           args: >-
             --no-progress
             --accept 200,204,206,429
-            --base-url https://bolens.github.io
             './**/*.md'
             './docs/**/*.html'
           fail: true
