@@ -1,0 +1,90 @@
+name: Detection or classification problem
+description: Report missing, incorrect, or misclassified privacy activity.
+title: "[Detection]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form when activity is missing, assigned to the wrong application,
+        duplicated, or classified as the wrong privacy kind.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I updated the plugin and searched existing issues.
+          required: true
+        - label: I checked exclusions and the camera/screen-share keyword settings.
+          required: true
+
+  - type: dropdown
+    id: activity-kind
+    attributes:
+      label: Activity kind
+      options:
+        - Microphone
+        - Audio output
+        - Camera
+        - Location
+        - Screen sharing
+        - Screenshot
+        - Screen recording
+    validations:
+      required: true
+
+  - type: input
+    id: application
+    attributes:
+      label: Application or device
+      description: Name the application, device, driver, or portal involved.
+      placeholder: Firefox, OBS Studio, USB webcam…
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Actual and expected detection
+      description: Explain what the widget reports and what it should report.
+    validations:
+      required: true
+
+  - type: textarea
+    id: conditions
+    attributes:
+      label: Reproduction conditions
+      description: Describe how to start the activity and whether the problem is consistent.
+    validations:
+      required: true
+
+  - type: input
+    id: omarchy-version
+    attributes:
+      label: Omarchy version
+      description: Run `omarchy version` and paste the result.
+    validations:
+      required: true
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: Find this in `manifest.json` inside the installed plugin directory.
+    validations:
+      required: true
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Relevant settings
+      description: Include exclusions, keywords, enabled kinds, and deduplication settings. Remove sensitive custom commands.
+      render: json
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics or screenshots
+      description: Add relevant PipeWire output, screenshots, or logs after removing sensitive information.
+

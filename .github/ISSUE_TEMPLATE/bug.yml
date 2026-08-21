@@ -1,0 +1,90 @@
+name: Bug report
+description: Report broken or unexpected plugin behavior.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. For missing or misclassified activity,
+        use the **Detection or classification problem** form instead.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I updated the plugin and confirmed the problem still occurs.
+          required: true
+        - label: I searched existing issues for the same problem.
+          required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the actual behavior and what you expected instead.
+      placeholder: The widget does… I expected it to…
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Enable…
+        2. Open…
+        3. Click…
+        4. Observe…
+    validations:
+      required: true
+
+  - type: input
+    id: omarchy-version
+    attributes:
+      label: Omarchy version
+      description: Run `omarchy version` and paste the result.
+      placeholder: Omarchy …
+    validations:
+      required: true
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: Find this in `manifest.json` inside the installed plugin directory.
+      placeholder: 0.1.1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Bar widget
+        - Activity popup
+        - Settings
+        - Notifications
+        - Privacy control
+        - Screenshot
+        - Screen recording
+        - Installation or update
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or error output
+      description: Paste relevant output and remove usernames, paths, or other sensitive data.
+      render: shell
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add screenshots, relevant configuration, or anything else that may help.
+

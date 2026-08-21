@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: User guide and troubleshooting
+    url: https://bolens.github.io/omarchy-privacy-devices/#troubleshooting
+    about: Check setup, configuration, privacy behavior, and common fixes first.
+  - name: Official plugin listing
+    url: https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices
+    about: View the plugin listing and installation details.
