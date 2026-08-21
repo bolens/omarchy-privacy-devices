@@ -833,7 +833,7 @@ Panel {
         Text {
           visible: root.editingKind === ""
           Layout.fillWidth: true
-          text: "PipeWire activity updates live. Location and recorder detection use bounded fallback polling. Middle-click the widget to refresh."
+          text: "PipeWire activity updates live. Location and recorder detection use bounded fallback polling. Middle-click an item for settings."
           color: Color.muted
           font.family: Style.font.family
           font.pixelSize: Style.font.caption
