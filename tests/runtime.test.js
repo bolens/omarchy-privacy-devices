@@ -31,6 +31,34 @@ assert.match(bar, /onMovementEnded:\s*root\.flushDeferredItems\(\)/, "deferred r
 assert.match(bar, /function closeCurrentLayer\(\)/, "Escape must close the current UI layer")
 assert.match(bar, /onMoveRequested:[\s\S]*?moveActivitySelection/, "activity rows must support keyboard navigation")
 assert.match(bar, /onTextKey:[\s\S]*?globalSettingsPage/, "settings tabs must support keyboard shortcuts")
+assert.match(bar, /readonly property var activitySourceItems:\s*orderedKinds\(\)\.map/, "bar device state must be built once per reactive update")
+assert.match(bar, /readonly property var visibleItems:\s*activitySourceItems\.filter/, "visible bar state must derive from the shared device snapshot")
+assert.match(bar, /readonly property var activeItemList:\s*visibleItems\.filter/, "active bar state must be cached for all consumers")
+assert.match(bar, /readonly property int activeCount:\s*activeItemList\.length/, "active count must not allocate another filtered list")
+assert.doesNotMatch(bar, /function buildVisibleItems\(/, "bar rendering must not independently rebuild device state")
+
+assert.match(service, /readonly property var enabledKindList:\s*Model\.arraySetting\(settings\.enabledKinds, Model\.KINDS\)/,
+  "enabled kinds must be normalized once per settings update")
+assert.match(service, /function enabledKinds\(\)\s*{\s*return enabledKindList\s*}/,
+  "hot service paths must reuse normalized enabled kinds")
+assert.match(service, /id:\s*preventativeControlTimer[\s\S]*?running:\s*root\.enabledPreventativeKinds\.length > 0/,
+  "preventative control polling must sleep when no enabled kind supports it")
+assert.match(service, /id:\s*muteRefreshTimer[\s\S]*?running:\s*root\.audioMonitoringEnabled/,
+  "mute polling must sleep when audio devices are disabled")
+assert.match(service, /readonly property var notificationKindList:\s*Model\.arraySetting\(/,
+  "notification filtering must reuse normalized settings")
+assert.match(service, /readonly property var sessionPolicies:\s*\(\{/,
+  "session policy arrays must be normalized once per settings update")
+assert.match(service, /id:\s*sessionSafetyTimer[\s\S]*?running:\s*root\.enabledKindList\.length > 0/,
+  "safety reconciliation must sleep when monitoring is disabled")
+assert.match(service, /id:\s*dependencyRefreshTimer[\s\S]*?running:\s*root\.enabledKindList\.length > 0/,
+  "dependency polling must sleep when no devices are enabled")
+assert.match(service, /property bool dependencyRefreshPending:\s*false/,
+  "dependency refreshes must retain changes received during an active probe")
+assert.match(service, /function refreshDependencies\(\)[\s\S]*?dependencyRefreshPending = true[\s\S]*?dependencyQueue = \[\]/,
+  "a newer dependency configuration must supersede the queued stale configuration")
+assert.match(service, /function runNextDependencyCheck\(\)[\s\S]*?if \(dependencyRefreshPending\) refreshDependencies\(\)/,
+  "dependency probes must run a coalesced refresh after the active probe exits")
 
 for (const signal of [
   "onObservedPipewireSessionsChanged", "onLocationAppsChanged", "onLocationActiveChanged",

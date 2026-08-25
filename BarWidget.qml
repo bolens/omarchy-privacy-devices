@@ -46,9 +46,10 @@ Panel {
   readonly property color disabledThemeColor: themeColor(String(setting("disabledColorRole", "urgent")), true)
   readonly property color mutedThemeColor: themeColor(String(setting("mutedColorRole", "urgent")), true)
   readonly property color unmutedThemeColor: themeColor(String(setting("unmutedColorRole", "foreground")), false)
-  readonly property var visibleItems: buildVisibleItems()
   readonly property var activitySourceItems: orderedKinds().map(function(kind) { return item(kind) })
-  readonly property int activeCount: activeItems().length
+  readonly property var visibleItems: activitySourceItems.filter(function(entry) { return entry.active || itemShowsWhenIdle(entry.kind) })
+  readonly property var activeItemList: visibleItems.filter(function(entry) { return entry.active })
+  readonly property int activeCount: activeItemList.length
   readonly property bool monitoringDegraded: privacyService && typeof privacyService.monitoringDegraded === "function" ? privacyService.monitoringDegraded() : false
   readonly property var kindOptions: [
     {value: "microphone", label: "Microphone"}, {value: "audio-output", label: "Audio output"},
@@ -593,18 +594,8 @@ Panel {
     return result
   }
 
-  function buildVisibleItems() {
-    var result = []
-    var kinds = orderedKinds()
-    for (var index = 0; index < kinds.length; index++) {
-      var entry = item(kinds[index])
-      if (entry.active || itemShowsWhenIdle(entry.kind)) result.push(entry)
-    }
-    return result
-  }
-
   function activeItems() {
-    return visibleItems.filter(function(entry) { return entry.active })
+    return activeItemList
   }
 
   function iconFor(kind) {

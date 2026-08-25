@@ -56,6 +56,7 @@ Item {
   property var dependencyCheckedMap: ({})
   property var dependencyQueue: []
   property string dependencyCheckKind: ""
+  property bool dependencyRefreshPending: false
   readonly property bool microphoneMuted: fallbackMicrophoneMuted
   readonly property bool outputMuted: fallbackOutputMuted
   readonly property var streamNodes: {
@@ -67,6 +68,18 @@ Item {
     return result
   }
   readonly property var observedPipewireSessions: pipewireObservations()
+  readonly property var enabledKindList: Model.arraySetting(settings.enabledKinds, Model.KINDS)
+  readonly property var configuredPreventativeKinds: Model.arraySetting(settings.blockableKinds, ["camera", "screen-share", "location"])
+  readonly property var enabledPreventativeKinds: configuredPreventativeKinds
+    .filter(function(kind) { return enabledKindList.indexOf(kind) !== -1 })
+  readonly property var notificationKindList: Model.arraySetting(settings.notificationKinds,
+    ["microphone", "camera", "screen-share", "screen-recording", "location"])
+  readonly property var sessionPolicies: ({
+    hiddenApps: Model.arraySetting(settings.hiddenApps, []),
+    notificationSuppressedApps: Model.arraySetting(settings.notificationSuppressedApps, [])
+  })
+  readonly property bool audioMonitoringEnabled: enabledKindList.indexOf("microphone") !== -1
+    || enabledKindList.indexOf("audio-output") !== -1
 
   onObservedPipewireSessionsChanged: scheduleSessionRefresh()
   onLocationAppsChanged: scheduleSessionRefresh()
@@ -155,7 +168,7 @@ Item {
   }
 
   function enabledKinds() {
-    return Model.arraySetting(settings.enabledKinds, Model.KINDS)
+    return enabledKindList
   }
 
   function kindEnabled(kind) {
@@ -167,10 +180,7 @@ Item {
   }
 
   function policies() {
-    return {
-      hiddenApps: Model.arraySetting(settings.hiddenApps, []),
-      notificationSuppressedApps: Model.arraySetting(settings.notificationSuppressedApps, [])
-    }
+    return sessionPolicies
   }
 
   function sessionsFor(kind) {
@@ -240,13 +250,12 @@ Item {
   }
 
   function handleSessionTransitions(transition) {
-    var notifyKinds = Model.arraySetting(settings.notificationKinds, ["microphone", "camera", "screen-share", "screen-recording", "location"])
     var stoppedForHistory = []
     var index
     if (activityInitialized && settings.notifyOnActivity !== false) {
       for (index = 0; index < transition.started.length; index++) {
         var started = transition.started[index]
-        if (notifyKinds.indexOf(started.kind) !== -1 && Model.shouldNotifyForSession(started, policies()))
+        if (notificationKindList.indexOf(started.kind) !== -1 && Model.shouldNotifyForSession(started, policies()))
           enqueueActivityNotification("started", started)
       }
     }
@@ -256,7 +265,7 @@ Item {
         recentHistory = Model.appendHistory(recentHistory, stopped, Date.now(), {maxEntries: 100, maxAgeMs: 7 * 24 * 60 * 60 * 1000})
         stoppedForHistory.push(stopped)
       }
-      if (settings.notifyOnStop === true && notifyKinds.indexOf(stopped.kind) !== -1 && Model.shouldNotifyForSession(stopped, policies()))
+      if (settings.notifyOnStop === true && notificationKindList.indexOf(stopped.kind) !== -1 && Model.shouldNotifyForSession(stopped, policies()))
         enqueueActivityNotification("stopped", stopped)
     }
     if (stoppedForHistory.length) Quickshell.execDetached([historyHelperPath(), "append", JSON.stringify(stoppedForHistory)])
@@ -377,7 +386,7 @@ Item {
 
   function controllable(kind) {
     if (kind === "microphone" || kind === "audio-output") return true
-    if (Model.arraySetting(settings.blockableKinds, ["camera", "screen-share", "location"]).indexOf(kind) !== -1) return true
+    if (configuredPreventativeKinds.indexOf(kind) !== -1) return true
     return kind === "screen-recording" || kind === "screenshot"
   }
 
@@ -450,13 +459,22 @@ Item {
   }
 
   function refreshDependencies() {
-    if (dependencyCheckProc.running) return
+    if (dependencyCheckProc.running) {
+      dependencyRefreshPending = true
+      dependencyQueue = []
+      return
+    }
+    dependencyRefreshPending = false
     dependencyQueue = enabledKinds().slice()
     runNextDependencyCheck()
   }
 
   function runNextDependencyCheck() {
-    if (dependencyCheckProc.running || dependencyQueue.length === 0) return
+    if (dependencyCheckProc.running) return
+    if (dependencyQueue.length === 0) {
+      if (dependencyRefreshPending) refreshDependencies()
+      return
+    }
     dependencyCheckKind = dependencyQueue.shift()
     dependencyCheckProc.command = [dependencyHelperPath(), "check", dependencyCheckKind, recordingBackend(), audioControlBackend(), screenshotBackend()]
     dependencyCheckProc.running = true
@@ -603,8 +621,7 @@ Item {
 
   function refreshPreventativeControls() {
     if (privacyControlProc.running || privacyControlKind !== "" || privacyStateProc.running) return
-    var kinds = Model.arraySetting(settings.blockableKinds, ["camera", "screen-share", "location"])
-    privacyStateQueue = kinds.slice()
+    privacyStateQueue = enabledPreventativeKinds.slice()
     runNextPrivacyState()
   }
 
@@ -619,11 +636,11 @@ Item {
   }
 
   function refreshMuteState() {
-    if (!microphoneStateProc.running) {
+    if (kindEnabled("microphone") && !microphoneStateProc.running) {
       microphoneStateProc.command = audioStateCommand("microphone")
       microphoneStateProc.running = true
     }
-    if (!outputStateProc.running) {
+    if (kindEnabled("audio-output") && !outputStateProc.running) {
       outputStateProc.command = audioStateCommand("audio-output")
       outputStateProc.running = true
     }
@@ -690,7 +707,7 @@ Item {
     id: preventativeControlTimer
     interval: 15000
     repeat: true
-    running: true
+    running: root.enabledPreventativeKinds.length > 0
     onTriggered: root.refreshPreventativeControls()
   }
 
@@ -704,9 +721,10 @@ Item {
   // Reactive PipeWire and observer updates do the normal work. This slow pass
   // is only a safety net for backends that mutate without emitting a QML signal.
   Timer {
+    id: sessionSafetyTimer
     interval: 15000
     repeat: true
-    running: true
+    running: root.enabledKindList.length > 0
     onTriggered: root.refreshSessions()
   }
 
@@ -731,9 +749,10 @@ Item {
   }
 
   Timer {
+    id: muteRefreshTimer
     interval: 3000
     repeat: true
-    running: true
+    running: root.audioMonitoringEnabled
     onTriggered: root.refreshMuteState()
   }
 
@@ -758,9 +777,10 @@ Item {
   }
 
   Timer {
+    id: dependencyRefreshTimer
     interval: 300000
     repeat: true
-    running: true
+    running: root.enabledKindList.length > 0
     onTriggered: root.refreshDependencies()
   }
 
