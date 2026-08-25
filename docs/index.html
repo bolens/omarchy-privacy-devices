@@ -862,7 +862,7 @@
             </figure>
             <div class="interface-supporting">
               <figure class="screenshot-card bar-shot">
-                <img src="bar.png" alt="Privacy Devices indicators occupying their exact center-bar footprint" width="141" height="50" loading="lazy" decoding="async">
+                <img src="bar.png" alt="Privacy Devices indicators occupying their exact center-bar footprint" width="182" height="50" loading="lazy" decoding="async">
                 <figcaption>Distinct markers keep active, disabled, verifying, and degraded states visible.</figcaption>
               </figure>
               <figure class="screenshot-card notification-shot">
@@ -871,7 +871,7 @@
               </figure>
             </div>
           </div>
-          <h3 class="gallery-title">Settings</h3>
+          <h3 class="gallery-title">Settings and details</h3>
           <div class="settings-gallery">
             <figure class="screenshot-card">
               <img src="general.png" alt="General settings page" width="500" height="660" loading="lazy" decoding="async">
@@ -892,6 +892,14 @@
             <figure class="screenshot-card">
               <img src="device.png" alt="Individual privacy-device settings page" width="500" height="660" loading="lazy" decoding="async">
               <figcaption>Per-device appearance, backend, diagnostics, and resets.</figcaption>
+            </figure>
+            <figure class="screenshot-card">
+              <img src="history.png" alt="Completed privacy activity history view" width="500" height="660" loading="lazy" decoding="async">
+              <figcaption>Searchable completed activity with duration, source, confidence, and application context.</figcaption>
+            </figure>
+            <figure class="screenshot-card">
+              <img src="history-disabled.png" alt="Activity history disabled state with link to monitoring settings" width="500" height="240" loading="lazy" decoding="async">
+              <figcaption>A direct opt-in path when private local history is disabled.</figcaption>
             </figure>
           </div>
         </div>
@@ -1013,7 +1021,7 @@
             <article class="guide-card"><h3>Appearance</h3><p>Tune bar layout, markers, counts, popup density, labels, colors, and disabled presentation.</p></article>
             <article class="guide-card"><h3>Notifications</h3><p>Choose activity and control alerts, with per-application suppression and the detected application icon when available.</p></article>
             <article class="guide-card"><h3>Enhanced monitoring</h3><p>Optionally inspect same-user open device handles to detect direct V4L2 camera and ALSA microphone access that bypasses ordinary PipeWire streams.</p></article>
-            <article class="guide-card"><h3>Recent activity</h3><p>Opt in to private metadata-only history bounded to seven days or 100 completed sessions. Disabling or clearing it deletes the stored file.</p></article>
+            <article class="guide-card"><h3>Recent activity</h3><p>Opt in to private metadata-only history bounded to seven days or 100 completed sessions, then open it from the clock icon or with H. Search locally by application, device, activity, source, or confidence. Disabling or confirming clear deletes the stored file.</p></article>
             <article class="guide-card"><h3>Audio</h3><p>Prefer <code>pactl</code>, <code>wpctl</code>, or automatic backend selection.</p></article>
             <article class="guide-card"><h3>Capture backends</h3><p>Use Omarchy, Grim, Grim + Satty, Hyprshot, Flameshot, GPU Screen Recorder, wf-recorder, or custom commands.</p></article>
             <article class="guide-card"><h3>Classification</h3><p>Exclude noisy apps and extend camera or screen-share keywords for unusual drivers and capture clients.</p></article>

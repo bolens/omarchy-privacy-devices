@@ -9,8 +9,22 @@ maintainer guides that define release and validation procedures.
 
 ### Added
 
+- Add a dedicated, keyboard-accessible history view with clear disabled,
+  loading, and empty states, local search, relative period groups, result
+  count pills, confidence provenance, and confirmed clearing.
 - Show a verified application or service icon in activity and control-result
   notifications, with safe themed fallbacks.
+
+### Fixed
+
+- Establish a silent startup activity baseline so restarting Quickshell does
+  not re-notify sessions that were already using a privacy device.
+- Deduplicate replayed history records in both live and persisted retention.
+- Make screenshot refreshes restart-safe and location-independent, capture both
+  history states, preserve user history and shell settings, and keep variable
+  image dimensions synchronized with the Pages gallery.
+- Discover Quickshell from `PATH` in the runtime harness instead of relying on
+  a developer-specific installation path.
 
 ## [0.4.0] - 2026-08-25
 

@@ -31,8 +31,10 @@ Activity notifications use the detected application icon when available:
 | <img src="docs/general.png" alt="General settings page" width="360"> | <img src="docs/appearance.png" alt="Appearance settings page" width="360"> |
 | Alerts | Monitoring |
 | <img src="docs/alerts.png" alt="Alerts settings page" width="360"> | <img src="docs/monitoring.png" alt="Monitoring settings page" width="360"> |
-| Individual device settings | |
-| <img src="docs/device.png" alt="Individual privacy-device settings page" width="360"> | |
+| Individual device settings | Activity history |
+| <img src="docs/device.png" alt="Individual privacy-device settings page" width="360"> | <img src="docs/history.png" alt="Completed privacy activity history view" width="360"> |
+| History disabled | |
+| <img src="docs/history-disabled.png" alt="Activity history disabled state" width="360"> | |
 
 </details>
 
@@ -44,8 +46,8 @@ Activity notifications use the detected application icon when available:
 - Verified mute, recording, camera, location, and screen-sharing controls.
 - Global and per-device appearance, ordering, visibility, backend, and status
   settings.
-- App-aware notifications, private diagnostics, optional bounded history, and
-  versioned settings transfer.
+- App-aware notifications, private diagnostics, searchable optional bounded
+  history, and versioned settings transfer.
 - Keyboard navigation throughout the popup and settings.
 - Persistent observers and bounded background work, with no network telemetry.
 
