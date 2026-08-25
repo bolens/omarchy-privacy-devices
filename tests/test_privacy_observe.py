@@ -63,7 +63,8 @@ class DirectDeviceObservationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for pid, command in [("10", "gpu-screen-recorder -w screen"), ("11", "grim -g 0,0 10x10 shot.png"), ("12", "unrelated"),
-                                 ("13", "python3 /plugin/privacy-observe watch-fallbacks --recording gpu-screen-recorder")]:
+                                 ("13", "python3 /plugin/privacy-observe watch-fallbacks --recording gpu-screen-recorder"),
+                                 ("14", "bash -lc pgrep -f ^gpu-screen-recorder")]:
                 process = root / pid
                 process.mkdir()
                 (process / "cmdline").write_bytes(command.replace(" ", "\0").encode() + b"\0")

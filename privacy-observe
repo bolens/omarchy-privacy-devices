@@ -84,15 +84,16 @@ def process_activity(
         try:
             if process.stat().st_uid != expected_uid:
                 continue
-            command = (process / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace").strip()
+            arguments = [part.decode(errors="replace") for part in (process / "cmdline").read_bytes().split(b"\0") if part]
         except (OSError, PermissionError):
             continue
-        if not command:
+        if not arguments:
             continue
-        if "privacy-observe watch-fallbacks" in command:
+        if any(Path(argument).name == "privacy-observe" for argument in arguments) and "watch-fallbacks" in arguments:
             continue
-        executable = Path(command.split(None, 1)[0]).name
-        if recording_name and recording_name in command:
+        executable = Path(arguments[0]).name
+        command = " ".join(arguments)
+        if recording_name and executable == Path(recording_name).name:
             recording.add(executable or recording_name)
         if screenshot_re and screenshot_re.search(command):
             screenshots.add(executable or "Screenshot tool")
