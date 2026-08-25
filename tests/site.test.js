@@ -57,6 +57,12 @@ assert.equal(source.querySelectorAll("#screenshots .settings-gallery .screenshot
   "settings captures must use a dedicated, consistent gallery");
 assert.match(html, /\.settings-gallery\s*\{[^}]*grid-template-columns:\s*repeat\(3,/s,
   "wide screens must show settings captures in three balanced columns");
+assert.doesNotMatch(html, /measured widget footprint|width varies/i,
+  "gallery captions must explain visible status instead of capture mechanics");
+assert.doesNotMatch(html, /official Omarchy (?:Shell )?plugin|official Omarchy Plugins directory/i,
+  "the independent community marketplace must not be described as official");
+assert.match(html, /detected application icon/i,
+  "notification guidance must explain app-aware icons");
 for (const image of ["preview", "bar", "general", "appearance", "alerts", "monitoring", "device"]) {
   const element = source.querySelector(`#screenshots img[src="${image}.png"]`);
   assert.ok(element, `Pages gallery must showcase ${image}.png`);
