@@ -1,8 +1,12 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 plugin_dir="$(cd -- "$(dirname -- "$0")/.." && pwd)"
-quickshell_bin="${QUICKSHELL_BIN:-/home/panda/.local/opt/quickshell-git/usr/bin/quickshell}"
+quickshell_bin="${QUICKSHELL_BIN:-quickshell}"
+command -v "$quickshell_bin" >/dev/null 2>&1 || {
+  printf 'Quickshell executable not found: %s\n' "$quickshell_bin" >&2
+  exit 127
+}
 set +e
 output="$(timeout 4 "$quickshell_bin" --no-color --path "$plugin_dir/RuntimeModelTest.qml" 2>&1)"
 status=$?

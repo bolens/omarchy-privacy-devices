@@ -6,41 +6,105 @@ const service = fs.readFileSync(path.join(__dirname, "..", "Service.qml"), "utf8
 const screenshotWorkflow = fs.readFileSync(path.join(__dirname, "..", "scripts/capture-screenshots"), "utf8")
 const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
 const ci = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "ci.yml"), "utf8")
+const qmlRuntime = fs.readFileSync(path.join(__dirname, "run_qml_runtime.sh"), "utf8")
+
+assert.doesNotMatch(qmlRuntime, /\/home\/[^/]+\//,
+  "the QML runtime test must not contain a developer-specific executable path")
+assert.match(qmlRuntime, /QUICKSHELL_BIN:-quickshell/,
+  "the QML runtime test should use PATH discovery while retaining an explicit override")
 
 assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?lastSessionRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastSessionRefreshAt, now\)[\s\S]*?lastFallbackRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastFallbackRefreshAt, now\)[\s\S]*?fallbackObserverHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(fallbackObserverLastSeen, now\)[\s\S]*?directHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(directObserverLastSeen, now\)/,
   "every exported telemetry timestamp must use the behavior-tested freshness policy")
 assert.match(service, /requestedSettingsPage = Model\.settingsPage\(page\)/, "settings IPC pages must pass through the shared allowlist")
 assert.match(screenshotWorkflow, /trap restore_desktop EXIT INT TERM/, "screenshot capture must restore the user's workspace on failure")
+assert.match(screenshotWorkflow, /trap 'printf .*Capture failed at line %s.*LINENO.*' ERR/,
+  "screenshot failures should identify their source line without tracing private state")
+assert.match(screenshotWorkflow, /flock -n 9/,
+  "screenshot capture must prevent concurrent runs from racing over user state")
+assert.match(screenshotWorkflow, /live_history=\$\(qs ipc --pid "\$shell_pid" call privacy-devices history\)[\s\S]*?persisted_history=\$\(\.\/privacy-history load\)[\s\S]*?unique_by\(\[\.id, \.endedAt\]\)[\s\S]*?\.\/privacy-history append "\$history_snapshot"/,
+  "screenshot capture must merge and restore deduplicated live and persisted pre-capture history")
+assert.match(screenshotWorkflow, /call privacy-devices historyEnabled[\s\S]*?history_samples=\$\(jq -cn[\s\S]*?\.\/privacy-history clear[\s\S]*?\.\/privacy-history append "\$history_samples"/,
+  "history screenshots must use bounded examples only after preserving the real store")
+assert.match(screenshotWorkflow, /\.\/privacy-history append "\$history_samples"[\s\S]*?omarchy restart shell[\s\S]*?wait_for_shell[\s\S]*?capture_panel history history/,
+  "sample history must be loaded into a fresh service before capture")
 assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must reject workspaces containing user windows")
 assert.match(screenshotWorkflow, /debugBarGeometry/, "bar screenshots must use measured live widget geometry")
 assert.ok(fs.statSync(path.join(__dirname, "..", "scripts/capture-screenshots")).mode & 0o111,
   "screenshot workflow must remain executable")
 for (const qml of ["DeviceSettingsEditor.qml", "DeviceDiagnostics.qml", "RuntimeModelTest.qml"])
   assert.match(ci, new RegExp(`qmllint[^']*${qml}`), `CI must lint ${qml}`)
-assert.match(screenshotWorkflow, /device-full\.png/, "screenshot workflow must capture an individual device settings page")
+assert.match(screenshotWorkflow, /capture_panel device device/, "screenshot workflow must capture an individual device settings page")
 assert.match(screenshotWorkflow, /docs\/device\.png/, "screenshot workflow must publish the device settings capture")
+assert.match(screenshotWorkflow, /privacy-devices-settings openHistory[\s\S]*capture_panel history history/,
+  "screenshot workflow must open and capture the dedicated history view through focused-monitor IPC")
+assert.match(screenshotWorkflow, /capture_panel history history[\s\S]*set_history_enabled false[\s\S]*capture_panel history-disabled history[\s\S]*restore_shell_settings/,
+  "screenshot workflow must refresh the disabled history state and restore the real shell settings")
+assert.match(screenshotWorkflow, /set_showcase_settings\(\)[\s\S]*showBarActiveMarker: true[\s\S]*showBarDisabledMarker: true[\s\S]*statusMarkerMode: "symbols"/,
+  "published captures should consistently showcase the default bar status markers")
+assert.match(screenshotWorkflow, /set_showcase_settings[\s\S]*omarchy restart shell[\s\S]*capture_panel history history/,
+  "showcase settings must be active before the interface captures")
+assert.match(screenshotWorkflow, /capture_panel history-disabled history "" 240/,
+  "the compact disabled-history view should not publish a mostly empty tall crop")
+assert.match(screenshotWorkflow, /docs\/history\.png/,
+  "screenshot workflow must publish the history capture")
+assert.match(screenshotWorkflow, /docs\/history-disabled\.png/,
+  "screenshot workflow must publish the disabled history capture")
+assert.match(screenshotWorkflow, /update-screenshot-metadata docs\/index\.html docs/,
+  "capture must keep variable screenshot dimensions synchronized with Pages metadata")
+assert.match(screenshotWorkflow, /cmp -s "\$settings_snapshot" "\$settings_file"/,
+  "successful capture must verify the original shell settings were restored byte-for-byte")
 assert.match(screenshotWorkflow, /omarchy notification send[\s\S]*--app-name[\s\S]*Privacy Devices[\s\S]*--icon[\s\S]*firefox/,
   "screenshot workflow must trigger an app-icon notification")
 assert.match(screenshotWorkflow, /notifications isDnd[\s\S]*notifications setDnd/,
   "screenshot workflow must preserve and temporarily normalize DND state")
 assert.match(screenshotWorkflow, /notification_summary=.*Screenshot example[\s\S]*call notifications dismiss "\$notification_summary"/,
   "screenshot cleanup must dismiss its uniquely labeled toast through Omarchy IPC")
-assert.match(screenshotWorkflow, /dismiss_result[\s\S]*== ok/,
-  "screenshot capture must verify that sample-toast dismissal succeeded")
+assert.match(screenshotWorkflow, /dismiss_result[\s\S]*!= ok[\s\S]*expire automatically/,
+  "unsupported sample-toast dismissal must degrade to bounded automatic expiry")
+assert.doesNotMatch(screenshotWorkflow, /dismiss_result[\s\S]{0,160}exit 1/,
+  "notification cleanup limitations must not discard otherwise valid screenshots")
 assert.match(screenshotWorkflow, /docs\/notification\.png/,
   "screenshot workflow must publish the notification capture")
 assert.match(screenshotWorkflow, /wtype -k Return/, "device capture must use wtype's portable Enter key name")
 assert.match(screenshotWorkflow, /call shell summon "\$plugin_id" ""/, "activity capture must explicitly summon the main widget view")
+assert.match(screenshotWorkflow, /capture_panel\(\)[\s\S]*?call shell hide "\$plugin_id"[\s\S]*?settings\) qs ipc --pid "\$shell_pid" call privacy-devices-settings open "\$page"/,
+  "settings capture must normalize popup state before opening each page")
 assert.match(screenshotWorkflow, /function validate_capture|validate_capture\(\)/, "screenshot workflow must reject blank captures")
-assert.match(screenshotWorkflow, /colors < 8/, "capture validation must reject low-content images")
+assert.match(screenshotWorkflow, /colors >= 8/, "capture validation must reject low-content images")
+assert.match(screenshotWorkflow, /wait_for_shell\(\)[\s\S]*?for attempt in \{1\.\.40\}/,
+  "capture must wait conditionally for a restarted shell instead of assuming startup duration")
+assert.doesNotMatch(screenshotWorkflow, /omarchy-overlay\/shell\/shell\.qml/,
+  "capture must not depend on a machine-specific shell config path")
+assert.match(screenshotWorkflow, /shell_reply=.*call shell ping[\s\S]*?history_reply=.*call privacy-devices historyEnabled[\s\S]*?shell_reply == ok[\s\S]*?history_reply =~/,
+  "capture must identify the target shell through its IPC capabilities")
+assert.match(screenshotWorkflow, /qs list --all[\s\S]*sort -rn/,
+  "capture must prefer the newest IPC-ready shell while an old instance retires")
+assert.doesNotMatch(screenshotWorkflow, /sleep 6/,
+  "capture must not rely on a fixed shell-startup delay")
+assert.doesNotMatch(screenshotWorkflow, /date \+%s%3N/,
+  "capture must not require GNU date millisecond extensions")
+assert.match(screenshotWorkflow, /python3 -c 'import time; print\(time\.time_ns\(\) \/\/ 1_000_000\)'/,
+  "capture must derive portable millisecond timestamps from Python")
+assert.match(screenshotWorkflow, /capture_panel\(\)[\s\S]*?for attempt in \{1\.\.4\}[\s\S]*?capture_has_content/,
+  "each popup capture must retry until its target crop contains real content")
+assert.ok(screenshotWorkflow.lastIndexOf("resolve_geometry", screenshotWorkflow.indexOf("capture_panel history history")) >= 0,
+  "bar geometry must be resolved before long-running capture operations")
 assert.match(service, /id:\s*fallbackObserverProc/, "process fallbacks must share one persistent structured observer")
 assert.match(service, /"watch-fallbacks"/, "fallback observer must use the structured watch protocol")
 assert.match(service, /settings\.recordingPollSeconds/, "the persistent fallback observer must honor the configured scan interval")
 assert.doesNotMatch(service, /id:\s*(?:recordingProc|screenshotProc)/, "recording and screenshot detection must not spawn periodic QML processes")
 assert.doesNotMatch(service, /id:\s*(?:recordingTimer|screenshotTimer)/, "persistent observation must replace recording and screenshot polling timers")
 assert.match(service, /target:\s*"privacy-devices-settings"[\s\S]*?shell\.summon/, "singleton service must route settings to the focused monitor")
+assert.match(service, /function openHistory\(\): string[\s\S]*?requestedView = "history"[\s\S]*?shell\.summon/,
+  "history IPC must use the singleton service's focused-monitor routing")
 assert.doesNotMatch(bar, /target:\s*"privacy-devices-settings"/, "per-monitor widgets must not compete for settings IPC ownership")
 assert.match(service, /id:\s*notificationFlush[\s\S]*?interval:\s*400/, "activity notifications must use a bounded coalescing window")
+assert.match(service, /id:\s*activityBaseline[\s\S]*?interval:\s*5000[\s\S]*?activityInitialized = true/,
+  "startup observations must settle into a silent baseline before notifications begin")
+assert.doesNotMatch(service, /function refreshSessions\(\)[\s\S]*?activityInitialized = true[\s\S]*?function scheduleSessionRefresh/,
+  "individual startup refreshes must not prematurely enable notifications")
+assert.match(service, /Model\.publishableSessionTransitions\([^;]+activityInitialized\)/,
+  "history and notifications must share the behavior-tested startup publication policy")
 assert.match(service, /function beginControlTransaction\(kind, expectedEnabled\)[\s\S]*?Model\.controlTransactionTransition\(null, \{type: "begin", expectedEnabled: expectedEnabled\}/,
   "control requests must enter the behavior-tested reducer with their requested state")
 assert.match(service, /function beginControlVerification\(kind, exitCode\)[\s\S]*?Model\.controlTransactionTransition\(current, \{type: "command", exitCode: exitCode\}/,
@@ -57,10 +121,34 @@ assert.match(bar, /function syncDisplayedItems\(\)[\s\S]*?contentFlick\.moving &
 assert.doesNotMatch(bar, /function activityStateChanged\(/,
   "QML must not retain a second untested presentation-state policy")
 assert.match(bar, /onCloseRequested:\s*root\.closeCurrentLayer\(\)/, "Escape must invoke layered popup dismissal")
-assert.match(bar, /function closeCurrentLayer\(\)[\s\S]*?Model\.popupDismissalAction\(editingKind, showingGlobalSettings\)/,
+assert.match(bar, /function closeCurrentLayer\(\)[\s\S]*?Model\.popupDismissalAction\(editingKind, showingGlobalSettings, showingHistory\)/,
   "layered dismissal must use the behavior-tested priority policy")
-assert.match(bar, /text: "Keyboard: ↑\/↓ select · Enter open · S settings · R refresh · Esc close"/,
+assert.match(bar, /text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
   "the activity footer must advertise every main-view keyboard command")
+assert.match(bar, /tooltipText: "Activity history"[\s\S]*?tooltipText: "Global settings"/,
+  "the history action must sit immediately left of global settings")
+assert.match(bar, /function showHistory\(\)[\s\S]*?privacyService\.loadHistory\(\)/,
+  "opening history must request persisted entries without polling")
+assert.match(bar, /id:\s*historyView[\s\S]*?History is off[\s\S]*?Loading history[\s\S]*?No completed activity yet/,
+  "history view must distinguish disabled, loading, and empty states")
+assert.match(bar, /filteredHistory:\s*Model\.filterHistory\(privacyService \? privacyService\.recentHistory : \[\], historyQuery\)/,
+  "history view must derive from the full service-bounded history")
+assert.equal((bar.match(/"Clear history"/g) || []).length, 1,
+  "history clearing must have one explicit home")
+assert.match(bar, /id:\s*historySearch[\s\S]*?placeholderText:\s*"Search history"/,
+  "history view must expose a local search field")
+assert.match(bar, /id:\s*historyCountPill[\s\S]*?radius:\s*implicitHeight \/ 2[\s\S]*?Model\.historyCountLabel\(/,
+  "history result counts must render as a labeled status pill")
+assert.match(bar, /readonly property var filteredHistory:\s*Model\.filterHistory\(/,
+  "history filtering must use the behavior-tested bounded model policy")
+assert.match(bar, /model:\s*root\.filteredHistory/,
+  "history delegates must render only filtered entries")
+assert.match(bar, /No history matches your search\./,
+  "history must distinguish a filtered-empty result from an empty store")
+assert.match(bar, /Model\.historyPeriodLabel\(modelData\.endedAt, root\.durationNow\)/,
+  "history entries must expose behavior-tested relative period groups")
+assert.match(bar, /Model\.historyClearAction\((?:root\.)?historyClearArmed\)/,
+  "destructive history clearing must use the behavior-tested confirmation policy")
 assert.doesNotMatch(bar, /Activity details distinguish observation source/,
   "the activity footer must not retain displaced implementation guidance")
 assert.match(bar, /onMoveRequested:[\s\S]*?dy !== 0[\s\S]*?moveActivitySelection\(dy\)/,
@@ -194,6 +282,10 @@ assert.match(service, /function clearHistory\(\)[\s\S]*?historyGeneration\+\+/,
   "clearing history must invalidate an in-flight load")
 assert.match(service, /id:\s*historyLoadProc[\s\S]*?Model\.historyLoadAccepted\(root\.historyLoadGeneration, root\.historyGeneration, root\.settings\.historyEnabled\)[\s\S]*?recentHistory = \[\]/,
   "stale history output must not repopulate private data after history is disabled or cleared")
+assert.match(service, /id:\s*historyLoadOutput[\s\S]*?onStreamFinished:\s*\{[\s\S]*?JSON\.parse\(String\(historyLoadOutput\.text \|\| "\[\]"\)\)/,
+  "history loading must parse the collector property exposed by Quickshell")
+assert.doesNotMatch(service, /id:\s*historyLoadProc[\s\S]*?onStreamFinished:\s*function\(text\)/,
+  "history loading must not assume the completion signal passes collected text")
 assert.match(service, /id:\s*dependencyCheckProc[\s\S]*?if \(!root\.dependencyRefreshPending\)[\s\S]*?dependencyReadyMap = ready/,
   "superseded dependency results must not be published")
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
+trap 'printf "Capture failed at line %s.\n" "$LINENO" >&2' ERR
 
 plugin_id="io.github.bolens.privacy-devices"
 monitor=""
@@ -26,9 +27,13 @@ while (($#)); do
   esac
 done
 
-for command in qs hyprctl jq grim magick pngquant wtype omarchy; do
+for command in qs hyprctl jq grim magick pngquant wtype omarchy python3 flock; do
   command -v "$command" >/dev/null || { printf 'Missing required command: %s\n' "$command" >&2; exit 1; }
 done
+
+lock_file="${XDG_RUNTIME_DIR:-/tmp}/privacy-devices-screenshots-${UID}.lock"
+exec 9>"$lock_file"
+flock -n 9 || { printf 'Another screenshot capture is already running.\n' >&2; exit 1; }
 
 monitor_json=$(hyprctl monitors -j)
 if [[ -z $monitor ]]; then
@@ -56,14 +61,108 @@ window_count=$(jq -r --argjson workspace "$capture_workspace" '[.[] | select(.wo
   exit 2
 }
 
-shell_pid=$(qs list --all | awk '
-  /Process ID:/ { pid=$3 }
-  /Config path: .*omarchy-overlay\/shell\/shell.qml/ { print pid; exit }
-')
-[[ $shell_pid =~ ^[1-9][0-9]*$ ]] || { printf 'No running Omarchy Shell instance found.\n' >&2; exit 1; }
+shell_pid=""
+widget_x=""
+widget_width=""
+panel_x=""
+
+wait_for_shell() {
+  local attempt candidate shell_reply history_reply
+  for attempt in {1..40}; do
+    while read -r candidate; do
+      [[ $candidate =~ ^[1-9][0-9]*$ ]] || continue
+      shell_reply=$(qs ipc --pid "$candidate" call shell ping 2>/dev/null || true)
+      history_reply=$(qs ipc --pid "$candidate" call privacy-devices historyEnabled 2>/dev/null || true)
+      if [[ $shell_reply == ok && $history_reply =~ ^(true|false)$ ]]; then
+        shell_pid=$candidate
+        return 0
+      fi
+    done < <(qs list --all | awk '/Process ID:/ { print $3 }' | sort -rn)
+    sleep 0.25
+  done
+  printf 'Omarchy Shell did not become IPC-ready.\n' >&2
+  return 1
+}
+
+focus_capture_workspace() {
+  local attempt focused workspace
+  hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null
+  hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$capture_workspace\" }))" >/dev/null
+  for attempt in {1..20}; do
+    focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
+    workspace=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .activeWorkspace.id')
+    [[ $focused == true && $workspace == "$capture_workspace" ]] && return 0
+    sleep 0.1
+  done
+  printf 'Could not focus %s workspace %s.\n' "$monitor" "$capture_workspace" >&2
+  return 1
+}
+
+resolve_geometry() {
+  local attempt geometry widget_row
+  for attempt in {1..40}; do
+    wait_for_shell || return 1
+    geometry=$(qs ipc --pid "$shell_pid" call shell debugBarGeometry 2>/dev/null || true)
+    widget_row=$(jq -c --arg id "$plugin_id" --argjson width "$monitor_width" '
+      [.[] | select(.id == $id and .visible and .width > 0)]
+      | sort_by((((.x + (.width / 2)) - ($width / 2)) | fabs))
+      | .[0]
+    ' <<<"${geometry:-[]}" 2>/dev/null || true)
+    widget_x=$(jq -r '.x // empty' <<<"${widget_row:-null}")
+    widget_width=$(jq -r '.width // empty' <<<"${widget_row:-null}")
+    if [[ $widget_x =~ ^[0-9]+$ && $widget_width =~ ^[1-9][0-9]*$ ]]; then
+      panel_x=$((widget_x - 168))
+      if ((panel_x >= 0 && panel_x + 500 <= monitor_width)); then return 0; fi
+    fi
+    sleep 0.25
+  done
+  printf 'Could not resolve live bar geometry for %s on %s.\n' "$plugin_id" "$monitor" >&2
+  return 1
+}
+
+capture_has_content() {
+  local image=$1 colors
+  colors=$(magick "$image" -format '%k' info: 2>/dev/null || true)
+  [[ $colors =~ ^[0-9]+$ ]] && ((colors >= 8))
+}
+
+capture_panel() {
+  local name=$1 mode=$2 page=${3:-} height=${4:-660} attempt
+  for attempt in {1..4}; do
+    : "$attempt"
+    wait_for_shell || return 1
+    focus_capture_workspace || return 1
+    qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
+    case "$mode" in
+      history) qs ipc --pid "$shell_pid" call privacy-devices-settings openHistory >/dev/null ;;
+      settings) qs ipc --pid "$shell_pid" call privacy-devices-settings open "$page" >/dev/null ;;
+      activity) qs ipc --pid "$shell_pid" call shell summon "$plugin_id" "" >/dev/null ;;
+      device)
+        qs ipc --pid "$shell_pid" call shell summon "$plugin_id" "" >/dev/null
+        sleep "$settle_seconds"
+        wtype -k down
+        wtype -k Return
+        ;;
+    esac
+    sleep "$settle_seconds"
+    grim -o "$monitor" "$capture_dir/$name-full.png"
+    magick "$capture_dir/$name-full.png" -crop "500x${height}+${panel_x}+20" +repage "$capture_dir/$name.png"
+    if capture_has_content "$capture_dir/$name.png"; then return 0; fi
+  done
+  printf 'Could not capture populated %s view after four attempts.\n' "$name" >&2
+  return 1
+}
+
+wait_for_shell
 
 capture_dir=$(mktemp -d)
+live_history=$(qs ipc --pid "$shell_pid" call privacy-devices history)
+persisted_history=$(./privacy-history load)
+history_snapshot=$(jq -cn --argjson live "$live_history" --argjson persisted "$persisted_history" '
+  $live + $persisted | unique_by([.id, .endedAt]) | sort_by(.endedAt) | reverse | .[:100]
+')
 restored=false
+settings_changed=false
 notification_visible=false
 notification_summary="Privacy activity started · Screenshot example"
 dnd_state=""
@@ -73,6 +172,14 @@ close_capture_notification() {
     notification_visible=false
   fi
 }
+restore_shell_settings() {
+  if [[ $settings_changed == true ]]; then
+    install -m "$settings_mode" "$settings_snapshot" "$settings_file"
+    settings_changed=false
+    omarchy restart shell >/dev/null
+    wait_for_shell
+  fi
+}
 restore_desktop() {
   if [[ $restored == false ]]; then
     close_capture_notification
@@ -80,34 +187,93 @@ restore_desktop() {
       qs ipc --pid "$shell_pid" call notifications setDnd on >/dev/null 2>&1 || true
       dnd_state=""
     fi
+    restore_shell_settings >/dev/null 2>&1 || true
     qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
+    ./privacy-history clear >/dev/null 2>&1 || true
+    if [[ $history_snapshot != "[]" ]]; then
+      ./privacy-history append "$history_snapshot" >/dev/null 2>&1 || true
+    fi
     hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null 2>&1 || true
     hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$original_workspace\" }))" >/dev/null 2>&1 || true
+    omarchy restart shell >/dev/null 2>&1 || true
     restored=true
   fi
   rm -rf -- "$capture_dir"
 }
 trap restore_desktop EXIT INT TERM
 
-hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null
-hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$capture_workspace\" }))" >/dev/null
+settings_file="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/shell.json"
+[[ -f $settings_file ]] || { printf 'Omarchy Shell settings not found: %s\n' "$settings_file" >&2; exit 1; }
+settings_snapshot="$capture_dir/shell.json"
+settings_mode=$(stat -c '%a' "$settings_file")
+cp -- "$settings_file" "$settings_snapshot"
 
-for page in general appearance alerts monitoring; do
-  qs ipc --pid "$shell_pid" call privacy-devices-settings open "$page" >/dev/null
-  sleep "$settle_seconds"
-  grim -o "$monitor" "$capture_dir/$page-full.png"
-done
+set_history_enabled() {
+  local enabled=$1 temporary matches
+  matches=$(jq --arg id "$plugin_id" '[.. | objects | select(.id? == $id)] | length' "$settings_file")
+  [[ $matches == 1 ]] || { printf 'Expected one configured %s widget; found %s.\n' "$plugin_id" "$matches" >&2; return 1; }
+  temporary=$(mktemp "${settings_file}.XXXXXX")
+  jq --arg id "$plugin_id" --argjson enabled "$enabled" '
+    (.. | objects | select(.id? == $id) | .historyEnabled) = $enabled
+  ' "$settings_file" >"$temporary"
+  chmod "$settings_mode" "$temporary"
+  mv -- "$temporary" "$settings_file"
+  settings_changed=true
+  omarchy restart shell >/dev/null
+  wait_for_shell
+}
 
-qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null
-qs ipc --pid "$shell_pid" call shell summon "$plugin_id" "" >/dev/null
-sleep "$settle_seconds"
-grim -o "$monitor" "$capture_dir/activity-full.png"
-wtype -k down
-wtype -k Return
-sleep "$settle_seconds"
-grim -o "$monitor" "$capture_dir/device-full.png"
-wtype -k escape
-sleep "$settle_seconds"
+set_showcase_settings() {
+  local temporary matches
+  matches=$(jq --arg id "$plugin_id" '[.. | objects | select(.id? == $id)] | length' "$settings_file")
+  [[ $matches == 1 ]] || { printf 'Expected one configured %s widget; found %s.\n' "$plugin_id" "$matches" >&2; return 1; }
+  temporary=$(mktemp "${settings_file}.XXXXXX")
+  jq --arg id "$plugin_id" '
+    (.. | objects | select(.id? == $id)) |= . + {
+      displayMode: "icons",
+      showIdle: true,
+      showBarActiveMarker: true,
+      showBarDisabledMarker: true,
+      statusMarkerMode: "symbols"
+    }
+  ' "$settings_file" >"$temporary"
+  chmod "$settings_mode" "$temporary"
+  mv -- "$temporary" "$settings_file"
+  settings_changed=true
+}
+
+history_enabled=$(qs ipc --pid "$shell_pid" call privacy-devices historyEnabled)
+[[ $history_enabled == true ]] || {
+  printf 'Enable activity history before refreshing screenshots.\n' >&2
+  exit 1
+}
+
+capture_now=$(python3 -c 'import time; print(time.time_ns() // 1_000_000)')
+history_samples=$(jq -cn --argjson now "$capture_now" '[
+  {id:"capture-firefox-microphone",kind:"microphone",application:"Firefox",device:"USB microphone",source:"pipewire",confidence:"confirmed",startedAt:($now-185000),endedAt:($now-5000),durationMs:180000},
+  {id:"capture-obs-camera",kind:"camera",application:"OBS Studio",device:"Integrated camera",source:"pipewire",confidence:"confirmed",startedAt:($now-3900000),endedAt:($now-300000),durationMs:3600000},
+  {id:"capture-chromium-screen",kind:"screen-share",application:"Chromium",device:"Desktop portal",source:"pipewire",confidence:"confirmed",startedAt:($now-8700000),endedAt:($now-7800000),durationMs:900000}
+]')
+./privacy-history clear >/dev/null
+./privacy-history append "$history_samples" >/dev/null
+set_showcase_settings
+omarchy restart shell >/dev/null
+wait_for_shell
+focus_capture_workspace
+resolve_geometry
+
+capture_panel history history "" 660
+set_history_enabled false
+capture_panel history-disabled history "" 240
+restore_shell_settings
+cmp -s "$settings_snapshot" "$settings_file" || {
+  printf 'Omarchy Shell settings did not restore exactly.\n' >&2
+  exit 1
+}
+for page in general appearance alerts monitoring; do capture_panel "$page" settings "$page" 660; done
+capture_panel activity activity "" 500
+capture_panel device device "" 660
+
 qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null
 sleep "$settle_seconds"
 grim -o "$monitor" "$capture_dir/bar-full.png"
@@ -123,51 +289,30 @@ notification_visible=true
 sleep "$settle_seconds"
 grim -o "$monitor" "$capture_dir/notification-full.png"
 dismiss_result=$(qs ipc --pid "$shell_pid" call notifications dismiss "$notification_summary")
-[[ $dismiss_result == ok ]] || { printf 'Could not dismiss capture notification.\n' >&2; exit 1; }
+if [[ $dismiss_result != ok ]]; then
+  printf 'Capture notification dismissal was unavailable; it will expire automatically.\n' >&2
+fi
 notification_visible=false
 if [[ $dnd_state == on ]]; then
   qs ipc --pid "$shell_pid" call notifications setDnd on >/dev/null
 fi
 dnd_state=""
 
-geometry=$(qs ipc --pid "$shell_pid" call shell debugBarGeometry)
-widget_row=$(jq -c --arg id "$plugin_id" --argjson width "$monitor_width" '
-  [.[] | select(.id == $id and .visible and .width > 0)]
-  | sort_by((((.x + (.width / 2)) - ($width / 2)) | fabs))
-  | .[0]
-' <<<"$geometry")
-widget_x=$(jq -r '.x' <<<"$widget_row")
-widget_width=$(jq -r '.width' <<<"$widget_row")
-[[ $widget_x =~ ^[0-9]+$ && $widget_width =~ ^[1-9][0-9]*$ ]] || {
-  printf 'Could not resolve live bar geometry for %s on %s.\n' "$plugin_id" "$monitor" >&2
-  exit 1
-}
-
-panel_x=$((widget_x - 168))
-((panel_x >= 0 && panel_x + 500 <= monitor_width)) || {
-  printf 'Resolved panel crop is outside %s.\n' "$monitor" >&2
-  exit 1
-}
-
-magick "$capture_dir/activity-full.png" -crop "500x500+${panel_x}+20" +repage "$capture_dir/activity.png"
-for page in general appearance alerts monitoring; do
-  magick "$capture_dir/$page-full.png" -crop "500x660+${panel_x}+20" +repage "$capture_dir/$page.png"
-done
-magick "$capture_dir/device-full.png" -crop "500x660+${panel_x}+20" +repage "$capture_dir/device.png"
 magick "$capture_dir/bar-full.png" -crop "${widget_width}x50+${widget_x}+0" +repage "$capture_dir/bar.png"
 notification_x=$((monitor_width - 428))
 ((notification_x >= 0)) || { printf 'Monitor is too narrow for notification capture.\n' >&2; exit 1; }
 magick "$capture_dir/notification-full.png" -crop "420x160+${notification_x}+30" +repage "$capture_dir/notification.png"
 
 validate_capture() {
-  local image=$1 colors
-  colors=$(magick "$image" -format '%k' info:)
-  if [[ ! $colors =~ ^[0-9]+$ ]] || ((colors < 8)); then
+  local image=$1
+  if ! capture_has_content "$image"; then
     printf 'Capture has too little visual content: %s\n' "$image" >&2
     exit 1
   fi
 }
 validate_capture "$capture_dir/activity.png"
+validate_capture "$capture_dir/history.png"
+validate_capture "$capture_dir/history-disabled.png"
 validate_capture "$capture_dir/device.png"
 validate_capture "$capture_dir/bar.png"
 validate_capture "$capture_dir/notification.png"
@@ -181,12 +326,15 @@ optimize_png() {
 
 optimize_png "$capture_dir/activity.png" preview.png
 install -m 0644 preview.png docs/preview.png
+optimize_png "$capture_dir/history.png" docs/history.png
+optimize_png "$capture_dir/history-disabled.png" docs/history-disabled.png
 for page in general appearance alerts monitoring; do
   optimize_png "$capture_dir/$page.png" "docs/$page.png"
 done
 optimize_png "$capture_dir/device.png" docs/device.png
 optimize_png "$capture_dir/bar.png" docs/bar.png
 optimize_png "$capture_dir/notification.png" docs/notification.png
+scripts/update-screenshot-metadata docs/index.html docs
 
 magick docs/social-card.png -fill '#0d110d' -draw 'rectangle 895,35 1729,875' "$capture_dir/social-base.png"
 magick "$capture_dir/activity.png" -resize 720x720 "$capture_dir/social-panel.png"

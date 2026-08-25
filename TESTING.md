@@ -70,17 +70,19 @@ at least 0.95.
 
 ## Refreshing screenshots
 
-Capture the activity view, exact bar footprint, global settings, and a device
-settings page
-from the live plugin on an otherwise empty workspace:
+Capture the activity and both history states, exact bar footprint, global
+settings, and a device settings page from the live plugin on an otherwise
+empty workspace:
 
 ```sh
 scripts/capture-screenshots --monitor DP-1 --workspace 10
 ```
 
-The script requires an empty workspace, uses measured widget geometry, updates
-all repository images, and restores the original workspace even on failure.
-Review images before committing them.
+The script requires enabled activity history and an empty workspace. It allows
+only one capture at a time, discovers the shell through IPC, uses measured
+widget geometry, and swaps in bounded example history. It restores the original
+shell settings, real history, DND state, and workspace even on failure. Review
+images before committing them.
 
 ## Live verification
 

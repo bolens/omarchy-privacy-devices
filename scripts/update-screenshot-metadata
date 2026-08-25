@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Synchronize Pages image dimensions with captured PNG assets."""
+
+import re
+import struct
+import sys
+from pathlib import Path
+
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+
+def png_dimensions(path: Path) -> tuple[int, int]:
+    with path.open("rb") as stream:
+        header = stream.read(24)
+    if len(header) != 24 or header[:8] != PNG_SIGNATURE or header[12:16] != b"IHDR":
+        raise ValueError(f"not a PNG image: {path}")
+    return struct.unpack(">II", header[16:24])
+
+
+def update(html_path: Path, asset_dir: Path) -> None:
+    source = html_path.read_text()
+    names = re.findall(r'<img\s+src="([A-Za-z0-9_-]+\.png)"', source)
+    for name in dict.fromkeys(names):
+        image = asset_dir / name
+        if not image.is_file():
+            raise ValueError(f"missing screenshot asset: {image}")
+        width, height = png_dimensions(image)
+        pattern = rf'(<img\s+src="{re.escape(name)}"[^>]*?\swidth=")\d+("\sheight=")\d+("[^>]*>)'
+        source, count = re.subn(pattern, rf"\g<1>{width}\g<2>{height}\g<3>", source)
+        if count != 1:
+            raise ValueError(f"expected one dimensioned image element for {name}")
+    html_path.write_text(source)
+
+
+def main() -> int:
+    if len(sys.argv) != 3:
+        print("usage: update-screenshot-metadata HTML ASSET_DIR", file=sys.stderr)
+        return 2
+    try:
+        update(Path(sys.argv[1]), Path(sys.argv[2]))
+    except (OSError, ValueError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
