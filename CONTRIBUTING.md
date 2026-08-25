@@ -1,7 +1,6 @@
 # Contributing
 
-Thanks for helping improve Privacy Devices. User-facing behavior should remain
-predictable, local-first, and consistent with Omarchy Shell conventions.
+Keep changes predictable, local-first, and consistent with Omarchy Shell.
 
 ## Before opening a change
 
@@ -21,18 +20,14 @@ git clone https://github.com/bolens/omarchy-privacy-devices.git
 cd omarchy-privacy-devices
 ```
 
-Install the checkout through Omarchy when testing integration behavior. Do not
-test destructive privacy controls against devices or sessions you cannot
-restore.
+Install the checkout through Omarchy for integration tests. Use only controls
+you can safely restore.
 
 ## Validation
 
-Run the full validation set in [TESTING.md](TESTING.md) before submitting a
-pull request. Keep commands and validation procedures there rather than
-duplicating them in contributor documentation.
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) before changing ownership or runtime
-boundaries, and [RELEASING.md](RELEASING.md) for the release playbook.
+Run [TESTING.md](TESTING.md) before submitting. Review
+[ARCHITECTURE.md](ARCHITECTURE.md) for runtime changes and
+[RELEASING.md](RELEASING.md) for releases.
 
 ## Change expectations
 
@@ -40,7 +35,7 @@ boundaries, and [RELEASING.md](RELEASING.md) for the release playbook.
 - Add or update tests for behavior, parsing, process handling, and security
   boundaries.
 - Never include secrets, personal device names, or unredacted diagnostic data.
-- Run `tests/run_qml_runtime.sh` in a graphical session to exercise shared model code in the real Quickshell JavaScript engine.
+- Run the graphical QML test required by [TESTING.md](TESTING.md).
 - Document user-visible changes on the Pages site and in `CHANGELOG.md`.
 - Keep custom commands clearly identified as unsandboxed user-controlled code.
 - Include screenshots for visible interface changes.

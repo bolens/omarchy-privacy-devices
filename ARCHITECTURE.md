@@ -81,16 +81,9 @@ normal operation poll-driven.
 - Session metadata is stripped of control characters and bounded before it is
   used for identity, rendering, IPC, notifications, or persistence.
 - Diagnostics are redacted by default and bounded before clipboard transfer.
-- Disabled, active, idle, pending, and degraded presentation derives from the
-  shared visual-state policy rather than independent QML conditions.
-- Popup selection, activation, navigation boundaries, and layered dismissal
-  derive from shared policies so reactive row changes cannot leave stale focus.
-- Scroll deferral compares only presentation-critical privacy state, while
-  diagnostic rows derive from one shared formatting policy.
-- Monitoring telemetry exports normalized ages and uses one presentation policy
-  for waiting, retry, heartbeat, and unavailable states.
-- Bar action guidance derives from one device-aware policy; QML owns composition
-  and input routing without a second control-description decision tree.
+- Shared presentation policies own visual state, navigation boundaries, scroll
+  deferral, diagnostics, telemetry text, and device-action guidance; QML owns
+  composition and input routing.
 
 ## Security boundaries
 

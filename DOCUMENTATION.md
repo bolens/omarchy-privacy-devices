@@ -1,7 +1,6 @@
 # Documentation
 
-This index separates user guidance, contributor contracts, and project policy.
-Each topic has one canonical owner so changes can be linked instead of copied.
+Each topic has one canonical owner; link to it instead of copying details.
 
 ## Users
 
@@ -44,6 +43,3 @@ Update the narrowest canonical document and link to it elsewhere:
 | Security scope, trust boundary, or disclosure process | `SECURITY.md` |
 | Support routing or diagnostic-sharing guidance | `SUPPORT.md` |
 | User-visible release history | `CHANGELOG.md` |
-
-When a change spans topics, update each canonical owner but avoid repeating
-procedures or command matrices. Cross-link to the owner instead.

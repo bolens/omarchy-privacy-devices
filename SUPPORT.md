@@ -4,8 +4,7 @@ The [user guide](https://bolens.github.io/omarchy-privacy-devices/) covers
 installation, configuration, supported backends, privacy behavior, and common
 problems.
 
-If the guide does not resolve the problem, choose the form that best matches
-what you observed:
+If needed, choose the closest issue form:
 
 - [General bug](https://github.com/bolens/omarchy-privacy-devices/issues/new?template=bug.yml)
 - [Detection or classification problem](https://github.com/bolens/omarchy-privacy-devices/issues/new?template=detection.yml)
@@ -21,10 +20,5 @@ Before filing a monitoring issue, open **Global settings → Monitoring** and us
 review it before attaching it. Never publish diagnostics produced through the
 unsafe IPC mode.
 
-This project is maintained on a best-effort basis. Response and resolution
-times are not guaranteed.
-
-## Related documentation
-
-See the [documentation index](DOCUMENTATION.md), [security policy](SECURITY.md),
-and public [user guide](https://bolens.github.io/omarchy-privacy-devices/).
+Response and resolution times are not guaranteed. See the
+[documentation index](DOCUMENTATION.md) for project policies.

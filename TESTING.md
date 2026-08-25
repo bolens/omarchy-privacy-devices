@@ -22,19 +22,10 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
 ```
 
-The JavaScript suites cover classification, settings sanitation, normalized
-sessions, control transitions and request outcomes, observer invalidation and
-recovery, heartbeat boundaries and clock skew, idempotent health updates,
-telemetry waiting/retry/heartbeat presentation,
-probe FIFO and refresh supersession, popup navigation boundaries and stale
-selection recovery, scroll-deferral and diagnostic presentation policy,
-device-action guidance, history-generation acceptance, visual-state policy, manifest/UI
-contracts, keyboard-guide/handler parity, runtime process topology and policy
-wiring, static security
-invariants, and documentation asset dimensions, references, ownership, and
-local cross-links. Python tests execute
-the helpers against temporary state and fake commands so privileged services,
-devices, screenshots, and recordings are never modified.
+The suites cover model policy, runtime wiring, settings/UI contracts, helpers,
+security boundaries, release metadata, documentation, and site assets. Helper
+tests use temporary state and fake commands; they do not modify devices or
+privileged services.
 
 The release metadata test keeps the manifest, changelog comparison links,
 issue template, and tag-validation workflow synchronized.
@@ -60,10 +51,7 @@ engine:
 tests/run_qml_runtime.sh
 ```
 
-This smoke test covers settings and notification policies plus control
-acceptance, observer heartbeat/invalidation, idempotent health updates, and
-probe-queue and popup-navigation policies in QML's JavaScript engine.
-It also verifies presentation deferral and diagnostic formatting compatibility.
+This runs representative shared policies in QML's JavaScript engine.
 
 ## Repository and site checks
 
@@ -82,19 +70,17 @@ at least 0.95.
 
 ## Refreshing screenshots
 
-Capture the activity view, exact bar footprint, and all four settings pages
+Capture the activity view, exact bar footprint, global settings, and a device
+settings page
 from the live plugin on an otherwise empty workspace:
 
 ```sh
 scripts/capture-screenshots --monitor DP-1 --workspace 10
 ```
 
-The script validates that the capture workspace is empty, discovers the live
-Omarchy Shell process and measured widget geometry, updates every repository
-image and the social card, and restores the monitor's original workspace even
-when capture fails. Review the resulting images before committing them. See
-the [documentation ownership map](DOCUMENTATION.md) for where screenshots are
-consumed.
+The script requires an empty workspace, uses measured widget geometry, updates
+all repository images, and restores the original workspace even on failure.
+Review images before committing them.
 
 ## Live verification
 

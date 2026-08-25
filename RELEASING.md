@@ -1,8 +1,6 @@
 # Release playbook
 
-This playbook covers release preparation, publication, verification, and
-recovery. Releases follow Semantic Versioning and are published from an
-annotated `vX.Y.Z` tag on `main`.
+Releases use Semantic Versioning and annotated `vX.Y.Z` tags on `main`.
 
 ## 1. Choose the version
 
@@ -24,9 +22,8 @@ issue-template examples when they display a concrete version.
    guide. Update `ARCHITECTURE.md` or `TESTING.md` when their contracts change.
 5. Run the validation matrix in [TESTING.md](TESTING.md).
 
-Keep the release commit limited to version and documentation changes whenever
-possible. Do not tag a dirty worktree or a commit that differs from the green
-CI revision.
+Keep release commits limited to version and documentation when possible. Tag
+only the clean revision that passed CI.
 
 ## 3. Validate the release candidate
 
@@ -83,14 +80,10 @@ Verify all of the following:
 
 ### Marketplace update readiness
 
-The community directory follows the repository's default-branch head during
-scheduled catalog refreshes. Before requesting verification of a newer
-upstream snapshot, confirm that the public repository has the release commit,
-root `manifest.json`, `README.md`, `LICENSE`, and `preview.png`; that the plugin
-ID is unchanged; and that install, update, and removal instructions remain
-accurate. Use the marketplace's existing-listing verification flow rather than
-opening a duplicate submission. Treat marketplace validation as compatibility
-and baseline review, not as a security certification.
+Before requesting marketplace verification, confirm the public release includes
+`manifest.json`, `README.md`, `LICENSE`, and `preview.png`; the plugin ID and
+lifecycle instructions remain correct. Update the existing listing rather than
+submitting a duplicate.
 
 ## 6. Recovery
 
