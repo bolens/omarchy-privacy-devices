@@ -25,7 +25,7 @@ screenshots, and screen recording.
 - Control actions remain pending until a state probe verifies the requested result.
 - Keyboard navigation: arrows select activity, Enter opens details, `s` opens settings, `r` rescans, and `1`–`3` switch settings tabs.
 - Inline mute, recording, and preventative privacy controls.
-- Configurable activity, ordering, icons, visibility, actions, colors, and
+- Configurable activity, ordering, icons, visibility, actions, semantic status markers, state pills, popup density, pending animation, session counts, disabled appearance, and
   capture backends.
 - Local monitoring with no network telemetry.
 

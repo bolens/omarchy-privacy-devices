@@ -12,6 +12,7 @@ All notable changes to Privacy Devices are documented here. The project follows
 - Coalesce notification bursts and expose explicit control transaction results.
 - Add private diagnostic export, inferred-attribution controls, and observer telemetry.
 - Extract reusable settings and activity-card components and enforce performance contracts.
+- Add configurable semantic icon markers, textual state pills, pending verification feedback, session counts, popup density, per-device marker visibility, and disabled appearance.
 
 - Project website, complete user guide, theme presets, and theme-aware favicon.
 - Structured issue forms and repository community guidance.
