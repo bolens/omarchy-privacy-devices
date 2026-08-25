@@ -5,28 +5,16 @@ Tests are organized around stable behavior boundaries rather than QML internals.
 ## Fast behavior suite
 
 ```sh
-node tests/model.test.js
-node tests/controls.test.js
-node tests/sessions.test.js
-node tests/monitoring.test.js
-node tests/queues.test.js
-node tests/navigation.test.js
-node tests/presentation.test.js
-node tests/settings.test.js
-node tests/runtime.test.js
-node tests/security.test.js
-node tests/release.test.js
-node tests/site.test.js
-node tests/documentation.test.js
-python3 -m unittest discover -s tests -p 'test_*.py'
-shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot \
-  scripts/capture-screenshots tests/run_qml_runtime.sh tests/fixtures/*
+npm test
 ```
 
 The suites cover model policy, runtime wiring, settings/UI contracts, helpers,
 security boundaries, release metadata, documentation, and site assets. Helper
 tests use temporary state and fake commands; they do not modify devices or
 privileged services.
+
+`tests/run_all.sh` is the canonical suite definition used by npm and CI. It
+discovers JavaScript and Python tests automatically and checks runtime scripts.
 
 The release metadata test keeps the manifest, changelog comparison links,
 issue template, and tag-validation workflow synchronized.

@@ -9,6 +9,8 @@ maintainer guides that define release and validation procedures.
 
 ### Added
 
+- Add one canonical, auto-discovering behavior-suite runner shared by local npm
+  workflows, CI, and contributor documentation.
 - Add coalesced settings writes, visible save/failure feedback, shared status
   surfaces, and an assembled-plugin QML smoke test.
 - Unify global boolean controls and settings-transfer result handling behind
