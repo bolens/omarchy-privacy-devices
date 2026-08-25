@@ -167,14 +167,9 @@ Panel {
   }
 
   function monitoringTelemetryText() {
-    if (!privacyService || typeof privacyService.monitoringTelemetry !== "function") return "Monitoring telemetry unavailable"
-    var data = privacyService.monitoringTelemetry()
-    return "PipeWire: " + (data.pipewireReactive ? "reactive" : "unavailable")
-      + "\nSession state: " + (data.lastSessionRefreshAgeSeconds < 0 ? "waiting" : data.lastSessionRefreshAgeSeconds + "s ago")
-      + "\nFallback probes: " + (data.lastFallbackRefreshAgeSeconds < 0 ? "waiting" : data.lastFallbackRefreshAgeSeconds + "s ago")
-      + " · observer " + (data.fallbackObserverRunning ? "running" : "retrying")
-      + "\nDirect-device observer: " + (data.directDeviceEnabled ? (data.directObserverRunning ? "running" : "retrying") : "disabled")
-      + (data.directDeviceEnabled ? " · heartbeat " + (data.directHeartbeatAgeSeconds < 0 ? "waiting" : data.directHeartbeatAgeSeconds + "s ago") + " · retry " + data.directObserverRetryMilliseconds + "ms" : "")
+    var data = privacyService && typeof privacyService.monitoringTelemetry === "function"
+      ? privacyService.monitoringTelemetry() : null
+    return Model.monitoringTelemetryText(data)
   }
 
   function commaList(value) {

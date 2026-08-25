@@ -43,4 +43,38 @@ assert.deepEqual(JSON.parse(JSON.stringify(degradedHealth.watcher)), {
   status: "degraded", source: "watcher", code: "late", reason: "heartbeat missed"
 })
 
+assert.equal(model.monitoringTelemetryText(null), "Monitoring telemetry unavailable")
+assert.equal(model.monitoringTelemetryText({
+  pipewireReactive: true,
+  lastSessionRefreshAgeSeconds: 3,
+  lastFallbackRefreshAgeSeconds: 2,
+  fallbackObserverRunning: true,
+  fallbackObserverHeartbeatAgeSeconds: 1,
+  fallbackObserverRetryMilliseconds: 1000,
+  directDeviceEnabled: true,
+  directObserverRunning: false,
+  directHeartbeatAgeSeconds: -1,
+  directObserverRetryMilliseconds: 4000
+}), [
+  "PipeWire: reactive",
+  "Session state: 3s ago",
+  "Fallback probes: 2s ago · observer running · heartbeat 1s ago · retry 1000ms",
+  "Direct-device observer: retrying · heartbeat waiting · retry 4000ms"
+].join("\n"))
+
+assert.equal(model.monitoringTelemetryText({
+  pipewireReactive: false,
+  lastSessionRefreshAgeSeconds: NaN,
+  lastFallbackRefreshAgeSeconds: undefined,
+  fallbackObserverRunning: false,
+  fallbackObserverHeartbeatAgeSeconds: -1,
+  fallbackObserverRetryMilliseconds: undefined,
+  directDeviceEnabled: false
+}), [
+  "PipeWire: unavailable",
+  "Session state: waiting",
+  "Fallback probes: waiting · observer retrying · heartbeat waiting · retry unknown",
+  "Direct-device observer: disabled"
+].join("\n"), "missing telemetry must produce stable human-readable fallbacks")
+
 console.log("monitoring policy tests passed")

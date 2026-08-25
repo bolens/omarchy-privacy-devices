@@ -70,6 +70,8 @@ assert.match(bar, /Loader\s*\{\s*id:\s*globalSettingsPageLoader[\s\S]*?sourceCom
 assert.match(activityCard, /required property var controller[\s\S]*?property var entry:/, "activity card must expose one deep controller/entry interface")
 assert.match(bar, /PanelSectionHeader \{ Layout\.fillWidth: true; text: "Observer health" \}[\s\S]*?text: root\.monitoringTelemetryText\(\)/,
   "the Monitoring page must render live observer telemetry in its health section")
+assert.match(bar, /function monitoringTelemetryText\(\)[\s\S]*?Model\.monitoringTelemetryText\(data\)/,
+  "observer telemetry copy must use the behavior-tested formatter")
 assert.match(bar, /function persistSettings\(values\)[\s\S]*?settingsMutationPending = true[\s\S]*?onOpenedChanged:[\s\S]*?else if \(settingsMutationPending\) Qt\.callLater\(root\.open\)/,
   "settings writes must preserve the open editor across shell config reloads")
 assert.match(bar, /Model\.sanitizeSettings\(candidate\)/, "settings writes must pass through the versioned sanitizer")

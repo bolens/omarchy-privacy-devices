@@ -483,6 +483,29 @@ function updateObserverHealth(health, source, status, code, reason) {
   return next
 }
 
+function monitoringTelemetryText(data) {
+  if (!data || typeof data !== "object") return "Monitoring telemetry unavailable"
+  function age(value) {
+    var seconds = Number(value)
+    return isFinite(seconds) && seconds >= 0 ? Math.round(seconds) + "s ago" : "waiting"
+  }
+  function retry(value) {
+    var milliseconds = Number(value)
+    return isFinite(milliseconds) && milliseconds >= 0 ? Math.round(milliseconds) + "ms" : "unknown"
+  }
+  var result = "PipeWire: " + (data.pipewireReactive === true ? "reactive" : "unavailable")
+    + "\nSession state: " + age(data.lastSessionRefreshAgeSeconds)
+    + "\nFallback probes: " + age(data.lastFallbackRefreshAgeSeconds)
+    + " · observer " + (data.fallbackObserverRunning === true ? "running" : "retrying")
+    + " · heartbeat " + age(data.fallbackObserverHeartbeatAgeSeconds)
+    + " · retry " + retry(data.fallbackObserverRetryMilliseconds)
+    + "\nDirect-device observer: " + (data.directDeviceEnabled === true
+      ? (data.directObserverRunning === true ? "running" : "retrying") : "disabled")
+  if (data.directDeviceEnabled === true) result += " · heartbeat " + age(data.directHeartbeatAgeSeconds)
+    + " · retry " + retry(data.directObserverRetryMilliseconds)
+  return result
+}
+
 // Serial subprocess queues share the same supersession rule: finish the active
 // probe, discard work derived from stale settings, then rebuild exactly once.
 function scheduleProbeRefresh(processBusy, requestedKinds) {

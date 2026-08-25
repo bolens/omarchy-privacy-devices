@@ -39,6 +39,9 @@ ShellRoot {
     var diagnostic = Model.deviceDiagnosticPresentation({dependenciesReady:true,health:{status:"healthy"},probeExitCode:-1,controlExitCode:-1})
     if (diagnostic.rows.length !== 7 || diagnostic.rows[1].value !== "Ready")
       throw new Error("diagnostic presentation policy failed")
+    var telemetry = Model.monitoringTelemetryText({pipewireReactive:true,lastSessionRefreshAgeSeconds:1,lastFallbackRefreshAgeSeconds:2,fallbackObserverRunning:true,fallbackObserverHeartbeatAgeSeconds:1,fallbackObserverRetryMilliseconds:1000,directDeviceEnabled:false})
+    if (telemetry.indexOf("Fallback probes: 2s ago · observer running · heartbeat 1s ago · retry 1000ms") < 0)
+      throw new Error("monitoring telemetry presentation failed")
     console.log("PRIVACY_QML_RUNTIME_OK")
     Qt.quit()
   }
