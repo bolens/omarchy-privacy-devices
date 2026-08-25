@@ -7,6 +7,8 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-25
+
 ### Added
 
 - Add one canonical, auto-discovering behavior-suite runner shared by local npm
@@ -44,6 +46,14 @@ maintainer guides that define release and validation procedures.
   image dimensions synchronized with the Pages gallery.
 - Discover Quickshell from `PATH` in the runtime harness instead of relying on
   a developer-specific installation path.
+- Honor vertical bar layouts and the host-provided foreground color contract.
+- Resolve localized screenshot and recording directories while rejecting
+  unsafe relative paths.
+
+### Security
+
+- Replace inline GeoClue shell probing with structured, bounded `busctl` calls
+  using fixed arguments and per-call timeouts.
 
 ## [0.4.0] - 2026-08-25
 
@@ -176,7 +186,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.1.1...v0.2.0
