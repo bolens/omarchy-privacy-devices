@@ -42,6 +42,12 @@ for (const image of ["bar", "general", "appearance", "alerts", "monitoring", "de
 }
 
 const source = new JSDOM(html).window.document;
+assert.equal(source.querySelectorAll("#screenshots .interface-showcase .screenshot-card").length, 2,
+  "activity and bar captures must form the compact interface showcase");
+assert.equal(source.querySelectorAll("#screenshots .settings-gallery .screenshot-card").length, 5,
+  "settings captures must use a dedicated, consistent gallery");
+assert.match(html, /\.settings-gallery\s*\{[^}]*grid-template-columns:\s*repeat\(3,/s,
+  "wide screens must show settings captures in three balanced columns");
 for (const image of ["preview", "bar", "general", "appearance", "alerts", "monitoring", "device"]) {
   const element = source.querySelector(`#screenshots img[src="${image}.png"]`);
   assert.ok(element, `Pages gallery must showcase ${image}.png`);
