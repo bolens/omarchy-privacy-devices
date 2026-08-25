@@ -71,6 +71,19 @@ const observation = (overrides = {}) => Object.assign({
 }
 
 {
+  const hostile = model.reconcileSessions([], [observation({
+    application: "A\u0000B" + "x".repeat(400),
+    device: "D\n" + "y".repeat(700),
+    detail: "z".repeat(700)
+  })], 1_000).active[0]
+  assert.equal(hostile.application.includes("\u0000"), false, "session application text strips controls")
+  assert.ok(Array.from(hostile.application).length <= 256, "session application text is bounded")
+  assert.ok(Array.from(hostile.device).length <= 512, "session device text is bounded")
+  assert.ok(Array.from(hostile.detail).length <= 512, "session detail text is bounded")
+  assert.equal(hostile.id, model.sessionId(hostile), "session identity uses the bounded representation")
+}
+
+{
   assert.equal(model.aggregateHealth([{status: "healthy"}, {status: "healthy"}]).status, "healthy")
   const partial = model.aggregateHealth([
     {status: "healthy", source: "pipewire"},

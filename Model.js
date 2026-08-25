@@ -257,15 +257,16 @@ function sessionId(observation) {
 
 function normalizeObservation(observation) {
   var value = observation || {}
-  return {
-    id: sessionId(value),
-    kind: String(value.kind || "unknown"),
-    application: String(value.application || "Unknown application"),
-    device: String(value.device || "Unknown device"),
-    source: String(value.source || "unknown"),
-    confidence: String(value.confidence || "inferred"),
-    detail: String(value.detail || "")
+  var normalized = {
+    kind: boundedPlainText(String(value.kind || "unknown"), 64) || "unknown",
+    application: boundedPlainText(String(value.application || "Unknown application"), 256) || "Unknown application",
+    device: boundedPlainText(String(value.device || "Unknown device"), 512) || "Unknown device",
+    source: boundedPlainText(String(value.source || "unknown"), 64) || "unknown",
+    confidence: boundedPlainText(String(value.confidence || "inferred"), 32) || "inferred",
+    detail: boundedPlainText(String(value.detail || ""), 512)
   }
+  normalized.id = sessionId(normalized)
+  return normalized
 }
 
 function reconcileSessions(previous, observations, now) {
