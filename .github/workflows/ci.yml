@@ -43,13 +43,22 @@ jobs:
             --volume "$GITHUB_WORKSPACE:/workspace:ro" \
             --workdir /workspace \
             archlinux@sha256:4bf33b21a715aac0b48ce6e9eaed4782a898eae96f88f5da3635572129c2584a \
-            bash -lc 'pacman -Syu --noconfirm quickshell qt6-declarative >/dev/null && /usr/lib/qt6/bin/qmllint -I .omarchy/shell BarWidget.qml Service.qml'
+            bash -lc 'pacman -Syu --noconfirm quickshell qt6-declarative >/dev/null && /usr/lib/qt6/bin/qmllint -I .omarchy/shell BarWidget.qml Service.qml SettingsSurface.qml IntegerSetting.qml PrivacyActivityCard.qml'
 
-      - name: Check shell scripts
+      - name: Check helper scripts
         run: shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
 
+      - name: Check Python helpers
+        run: |
+          python3 -m py_compile privacy-history privacy-observe privacy-diagnostics privacy-settings
+          python3 -m unittest discover -s tests -p 'test_*.py'
+
       - name: Run model tests
-        run: node tests/model.test.js
+        run: |
+          node tests/model.test.js
+          node tests/sessions.test.js
+          node tests/settings.test.js
+          node tests/runtime.test.js
 
       - name: Run security tests
         run: node tests/security.test.js
