@@ -99,6 +99,10 @@ assert.match(screenshotWorkflow, /update-screenshot-metadata docs\/index\.html d
   "capture must synchronize Pages dimensions and content-addressed README images")
 assert.match(screenshotWorkflow, /cmp -s "\$settings_snapshot" "\$settings_file"/,
   "successful capture must verify the original shell settings were restored byte-for-byte")
+assert.match(screenshotWorkflow, /quickshell kill -p "\$config_dir" --any-display[\s\S]*?install -m "\$settings_mode" "\$settings_snapshot" "\$settings_file"[\s\S]*?omarchy-launch-shell[\s\S]*?wait_for_shell[\s\S]*?settings_changed=false/,
+  "settings restoration must stop the old shell before replacing its file and clear the recovery flag only after the replacement is ready")
+assert.doesNotMatch(screenshotWorkflow, /install -m "\$settings_mode" "\$settings_snapshot" "\$settings_file"[\s\S]{0,120}?omarchy restart shell/,
+  "the outgoing shell must never receive a chance to overwrite a restored settings snapshot")
 assert.match(screenshotWorkflow, /omarchy notification send[\s\S]*--app-name[\s\S]*Privacy Devices[\s\S]*--icon[\s\S]*firefox/,
   "screenshot workflow must trigger an app-icon notification")
 assert.match(screenshotWorkflow, /notifications isDnd[\s\S]*notifications setDnd/,

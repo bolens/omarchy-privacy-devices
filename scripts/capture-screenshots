@@ -29,7 +29,7 @@ while (($#)); do
   esac
 done
 
-for command in qs hyprctl jq grim magick pngquant wtype omarchy python3 flock; do
+for command in qs quickshell timeout hyprctl jq grim magick pngquant wtype omarchy python3 flock; do
   command -v "$command" >/dev/null || { printf 'Missing required command: %s\n' "$command" >&2; exit 1; }
 done
 
@@ -180,10 +180,23 @@ close_capture_notification() {
 }
 restore_shell_settings() {
   if [[ $settings_changed == true ]]; then
+    local session_omarchy_path config_dir
+    session_omarchy_path=$(systemctl --user show-environment 2>/dev/null | sed -n 's/^OMARCHY_PATH=//p' | tail -n 1)
+    : "${session_omarchy_path:=${OMARCHY_PATH:-}}"
+    config_dir="$session_omarchy_path/shell"
+    [[ -f $config_dir/shell.qml ]] || {
+      printf 'Omarchy shell config not found: %s\n' "$config_dir" >&2
+      return 1
+    }
+
+    # Stop the shell completely before replacing its settings. Installing the
+    # snapshot first lets the outgoing process persist temporary capture state
+    # over the restored file during shutdown.
+    while timeout 5 quickshell kill -p "$config_dir" --any-display >/dev/null 2>&1; do :; done
     install -m "$settings_mode" "$settings_snapshot" "$settings_file"
-    settings_changed=false
-    omarchy restart shell >/dev/null
+    hyprctl dispatch 'hl.dsp.exec_cmd("omarchy-launch-shell")' >/dev/null
     wait_for_shell
+    settings_changed=false
   fi
 }
 restore_history() {
