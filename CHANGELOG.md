@@ -32,6 +32,8 @@ maintainer guides that define release and validation procedures.
   command guide whose advertised actions are checked against their handlers.
 - Make popup selection, activation, editor navigation, and layered dismissal
   behavior-tested, including empty, stale, and boundary states.
+- Behavior-test scroll-deferral semantics and diagnostic row formatting instead
+  of relying on QML implementation and unrelated-label searches.
 
 ### Fixed
 

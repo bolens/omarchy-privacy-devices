@@ -85,6 +85,8 @@ normal operation poll-driven.
   shared visual-state policy rather than independent QML conditions.
 - Popup selection, activation, navigation boundaries, and layered dismissal
   derive from shared policies so reactive row changes cannot leave stale focus.
+- Scroll deferral compares only presentation-critical privacy state, while
+  diagnostic rows derive from one shared formatting policy.
 
 ## Security boundaries
 

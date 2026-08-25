@@ -11,6 +11,7 @@ node tests/sessions.test.js
 node tests/monitoring.test.js
 node tests/queues.test.js
 node tests/navigation.test.js
+node tests/presentation.test.js
 node tests/settings.test.js
 node tests/runtime.test.js
 node tests/security.test.js
@@ -25,7 +26,8 @@ The JavaScript suites cover classification, settings sanitation, normalized
 sessions, control transitions and request outcomes, observer invalidation and
 recovery, heartbeat boundaries and clock skew, idempotent health updates,
 probe FIFO and refresh supersession, popup navigation boundaries and stale
-selection recovery, history-generation acceptance, visual-state policy, manifest/UI
+selection recovery, scroll-deferral and diagnostic presentation policy,
+history-generation acceptance, visual-state policy, manifest/UI
 contracts, keyboard-guide/handler parity, runtime process topology and policy
 wiring, static security
 invariants, and documentation asset dimensions, references, ownership, and
@@ -60,6 +62,7 @@ tests/run_qml_runtime.sh
 This smoke test covers settings and notification policies plus control
 acceptance, observer heartbeat/invalidation, idempotent health updates, and
 probe-queue and popup-navigation policies in QML's JavaScript engine.
+It also verifies presentation deferral and diagnostic formatting compatibility.
 
 ## Repository and site checks
 
