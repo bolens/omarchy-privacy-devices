@@ -14,7 +14,8 @@ function sanitizeSettings(data) {
   var clean = {}, index, key
   var booleans = {showIdle:true, showControls:true, deduplicateApps:true, notifyOnActivity:true, notifyOnStop:false,
     notifyOnControlChanges:true, historyEnabled:false, directDeviceMonitoring:false, showInferredAttribution:true,
-    showStatePills:true, showSessionCounts:true, showBarSessionCounts:true, animatePending:true}
+    showStatePills:true, showSessionCounts:true, showBarSessionCounts:true, animatePending:true,
+    showBarActiveMarker:true, showBarDisabledMarker:true, showBarPendingMarker:true, showBarDegradedMarker:true}
   for (key in booleans) if (source[key] !== undefined) clean[key] = typeof source[key] === "boolean" ? source[key] : booleans[key]
   var integers = {directDevicePollSeconds:[2,60,5], locationPollSeconds:[5,300,15], recordingPollSeconds:[1,60,2], popupMaxHeight:[360,900,620], barItemSpacing:[0,12,0], barItemPadding:[2,12,5]}
   for (key in integers) if (source[key] !== undefined) {
@@ -42,11 +43,16 @@ function sanitizeSettings(data) {
   var stringLists = ["excludedApps", "hiddenApps", "notificationSuppressedApps", "cameraKeywords", "screenShareKeywords"]
   for (index = 0; index < stringLists.length; index++) if (Array.isArray(source[stringLists[index]]))
     clean[stringLists[index]] = unique(source[stringLists[index]].filter(function(value) { return typeof value === "string" && value.trim() !== "" }).map(function(value) { return value.trim().slice(0, 256) })).slice(0, 256)
-  var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["symbols","letters","off"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
+  var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["symbols","letters","custom","off"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
     audioControlBackend:["auto","pactl","wpctl"], screenshotBackend:["omarchy","grim","grim-satty","hyprshot","flameshot","custom"],
     activeColorRole:["bar-active","urgent","accent","foreground"], inactiveColorRole:["muted","foreground","accent"], disabledColorRole:["urgent","muted","accent","foreground","bar-active"],
     mutedColorRole:["urgent","muted","bar-active","accent","foreground"], unmutedColorRole:["foreground","bar-active","accent","muted","urgent"]}
   for (key in enums) if (source[key] !== undefined) clean[key] = enums[key].indexOf(source[key]) >= 0 ? source[key] : enums[key][0]
+  var markerGlyphs = {barActiveMarkerIcon:"●", barDisabledMarkerIcon:"⊘", barPendingMarkerIcon:"…", barDegradedMarkerIcon:"!"}
+  for (key in markerGlyphs) if (source[key] !== undefined) {
+    var glyph = typeof source[key] === "string" ? source[key].replace(/[\x00-\x1f\x7f]/g, "").trim().slice(0, 8) : ""
+    clean[key] = glyph || markerGlyphs[key]
+  }
   var commands = ["screenshotCustomCommand", "recordingCustomStartCommand", "recordingCustomStopCommand"]
   for (index = 0; index < commands.length; index++) if (source[commands[index]] !== undefined) clean[commands[index]] = String(source[commands[index]] || "").slice(0, 4096)
   var processNames = ["screenshotProcessName", "recordingProcessName"]
@@ -103,9 +109,14 @@ function privacyStateLabel(entry) {
   return labels[privacyVisualState(entry)] || "IDLE"
 }
 
-function privacyStateMarker(entry, mode, visible) {
+function privacyStateMarker(entry, mode, visible, customMarkers) {
   if (visible === false || mode === "off") return ""
   var state = privacyVisualState(entry)
+  if (mode === "custom") {
+    var custom = customMarkers && typeof customMarkers === "object" ? customMarkers : {}
+    var customDefaults = {pending: "…", unavailable: "!", disabled: "⊘", active: "●", idle: ""}
+    return custom[state] === undefined ? customDefaults[state] || "" : String(custom[state])
+  }
   if (mode === "letters") {
     var letters = {pending: "V", unavailable: "!", disabled: "X", active: "A", idle: ""}
     return letters[state] || ""

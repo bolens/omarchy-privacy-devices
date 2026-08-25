@@ -21,7 +21,9 @@ const globalKeys = [
   "directDevicePollSeconds", "showInferredAttribution", "locationPollSeconds", "recordingPollSeconds", "popupMaxHeight",
   "activeColorRole", "inactiveColorRole", "disabledColorRole", "disabledOpacity",
   "statusMarkerMode", "statePillStyle", "popupDensity", "showStatePills", "showSessionCounts", "animatePending",
-  "barIconScale", "barItemSpacing", "barItemPadding", "barMarkerPosition", "showBarSessionCounts"
+  "barIconScale", "barItemSpacing", "barItemPadding", "barMarkerPosition", "showBarSessionCounts",
+  "showBarActiveMarker", "showBarDisabledMarker", "showBarPendingMarker", "showBarDegradedMarker"
+  , "barActiveMarkerIcon", "barDisabledMarkerIcon", "barPendingMarkerIcon", "barDegradedMarkerIcon"
 ]
 
 assert.deepEqual(
@@ -76,8 +78,13 @@ assert.equal((bar.match(/text: "Export settings"/g) || []).length, 1, "settings 
 assert.match(activityCard, /HoverHandler[\s\S]*?selectedKind/, "hover should track keyboard selection without polling")
 assert.match(activityCard, /itemStateLabel\(entry\)/, "every popup row must expose a textual semantic state")
 assert.match(bar, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")
-for (const label of ["Icon scale", "Space between bar items", "Bar item padding", "Bar status markers", "Marker position", "Popup state pills", "Popup density", "Show state pills", "Show popup session counts", "Show bar session counts", "Animate verification", "Disabled opacity"])
+for (const label of ["Icon scale", "Space between bar items", "Bar item padding", "Bar status markers", "Marker position", "Show active status marker", "Show disabled status marker", "Show verifying status marker", "Show degraded status marker", "Popup state pills", "Popup density", "Show state pills", "Show popup session counts", "Show bar session counts", "Animate verification", "Disabled opacity"])
   assert.match(bar, new RegExp(label), `${label} must be exposed in global visual settings`)
+assert.match(bar, /state === "active" \? showBarActiveMarker[\s\S]*?state === "disabled" \? showBarDisabledMarker[\s\S]*?state === "pending" \? showBarPendingMarker[\s\S]*?state === "unavailable" \? showBarDegradedMarker/,
+  "bar status classes must have independent marker visibility")
+for (const label of ["Active marker icon", "Disabled marker icon", "Verifying marker icon", "Degraded marker icon"])
+  assert.match(bar, new RegExp(label), `${label} must be exposed for custom marker mode`)
+assert.match(bar, /options: \["symbols", "letters", "custom", "off"\]/, "bar marker mode must expose custom glyphs")
 assert.ok(bar.indexOf("id: appearanceSettingsPage") < bar.indexOf("Theme colors"), "theme controls belong on Appearance")
 assert.ok(bar.indexOf("id: appearanceSettingsPage") < bar.indexOf("Status presentation"), "status controls belong on Appearance")
 assert.match(bar, /"1234"[\s\S]*?\["general", "appearance", "alerts", "monitoring"\]/, "settings keyboard shortcuts must cover all pages")

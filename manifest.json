@@ -28,6 +28,14 @@
       "barItemPadding": 5,
       "barMarkerPosition": "after",
       "showBarSessionCounts": true,
+      "showBarActiveMarker": true,
+      "showBarDisabledMarker": true,
+      "showBarPendingMarker": true,
+      "showBarDegradedMarker": true,
+      "barActiveMarkerIcon": "●",
+      "barDisabledMarkerIcon": "⊘",
+      "barPendingMarkerIcon": "…",
+      "barDegradedMarkerIcon": "!",
       "activeColorRole": "bar-active",
       "inactiveColorRole": "muted",
       "disabledColorRole": "urgent",
@@ -159,6 +167,58 @@
         "defaultValue": true
       },
       {
+        "key": "showBarActiveMarker",
+        "type": "boolean",
+        "label": "Show active bar marker",
+        "description": "Show a status marker beside active privacy-device icons.",
+        "defaultValue": true
+      },
+      {
+        "key": "showBarDisabledMarker",
+        "type": "boolean",
+        "label": "Show disabled bar marker",
+        "description": "Show a status marker beside disabled privacy-device icons.",
+        "defaultValue": true
+      },
+      {
+        "key": "showBarPendingMarker",
+        "type": "boolean",
+        "label": "Show verifying bar marker",
+        "description": "Show a status marker while a privacy control is being verified.",
+        "defaultValue": true
+      },
+      {
+        "key": "showBarDegradedMarker",
+        "type": "boolean",
+        "label": "Show degraded bar marker",
+        "description": "Show a status marker when monitoring is degraded.",
+        "defaultValue": true
+      },
+      {
+        "key": "barActiveMarkerIcon",
+        "type": "string",
+        "label": "Active bar marker icon",
+        "defaultValue": "●"
+      },
+      {
+        "key": "barDisabledMarkerIcon",
+        "type": "string",
+        "label": "Disabled bar marker icon",
+        "defaultValue": "⊘"
+      },
+      {
+        "key": "barPendingMarkerIcon",
+        "type": "string",
+        "label": "Verifying bar marker icon",
+        "defaultValue": "…"
+      },
+      {
+        "key": "barDegradedMarkerIcon",
+        "type": "string",
+        "label": "Degraded bar marker icon",
+        "defaultValue": "!"
+      },
+      {
         "key": "activeColorRole",
         "type": "enum",
         "label": "Active theme color",
@@ -199,7 +259,7 @@
       "key": "statusMarkerMode",
       "type": "enum",
       "label": "Bar status markers",
-      "options": ["symbols", "letters", "off"],
+      "options": ["symbols", "letters", "custom", "off"],
       "defaultValue": "symbols"
     },
     {

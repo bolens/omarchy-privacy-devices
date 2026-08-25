@@ -38,6 +38,7 @@ The widget occupies only its privacy-device indicators in the center bar:
 - Optional bounded local history plus independently reversible display and notification policies.
 - Four focused global-settings pages for behavior, appearance, alerts, and monitoring.
 - Independent bar icon scale, item spacing, padding, status-marker position, session counts, colors, and idle appearance.
+- Independently hide active, disabled, verifying, or degraded bar markers, or replace their glyphs through Custom marker mode.
 - Live observer freshness, mode, heartbeat, and retry diagnostics on the Monitoring settings page.
 - One persistent structured observer replaces per-second screenshot and recorder subprocess polling.
 - Private-by-default diagnostic export redacts application and device identities.

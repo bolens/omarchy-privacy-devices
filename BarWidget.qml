@@ -29,6 +29,17 @@ Panel {
   readonly property bool showStatePills: setting("showStatePills", true) === true
   readonly property bool showSessionCounts: setting("showSessionCounts", true) === true
   readonly property bool showBarSessionCounts: setting("showBarSessionCounts", true) === true
+  readonly property bool showBarActiveMarker: setting("showBarActiveMarker", true) === true
+  readonly property bool showBarDisabledMarker: setting("showBarDisabledMarker", true) === true
+  readonly property bool showBarPendingMarker: setting("showBarPendingMarker", true) === true
+  readonly property bool showBarDegradedMarker: setting("showBarDegradedMarker", true) === true
+  readonly property var customBarMarkers: ({
+    active: String(setting("barActiveMarkerIcon", "●")),
+    disabled: String(setting("barDisabledMarkerIcon", "⊘")),
+    pending: String(setting("barPendingMarkerIcon", "…")),
+    unavailable: String(setting("barDegradedMarkerIcon", "!")),
+    idle: ""
+  })
   readonly property bool animatePending: setting("animatePending", true) === true
   readonly property color activeThemeColor: themeColor(String(setting("activeColorRole", "bar-active")), true)
   readonly property color inactiveThemeColor: themeColor(String(setting("inactiveColorRole", "muted")), false)
@@ -226,7 +237,12 @@ Panel {
     return visibility[kind] === undefined ? true : visibility[kind] === true
   }
   function itemStateMarker(entry) {
-    return Model.privacyStateMarker(entry, statusMarkerMode, itemStatusMarkerVisible(entry.kind))
+    var state = itemVisualState(entry)
+    var stateVisible = state === "active" ? showBarActiveMarker
+      : (state === "disabled" ? showBarDisabledMarker
+      : (state === "pending" ? showBarPendingMarker
+      : (state === "unavailable" ? showBarDegradedMarker : true)))
+    return Model.privacyStateMarker(entry, statusMarkerMode, itemStatusMarkerVisible(entry.kind) && stateVisible, customBarMarkers)
   }
   function itemSessionCount(entry) { return Model.privacySessionCount(entry, showSessionCounts) }
 
@@ -1243,8 +1259,16 @@ Panel {
       SettingsSurface {
         accent: root.activeThemeColor
         PanelSectionHeader { Layout.fillWidth: true; text: "Status presentation" }
-        Dropdown { Layout.fillWidth: true; label: "Bar status markers"; options: ["symbols", "letters", "off"]; value: root.statusMarkerMode; onChanged: function(value) { root.persistSettings({statusMarkerMode: value}) } }
+        Dropdown { Layout.fillWidth: true; label: "Bar status markers"; options: ["symbols", "letters", "custom", "off"]; value: root.statusMarkerMode; onChanged: function(value) { root.persistSettings({statusMarkerMode: value}) } }
         Dropdown { Layout.fillWidth: true; label: "Marker position"; options: ["after", "before"]; value: root.barMarkerPosition; onChanged: function(value) { root.persistSettings({barMarkerPosition: value}) } }
+        MarkerGlyphEditor { visible: root.statusMarkerMode === "custom"; settingKey: "barActiveMarkerIcon"; label: "Active marker icon"; fallback: "●" }
+        MarkerGlyphEditor { visible: root.statusMarkerMode === "custom"; settingKey: "barDisabledMarkerIcon"; label: "Disabled marker icon"; fallback: "⊘" }
+        MarkerGlyphEditor { visible: root.statusMarkerMode === "custom"; settingKey: "barPendingMarkerIcon"; label: "Verifying marker icon"; fallback: "…" }
+        MarkerGlyphEditor { visible: root.statusMarkerMode === "custom"; settingKey: "barDegradedMarkerIcon"; label: "Degraded marker icon"; fallback: "!" }
+        Toggle { Layout.fillWidth: true; label: "Show active status marker"; description: "Show the active marker beside active device icons in the bar."; checked: root.showBarActiveMarker; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showBarActiveMarker: !checked}) }
+        Toggle { Layout.fillWidth: true; label: "Show disabled status marker"; description: "Show the disabled marker beside blocked or muted device icons in the bar."; checked: root.showBarDisabledMarker; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showBarDisabledMarker: !checked}) }
+        Toggle { Layout.fillWidth: true; label: "Show verifying status marker"; description: "Show the verifying marker while a control action is pending."; checked: root.showBarPendingMarker; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showBarPendingMarker: !checked}) }
+        Toggle { Layout.fillWidth: true; label: "Show degraded status marker"; description: "Show the degraded marker when a monitoring source is unhealthy."; checked: root.showBarDegradedMarker; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showBarDegradedMarker: !checked}) }
         Dropdown { Layout.fillWidth: true; label: "Popup state pills"; options: ["filled", "outline", "minimal"]; value: root.statePillStyle; onChanged: function(value) { root.persistSettings({statePillStyle: value}) } }
         Dropdown { Layout.fillWidth: true; label: "Popup density"; options: ["comfortable", "compact"]; value: root.popupDensity; onChanged: function(value) { root.persistSettings({popupDensity: value}) } }
         Toggle { Layout.fillWidth: true; label: "Show state pills"; description: "Keep textual state visible beside each popup row."; checked: root.showStatePills; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showStatePills: !checked}) }
@@ -1337,5 +1361,35 @@ Panel {
     horizontalPadding: Style.spacing.controlPaddingX
     verticalPadding: Style.spacing.controlPaddingY
     onClicked: { root.globalSettingsPage = value; contentFlick.contentY = 0 }
+  }
+
+  component MarkerGlyphEditor: RowLayout {
+    required property string settingKey
+    required property string label
+    required property string fallback
+    Layout.fillWidth: true
+    Text { text: parent.label; color: Color.popups.text; font.family: Style.font.family; Layout.preferredWidth: 170 }
+    TextField {
+      id: markerEditor
+      Layout.fillWidth: true
+      text: String(root.setting(parent.settingKey, parent.fallback))
+      maximumLength: 8
+      foreground: Color.popups.text
+      accent: root.activeThemeColor
+      font.family: Style.font.family
+      onAccepted: {
+        var update = {}
+        update[parent.settingKey] = text
+        root.persistSettings(update)
+      }
+    }
+    Button {
+      text: "Save"
+      onClicked: {
+        var update = {}
+        update[parent.settingKey] = markerEditor.text
+        root.persistSettings(update)
+      }
+    }
   }
 }

@@ -15,6 +15,10 @@ maintainer guides that define release and validation procedures.
   social-preview screenshots from the live plugin on the primary monitor.
 - Establish a canonical documentation index and cross-linked ownership map to
   reduce duplicated maintainer guidance.
+- Add independent Appearance settings for active, disabled, verifying, and
+  degraded bar-status markers without hiding device icons.
+- Add a custom bar-marker mode with sanitized glyph settings for every
+  non-idle status.
 
 ### Fixed
 
