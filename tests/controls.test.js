@@ -44,4 +44,16 @@ assert.equal(timedOut.status, "failed")
 assert.equal(timedOut.code, "verification_timeout")
 assert.equal(timedOut.exitCode, 14)
 
+const request = (overrides = {}) => Object.assign({
+  known: true, enabled: true, serviceOwned: true, dependenciesReady: true,
+  pending: false, processBusy: false
+}, overrides)
+assert.equal(model.controlRequestStatus(request()), "ok")
+assert.equal(model.controlRequestStatus(request({known: false})), "unsupported")
+assert.equal(model.controlRequestStatus(request({enabled: false})), "disabled")
+assert.equal(model.controlRequestStatus(request({serviceOwned: false})), "unsupported")
+assert.equal(model.controlRequestStatus(request({dependenciesReady: false})), "unavailable")
+assert.equal(model.controlRequestStatus(request({pending: true})), "busy")
+assert.equal(model.controlRequestStatus(request({processBusy: true})), "busy")
+
 console.log("control transaction tests passed")

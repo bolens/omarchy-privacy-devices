@@ -134,4 +134,27 @@ const observation = (overrides = {}) => Object.assign({
   assert.equal(grouped.count, 2, "duplicate transitions are collapsed")
 }
 
+{
+  const sessions = [
+    Object.assign(observation({source: "pipewire"}), {id: "pipewire"}),
+    Object.assign(observation({source: "direct-device"}), {id: "direct"})
+  ]
+  const invalidated = model.invalidateObserverSessions(sessions, "direct-device", {})
+  assert.deepEqual(Array.from(invalidated.active.map(session => session.id)), ["pipewire"])
+  assert.equal(invalidated.changed, true)
+  assert.equal(invalidated.suppressedSources["direct-device"], true)
+
+  const recovery = model.partitionObserverRecoveryStarts([
+    observation({source: "direct-device", application: "Recovered one"}),
+    observation({source: "direct-device", application: "Recovered two"}),
+    observation({source: "pipewire", application: "New stream"})
+  ], invalidated.suppressedSources)
+  assert.deepEqual(Array.from(recovery.notifyable.map(session => session.application)), ["New stream"])
+  assert.deepEqual(JSON.parse(JSON.stringify(recovery.suppressedSources)), {})
+
+  const unchanged = model.invalidateObserverSessions(invalidated.active, "direct-device", recovery.suppressedSources)
+  assert.equal(unchanged.changed, false, "repeated observer invalidation is allocation-free")
+  assert.equal(unchanged.active, invalidated.active)
+}
+
 console.log("session model tests passed")

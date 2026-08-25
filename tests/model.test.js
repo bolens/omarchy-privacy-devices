@@ -122,4 +122,7 @@ const hostileText = '<img src="https://attacker.invalid/pixel"> & camera'
 const safeText = context.autoTextSafe(hostileText)
 if (/[<>&]/.test(safeText)) throw new Error("shared AutoText metacharacters remain")
 if (safeText !== '＜img src="https://attacker.invalid/pixel"＞ ＆ camera') throw new Error("shared AutoText sanitization")
+if (!context.historyLoadAccepted(4, 4, true)) throw new Error("current enabled history load accepted")
+if (context.historyLoadAccepted(3, 4, true)) throw new Error("stale history load rejected")
+if (context.historyLoadAccepted(4, 4, false)) throw new Error("disabled history load rejected")
 console.log("model tests passed")

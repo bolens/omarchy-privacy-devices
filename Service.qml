@@ -157,12 +157,10 @@ Item {
   }
 
   function discardObserverSessions(source) {
-    var retained = activeSessions.filter(function(session) { return session.source !== source })
-    if (retained.length === activeSessions.length) return
-    activeSessions = retained
-    var suppressed = Object.assign({}, suppressedObserverStarts)
-    suppressed[source] = true
-    suppressedObserverStarts = suppressed
+    var result = Model.invalidateObserverSessions(activeSessions, source, suppressedObserverStarts)
+    if (!result.changed) return
+    activeSessions = result.active
+    suppressedObserverStarts = result.suppressedSources
   }
 
   function fallbackObserverCommand() {
@@ -306,23 +304,15 @@ Item {
 
   function handleSessionTransitions(transition) {
     var stoppedForHistory = []
-    var recoveredSources = ({})
+    var recovery = Model.partitionObserverRecoveryStarts(transition.started, suppressedObserverStarts)
+    if (recovery.suppressedSources !== suppressedObserverStarts)
+      suppressedObserverStarts = recovery.suppressedSources
     var index
-    for (index = 0; index < transition.started.length; index++) {
-      var started = transition.started[index]
-      if (suppressedObserverStarts[started.source]) {
-        recoveredSources[started.source] = true
-        continue
-      }
+    for (index = 0; index < recovery.notifyable.length; index++) {
+      var started = recovery.notifyable[index]
       if (activityInitialized && settings.notifyOnActivity !== false
           && notificationKindList.indexOf(started.kind) !== -1 && Model.shouldNotifyForSession(started, policies()))
         enqueueActivityNotification("started", started)
-    }
-    var recovered = Object.keys(recoveredSources)
-    if (recovered.length) {
-      var suppressed = Object.assign({}, suppressedObserverStarts)
-      for (index = 0; index < recovered.length; index++) delete suppressed[recovered[index]]
-      suppressedObserverStarts = suppressed
     }
     for (index = 0; index < transition.stopped.length; index++) {
       var stopped = transition.stopped[index]
@@ -464,6 +454,23 @@ Item {
       && controllable(kind)
   }
 
+  function controlProcessBusy(kind) {
+    if (kind === "microphone") return microphoneControlProc.running
+    if (kind === "audio-output") return outputControlProc.running
+    return privacyControlProc.running
+  }
+
+  function controlRequestStatus(kind) {
+    return Model.controlRequestStatus({
+      known: Model.KINDS.indexOf(kind) !== -1,
+      enabled: kindEnabled(kind),
+      serviceOwned: serviceControllable(kind),
+      dependenciesReady: dependenciesReady(kind),
+      pending: controlPending(kind),
+      processBusy: controlProcessBusy(kind)
+    })
+  }
+
   function controlEnabled(kind) {
     if (kind === "microphone") return !microphoneMuted
     if (kind === "audio-output") return !outputMuted
@@ -597,7 +604,7 @@ Item {
   }
 
   function toggleControl(kind) {
-    if (!kindEnabled(kind) || !serviceControllable(kind) || controlPending(kind) || !dependenciesReady(kind)) return false
+    if (controlRequestStatus(kind) !== "ok") return false
     if (kind === "microphone" && !microphoneControlProc.running) {
       beginControlTransaction(kind, microphoneMuted)
       microphoneControlProc.command = audioToggleCommand(kind)
@@ -988,7 +995,7 @@ Item {
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: function(text) {
-        if (root.historyLoadGeneration !== root.historyGeneration || root.settings.historyEnabled !== true) {
+        if (!Model.historyLoadAccepted(root.historyLoadGeneration, root.historyGeneration, root.settings.historyEnabled)) {
           root.recentHistory = []
           return
         }
@@ -1024,12 +1031,8 @@ Item {
     function rescan(): string { root.refreshFallbacks(); root.refreshDirectDevices(); root.refreshSessions(); return "ok" }
     function refresh(): string { root.refreshFallbacks(); return "ok" }
     function toggle(kind: string): string {
-      if (Model.KINDS.indexOf(kind) === -1) return "unsupported"
-      if (!root.kindEnabled(kind)) return "disabled"
-      if (!root.serviceControllable(kind)) return "unsupported"
-      if (!root.dependenciesReady(kind)) return "unavailable"
-      if (root.controlPending(kind)) return "busy"
-      return root.toggleControl(kind) ? "ok" : "busy"
+      var status = root.controlRequestStatus(kind)
+      return status === "ok" ? (root.toggleControl(kind) ? "ok" : "busy") : status
     }
   }
 

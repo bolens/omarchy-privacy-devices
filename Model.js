@@ -302,6 +302,39 @@ function reconcileSessions(previous, observations, now) {
   return {active: active, started: started, stopped: stopped}
 }
 
+function invalidateObserverSessions(sessions, source, suppressedSources) {
+  var rows = Array.isArray(sessions) ? sessions : []
+  var found = false
+  for (var index = 0; index < rows.length; index++) {
+    if (rows[index].source === source) { found = true; break }
+  }
+  if (!found) return {active: rows, suppressedSources: suppressedSources || {}, changed: false}
+  var suppressed = Object.assign({}, suppressedSources || {})
+  suppressed[source] = true
+  return {
+    active: rows.filter(function(session) { return session.source !== source }),
+    suppressedSources: suppressed,
+    changed: true
+  }
+}
+
+function partitionObserverRecoveryStarts(started, suppressedSources) {
+  var rows = Array.isArray(started) ? started : []
+  var suppressed = suppressedSources || {}
+  var notifyable = []
+  var recovered = {}
+  for (var index = 0; index < rows.length; index++) {
+    var session = rows[index]
+    if (suppressed[session.source]) recovered[session.source] = true
+    else notifyable.push(session)
+  }
+  var sources = Object.keys(recovered)
+  if (!sources.length) return {notifyable: notifyable, suppressedSources: suppressed}
+  var remaining = Object.assign({}, suppressed)
+  for (index = 0; index < sources.length; index++) delete remaining[sources[index]]
+  return {notifyable: notifyable, suppressedSources: remaining}
+}
+
 function applicationsForSessions(sessions, kind, deduplicate) {
   var values = (Array.isArray(sessions) ? sessions : []).filter(function(session) {
     return !kind || session.kind === kind
@@ -393,6 +426,16 @@ function controlTransactionTransition(current, event, now) {
   return current
 }
 
+function controlRequestStatus(request) {
+  var state = request || {}
+  if (state.known !== true) return "unsupported"
+  if (state.enabled !== true) return "disabled"
+  if (state.serviceOwned !== true) return "unsupported"
+  if (state.dependenciesReady !== true) return "unavailable"
+  if (state.pending === true || state.processBusy === true) return "busy"
+  return "ok"
+}
+
 function appendHistory(history, session, now, limits) {
   limits = limits || {}
   var maxEntries = Math.max(1, Number(limits.maxEntries || 100))
@@ -402,6 +445,10 @@ function appendHistory(history, session, now, limits) {
     return Number(entry.endedAt || entry.startedAt || 0) >= cutoff
   })
   return result.slice(0, maxEntries)
+}
+
+function historyLoadAccepted(loadGeneration, currentGeneration, enabled) {
+  return Number(loadGeneration) === Number(currentGeneration) && enabled === true
 }
 
 // Ignore timestamps that naturally advance on every observation. Consumers only

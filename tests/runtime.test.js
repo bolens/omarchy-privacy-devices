@@ -106,15 +106,17 @@ assert.match(service, /id:\s*fallbackObserverProc[\s\S]*?clearFallbackObserverSt
   "unexpected fallback observer exit must clear observations before reporting failure")
 assert.match(service, /kind === "screen-recording" \|\| kind === "screenshot"[\s\S]*?observerHealth\["fallback-observer"\]/,
   "capture health must include its observer state")
-assert.match(service, /function discardObserverSessions\(source\)[\s\S]*?suppressedObserverStarts/,
+assert.match(service, /function discardObserverSessions\(source\)[\s\S]*?Model\.invalidateObserverSessions\(activeSessions, source, suppressedObserverStarts\)/,
   "observer invalidation must remember uncertain sessions across recovery")
-assert.match(service, /if \(suppressedObserverStarts\[started\.source\]\)[\s\S]*?continue/,
+assert.match(service, /function handleSessionTransitions\(transition\)[\s\S]*?Model\.partitionObserverRecoveryStarts\(transition\.started, suppressedObserverStarts\)/,
   "observer recovery must not announce uncertain sessions as new activity")
 assert.match(service, /function serviceControllable\(kind\)[\s\S]*?\["microphone", "audio-output", "camera", "screen-share", "location"\]/,
   "headless control must be limited to actions owned by the singleton service")
-assert.match(service, /function toggleControl\(kind\)[\s\S]*?if \(!kindEnabled\(kind\) \|\| !serviceControllable\(kind\) \|\| controlPending\(kind\) \|\| !dependenciesReady\(kind\)\) return false/,
+assert.match(service, /function toggleControl\(kind\)[\s\S]*?if \(controlRequestStatus\(kind\) !== "ok"\) return false/,
   "control requests must reject disabled, unsupported, and pending devices")
-assert.match(service, /function toggle\(kind: string\): string[\s\S]*?return "disabled"[\s\S]*?return "unsupported"[\s\S]*?return "busy"/,
+assert.match(service, /function controlRequestStatus\(kind\)[\s\S]*?Model\.controlRequestStatus\(/,
+  "runtime control state must use the behavior-tested request policy")
+assert.match(service, /function toggle\(kind: string\): string[\s\S]*?root\.controlRequestStatus\(kind\)/,
   "control IPC must report why an action was not accepted")
 assert.match(bar, /function toggleEntry\(entry\)[\s\S]*?if \(!privacyService \|\| !entry\.controllable \|\| entry\.pending\) return/,
   "bar controls must ignore repeated input while verification is pending")
@@ -136,7 +138,7 @@ assert.match(service, /property int historyGeneration:\s*0[\s\S]*?property int h
   "history loads must be tied to the privacy configuration that requested them")
 assert.match(service, /function clearHistory\(\)[\s\S]*?historyGeneration\+\+/,
   "clearing history must invalidate an in-flight load")
-assert.match(service, /id:\s*historyLoadProc[\s\S]*?historyLoadGeneration !== root\.historyGeneration[\s\S]*?historyEnabled !== true[\s\S]*?recentHistory = \[\]/,
+assert.match(service, /id:\s*historyLoadProc[\s\S]*?Model\.historyLoadAccepted\(root\.historyLoadGeneration, root\.historyGeneration, root\.settings\.historyEnabled\)[\s\S]*?recentHistory = \[\]/,
   "stale history output must not repopulate private data after history is disabled or cleared")
 assert.match(service, /id:\s*dependencyCheckProc[\s\S]*?if \(!root\.dependencyRefreshPending\)[\s\S]*?dependencyReadyMap = ready/,
   "superseded dependency results must not be published")
