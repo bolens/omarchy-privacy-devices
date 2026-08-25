@@ -63,6 +63,10 @@ normal operation poll-driven.
   activity.
 - Control commands are not successful until an observed state matches the
   requested state; verification has a bounded timeout.
+- Service IPC owns only headless state controls; capture actions remain with
+  the focused bar, and rejected requests return an explicit result.
+- A pending control retains its verification probe if monitoring settings
+  change, while superseded background probe queues are coalesced.
 - Pending controls retain the last observed state rather than presenting an
   optimistic result.
 - Settings are allowlisted, bounded, and versioned before reaching runtime;

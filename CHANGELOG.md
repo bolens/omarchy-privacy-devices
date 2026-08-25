@@ -29,6 +29,9 @@ maintainer guides that define release and validation procedures.
 - Clear stale direct-device and capture activity when an observer fails,
   surface fallback observer health, and avoid treating monitoring loss or
   uncertain recovery as genuine activity transitions.
+- Reject unsupported, disabled, unavailable, busy, and duplicate control
+  requests instead of reporting false success; preserve verification probes
+  across concurrent monitoring-setting changes.
 
 ### Security
 
