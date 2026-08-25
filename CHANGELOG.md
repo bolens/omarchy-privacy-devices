@@ -7,6 +7,8 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-08-25
+
 ### Changed
 
 - Keep maintainer-only workflows, tests, tooling, and runtime harnesses out of
@@ -212,7 +214,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.4.0...v0.5.0
