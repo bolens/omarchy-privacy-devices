@@ -44,6 +44,10 @@ jobs:
             echo "Release archive contains generated or forbidden files" >&2
             exit 1
           fi
+          if grep -E '^(\.github|scripts|tests)/|^Runtime.*Test\.qml$|^package(-lock)?\.json$' <<<"$archive_files"; then
+            echo "Release archive contains maintainer-only files" >&2
+            exit 1
+          fi
           if git grep -IlE -- 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gh[pousr]_[A-Za-z0-9_]{20,}' -- .; then
             echo "Tracked files contain credential-like material" >&2
             exit 1
