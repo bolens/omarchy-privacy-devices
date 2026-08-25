@@ -26,6 +26,10 @@ maintainer guides that define release and validation procedures.
 - Replace heartbeat and observer-health implementation checks with boundary,
   clock-skew, identity, and QML-engine behavior tests backed by shared model
   policies.
+- Replace duplicated dependency and preventative probe scheduling with a shared,
+  behavior-tested FIFO and refresh-supersession policy.
+- Replace the activity footer's implementation notes with a concise keyboard
+  command guide whose advertised actions are checked against their handlers.
 
 ### Fixed
 
