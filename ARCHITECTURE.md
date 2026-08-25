@@ -89,6 +89,8 @@ normal operation poll-driven.
   diagnostic rows derive from one shared formatting policy.
 - Monitoring telemetry exports normalized ages and uses one presentation policy
   for waiting, retry, heartbeat, and unavailable states.
+- Bar action guidance derives from one device-aware policy; QML owns composition
+  and input routing without a second control-description decision tree.
 
 ## Security boundaries
 

@@ -36,6 +36,8 @@ maintainer guides that define release and validation procedures.
   of relying on QML implementation and unrelated-label searches.
 - Behavior-test monitoring telemetry text, expose fallback-observer heartbeat
   and retry timing, and render missing values as stable fallbacks.
+- Behavior-test tooltip actions and remove the unused duplicate control-guidance
+  implementation from the bar widget.
 
 ### Fixed
 
