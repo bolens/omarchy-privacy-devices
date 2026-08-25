@@ -103,6 +103,8 @@ Camera, location, and portal controls cross privileged or service-management
 boundaries only through fixed helper commands. Custom capture and recording
 commands are explicitly user-controlled and are never inferred from observed
 process text. Recorder stopping validates PID ownership and executable identity.
+GeoClue discovery uses fixed `busctl` argument arrays, bounded output, and
+per-call timeouts rather than an inline shell pipeline.
 
 Monitoring reads metadata only. It never opens camera or microphone devices,
 captures media, or sends telemetry over the network.

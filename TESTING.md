@@ -13,6 +13,9 @@ security boundaries, release metadata, documentation, and site assets. Helper
 tests use temporary state and fake commands; they do not modify devices or
 privileged services.
 
+Runtime contract checks also keep plugin entry points embeddable, helper paths
+relocatable, and detached commands argument-safe.
+
 `tests/run_all.sh` is the canonical suite definition used by npm and CI. It
 discovers JavaScript and Python tests automatically and checks runtime scripts.
 
