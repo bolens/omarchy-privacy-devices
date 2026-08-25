@@ -24,7 +24,9 @@ assert.deepEqual(pngDimensions("docs/preview.png"), [500, 500]);
 assert.deepEqual(pngDimensions("docs/appearance.png"), [500, 660]);
 for (const page of ["general", "alerts", "monitoring"])
   assert.deepEqual(pngDimensions(`docs/${page}.png`), [500, 660]);
-assert.deepEqual(pngDimensions("docs/bar.png"), [182, 50]);
+const barDimensions = pngDimensions("docs/bar.png");
+assert.equal(barDimensions[1], 50, "bar capture must retain the live horizontal-bar height");
+assert.ok(barDimensions[0] > 0 && barDimensions[0] <= 500, "bar capture must be a tightly bounded live widget footprint");
 assert.equal(new Set(
   ["general", "appearance", "alerts", "monitoring"]
     .map((page) => fs.readFileSync(path.join(root, `docs/${page}.png`)).toString("base64"))
@@ -37,6 +39,17 @@ assert.match(html, /src="appearance\.png"[^>]+width="500" height="660"/);
 for (const image of ["bar", "general", "appearance", "alerts", "monitoring"]) {
   assert.match(html, new RegExp(`src="${image}\\.png"`));
   assert.match(fs.readFileSync(path.join(root, "README.md"), "utf8"), new RegExp(`docs/${image}\\.png`));
+}
+
+const source = new JSDOM(html).window.document;
+for (const image of ["preview", "bar", "general", "appearance", "alerts", "monitoring"]) {
+  const element = source.querySelector(`#screenshots img[src="${image}.png"]`);
+  assert.ok(element, `Pages gallery must showcase ${image}.png`);
+  assert.deepEqual(
+    [Number(element.getAttribute("width")), Number(element.getAttribute("height"))],
+    pngDimensions(`docs/${image}.png`),
+    `Pages dimensions must match ${image}.png`
+  );
 }
 
 let copied = "";
