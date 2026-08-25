@@ -1348,7 +1348,7 @@ Panel {
         Text {
           visible: root.editingKind === "" && !root.showingGlobalSettings
           Layout.fillWidth: true
-          text: "Activity details distinguish observation source, attribution confidence, and control state. Middle-click an item for settings."
+          text: "Keyboard: ↑/↓ select · Enter open · S settings · R refresh · Esc close"
           textFormat: Text.PlainText
           color: Color.muted
           font.family: Style.font.family

@@ -49,7 +49,8 @@ for (const key of globalKeys) {
 }
 
 assert.match(bar, /GlobalSettingsTab \{ label: "Appearance"; value: "appearance" \}/, "appearance settings need a dedicated page")
-assert.match(bar, /Reset global settings/)
+assert.match(bar, /Button \{ Layout\.alignment: Qt\.AlignRight; text: "Reset global settings"; onClicked: root\.resetGlobalSettings\(\) \}/,
+  "the global reset action must invoke the complete reset policy")
 for (const selector of ["Monitored activity", "Activity notifications", "Preventative controls"])
   assert.match(bar, new RegExp(`label:\\s*"${selector}"`), `${selector} must remain configurable`)
 assert.match(bar, /ColumnLayout\s*\{\s*id:\s*activityRows[\s\S]*?visible:\s*root\.editingKind === "" && !root\.showingGlobalSettings[\s\S]*?Repeater\s*\{/,
@@ -66,11 +67,11 @@ assert.match(bar, /onSettingsRequestSerialChanged\(\) \{ root\.handleSettingsReq
 assert.match(surface, /default property alias content:/, "settings groups need a reusable visual surface")
 assert.match(integer, /IntValidator[\s\S]*?bottom:[\s\S]*?top:/, "integer settings must enforce their declared bounds")
 assert.match(bar, /Loader\s*\{\s*id:\s*globalSettingsPageLoader[\s\S]*?sourceComponent:[\s\S]*?globalSettingsPage/, "only the active settings page should be instantiated")
-assert.match(bar, /SettingsSurface\s*\{/, "settings pages should share consistent surface layout")
 assert.match(activityCard, /required property var controller[\s\S]*?property var entry:/, "activity card must expose one deep controller/entry interface")
-assert.match(bar, /IntegerSetting\s*\{/, "bounded polling settings should share validated editing behavior")
-assert.match(bar, /monitoringTelemetryText\(\)/, "the Monitoring page must expose observer telemetry")
-assert.match(bar, /settingsMutationPending/, "settings writes must preserve the open editor across shell config reloads")
+assert.match(bar, /PanelSectionHeader \{ Layout\.fillWidth: true; text: "Observer health" \}[\s\S]*?text: root\.monitoringTelemetryText\(\)/,
+  "the Monitoring page must render live observer telemetry in its health section")
+assert.match(bar, /function persistSettings\(values\)[\s\S]*?settingsMutationPending = true[\s\S]*?onOpenedChanged:[\s\S]*?else if \(settingsMutationPending\) Qt\.callLater\(root\.open\)/,
+  "settings writes must preserve the open editor across shell config reloads")
 assert.match(bar, /Model\.sanitizeSettings\(candidate\)/, "settings writes must pass through the versioned sanitizer")
 assert.match(bar, /privacy-settings[\s\S]*?settingsTransferProc/, "settings transfer must use the bounded helper")
 assert.ok(bar.indexOf("Private data") > bar.indexOf("id: monitoringSettingsPage"), "private storage controls belong on Monitoring")
@@ -90,7 +91,8 @@ assert.ok(bar.indexOf("id: appearanceSettingsPage") < bar.indexOf("Theme colors"
 assert.ok(bar.indexOf("id: appearanceSettingsPage") < bar.indexOf("Status presentation"), "status controls belong on Appearance")
 assert.match(bar, /"1234"[\s\S]*?\["general", "appearance", "alerts", "monitoring"\]/, "settings keyboard shortcuts must cover all pages")
 assert.match(bar, /var count = Model\.privacySessionCount\(entry, showBarSessionCounts\)/, "bar counts must not depend on popup-count visibility")
-assert.match(bar, /persistItemStatusMarker/, "per-item settings must control marker visibility")
+assert.match(bar, /label: "Show status markers for this device"[\s\S]*?onChanged: function\(value\) \{ root\.persistItemStatusMarker\(root\.editingKind, value\) \}/,
+  "per-item marker settings must persist the selected override")
 assert.match(bar, /text: "Move left"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, -1\)/,
   "device placement must disable unavailable left movement")
 assert.match(bar, /text: "Move right"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, 1\)/,

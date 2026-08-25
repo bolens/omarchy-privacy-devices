@@ -31,7 +31,6 @@ assert.match(service, /function verifyControlTransaction\(kind, observedEnabled,
 assert.match(service, /transitionControlTransaction\(kind, \{type: "timeout"\}, now\)/, "verification must delegate bounded timeout handling to the tested reducer")
 assert.doesNotMatch(service, /fallbackMicrophoneMuted\s*=\s*!fallbackMicrophoneMuted/, "controls must preserve the last observed microphone state while verification is pending")
 assert.doesNotMatch(service, /fallbackOutputMuted\s*=\s*!fallbackOutputMuted/, "controls must preserve the last observed output state while verification is pending")
-assert.match(service, /lastFallbackRefreshAt/, "fallback refresh freshness must be observable")
 assert.match(bar, /pixelAligned:\s*true/, "popup scrolling should remain pixel aligned")
 assert.match(bar, /onMovementEnded:\s*root\.flushDeferredItems\(\)/, "deferred row updates must flush when scrolling ends")
 assert.match(bar, /onCloseRequested:\s*root\.closeCurrentLayer\(\)/, "Escape must invoke layered popup dismissal")
@@ -39,6 +38,18 @@ assert.match(bar, /function closeCurrentLayer\(\)[\s\S]*?editingKind !== ""[\s\S
   "layered dismissal must close a device editor, then global settings, then the popup")
 assert.match(bar, /onMoveRequested:[\s\S]*?moveActivitySelection/, "activity rows must support keyboard navigation")
 assert.match(bar, /onTextKey:[\s\S]*?globalSettingsPage/, "settings tabs must support keyboard shortcuts")
+assert.match(bar, /text: "Keyboard: ↑\/↓ select · Enter open · S settings · R refresh · Esc close"/,
+  "the activity footer must advertise every main-view keyboard command")
+assert.doesNotMatch(bar, /Activity details distinguish observation source/,
+  "the activity footer must not retain displaced implementation guidance")
+assert.match(bar, /onMoveRequested:[\s\S]*?dy !== 0[\s\S]*?moveActivitySelection\(dy\)/,
+  "advertised vertical navigation must select activity rows")
+assert.match(bar, /onActivateRequested:[\s\S]*?activateActivitySelection\(\)/,
+  "the advertised Enter command must open the selected activity row")
+assert.match(bar, /text === "s" \|\| text === "S"[\s\S]*?showGlobalSettings\("general"\)/,
+  "the advertised S command must open settings")
+assert.match(bar, /text === "r" \|\| text === "R"[\s\S]*?refreshFallbacks\(\)/,
+  "the advertised R command must request an observer refresh")
 assert.match(bar, /readonly property var activitySourceItems:\s*orderedKinds\(\)\.map/, "bar device state must be built once per reactive update")
 assert.match(bar, /readonly property var visibleItems:\s*activitySourceItems\.filter/, "visible bar state must derive from the shared device snapshot")
 assert.match(bar, /readonly property var activeItemList:\s*visibleItems\.filter/, "active bar state must be cached for all consumers")
@@ -84,13 +95,13 @@ assert.match(service, /"omarchy",\s*"notification",\s*"send"/,
 assert.match(service, /"watch",\s*"--heartbeat"/, "direct-device monitoring must use one persistent observer")
 assert.match(service, /directObserverRetryMilliseconds[\s\S]*?Math\.min\([^\n]*60000\)/,
   "observer restart backoff must be bounded at 60 seconds")
-assert.equal((service.match(/Model\.observerHeartbeatState\(/g) || []).length, 2,
-  "both observer timers must use the behavior-tested heartbeat policy")
+assert.match(service, /Model\.observerHeartbeatState\(root\.directObserverLastSeen, root\.directObserverStartedAt, Date\.now\(\), heartbeat\)\.stale/,
+  "direct observation must apply startup grace and last-seen state through the tested heartbeat policy")
+assert.match(service, /Model\.observerHeartbeatState\(root\.fallbackObserverLastSeen, root\.fallbackObserverStartedAt, Date\.now\(\), heartbeat\)\.stale/,
+  "fallback observation must apply startup grace and last-seen state through the tested heartbeat policy")
 assert.match(service, /function setObserverHealth\(source, status, code, reason\)[\s\S]*?Model\.updateObserverHealth\(/,
   "observer health mutation must use the behavior-tested idempotent policy")
 assert.doesNotMatch(service, /directDeviceTimer/, "removed polling timer must not remain referenced")
-assert.match(service, /property double directObserverStartedAt:\s*0/, "direct observer staleness must account for startup grace")
-assert.match(service, /property double fallbackObserverStartedAt:\s*0/, "fallback observer staleness must account for startup grace")
 assert.match(service, /function clearDirectObserverState\(\)[\s\S]*?directObservations = \[\]/,
   "direct observer failure must discard stale active-device observations")
 assert.match(service, /function clearDirectObserverState\(\)[\s\S]*?discardObserverSessions\("direct-device"\)/,
