@@ -56,8 +56,10 @@ assert.match(bar, /model:\s*root\.editingKind === "" && !root\.showingGlobalSett
 assert.match(bar, /delegate:\s*PrivacyActivityCard\s*\{[\s\S]*?entry:\s*modelData[\s\S]*?controller:\s*root/,
   "activity presentation must be isolated in its tested card component")
 assert.match(bar, /manageIpc:\s*false/, "per-monitor panels must delegate IPC routing to the singleton service and focused-monitor shell router")
-assert.match(bar, /privacyService\.settingsRequestSerial > handledSettingsRequestSerial[\s\S]*?showGlobalSettings\(privacyService\.requestedSettingsPage\)/,
+assert.match(bar, /settingsRequestSerial <= handledSettingsRequestSerial[\s\S]*?showGlobalSettings\(privacyService\.requestedSettingsPage\)/,
   "the focused widget must consume singleton settings requests")
+assert.match(bar, /onSettingsRequestSerialChanged\(\) \{ root\.handleSettingsRequest\(\) \}/,
+  "settings IPC page changes must apply while the popup remains open")
 assert.match(surface, /default property alias content:/, "settings groups need a reusable visual surface")
 assert.match(integer, /IntValidator[\s\S]*?bottom:[\s\S]*?top:/, "integer settings must enforce their declared bounds")
 assert.match(bar, /Loader\s*\{\s*id:\s*globalSettingsPageLoader[\s\S]*?sourceComponent:[\s\S]*?globalSettingsPage/, "only the active settings page should be instantiated")

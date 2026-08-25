@@ -84,6 +84,12 @@ Panel {
     contentFlick.contentY = 0
   }
 
+  function handleSettingsRequest() {
+    if (!opened || !privacyService || privacyService.settingsRequestSerial <= handledSettingsRequestSerial) return
+    handledSettingsRequestSerial = privacyService.settingsRequestSerial
+    showGlobalSettings(privacyService.requestedSettingsPage)
+  }
+
   function closeCurrentLayer() {
     if (editingKind !== "") { editingKind = ""; return }
     if (showingGlobalSettings) { showActivity(); return }
@@ -555,10 +561,7 @@ Panel {
   onOpenedChanged: {
     if (opened) {
       durationNow = Date.now()
-      if (privacyService && privacyService.settingsRequestSerial > handledSettingsRequestSerial) {
-        handledSettingsRequestSerial = privacyService.settingsRequestSerial
-        showGlobalSettings(privacyService.requestedSettingsPage)
-      }
+      handleSettingsRequest()
     }
     else if (settingsMutationPending) Qt.callLater(root.open)
     else {
@@ -567,6 +570,10 @@ Panel {
       globalSettingsPage = "general"
       contentFlick.contentY = 0
     }
+  }
+  Connections {
+    target: root.privacyService
+    function onSettingsRequestSerialChanged() { root.handleSettingsRequest() }
   }
   Component.onCompleted: { syncDisplayedItems(); Qt.callLater(syncService) }
 
