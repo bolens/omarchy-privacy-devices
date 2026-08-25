@@ -7,6 +7,11 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Added
+
+- Show a verified application or service icon in activity and control-result
+  notifications, with safe themed fallbacks.
+
 ## [0.4.0] - 2026-08-25
 
 ### Added

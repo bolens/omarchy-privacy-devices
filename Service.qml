@@ -257,9 +257,13 @@ Item {
       var kind = Model.classifyNode(node, settings)
       if (!kind) continue
       var props = Model.properties(node)
+      var application = Model.appName(node)
+      var applicationIcon = props["application.icon-name"] || props["application.id"] || props["application.process.binary"]
+      if (!applicationIcon && String(application).toLowerCase() === "pipewire") applicationIcon = "pipewire-symbolic"
       result.push({
         kind: kind,
-        application: Model.appName(node),
+        application: application,
+        icon: Model.notificationIconName(applicationIcon),
         device: String(props["node.target"] || props["device.description"] || props["node.description"] || "PipeWire device"),
         source: "pipewire",
         confidence: kind === "camera" || kind === "screen-share" ? "inferred" : "confirmed",
@@ -272,9 +276,9 @@ Item {
   function fallbackObservations() {
     var result = []
     var index
-    for (index = 0; index < locationApps.length; index++) result.push({kind: "location", application: locationApps[index], device: "GeoClue", source: "geoclue", confidence: "confirmed"})
+    for (index = 0; index < locationApps.length; index++) result.push({kind: "location", application: locationApps[index], icon: Model.notificationIconName(locationApps[index]), device: "GeoClue", source: "geoclue", confidence: "confirmed"})
     if (locationActive && !locationApps.length) result.push({kind: "location", application: "Unknown application", device: "GeoClue", source: "geoclue", confidence: "inferred"})
-    for (index = 0; index < recordingApps.length; index++) result.push({kind: "screen-recording", application: recordingApps[index], device: "Desktop", source: "process-probe", confidence: "inferred"})
+    for (index = 0; index < recordingApps.length; index++) result.push({kind: "screen-recording", application: recordingApps[index], icon: Model.notificationIconName(recordingApps[index]), device: "Desktop", source: "process-probe", confidence: "inferred"})
     if (screenshotActive) result.push({kind: "screenshot", application: "Screenshot tool", device: "Desktop", source: "process-probe", confidence: "inferred"})
     return result
   }
@@ -676,31 +680,42 @@ Item {
     }
   }
 
-  function notify(title, body) {
-    Quickshell.execDetached([
+  function resolvedNotificationIcon(name, fallback) {
+    var candidates = [Model.notificationIconName(name), Model.notificationIconName(fallback)]
+    for (var index = 0; index < candidates.length; index++) {
+      var candidate = candidates[index]
+      if (candidate && Quickshell.iconPath(candidate, true)) return candidate
+    }
+    return ""
+  }
+
+  function notify(title, body, icon, fallbackIcon) {
+    var command = [
       "omarchy", "notification", "send",
-      "--app-name", "Privacy Devices",
-      "--urgency", "normal",
-      Model.autoTextSafe(title), Model.autoTextSafe(body)
-    ])
+      "--app-name", "Privacy Devices"
+    ]
+    var resolvedIcon = resolvedNotificationIcon(icon, fallbackIcon)
+    if (resolvedIcon) command.push("--icon", resolvedIcon)
+    command.push("--urgency", "normal", Model.autoTextSafe(title), Model.autoTextSafe(body))
+    Quickshell.execDetached(command)
   }
 
   function enqueueActivityNotification(phase, session) {
     if (notificationQueue.length && notificationQueue[0].phase !== phase) flushActivityNotifications()
-    notificationQueue = notificationQueue.concat([{phase: phase, kind: session.kind, application: session.application}])
+    notificationQueue = notificationQueue.concat([{phase: phase, kind: session.kind, application: session.application, icon: session.icon}])
     notificationFlush.restart()
   }
 
   function flushActivityNotifications() {
     var grouped = Model.coalesceNotificationEvents(notificationQueue)
     notificationQueue = []
-    if (grouped.count > 0) notify(grouped.title, grouped.body)
+    if (grouped.count > 0) notify(grouped.title, grouped.body, grouped.icon, grouped.fallbackIcon)
   }
 
   function notifyControlResult(kind, exitCode) {
     if (settings.notifyOnControlChanges === false) return
-    if (Number(exitCode) === 0) notify("Privacy control updated", Model.label(kind) + " change applied")
-    else notify("Privacy control failed", Model.label(kind) + " was not changed")
+    if (Number(exitCode) === 0) notify("Privacy control updated", Model.label(kind) + " change applied", Model.notificationKindIcon(kind), "security-high-symbolic")
+    else notify("Privacy control failed", Model.label(kind) + " was not changed", Model.notificationKindIcon(kind), "security-high-symbolic")
   }
 
   function refreshPreventativeControls() {

@@ -40,7 +40,8 @@ The widget occupies only its privacy-device indicators in the center bar:
 - Verified mute, recording, camera, location, and screen-sharing controls.
 - Global and per-device appearance, ordering, visibility, backend, and status
   settings.
-- Private diagnostics, optional bounded history, and versioned settings transfer.
+- App-aware notifications, private diagnostics, optional bounded history, and
+  versioned settings transfer.
 - Keyboard navigation throughout the popup and settings.
 - Persistent observers and bounded background work, with no network telemetry.
 

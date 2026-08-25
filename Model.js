@@ -263,7 +263,8 @@ function normalizeObservation(observation) {
     device: boundedPlainText(String(value.device || "Unknown device"), 512) || "Unknown device",
     source: boundedPlainText(String(value.source || "unknown"), 64) || "unknown",
     confidence: boundedPlainText(String(value.confidence || "inferred"), 32) || "inferred",
-    detail: boundedPlainText(String(value.detail || ""), 512)
+    detail: boundedPlainText(String(value.detail || ""), 512),
+    icon: notificationIconName(value.icon)
   }
   normalized.id = sessionId(normalized)
   return normalized
@@ -557,7 +558,7 @@ function sessionsEquivalent(left, right) {
   if (left.length !== right.length) return false
   var previous = {}
   for (var index = 0; index < left.length; index++) previous[String(left[index].id || "")] = left[index]
-  var fields = ["kind", "application", "device", "source", "confidence", "detail"]
+  var fields = ["kind", "application", "device", "source", "confidence", "detail", "icon"]
   for (var nextIndex = 0; nextIndex < right.length; nextIndex++) {
     var candidate = right[nextIndex]
     var existing = previous[String(candidate.id || "")]
@@ -654,24 +655,54 @@ function formatDuration(milliseconds) {
 
 function coalesceNotificationEvents(events) {
   var rows = Array.isArray(events) ? events : []
-  if (!rows.length) return {title: "Privacy activity", body: "", count: 0}
+  if (!rows.length) return {title: "Privacy activity", body: "", count: 0, icon: "security-high-symbolic"}
   var phase = String(rows[0].phase || "started")
-  var byApp = {}, seen = {}, count = 0
+  var byApp = {}, seen = {}, icons = {}, kinds = {}, count = 0
   for (var index = 0; index < rows.length; index++) {
     var event = rows[index] || {}
     var application = String(event.application || "Unknown application")
-    var kindLabel = label(String(event.kind || ""))
+    var kind = String(event.kind || "")
+    var kindLabel = label(kind)
+    var icon = notificationIconName(event.icon)
     var key = phase + "\u0000" + application.toLowerCase() + "\u0000" + kindLabel
     if (seen[key]) continue
     seen[key] = true
     if (!byApp[application]) byApp[application] = []
     byApp[application].push(kindLabel)
+    if (icon) icons[icon] = true
+    if (kind) kinds[kind] = true
     count++
   }
   var lines = Object.keys(byApp).sort().map(function(application) {
     return application + ": " + byApp[application].sort().join(", ")
   })
-  return {title: "Privacy activity " + phase, body: lines.join("\n"), count: count}
+  var applications = Object.keys(byApp)
+  var iconNames = Object.keys(icons)
+  var kindNames = Object.keys(kinds)
+  var fallbackIcon = kindNames.length === 1 ? notificationKindIcon(kindNames[0]) : "security-high-symbolic"
+  var notificationIcon = applications.length === 1 && iconNames.length === 1
+    ? iconNames[0]
+    : fallbackIcon
+  return {title: "Privacy activity " + phase, body: lines.join("\n"), count: count,
+    icon: notificationIcon, fallbackIcon: fallbackIcon}
+}
+
+function notificationIconName(value) {
+  var name = boundedPlainText(String(value || ""), 256)
+  return /^[A-Za-z0-9][A-Za-z0-9._-]{0,255}$/.test(name) ? name : ""
+}
+
+function notificationKindIcon(kind) {
+  var icons = {
+    microphone: "audio-input-microphone-symbolic",
+    "audio-output": "audio-speakers-symbolic",
+    camera: "camera-web-symbolic",
+    "screen-share": "video-display-symbolic",
+    screenshot: "camera-photo-symbolic",
+    "screen-recording": "media-record-symbolic",
+    location: "find-location-symbolic"
+  }
+  return icons[String(kind || "")] || "security-high-symbolic"
 }
 
 // Shared Omarchy bar controls render strings with Text.AutoText. Replace the

@@ -107,6 +107,14 @@ assert.doesNotMatch(service, /interval:\s*1000[\s\S]{0,100}?onTriggered:\s*root\
   "session discovery must not continuously rebuild from a one-second poll")
 assert.match(service, /"omarchy",\s*"notification",\s*"send"/,
   "notifications must use Omarchy's DND-aware notification path")
+assert.match(service, /Quickshell\.iconPath\([^,]+,\s*true\)/,
+  "notification icons must be verified against the active icon theme")
+assert.match(service, /resolvedNotificationIcon\([^,]+,\s*[^)]+\)[\s\S]*?candidates/,
+  "an unavailable application icon must retry a device or service fallback")
+assert.match(service, /--icon/,
+  "resolved application or service icons must be sent with notifications")
+assert.match(service, /props\["application\.icon-name"\]/,
+  "PipeWire application icon metadata must reach the notification pipeline")
 assert.match(service, /"watch",\s*"--heartbeat"/, "direct-device monitoring must use one persistent observer")
 assert.match(service, /directObserverRetryMilliseconds[\s\S]*?Math\.min\([^\n]*60000\)/,
   "observer restart backoff must be bounded at 60 seconds")

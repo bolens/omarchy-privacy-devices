@@ -74,13 +74,17 @@ const observation = (overrides = {}) => Object.assign({
   const hostile = model.reconcileSessions([], [observation({
     application: "A\u0000B" + "x".repeat(400),
     device: "D\n" + "y".repeat(700),
-    detail: "z".repeat(700)
+    detail: "z".repeat(700),
+    icon: "/home/user/private.png"
   })], 1_000).active[0]
   assert.equal(hostile.application.includes("\u0000"), false, "session application text strips controls")
   assert.ok(Array.from(hostile.application).length <= 256, "session application text is bounded")
   assert.ok(Array.from(hostile.device).length <= 512, "session device text is bounded")
   assert.ok(Array.from(hostile.detail).length <= 512, "session detail text is bounded")
+  assert.equal(hostile.icon, "", "session icon metadata cannot select arbitrary files")
   assert.equal(hostile.id, model.sessionId(hostile), "session identity uses the bounded representation")
+  assert.equal(model.reconcileSessions([], [observation({icon: "org.mozilla.firefox"})], 1_000).active[0].icon,
+    "org.mozilla.firefox", "safe themed icon identifiers survive normalization")
 }
 
 {
@@ -125,13 +129,25 @@ const observation = (overrides = {}) => Object.assign({
 
 {
   const grouped = model.coalesceNotificationEvents([
-    {phase: "started", kind: "camera", application: "Firefox"},
-    {phase: "started", kind: "microphone", application: "Firefox"},
-    {phase: "started", kind: "camera", application: "Firefox"}
+    {phase: "started", kind: "camera", application: "Firefox", icon: "firefox"},
+    {phase: "started", kind: "microphone", application: "Firefox", icon: "firefox"},
+    {phase: "started", kind: "camera", application: "Firefox", icon: "firefox"}
   ])
   assert.equal(grouped.title, "Privacy activity started")
   assert.equal(grouped.body, "Firefox: Camera, Microphone")
   assert.equal(grouped.count, 2, "duplicate transitions are collapsed")
+  assert.equal(grouped.icon, "firefox", "a single application's themed icon is retained")
+  assert.equal(grouped.fallbackIcon, "security-high-symbolic",
+    "multi-device activity retains a resolvable privacy fallback")
+
+  const mixed = model.coalesceNotificationEvents([
+    {phase: "started", kind: "camera", application: "Firefox", icon: "firefox"},
+    {phase: "started", kind: "microphone", application: "Calls", icon: "calls"}
+  ])
+  assert.equal(mixed.icon, "security-high-symbolic", "multi-app bursts use a neutral privacy icon")
+  assert.equal(mixed.fallbackIcon, "security-high-symbolic")
+  assert.equal(model.notificationIconName("../../private/icon"), "", "icon metadata cannot select paths")
+  assert.equal(model.notificationIconName("org.mozilla.firefox"), "org.mozilla.firefox")
 }
 
 {
