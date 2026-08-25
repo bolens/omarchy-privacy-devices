@@ -1,8 +1,11 @@
 * text=auto eol=lf
 *.png binary
 
+/.github export-ignore
 /.github/** export-ignore
+/scripts export-ignore
 /scripts/** export-ignore
+/tests export-ignore
 /tests/** export-ignore
 /Runtime*Test.qml export-ignore
 /package.json export-ignore
