@@ -1,6 +1,7 @@
 import importlib.machinery
 import importlib.util
 import json
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -31,12 +32,20 @@ class DiagnosticCopyTests(unittest.TestCase):
         self.assertEqual(run.call_args.args[0], ["/usr/bin/wl-copy"])
         self.assertEqual(json.loads(run.call_args.kwargs["input"]), payload)
         self.assertTrue(run.call_args.kwargs["text"])
+        self.assertEqual(run.call_args.kwargs["timeout"], 5)
 
     def test_fails_closed_when_clipboard_tool_is_missing(self):
         payload = {"version": 1, "redacted": True}
         with patch.object(sys, "argv", ["privacy-diagnostics", json.dumps(payload)]), patch.object(MODULE.shutil, "which", return_value=None), patch.object(MODULE.subprocess, "run") as run:
             self.assertEqual(MODULE.main(), 1)
         run.assert_not_called()
+
+    def test_times_out_a_stuck_clipboard_process(self):
+        payload = {"version": 1, "redacted": True}
+        with patch.object(sys, "argv", ["privacy-diagnostics", json.dumps(payload)]), \
+             patch.object(MODULE.shutil, "which", return_value="/usr/bin/wl-copy"), \
+             patch.object(MODULE.subprocess, "run", side_effect=subprocess.TimeoutExpired("wl-copy", 5)):
+            self.assertEqual(MODULE.main(), 1)
 
 
 if __name__ == "__main__":

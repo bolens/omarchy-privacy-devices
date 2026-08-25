@@ -48,5 +48,11 @@ assert.match(ciWorkflow, /name: Inspect release archive[\s\S]*?git archive HEAD 
   "CI must reject generated files from the release archive");
 assert.match(ciWorkflow, /git grep -IlE[\s\S]*?PRIVATE KEY[\s\S]*?gh\[pousr\]/,
   "CI must reject credential-like material from tracked release files");
+const attributes = read(".gitattributes");
+for (const pattern of ["/.github/**", "/scripts/**", "/tests/**", "/Runtime*Test.qml", "/package.json", "/package-lock.json"])
+  assert.match(attributes, new RegExp(`^${pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} export-ignore$`, "m"),
+    `release attributes must omit ${pattern}`);
+assert.match(ciWorkflow, /Release archive contains maintainer-only files/,
+  "CI must inspect the built archive for maintainer-only content");
 
 console.log(`release metadata checks passed for v${manifest.version}`);

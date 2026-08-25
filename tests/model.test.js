@@ -122,6 +122,8 @@ const hostileText = '<img src="https://attacker.invalid/pixel"> & camera'
 const safeText = context.autoTextSafe(hostileText)
 if (/[<>&]/.test(safeText)) throw new Error("shared AutoText metacharacters remain")
 if (safeText !== '＜img src="https://attacker.invalid/pixel"＞ ＆ camera') throw new Error("shared AutoText sanitization")
+if (context.boundedPlainText("safe\u202eevil\u2066\ntext", 32) !== "safeeviltext") throw new Error("plain-text direction and control sanitation")
+if (context.sanitizeSettings({hiddenApps: [" Browser\u202e ", "\n"]}).hiddenApps.join() !== "Browser") throw new Error("settings list plain-text sanitation")
 if (!context.historyLoadAccepted(4, 4, true)) throw new Error("current enabled history load accepted")
 if (context.historyLoadAccepted(3, 4, true)) throw new Error("stale history load rejected")
 if (context.historyLoadAccepted(4, 4, false)) throw new Error("disabled history load rejected")

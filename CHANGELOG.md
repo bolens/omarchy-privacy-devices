@@ -7,6 +7,18 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Changed
+
+- Keep maintainer-only workflows, tests, tooling, and runtime harnesses out of
+  release archives while preserving installed and marketplace files.
+
+### Security
+
+- Launch trusted capture helpers and Omarchy commands with argument arrays;
+  only explicit user-configured custom commands retain shell semantics.
+- Strip text controls and Unicode direction overrides from session, history,
+  and imported list metadata, and bound diagnostic clipboard subprocesses.
+
 ## [0.5.2] - 2026-08-25
 
 ### Fixed

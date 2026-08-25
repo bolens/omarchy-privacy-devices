@@ -28,8 +28,11 @@ def main() -> int:
     if not clipboard:
         return 1
     try:
-        return subprocess.run([os.path.realpath(clipboard)], input=json.dumps(payload, separators=(",", ":")), text=True, check=False).returncode
-    except OSError:
+        return subprocess.run(
+            [os.path.realpath(clipboard)], input=json.dumps(payload, separators=(",", ":")),
+            text=True, check=False, timeout=5,
+        ).returncode
+    except (OSError, subprocess.SubprocessError):
         return 1
 
 
