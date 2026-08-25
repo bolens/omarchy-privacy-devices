@@ -26,7 +26,7 @@ while (($#)); do
   esac
 done
 
-for command in qs hyprctl jq grim magick pngquant wtype; do
+for command in qs hyprctl jq grim magick pngquant wtype omarchy; do
   command -v "$command" >/dev/null || { printf 'Missing required command: %s\n' "$command" >&2; exit 1; }
 done
 
@@ -64,8 +64,22 @@ shell_pid=$(qs list --all | awk '
 
 capture_dir=$(mktemp -d)
 restored=false
+notification_visible=false
+notification_summary="Privacy activity started · Screenshot example"
+dnd_state=""
+close_capture_notification() {
+  if [[ $notification_visible == true ]]; then
+    qs ipc --pid "$shell_pid" call notifications dismiss "$notification_summary" >/dev/null 2>&1 || true
+    notification_visible=false
+  fi
+}
 restore_desktop() {
   if [[ $restored == false ]]; then
+    close_capture_notification
+    if [[ $dnd_state == on ]]; then
+      qs ipc --pid "$shell_pid" call notifications setDnd on >/dev/null 2>&1 || true
+      dnd_state=""
+    fi
     qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
     hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null 2>&1 || true
     hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$original_workspace\" }))" >/dev/null 2>&1 || true
@@ -98,6 +112,24 @@ qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null
 sleep "$settle_seconds"
 grim -o "$monitor" "$capture_dir/bar-full.png"
 
+dnd_state=$(qs ipc --pid "$shell_pid" call notifications isDnd)
+if [[ $dnd_state == on ]]; then
+  qs ipc --pid "$shell_pid" call notifications setDnd off >/dev/null
+fi
+omarchy notification send --app-name "Privacy Devices" \
+  --icon firefox --urgency normal --expire-time 15000 \
+  "$notification_summary" "Firefox: Microphone"
+notification_visible=true
+sleep "$settle_seconds"
+grim -o "$monitor" "$capture_dir/notification-full.png"
+dismiss_result=$(qs ipc --pid "$shell_pid" call notifications dismiss "$notification_summary")
+[[ $dismiss_result == ok ]] || { printf 'Could not dismiss capture notification.\n' >&2; exit 1; }
+notification_visible=false
+if [[ $dnd_state == on ]]; then
+  qs ipc --pid "$shell_pid" call notifications setDnd on >/dev/null
+fi
+dnd_state=""
+
 geometry=$(qs ipc --pid "$shell_pid" call shell debugBarGeometry)
 widget_row=$(jq -c --arg id "$plugin_id" --argjson width "$monitor_width" '
   [.[] | select(.id == $id and .visible and .width > 0)]
@@ -123,6 +155,9 @@ for page in general appearance alerts monitoring; do
 done
 magick "$capture_dir/device-full.png" -crop "500x660+${panel_x}+20" +repage "$capture_dir/device.png"
 magick "$capture_dir/bar-full.png" -crop "${widget_width}x50+${widget_x}+0" +repage "$capture_dir/bar.png"
+notification_x=$((monitor_width - 428))
+((notification_x >= 0)) || { printf 'Monitor is too narrow for notification capture.\n' >&2; exit 1; }
+magick "$capture_dir/notification-full.png" -crop "420x160+${notification_x}+30" +repage "$capture_dir/notification.png"
 
 validate_capture() {
   local image=$1 colors
@@ -135,6 +170,7 @@ validate_capture() {
 validate_capture "$capture_dir/activity.png"
 validate_capture "$capture_dir/device.png"
 validate_capture "$capture_dir/bar.png"
+validate_capture "$capture_dir/notification.png"
 for page in general appearance alerts monitoring; do validate_capture "$capture_dir/$page.png"; done
 
 optimize_png() {
@@ -150,6 +186,7 @@ for page in general appearance alerts monitoring; do
 done
 optimize_png "$capture_dir/device.png" docs/device.png
 optimize_png "$capture_dir/bar.png" docs/bar.png
+optimize_png "$capture_dir/notification.png" docs/notification.png
 
 magick docs/social-card.png -fill '#0d110d' -draw 'rectangle 895,35 1729,875' "$capture_dir/social-base.png"
 magick "$capture_dir/activity.png" -resize 720x720 "$capture_dir/social-panel.png"

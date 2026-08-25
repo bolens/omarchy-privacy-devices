@@ -19,6 +19,16 @@ for (const qml of ["DeviceSettingsEditor.qml", "DeviceDiagnostics.qml", "Runtime
   assert.match(ci, new RegExp(`qmllint[^']*${qml}`), `CI must lint ${qml}`)
 assert.match(screenshotWorkflow, /device-full\.png/, "screenshot workflow must capture an individual device settings page")
 assert.match(screenshotWorkflow, /docs\/device\.png/, "screenshot workflow must publish the device settings capture")
+assert.match(screenshotWorkflow, /omarchy notification send[\s\S]*--app-name[\s\S]*Privacy Devices[\s\S]*--icon[\s\S]*firefox/,
+  "screenshot workflow must trigger an app-icon notification")
+assert.match(screenshotWorkflow, /notifications isDnd[\s\S]*notifications setDnd/,
+  "screenshot workflow must preserve and temporarily normalize DND state")
+assert.match(screenshotWorkflow, /notification_summary=.*Screenshot example[\s\S]*call notifications dismiss "\$notification_summary"/,
+  "screenshot cleanup must dismiss its uniquely labeled toast through Omarchy IPC")
+assert.match(screenshotWorkflow, /dismiss_result[\s\S]*== ok/,
+  "screenshot capture must verify that sample-toast dismissal succeeded")
+assert.match(screenshotWorkflow, /docs\/notification\.png/,
+  "screenshot workflow must publish the notification capture")
 assert.match(screenshotWorkflow, /wtype -k Return/, "device capture must use wtype's portable Enter key name")
 assert.match(screenshotWorkflow, /call shell summon "\$plugin_id" ""/, "activity capture must explicitly summon the main widget view")
 assert.match(screenshotWorkflow, /function validate_capture|validate_capture\(\)/, "screenshot workflow must reject blank captures")
