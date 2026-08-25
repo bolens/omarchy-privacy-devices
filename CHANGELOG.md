@@ -20,6 +20,9 @@ maintainer guides that define release and validation procedures.
 - Reuse normalized runtime policy and device snapshots, suspend background
   probes when their device classes are disabled, and coalesce dependency
   refreshes across in-flight checks.
+- Move control acceptance, observer invalidation/recovery, and history-load
+  acceptance behind behavior-tested model policies while retaining QML wiring
+  contracts.
 
 ### Fixed
 

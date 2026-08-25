@@ -19,9 +19,11 @@ shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
 ```
 
 The JavaScript suites cover classification, settings sanitation, normalized
-sessions, control transitions, visual-state policy, manifest/UI contracts,
-runtime process topology, static security invariants, and documentation asset
-dimensions, references, ownership, and local cross-links. Python tests execute
+sessions, control transitions and request outcomes, observer invalidation and
+recovery, history-generation acceptance, visual-state policy, manifest/UI
+contracts, runtime process topology and policy wiring, static security
+invariants, and documentation asset dimensions, references, ownership, and
+local cross-links. Python tests execute
 the helpers against temporary state and fake commands so privileged services,
 devices, screenshots, and recordings are never modified.
 

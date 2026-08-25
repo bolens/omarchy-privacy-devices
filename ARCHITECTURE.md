@@ -30,7 +30,8 @@ multiple displays do not duplicate observers or race for IPC ownership.
 - `BarWidget.qml` renders service state, routes user actions, and persists
   sanitized settings through Omarchy Shell.
 - `Model.js` contains pure classification, normalization, reconciliation,
-  health, settings, and visual-state policy shared by runtime and tests.
+  health, settings, control-request, observer-recovery, history-acceptance, and
+  visual-state policy shared by runtime and tests.
 - `PrivacyActivityCard.qml`, `DeviceSettingsEditor.qml`,
   `DeviceDiagnostics.qml`, `SettingsSurface.qml`, and `IntegerSetting.qml`
   contain reusable presentation components without monitoring ownership.
