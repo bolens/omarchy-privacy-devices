@@ -505,13 +505,11 @@ Item {
   function toggleControl(kind) {
     if (kind === "microphone" && !microphoneControlProc.running) {
       beginControlTransaction(kind, microphoneMuted)
-      fallbackMicrophoneMuted = !fallbackMicrophoneMuted
       microphoneControlProc.command = audioToggleCommand(kind)
       microphoneControlProc.running = true
     }
     else if (kind === "audio-output" && !outputControlProc.running) {
       beginControlTransaction(kind, outputMuted)
-      fallbackOutputMuted = !fallbackOutputMuted
       outputControlProc.command = audioToggleCommand(kind)
       outputControlProc.running = true
     }
@@ -520,7 +518,6 @@ Item {
       privacyControlKind = kind
       privacyStateQueue = []
       if (privacyStateProc.running) privacyStateProc.running = false
-      setAllowed(kind, !controlEnabled(kind))
       privacyControlProc.command = [helperPath(), "toggle", kind]
       privacyControlProc.running = true
     }

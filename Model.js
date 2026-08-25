@@ -7,7 +7,8 @@ function sanitizeSettings(data) {
   var source = data && typeof data === "object" && !Array.isArray(data) ? data : {}
   var clean = {}, index, key
   var booleans = {showIdle:true, showControls:true, deduplicateApps:true, notifyOnActivity:true, notifyOnStop:false,
-    notifyOnControlChanges:true, historyEnabled:false, directDeviceMonitoring:false, showInferredAttribution:true}
+    notifyOnControlChanges:true, historyEnabled:false, directDeviceMonitoring:false, showInferredAttribution:true,
+    showStatePills:true, showSessionCounts:true, animatePending:true}
   for (key in booleans) if (source[key] !== undefined) clean[key] = typeof source[key] === "boolean" ? source[key] : booleans[key]
   var integers = {directDevicePollSeconds:[2,60,5], locationPollSeconds:[5,300,15], recordingPollSeconds:[1,60,2], popupMaxHeight:[360,900,620]}
   for (key in integers) if (source[key] !== undefined) {
@@ -19,31 +20,35 @@ function sanitizeSettings(data) {
     var opacity = Number(source.idleOpacity)
     clean.idleOpacity = Math.max(0.1, Math.min(1, isFinite(opacity) ? opacity : 0.45))
   }
+  if (source.disabledOpacity !== undefined) {
+    var disabledOpacity = Number(source.disabledOpacity)
+    clean.disabledOpacity = Math.max(0.25, Math.min(1, isFinite(disabledOpacity) ? disabledOpacity : 1))
+  }
   var kindLists = ["enabledKinds", "order", "notificationKinds", "blockableKinds"]
   for (index = 0; index < kindLists.length; index++) if (Array.isArray(source[kindLists[index]]))
     clean[kindLists[index]] = unique(source[kindLists[index]].filter(function(value) { return KINDS.indexOf(value) >= 0 })).slice(0, KINDS.length)
   var stringLists = ["excludedApps", "hiddenApps", "notificationSuppressedApps", "cameraKeywords", "screenShareKeywords"]
   for (index = 0; index < stringLists.length; index++) if (Array.isArray(source[stringLists[index]]))
     clean[stringLists[index]] = unique(source[stringLists[index]].filter(function(value) { return typeof value === "string" && value.trim() !== "" }).map(function(value) { return value.trim().slice(0, 256) })).slice(0, 256)
-  var enums = {displayMode:["icons","active-count","active-only"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
+  var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["symbols","letters","off"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
     audioControlBackend:["auto","pactl","wpctl"], screenshotBackend:["omarchy","grim","grim-satty","hyprshot","flameshot","custom"],
-    activeColorRole:["bar-active","urgent","accent","foreground"], inactiveColorRole:["muted","foreground","accent"],
+    activeColorRole:["bar-active","urgent","accent","foreground"], inactiveColorRole:["muted","foreground","accent"], disabledColorRole:["urgent","muted","accent","foreground","bar-active"],
     mutedColorRole:["urgent","muted","bar-active","accent","foreground"], unmutedColorRole:["foreground","bar-active","accent","muted","urgent"]}
   for (key in enums) if (source[key] !== undefined) clean[key] = enums[key].indexOf(source[key]) >= 0 ? source[key] : enums[key][0]
   var strings = ["screenshotCustomCommand", "screenshotProcessName", "recordingProcessName", "recordingCustomStartCommand", "recordingCustomStopCommand"]
   for (index = 0; index < strings.length; index++) if (source[strings[index]] !== undefined) clean[strings[index]] = String(source[strings[index]] || "").slice(0, 4096)
-  var maps = ["icons", "itemColorRoles", "itemIdleOpacity", "itemIdleVisibility", "itemLabels"]
+  var maps = ["icons", "itemColorRoles", "itemIdleOpacity", "itemIdleVisibility", "itemStatusMarkerVisibility", "itemLabels"]
   for (index = 0; index < maps.length; index++) if (source[maps[index]] && typeof source[maps[index]] === "object" && !Array.isArray(source[maps[index]])) {
     var mapName = maps[index], map = {}, keys = Object.keys(source[mapName]).filter(function(value) { return KINDS.indexOf(value) >= 0 }).slice(0, KINDS.length)
     for (var mapIndex = 0; mapIndex < keys.length; mapIndex++) {
       var mapKey = keys[mapIndex], mapValue = source[mapName][mapKey]
-      if (mapName === "itemIdleVisibility") map[mapKey] = mapValue === true
+      if (mapName === "itemIdleVisibility" || mapName === "itemStatusMarkerVisibility") map[mapKey] = mapValue === true
       else if (mapName === "itemIdleOpacity") {
         var itemOpacity = Number(mapValue)
         map[mapKey] = Math.max(0.1, Math.min(1, isFinite(itemOpacity) ? itemOpacity : 0.45))
       } else if (mapName === "itemColorRoles") {
         if (!mapValue || typeof mapValue !== "object" || Array.isArray(mapValue)) continue
-        var roles = {}, roleNames = ["active", "inactive", "muted", "unmuted"]
+        var roles = {}, roleNames = ["active", "inactive", "disabled", "muted", "unmuted"]
         for (var roleIndex = 0; roleIndex < roleNames.length; roleIndex++) if (typeof mapValue[roleNames[roleIndex]] === "string") roles[roleNames[roleIndex]] = mapValue[roleNames[roleIndex]].slice(0, 32)
         map[mapKey] = roles
       } else map[mapKey] = String(mapValue || "").slice(0, 128)
@@ -58,6 +63,37 @@ function arraySetting(value, fallback) {
   if (Array.isArray(value)) return value.map(function(entry) { return String(entry) })
   if (typeof value === "string") return value.split(",").map(function(entry) { return entry.trim() }).filter(Boolean)
   return fallback.slice()
+}
+
+function privacyVisualState(entry) {
+  entry = entry || {}
+  if (entry.pending === true) return "pending"
+  if (entry.health && entry.health.status && entry.health.status !== "healthy") return "unavailable"
+  var disableCapable = ["microphone", "audio-output", "camera", "screen-share", "location"].indexOf(String(entry.kind || "")) >= 0
+  if (disableCapable && entry.controlEnabled === false) return "disabled"
+  return entry.active === true ? "active" : "idle"
+}
+
+function privacyStateLabel(entry) {
+  var labels = {pending: "VERIFYING", unavailable: "DEGRADED", disabled: "DISABLED", active: "ACTIVE", idle: "IDLE"}
+  return labels[privacyVisualState(entry)] || "IDLE"
+}
+
+function privacyStateMarker(entry, mode, visible) {
+  if (visible === false || mode === "off") return ""
+  var state = privacyVisualState(entry)
+  if (mode === "letters") {
+    var letters = {pending: "V", unavailable: "!", disabled: "X", active: "A", idle: ""}
+    return letters[state] || ""
+  }
+  var symbols = {pending: "…", unavailable: "!", disabled: "⊘", active: "●", idle: ""}
+  return symbols[state] || ""
+}
+
+function privacySessionCount(entry, visible) {
+  if (visible === false) return 0
+  var sessions = entry && Array.isArray(entry.sessions) ? entry.sessions.length : 0
+  return sessions > 1 ? sessions : 0
 }
 
 function lowerList(value, fallback) {

@@ -14,6 +14,18 @@ function node(mediaClass, name, extra = {}) {
 }
 
 const defaults = {excludedApps: ["cava"], cameraKeywords: ["camera", "v4l2"], screenShareKeywords: ["portal", "screencast"]}
+if (context.privacyVisualState({kind: "camera", active: false, controllable: true, controlEnabled: false, health: {status: "healthy"}}) !== "disabled") throw new Error("blocked camera visual state")
+if (context.privacyVisualState({kind: "location", active: false, controllable: true, controlEnabled: true, health: {status: "healthy"}}) !== "idle") throw new Error("available idle visual state")
+if (context.privacyVisualState({kind: "screen-recording", active: false, controllable: true, controlEnabled: false, health: {status: "healthy"}}) !== "idle") throw new Error("stopped recording is idle, not disabled")
+if (context.privacyVisualState({kind: "camera", active: true, controllable: true, controlEnabled: true, health: {status: "healthy"}}) !== "active") throw new Error("active visual state")
+if (context.privacyVisualState({kind: "camera", active: false, controllable: true, controlEnabled: false, health: {status: "degraded"}}) !== "unavailable") throw new Error("health failure takes visual precedence")
+if (context.privacyVisualState({kind: "camera", active: false, pending: true, controlEnabled: false, health: {status: "degraded"}}) !== "pending") throw new Error("pending visual state takes precedence")
+if (context.privacyStateLabel({kind: "camera", pending: true}) !== "VERIFYING") throw new Error("pending state label")
+if (context.privacyStateMarker({kind: "camera", controlEnabled: false}) !== "⊘") throw new Error("disabled state marker")
+if (context.privacyStateMarker({kind: "camera", controlEnabled: false}, "letters", true) !== "X") throw new Error("letter status marker")
+if (context.privacyStateMarker({kind: "camera", controlEnabled: false}, "off", true) !== "" || context.privacyStateMarker({kind: "camera", controlEnabled: false}, "symbols", false) !== "") throw new Error("status marker suppression")
+if (context.privacySessionCount({sessions: [{}, {}]}) !== 2 || context.privacySessionCount({sessions: [{}]}) !== 0) throw new Error("multi-session count badge")
+if (context.privacySessionCount({sessions: [{}, {}]}, false) !== 0) throw new Error("multi-session count suppression")
 const sanitized = context.sanitizeSettings({showIdle: "yes", popupMaxHeight: 9999, enabledKinds: ["camera", "camera", "bogus"], unknown: "discard"})
 if (JSON.stringify(sanitized) !== JSON.stringify({showIdle: true, popupMaxHeight: 900, enabledKinds: ["camera"], _privacySettingsVersion: 1})) throw new Error("settings sanitizer")
 const hardenedSettings = context.sanitizeSettings({
@@ -24,6 +36,12 @@ const hardenedSettings = context.sanitizeSettings({
   itemIdleVisibility: {camera: "yes", microphone: true},
   itemLabels: {camera: "C".repeat(200), bogus: "ignored"},
   itemColorRoles: {camera: {active: "accent", unexpected: "danger"}, bogus: {active: "urgent"}},
+  itemStatusMarkerVisibility: {camera: false, bogus: true},
+  disabledOpacity: 0,
+  statusMarkerMode: "invalid",
+  statePillStyle: "invalid",
+  popupDensity: "invalid",
+  showStatePills: "yes",
 })
 if (hardenedSettings.idleOpacity !== 0.1 || hardenedSettings.displayMode !== "icons") throw new Error("numeric and enum settings bounds")
 if (JSON.stringify(hardenedSettings.notificationSuppressedApps) !== JSON.stringify(["Firefox"])) throw new Error("settings string-list normalization")
@@ -31,6 +49,10 @@ if (JSON.stringify(hardenedSettings.itemIdleOpacity) !== JSON.stringify({camera:
 if (JSON.stringify(hardenedSettings.itemIdleVisibility) !== JSON.stringify({camera: false, microphone: true})) throw new Error("per-item boolean normalization")
 if (hardenedSettings.itemLabels.camera.length !== 128 || hardenedSettings.itemLabels.bogus !== undefined) throw new Error("per-item label bounds")
 if (JSON.stringify(hardenedSettings.itemColorRoles) !== JSON.stringify({camera: {active: "accent"}})) throw new Error("per-item role allowlist")
+if (JSON.stringify(hardenedSettings.itemStatusMarkerVisibility) !== JSON.stringify({camera: false})) throw new Error("per-item marker visibility allowlist")
+if (hardenedSettings.disabledOpacity !== 0.25) throw new Error("disabled opacity bounds")
+if (hardenedSettings.statusMarkerMode !== "symbols" || hardenedSettings.statePillStyle !== "filled" || hardenedSettings.popupDensity !== "comfortable") throw new Error("visual enum defaults")
+if (hardenedSettings.showStatePills !== true) throw new Error("visual boolean normalization")
 if (context.classifyNode(node("Stream/Input/Audio", "Firefox"), defaults) !== "microphone") throw new Error("microphone classification")
 if (context.classifyNode(node("Stream/Output/Audio", "Firefox"), defaults) !== "audio-output") throw new Error("audio output classification")
 if (context.classifyNode(node("Stream/Input/Video", "Firefox", {"media.name":"Integrated Camera"}), defaults) !== "camera") throw new Error("camera classification")
