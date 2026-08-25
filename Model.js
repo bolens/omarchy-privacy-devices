@@ -95,6 +95,31 @@ function arraySetting(value, fallback) {
   return fallback.slice()
 }
 
+function hasItemOverride(settings, group, kind, field) {
+  var map = settings && settings[group]
+  if (!map || typeof map !== "object" || Array.isArray(map) || !Object.prototype.hasOwnProperty.call(map, kind)) return false
+  if (field === undefined) return true
+  var entry = map[kind]
+  return entry && typeof entry === "object" && !Array.isArray(entry) && Object.prototype.hasOwnProperty.call(entry, field)
+}
+
+function itemOverrideMode(settings, group, kind) {
+  if (!hasItemOverride(settings, group, kind)) return "inherit"
+  return settings[group][kind] === true ? "show" : "hide"
+}
+
+function deviceBackendValidation(kind, settings) {
+  var source = settings && typeof settings === "object" ? settings : {}
+  if (kind === "screenshot" && source.screenshotBackend === "custom" && !String(source.screenshotCustomCommand || "").trim())
+    return {valid: false, message: "Enter a screenshot command."}
+  if (kind === "screen-recording" && source.recordingBackend === "custom") {
+    if (!String(source.recordingProcessName || "").trim()) return {valid: false, message: "Enter the recorder process name."}
+    if (!String(source.recordingCustomStartCommand || "").trim() || !String(source.recordingCustomStopCommand || "").trim())
+      return {valid: false, message: "Enter start and stop commands."}
+  }
+  return {valid: true, message: ""}
+}
+
 function privacyVisualState(entry) {
   entry = entry || {}
   if (entry.pending === true) return "pending"

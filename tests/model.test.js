@@ -1,4 +1,5 @@
 const fs = require("fs")
+const assert = require("node:assert/strict")
 const vm = require("vm")
 const source = fs.readFileSync(require("path").join(__dirname, "..", "Model.js"), "utf8").replace(/^\.pragma library\s*/, "")
 const context = {}
@@ -50,6 +51,22 @@ if (JSON.stringify(hardenedSettings.itemIdleVisibility) !== JSON.stringify({came
 if (hardenedSettings.itemLabels.camera.length !== 128 || hardenedSettings.itemLabels.bogus !== undefined) throw new Error("per-item label bounds")
 if (JSON.stringify(hardenedSettings.itemColorRoles) !== JSON.stringify({camera: {active: "accent"}})) throw new Error("per-item role allowlist")
 if (JSON.stringify(hardenedSettings.itemStatusMarkerVisibility) !== JSON.stringify({camera: false})) throw new Error("per-item marker visibility allowlist")
+
+assert.equal(context.itemOverrideMode({}, "itemIdleVisibility", "camera"), "inherit")
+assert.equal(context.itemOverrideMode({itemIdleVisibility: {camera: true}}, "itemIdleVisibility", "camera"), "show")
+assert.equal(context.itemOverrideMode({itemIdleVisibility: {camera: false}}, "itemIdleVisibility", "camera"), "hide")
+assert.equal(context.hasItemOverride({itemColorRoles: {camera: {active: "accent"}}}, "itemColorRoles", "camera", "active"), true)
+assert.equal(context.hasItemOverride({itemColorRoles: {camera: {active: "accent"}}}, "itemColorRoles", "camera", "inactive"), false)
+
+assert.deepEqual(JSON.parse(JSON.stringify(context.deviceBackendValidation("screenshot", {
+  screenshotBackend: "custom", screenshotCustomCommand: "", screenshotProcessName: "grim"
+}))), {valid: false, message: "Enter a screenshot command."})
+assert.deepEqual(JSON.parse(JSON.stringify(context.deviceBackendValidation("screen-recording", {
+  recordingBackend: "custom", recordingProcessName: "recorder", recordingCustomStartCommand: "start", recordingCustomStopCommand: ""
+}))), {valid: false, message: "Enter start and stop commands."})
+assert.equal(context.deviceBackendValidation("screen-recording", {
+  recordingBackend: "custom", recordingProcessName: "recorder", recordingCustomStartCommand: "start", recordingCustomStopCommand: "stop"
+}).valid, true)
 if (hardenedSettings.disabledOpacity !== 0.25) throw new Error("disabled opacity bounds")
 if (hardenedSettings.statusMarkerMode !== "symbols" || hardenedSettings.statePillStyle !== "filled" || hardenedSettings.popupDensity !== "comfortable") throw new Error("visual enum defaults")
 if (hardenedSettings.showStatePills !== true) throw new Error("visual boolean normalization")

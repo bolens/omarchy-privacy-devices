@@ -104,6 +104,21 @@ assert.match(bar, /label: "Show status markers for this device"[\s\S]*?Global st
 for (const label of ["Bar preview", "Display label", "Device icon"])
   assert.match(bar, new RegExp(`text: "${label}"`), `${label} must remain visible without relying on input placeholders`)
 assert.match(bar, /Shared by microphone and audio output/, "shared audio backend scope must be explicit")
+assert.match(bar, /function moveDeviceEditor\(delta\)/, "device editor must support adjacent navigation")
+assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceEditor\(dx\)/,
+  "left and right keys must navigate device editors")
+assert.match(bar, /text: "Previous device"[\s\S]*?text: "Next device"/, "device pages must expose visible adjacent navigation")
+assert.match(bar, /function resetDeviceBackend\(kind\)/, "backend reset must be scoped by device")
+assert.match(bar, /text: "Reset all device settings"/, "device pages must offer a complete reset")
+assert.match(bar, /property bool dirty:[\s\S]*?Unsaved changes[\s\S]*?enabled: parent\.dirty/,
+  "device text editors must expose dirty state and disable redundant saves")
+assert.match(bar, /Model\.deviceBackendValidation\("screenshot"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,
+  "custom screenshot settings must validate before saving")
+assert.match(bar, /Model\.deviceBackendValidation\("screen-recording"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,
+  "custom recording settings must validate before saving")
+assert.match(bar, /maximumLength: 4096/, "custom command editors must expose sanitizer-aligned bounds")
+assert.match(bar, /root\.deviceAppearanceCustomized\(root\.editingKind\) \? "Customized" : "Using global defaults"/,
+  "device appearance must identify inherited versus customized state")
 assert.match(bar, /text: "Reset device appearance"[\s\S]*?default label, icon, colors, idle visibility, idle opacity, and status-marker visibility/,
   "device reset copy must match every reset field")
 assert.match(activityCard, /controller\.statePillStyle === "filled"[\s\S]*?controller\.statePillStyle === "minimal"/, "state-pill styles must alter fill and border presentation")

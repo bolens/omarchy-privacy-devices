@@ -120,6 +120,17 @@ Panel {
     if (selectedKind) { showingGlobalSettings = false; editingKind = selectedKind; contentFlick.contentY = 0 }
   }
 
+  function moveDeviceEditor(delta) {
+    var order = orderedKinds()
+    var index = order.indexOf(editingKind)
+    if (index < 0) return
+    var target = Math.max(0, Math.min(order.length - 1, index + delta))
+    if (target === index) return
+    editingKind = order[target]
+    selectedKind = editingKind
+    contentFlick.contentY = 0
+  }
+
   function activityStateChanged(next) {
     if (next.length !== displayedActivityItems.length) return true
     for (var index = 0; index < next.length; index++) {
@@ -376,20 +387,37 @@ Panel {
 
   function persistItemColor(kind, state, role) {
     var roles = JSON.parse(JSON.stringify(setting("itemColorRoles", {}) || {}))
-    if (!roles[kind]) roles[kind] = {}
-    roles[kind][state] = role
+    if (role === "inherit") {
+      if (roles[kind]) {
+        delete roles[kind][state]
+        if (Object.keys(roles[kind]).length === 0) delete roles[kind]
+      }
+    } else {
+      if (!roles[kind]) roles[kind] = {}
+      roles[kind][state] = role
+    }
     persistSettings({itemColorRoles: roles})
   }
 
-  function persistItemStatusMarker(kind, visible) {
+  function persistItemStatusMarker(kind, mode) {
     var visibility = JSON.parse(JSON.stringify(setting("itemStatusMarkerVisibility", {}) || {}))
-    visibility[kind] = visible === true
+    if (mode === "inherit") delete visibility[kind]
+    else visibility[kind] = mode === "show"
     persistSettings({itemStatusMarkerVisibility: visibility})
   }
 
   function itemColorRole(kind, state, fallback) {
     var roles = setting("itemColorRoles", {}) || {}
     return roles[kind] && roles[kind][state] ? String(roles[kind][state]) : fallback
+  }
+
+  function itemColorOverrideRole(kind, state) {
+    return Model.hasItemOverride(settings, "itemColorRoles", kind, state)
+      ? String(setting("itemColorRoles", {})[kind][state]) : "inherit"
+  }
+
+  function itemOverrideMode(group, kind) {
+    return Model.itemOverrideMode(settings, group, kind)
   }
 
   function moveItem(kind, delta) {
@@ -414,9 +442,10 @@ Panel {
     return overrides[kind] !== undefined ? overrides[kind] === true : showIdle
   }
 
-  function persistItemIdleVisibility(kind, visible) {
+  function persistItemIdleVisibility(kind, mode) {
     var overrides = JSON.parse(JSON.stringify(setting("itemIdleVisibility", {}) || {}))
-    overrides[kind] = visible === true
+    if (mode === "inherit") delete overrides[kind]
+    else overrides[kind] = mode === "show"
     persistSettings({itemIdleVisibility: overrides})
   }
 
@@ -428,11 +457,12 @@ Panel {
 
   function persistItemIdleOpacity(kind, percent) {
     var overrides = JSON.parse(JSON.stringify(setting("itemIdleOpacity", {}) || {}))
-    overrides[kind] = Math.max(10, Math.min(100, Number(percent))) / 100
+    if (percent === null || percent === undefined) delete overrides[kind]
+    else overrides[kind] = Math.max(10, Math.min(100, Number(percent))) / 100
     persistSettings({itemIdleOpacity: overrides})
   }
 
-  function resetItemSettings(kind) {
+  function itemResetValues(kind) {
     var icons = JSON.parse(JSON.stringify(setting("icons", {}) || {}))
     var roles = JSON.parse(JSON.stringify(setting("itemColorRoles", {}) || {}))
     var visibility = JSON.parse(JSON.stringify(setting("itemIdleVisibility", {}) || {}))
@@ -445,7 +475,29 @@ Panel {
     delete opacity[kind]
     delete markerVisibility[kind]
     delete labels[kind]
-    persistSettings({icons: icons, itemColorRoles: roles, itemIdleVisibility: visibility, itemIdleOpacity: opacity, itemStatusMarkerVisibility: markerVisibility, itemLabels: labels})
+    return {icons: icons, itemColorRoles: roles, itemIdleVisibility: visibility, itemIdleOpacity: opacity, itemStatusMarkerVisibility: markerVisibility, itemLabels: labels}
+  }
+
+  function resetItemSettings(kind) {
+    persistSettings(itemResetValues(kind))
+  }
+
+  function deviceBackendDefaults(kind) {
+    if (kind === "screenshot") return {screenshotBackend: "omarchy", screenshotCustomCommand: "", screenshotProcessName: ""}
+    if (kind === "screen-recording") return {recordingBackend: "omarchy", recordingProcessName: "", recordingCustomStartCommand: "", recordingCustomStopCommand: ""}
+    if (isAudioControl({kind: kind})) return {audioControlBackend: "auto"}
+    return {}
+  }
+
+  function resetDeviceBackend(kind) {
+    persistSettings(deviceBackendDefaults(kind))
+  }
+
+  function resetAllDeviceSettings(kind) {
+    var values = itemResetValues(kind)
+    var backend = deviceBackendDefaults(kind)
+    for (var key in backend) values[key] = backend[key]
+    persistSettings(values)
   }
 
   function toggleEntry(entry) {
@@ -512,9 +564,24 @@ Panel {
   }
 
   function iconFor(kind) {
-    var defaults = {"microphone":"󰍬", "audio-output":"󰓃", "camera":"󰄀", "screen-share":"󰍹", "screenshot":"󰹑", "screen-recording":"󰻂", "location":"󰋽"}
     var icons = setting("icons", {}) || {}
-    return icons[kind] !== undefined ? String(icons[kind]) : String(defaults[kind] || "")
+    return icons[kind] !== undefined ? String(icons[kind]) : defaultIcon(kind)
+  }
+
+  function defaultIcon(kind) {
+    var defaults = {"microphone":"󰍬", "audio-output":"󰓃", "camera":"󰄀", "screen-share":"󰍹", "screenshot":"󰹑", "screen-recording":"󰻂", "location":"󰋽"}
+    return String(defaults[kind] || "")
+  }
+
+  function deviceAppearanceCustomized(kind) {
+    var labels = setting("itemLabels", {}) || {}
+    var icons = setting("icons", {}) || {}
+    return Object.prototype.hasOwnProperty.call(labels, kind)
+      || (Object.prototype.hasOwnProperty.call(icons, kind) && String(icons[kind]) !== defaultIcon(kind))
+      || Model.hasItemOverride(settings, "itemColorRoles", kind)
+      || Model.hasItemOverride(settings, "itemIdleVisibility", kind)
+      || Model.hasItemOverride(settings, "itemIdleOpacity", kind)
+      || Model.hasItemOverride(settings, "itemStatusMarkerVisibility", kind)
   }
 
   function sharedText(value) {
@@ -666,7 +733,8 @@ Panel {
       anchors.fill: parent
       onCloseRequested: root.closeCurrentLayer()
       onMoveRequested: function(dx, dy) {
-        if (dy !== 0 && root.editingKind === "" && !root.showingGlobalSettings) root.moveActivitySelection(dy)
+        if (root.editingKind !== "" && dx !== 0) root.moveDeviceEditor(dx)
+        else if (dy !== 0 && root.editingKind === "" && !root.showingGlobalSettings) root.moveActivitySelection(dy)
       }
       onActivateRequested: {
         if (root.editingKind === "" && !root.showingGlobalSettings) root.activateActivitySelection()
@@ -789,6 +857,16 @@ Panel {
               font.pixelSize: Style.font.title
               font.weight: Font.DemiBold
             }
+            Button {
+              text: "Previous device"
+              enabled: root.canMoveItem(root.editingKind, -1)
+              onClicked: root.moveDeviceEditor(-1)
+            }
+            Button {
+              text: "Next device"
+              enabled: root.canMoveItem(root.editingKind, 1)
+              onClicked: root.moveDeviceEditor(1)
+            }
           }
 
           SettingsSurface {
@@ -818,8 +896,19 @@ Panel {
           }
 
           SettingsSurface {
+            id: appearanceSurface
             accent: root.activeThemeColor
+            property bool labelDirty: labelEditor.text.trim() !== root.labelFor(root.editingKind)
+            property bool iconDirty: iconEditor.text !== root.iconFor(root.editingKind)
             PanelSectionHeader { Layout.fillWidth: true; text: "Appearance" }
+            Text {
+              Layout.fillWidth: true
+              text: appearanceSurface.labelDirty || appearanceSurface.iconDirty ? "Unsaved changes" : (root.deviceAppearanceCustomized(root.editingKind) ? "Customized" : "Using global defaults")
+              textFormat: Text.PlainText
+              color: appearanceSurface.labelDirty || appearanceSurface.iconDirty ? Color.accent : Color.muted
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+            }
             Text { Layout.fillWidth: true; text: "Display label"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
             RowLayout {
               Layout.fillWidth: true
@@ -836,6 +925,7 @@ Panel {
             Button {
               text: "Save"
               tooltipText: "Save display label"
+              enabled: appearanceSurface.labelDirty
               onClicked: root.persistLabel(root.editingKind, labelEditor.text)
             }
           }
@@ -856,6 +946,7 @@ Panel {
             Button {
               text: "Save"
               tooltipText: "Save device icon"
+              enabled: appearanceSurface.iconDirty
               onClicked: root.persistIcon(root.editingKind, iconEditor.text)
             }
           }
@@ -863,10 +954,8 @@ Panel {
             Dropdown {
             Layout.fillWidth: true
             label: root.isAudioControl({kind: root.editingKind}) ? "Muted color" : "Active color"
-            options: ["bar-active", "urgent", "accent", "foreground", "muted"]
-            value: root.isAudioControl({kind: root.editingKind})
-              ? root.itemColorRole(root.editingKind, "muted", String(root.setting("mutedColorRole", "urgent")))
-              : root.itemColorRole(root.editingKind, "active", String(root.setting("activeColorRole", "bar-active")))
+            options: ["inherit", "bar-active", "urgent", "accent", "foreground", "muted"]
+            value: root.itemColorOverrideRole(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "muted" : "active")
             onChanged: function(value) { root.persistItemColor(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "muted" : "active", value) }
           }
 
@@ -874,43 +963,48 @@ Panel {
             visible: root.isPreventativeControl({kind: root.editingKind})
             Layout.fillWidth: true
             label: "Disabled color"
-            options: ["bar-active", "urgent", "accent", "foreground", "muted"]
-            value: root.itemColorRole(root.editingKind, "disabled", String(root.setting("disabledColorRole", "urgent")))
+            options: ["inherit", "bar-active", "urgent", "accent", "foreground", "muted"]
+            value: root.itemColorOverrideRole(root.editingKind, "disabled")
             onChanged: function(value) { root.persistItemColor(root.editingKind, "disabled", value) }
           }
 
             Dropdown {
             Layout.fillWidth: true
             label: root.isAudioControl({kind: root.editingKind}) ? "Unmuted color" : "Inactive color"
-            options: ["bar-active", "urgent", "accent", "foreground", "muted"]
-            value: root.isAudioControl({kind: root.editingKind})
-              ? root.itemColorRole(root.editingKind, "unmuted", String(root.setting("unmutedColorRole", "foreground")))
-              : root.itemColorRole(root.editingKind, "inactive", String(root.setting("inactiveColorRole", "muted")))
+            options: ["inherit", "bar-active", "urgent", "accent", "foreground", "muted"]
+            value: root.itemColorOverrideRole(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "unmuted" : "inactive")
             onChanged: function(value) { root.persistItemColor(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "unmuted" : "inactive", value) }
           }
 
-            NumberField {
-            label: "Idle opacity (%)"
-            from: 10
-            to: 100
-            stepSize: 5
-            value: Math.round(root.itemIdleOpacity(root.editingKind) * 100)
-            foreground: Color.popups.text
-            accent: root.activeThemeColor
-            fontFamily: Style.font.family
-            onModified: function(value) { root.persistItemIdleOpacity(root.editingKind, value) }
-          }
+            RowLayout {
+              Layout.fillWidth: true
+              NumberField {
+                Layout.fillWidth: true
+                label: "Idle opacity (%)"
+                from: 10
+                to: 100
+                stepSize: 5
+                value: Math.round(root.itemIdleOpacity(root.editingKind) * 100)
+                foreground: Color.popups.text
+                accent: root.activeThemeColor
+                fontFamily: Style.font.family
+                onModified: function(value) { root.persistItemIdleOpacity(root.editingKind, value) }
+              }
+              Button {
+                text: "Use default"
+                enabled: Model.hasItemOverride(root.settings, "itemIdleOpacity", root.editingKind)
+                onClicked: root.persistItemIdleOpacity(root.editingKind, null)
+              }
+            }
 
-            Toggle {
+            Dropdown {
               Layout.fillWidth: true
               label: "Show status markers for this device"
-              description: "Global status-marker rules still apply."
-              checked: root.itemStatusMarkerVisible(root.editingKind)
-              foreground: Color.popups.text
-              accent: root.activeThemeColor
-              fontFamily: Style.font.family
-              onClicked: root.persistItemStatusMarker(root.editingKind, !checked)
+              options: ["inherit", "show", "hide"]
+              value: root.itemOverrideMode("itemStatusMarkerVisibility", root.editingKind)
+              onChanged: function(value) { root.persistItemStatusMarker(root.editingKind, value) }
             }
+            Text { Layout.fillWidth: true; text: "Global status-marker rules still apply when this device is set to show."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
           }
 
           SettingsSurface {
@@ -930,15 +1024,12 @@ Panel {
               }
               Item { Layout.fillWidth: true }
             }
-            Toggle {
+            Dropdown {
               Layout.fillWidth: true
               label: "Show while idle"
-              description: "Keep this device visible on the bar when it is not active."
-              checked: root.itemShowsWhenIdle(root.editingKind)
-              foreground: Color.popups.text
-              accent: root.activeThemeColor
-              fontFamily: Style.font.family
-              onClicked: root.persistItemIdleVisibility(root.editingKind, !checked)
+              options: ["inherit", "show", "hide"]
+              value: root.itemOverrideMode("itemIdleVisibility", root.editingKind)
+              onChanged: function(value) { root.persistItemIdleVisibility(root.editingKind, value) }
             }
           }
 
@@ -992,28 +1083,49 @@ Panel {
             visible: root.editingKind === "screenshot" && String(root.setting("screenshotBackend", "omarchy")) === "custom"
             Layout.fillWidth: true
             spacing: Style.spacing.sm
+            property bool dirty: customScreenshotCommandEditor.text !== String(root.setting("screenshotCustomCommand", ""))
+              || customScreenshotProcessEditor.text !== String(root.setting("screenshotProcessName", ""))
+            property var validation: Model.deviceBackendValidation("screenshot", {
+              screenshotBackend: "custom",
+              screenshotCustomCommand: customScreenshotCommandEditor.text,
+              screenshotProcessName: customScreenshotProcessEditor.text
+            })
+            Text { Layout.fillWidth: true; text: "Screenshot command"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
             TextField {
               id: customScreenshotCommandEditor
               Layout.fillWidth: true
               placeholderText: "Screenshot command"
               text: String(root.setting("screenshotCustomCommand", ""))
+              maximumLength: 4096
               foreground: Color.popups.text
               accent: root.activeThemeColor
               font.family: Style.font.family
-              onAccepted: root.persistSettings({screenshotCustomCommand: text})
+              onAccepted: if (parent.validation.valid) root.persistSettings({screenshotCustomCommand: text, screenshotProcessName: customScreenshotProcessEditor.text})
             }
+            Text { Layout.fillWidth: true; text: "Activity process substring (optional)"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
             TextField {
               id: customScreenshotProcessEditor
               Layout.fillWidth: true
               placeholderText: "Activity process substring (optional)"
               text: String(root.setting("screenshotProcessName", ""))
+              maximumLength: 256
               foreground: Color.popups.text
               accent: root.activeThemeColor
               font.family: Style.font.family
-              onAccepted: root.persistSettings({screenshotProcessName: text})
+              onAccepted: if (parent.validation.valid) root.persistSettings({screenshotCustomCommand: customScreenshotCommandEditor.text, screenshotProcessName: text})
+            }
+            Text {
+              Layout.fillWidth: true
+              text: !parent.validation.valid ? parent.validation.message : (parent.dirty ? "Unsaved changes" : "Saved")
+              textFormat: Text.PlainText
+              color: !parent.validation.valid ? Color.urgent : (parent.dirty ? Color.accent : Color.muted)
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+              wrapMode: Text.WordWrap
             }
             Button {
               text: "Save custom backend"
+              enabled: parent.dirty && parent.validation.valid
               onClicked: root.persistSettings({
                 screenshotCustomCommand: customScreenshotCommandEditor.text,
                 screenshotProcessName: customScreenshotProcessEditor.text
@@ -1025,38 +1137,63 @@ Panel {
             visible: root.editingKind === "screen-recording" && String(root.setting("recordingBackend", "omarchy")) === "custom"
             Layout.fillWidth: true
             spacing: Style.spacing.sm
+            property bool dirty: customRecorderProcessEditor.text !== String(root.setting("recordingProcessName", ""))
+              || customRecorderStartEditor.text !== String(root.setting("recordingCustomStartCommand", ""))
+              || customRecorderStopEditor.text !== String(root.setting("recordingCustomStopCommand", ""))
+            property var validation: Model.deviceBackendValidation("screen-recording", {
+              recordingBackend: "custom",
+              recordingProcessName: customRecorderProcessEditor.text,
+              recordingCustomStartCommand: customRecorderStartEditor.text,
+              recordingCustomStopCommand: customRecorderStopEditor.text
+            })
+            Text { Layout.fillWidth: true; text: "Recorder process name"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
             TextField {
               id: customRecorderProcessEditor
               Layout.fillWidth: true
               placeholderText: "Process command substring"
               text: String(root.setting("recordingProcessName", ""))
+              maximumLength: 256
               foreground: Color.popups.text
               accent: root.activeThemeColor
               font.family: Style.font.family
-              onAccepted: root.persistSettings({recordingProcessName: text})
+              onAccepted: if (parent.validation.valid) root.persistSettings({recordingProcessName: text, recordingCustomStartCommand: customRecorderStartEditor.text, recordingCustomStopCommand: customRecorderStopEditor.text})
             }
+            Text { Layout.fillWidth: true; text: "Start command"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
             TextField {
               id: customRecorderStartEditor
               Layout.fillWidth: true
               placeholderText: "Start command"
               text: String(root.setting("recordingCustomStartCommand", ""))
+              maximumLength: 4096
               foreground: Color.popups.text
               accent: root.activeThemeColor
               font.family: Style.font.family
-              onAccepted: root.persistSettings({recordingCustomStartCommand: text})
+              onAccepted: if (parent.validation.valid) root.persistSettings({recordingProcessName: customRecorderProcessEditor.text, recordingCustomStartCommand: text, recordingCustomStopCommand: customRecorderStopEditor.text})
             }
+            Text { Layout.fillWidth: true; text: "Stop command"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
             TextField {
               id: customRecorderStopEditor
               Layout.fillWidth: true
               placeholderText: "Stop command"
               text: String(root.setting("recordingCustomStopCommand", ""))
+              maximumLength: 4096
               foreground: Color.popups.text
               accent: root.activeThemeColor
               font.family: Style.font.family
-              onAccepted: root.persistSettings({recordingCustomStopCommand: text})
+              onAccepted: if (parent.validation.valid) root.persistSettings({recordingProcessName: customRecorderProcessEditor.text, recordingCustomStartCommand: customRecorderStartEditor.text, recordingCustomStopCommand: text})
+            }
+            Text {
+              Layout.fillWidth: true
+              text: !parent.validation.valid ? parent.validation.message : (parent.dirty ? "Unsaved changes" : "Saved")
+              textFormat: Text.PlainText
+              color: !parent.validation.valid ? Color.urgent : (parent.dirty ? Color.accent : Color.muted)
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+              wrapMode: Text.WordWrap
             }
             Button {
               text: "Save custom backend"
+              enabled: parent.dirty && parent.validation.valid
               onClicked: root.persistSettings({
                 recordingProcessName: customRecorderProcessEditor.text,
                 recordingCustomStartCommand: customRecorderStartEditor.text,
@@ -1112,11 +1249,28 @@ Panel {
             Layout.fillWidth: true
             accent: root.activeThemeColor
             PanelSectionHeader { Layout.fillWidth: true; text: "Reset device appearance" }
+            RowLayout {
+              Layout.fillWidth: true
+              Button {
+                text: "Reset device appearance"
+                tooltipText: "Restore the default label, icon, colors, idle visibility, idle opacity, and status-marker visibility"
+                onClicked: {
+                  root.resetItemSettings(root.editingKind)
+                  iconEditor.text = root.iconFor(root.editingKind)
+                  labelEditor.text = root.labelFor(root.editingKind)
+                }
+              }
+              Button {
+                visible: root.editingKind === "screen-recording" || root.editingKind === "screenshot" || root.isAudioControl({kind: root.editingKind})
+                text: root.isAudioControl({kind: root.editingKind}) ? "Reset shared backend" : "Reset backend"
+                tooltipText: root.isAudioControl({kind: root.editingKind}) ? "Affects microphone and audio output" : "Restore this device's default backend"
+                onClicked: root.resetDeviceBackend(root.editingKind)
+              }
+            }
             Button {
-              text: "Reset device appearance"
-              tooltipText: "Restore the default label, icon, colors, idle visibility, idle opacity, and status-marker visibility"
+              text: "Reset all device settings"
               onClicked: {
-                root.resetItemSettings(root.editingKind)
+                root.resetAllDeviceSettings(root.editingKind)
                 iconEditor.text = root.iconFor(root.editingKind)
                 labelEditor.text = root.labelFor(root.editingKind)
               }
