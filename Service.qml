@@ -135,11 +135,8 @@ Item {
   }
 
   function setObserverHealth(source, status, code, reason) {
-    var current = observerHealth[source] || {}
-    if (current.status === status && current.code === code && current.reason === reason) return
-    var next = Object.assign({}, observerHealth)
-    next[source] = {status: status, source: source, code: code, reason: reason}
-    observerHealth = next
+    var next = Model.updateObserverHealth(observerHealth, source, status, code, reason)
+    if (next !== observerHealth) observerHealth = next
   }
 
   function clearDirectObserverState() {
@@ -347,14 +344,14 @@ Item {
     var now = Date.now()
     return {
       pipewireReactive: pipewireAvailable,
-      lastSessionRefreshAgeSeconds: lastSessionRefreshAt > 0 ? Math.max(0, Math.round((now - lastSessionRefreshAt) / 1000)) : -1,
-      lastFallbackRefreshAgeSeconds: lastFallbackRefreshAt > 0 ? Math.max(0, Math.round((now - lastFallbackRefreshAt) / 1000)) : -1,
+      lastSessionRefreshAgeSeconds: Model.freshnessAgeSeconds(lastSessionRefreshAt, now),
+      lastFallbackRefreshAgeSeconds: Model.freshnessAgeSeconds(lastFallbackRefreshAt, now),
       fallbackObserverRunning: fallbackObserverProc.running,
-      fallbackObserverHeartbeatAgeSeconds: fallbackObserverLastSeen > 0 ? Math.max(0, Math.round((now - fallbackObserverLastSeen) / 1000)) : -1,
+      fallbackObserverHeartbeatAgeSeconds: Model.freshnessAgeSeconds(fallbackObserverLastSeen, now),
       fallbackObserverRetryMilliseconds: fallbackObserverRetryMilliseconds,
       directDeviceEnabled: settings.directDeviceMonitoring === true,
       directObserverRunning: directDeviceProc.running,
-      directHeartbeatAgeSeconds: directObserverLastSeen > 0 ? Math.max(0, Math.round((now - directObserverLastSeen) / 1000)) : -1,
+      directHeartbeatAgeSeconds: Model.freshnessAgeSeconds(directObserverLastSeen, now),
       directObserverRetryMilliseconds: directObserverRetryMilliseconds
     }
   }
@@ -839,9 +836,8 @@ Item {
     repeat: true
     running: root.settings.directDeviceMonitoring === true
     onTriggered: {
-      var heartbeat = root.boundedSeconds(root.settings.directDevicePollSeconds, 5, 2, 60) * 1000
-      var freshnessAnchor = Math.max(root.directObserverLastSeen, root.directObserverStartedAt)
-      if (freshnessAnchor > 0 && Date.now() - freshnessAnchor <= Math.max(15000, heartbeat * 3)) return
+      var heartbeat = root.boundedSeconds(root.settings.directDevicePollSeconds, 5, 2, 60)
+      if (!Model.observerHeartbeatState(root.directObserverLastSeen, root.directObserverStartedAt, Date.now(), heartbeat).stale) return
       root.clearDirectObserverState()
       root.setObserverHealth("direct-device", "degraded", "heartbeat_stale", "observer heartbeat is stale")
     }
@@ -853,9 +849,8 @@ Item {
     repeat: true
     running: root.kindEnabled("screen-recording") || root.kindEnabled("screenshot")
     onTriggered: {
-      var heartbeat = root.boundedSeconds(root.settings.recordingPollSeconds, 2, 1, 60) * 1000
-      var freshnessAnchor = Math.max(root.fallbackObserverLastSeen, root.fallbackObserverStartedAt)
-      if (freshnessAnchor > 0 && Date.now() - freshnessAnchor <= Math.max(15000, heartbeat * 3)) return
+      var heartbeat = root.boundedSeconds(root.settings.recordingPollSeconds, 2, 1, 60)
+      if (!Model.observerHeartbeatState(root.fallbackObserverLastSeen, root.fallbackObserverStartedAt, Date.now(), heartbeat).stale) return
       root.clearFallbackObserverState()
       root.setObserverHealth("fallback-observer", "degraded", "heartbeat_stale", "fallback observer heartbeat is stale")
     }

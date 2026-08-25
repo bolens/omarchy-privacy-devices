@@ -451,6 +451,38 @@ function historyLoadAccepted(loadGeneration, currentGeneration, enabled) {
   return Number(loadGeneration) === Number(currentGeneration) && enabled === true
 }
 
+function freshnessAgeSeconds(timestamp, now) {
+  var value = Number(timestamp)
+  var current = Number(now)
+  if (!(value > 0) || !isFinite(current)) return -1
+  return Math.max(0, Math.round((current - value) / 1000))
+}
+
+function observerHeartbeatState(lastSeen, startedAt, now, heartbeatSeconds) {
+  var heartbeat = Number(heartbeatSeconds)
+  if (!isFinite(heartbeat)) heartbeat = 5
+  heartbeat = Math.max(1, Math.min(60, heartbeat))
+  var threshold = Math.max(15000, heartbeat * 3000)
+  var seen = Number(lastSeen)
+  var started = Number(startedAt)
+  var anchor = Math.max(isFinite(seen) ? seen : 0, isFinite(started) ? started : 0)
+  var current = Number(now)
+  return {
+    stale: !(anchor > 0) || !isFinite(current) || current - anchor > threshold,
+    ageSeconds: freshnessAgeSeconds(anchor, current),
+    thresholdMilliseconds: threshold
+  }
+}
+
+function updateObserverHealth(health, source, status, code, reason) {
+  var currentHealth = health && typeof health === "object" ? health : {}
+  var current = currentHealth[source] || {}
+  if (current.status === status && current.code === code && current.reason === reason) return currentHealth
+  var next = Object.assign({}, currentHealth)
+  next[source] = {status: status, source: source, code: code, reason: reason}
+  return next
+}
+
 // Ignore timestamps that naturally advance on every observation. Consumers only
 // need a new array when something they render or act upon actually changed.
 function sessionsEquivalent(left, right) {

@@ -6,7 +6,8 @@ const service = fs.readFileSync(path.join(__dirname, "..", "Service.qml"), "utf8
 const screenshotWorkflow = fs.readFileSync(path.join(__dirname, "..", "scripts/capture-screenshots"), "utf8")
 const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
 
-assert.match(service, /function monitoringTelemetry\(\)/, "service must expose monitoring telemetry")
+assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?Model\.freshnessAgeSeconds\(/,
+  "monitoring telemetry must use the behavior-tested freshness policy")
 assert.match(service, /requestedSettingsPage = Model\.settingsPage\(page\)/, "settings IPC pages must pass through the shared allowlist")
 assert.match(screenshotWorkflow, /trap restore_desktop EXIT INT TERM/, "screenshot capture must restore the user's workspace on failure")
 assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must reject workspaces containing user windows")
@@ -78,7 +79,10 @@ assert.match(service, /"omarchy",\s*"notification",\s*"send"/,
 assert.match(service, /"watch",\s*"--heartbeat"/, "direct-device monitoring must use one persistent observer")
 assert.match(service, /directObserverRetryMilliseconds[\s\S]*?Math\.min\([^\n]*60000\)/,
   "observer restart backoff must be bounded at 60 seconds")
-assert.match(service, /observer heartbeat is stale/, "missing observer heartbeats must degrade health")
+assert.equal((service.match(/Model\.observerHeartbeatState\(/g) || []).length, 2,
+  "both observer timers must use the behavior-tested heartbeat policy")
+assert.match(service, /function setObserverHealth\(source, status, code, reason\)[\s\S]*?Model\.updateObserverHealth\(/,
+  "observer health mutation must use the behavior-tested idempotent policy")
 assert.doesNotMatch(service, /directDeviceTimer/, "removed polling timer must not remain referenced")
 assert.match(service, /property double directObserverStartedAt:\s*0/, "direct observer staleness must account for startup grace")
 assert.match(service, /property double fallbackObserverStartedAt:\s*0/, "fallback observer staleness must account for startup grace")
