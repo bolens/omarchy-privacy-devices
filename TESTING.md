@@ -25,6 +25,7 @@ shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
 The JavaScript suites cover classification, settings sanitation, normalized
 sessions, control transitions and request outcomes, observer invalidation and
 recovery, heartbeat boundaries and clock skew, idempotent health updates,
+telemetry waiting/retry/heartbeat presentation,
 probe FIFO and refresh supersession, popup navigation boundaries and stale
 selection recovery, scroll-deferral and diagnostic presentation policy,
 history-generation acceptance, visual-state policy, manifest/UI

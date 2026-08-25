@@ -34,6 +34,8 @@ maintainer guides that define release and validation procedures.
   behavior-tested, including empty, stale, and boundary states.
 - Behavior-test scroll-deferral semantics and diagnostic row formatting instead
   of relying on QML implementation and unrelated-label searches.
+- Behavior-test monitoring telemetry text, expose fallback-observer heartbeat
+  and retry timing, and render missing values as stable fallbacks.
 
 ### Fixed
 

@@ -87,6 +87,8 @@ normal operation poll-driven.
   derive from shared policies so reactive row changes cannot leave stale focus.
 - Scroll deferral compares only presentation-critical privacy state, while
   diagnostic rows derive from one shared formatting policy.
+- Monitoring telemetry exports normalized ages and uses one presentation policy
+  for waiting, retry, heartbeat, and unavailable states.
 
 ## Security boundaries
 
