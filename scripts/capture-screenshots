@@ -125,6 +125,20 @@ focus_capture_workspace() {
   return 1
 }
 
+restore_original_workspace() {
+  local attempt focused workspace
+  hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null 2>&1 || return 1
+  hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$original_workspace\" }))" >/dev/null 2>&1 || return 1
+  for attempt in {1..20}; do
+    focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
+    workspace=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .activeWorkspace.id')
+    [[ $focused == true && $workspace == "$original_workspace" ]] && return 0
+    sleep 0.1
+  done
+  printf 'Could not restore %s workspace %s.\n' "$monitor" "$original_workspace" >&2
+  return 1
+}
+
 resolve_geometry() {
   local attempt geometry widget_row
   for attempt in {1..40}; do
@@ -235,8 +249,7 @@ restore_desktop() {
     restore_shell_settings >/dev/null 2>&1 || true
     qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
     restore_history || restore_failed=true
-    hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null 2>&1 || true
-    hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$original_workspace\" }))" >/dev/null 2>&1 || true
+    restore_original_workspace || restore_failed=true
     restored=true
   fi
   rm -rf -- "$capture_dir"

@@ -42,6 +42,8 @@ assert.match(screenshotWorkflow, /call privacy-devices historyEnabled[\s\S]*?his
 assert.match(screenshotWorkflow, /\.\/privacy-history append "\$history_samples"[\s\S]*?set_showcase_settings[\s\S]*?reload_shell_config[\s\S]*?capture_panel history history/,
   "sample history and showcase settings must be ready before capture without restarting Quickshell")
 assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must reject workspaces containing user windows")
+assert.match(screenshotWorkflow, /restore_original_workspace\(\) \{[\s\S]*?for attempt in \{1\.\.20\}[\s\S]*?workspace == \"\$original_workspace\"/,
+  "workspace restoration must wait until the compositor confirms the original workspace")
 assert.match(screenshotWorkflow, /debugBarGeometry/, "bar screenshots must use measured live widget geometry")
 assert.match(screenshotWorkflow, /panel_capture_x=\$\(\(widget_x \+ widget_width \/ 2 - panel_width \/ 2 - panel_side_padding\)\)/,
   "panel captures must center on live widget geometry instead of using a stale offset")
