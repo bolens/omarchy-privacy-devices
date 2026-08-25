@@ -28,7 +28,7 @@ assert.match(qmlRuntime, /runtime_dir="\$runtime_parent\/runtime tree"/,
 assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?lastSessionRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastSessionRefreshAt, now\)[\s\S]*?lastFallbackRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastFallbackRefreshAt, now\)[\s\S]*?fallbackObserverHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(fallbackObserverLastSeen, now\)[\s\S]*?directHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(directObserverLastSeen, now\)/,
   "every exported telemetry timestamp must use the behavior-tested freshness policy")
 assert.match(service, /requestedSettingsPage = Model\.settingsPage\(page\)/, "settings IPC pages must pass through the shared allowlist")
-assert.match(screenshotWorkflow, /trap restore_desktop EXIT INT TERM/, "screenshot capture must restore the user's workspace on failure")
+assert.match(screenshotWorkflow, /trap cleanup_capture EXIT INT TERM/, "screenshot capture must restore user and repository state on failure")
 assert.match(screenshotWorkflow, /trap 'printf .*Capture failed at line %s.*LINENO.*' ERR/,
   "screenshot failures should identify their source line without tracing private state")
 assert.match(screenshotWorkflow, /flock -n 9/,
@@ -105,8 +105,14 @@ assert.match(screenshotWorkflow, /docs\/history\.png/,
   "screenshot workflow must publish the history capture")
 assert.match(screenshotWorkflow, /docs\/history-disabled\.png/,
   "screenshot workflow must publish the disabled history capture")
-assert.match(screenshotWorkflow, /update-screenshot-metadata docs\/index\.html docs README\.md/,
+assert.match(screenshotWorkflow, /update-screenshot-metadata \"\$publish_dir\/docs\/index\.html\" \"\$publish_dir\/docs\" \"\$publish_dir\/README\.md\"/,
   "capture must synchronize Pages dimensions and content-addressed README images")
+assert.match(screenshotWorkflow, /restore_desktop[\s\S]*?publication_started=true[\s\S]*?install -m[\s\S]*?publication_complete=true/,
+  "repository assets must publish only after desktop restoration succeeds")
+assert.match(screenshotWorkflow, /rollback_publication\(\) \{[\s\S]*?publication_complete == false[\s\S]*?publish_backup_dir/,
+  "an interrupted screenshot publication must restore every original asset")
+assert.match(screenshotWorkflow, /optimize_png \"\$capture_dir\/activity\.png\" \"\$publish_dir\/preview\.png\"/,
+  "optimized screenshots must remain staged until publication")
 assert.match(screenshotWorkflow, /cmp -s "\$settings_snapshot" "\$settings_file"/,
   "successful capture must verify the original shell settings were restored byte-for-byte")
 assert.match(screenshotWorkflow, /function reload_shell_config|reload_shell_config\(\) \{[\s\S]*?call shell reloadConfig[\s\S]*?wait_for_live_config/,

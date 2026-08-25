@@ -202,6 +202,9 @@ wait_for_shell
 initial_shell_pid=$shell_pid
 
 capture_dir=$(mktemp -d)
+publish_dir="$capture_dir/publish"
+publish_backup_dir="$capture_dir/publish-backup"
+mkdir -p "$publish_dir/docs" "$publish_backup_dir/docs"
 live_history=$(qs ipc --pid "$shell_pid" call privacy-devices history)
 persisted_history=$(./privacy-history load)
 history_snapshot=$(jq -cn --argjson live "$live_history" --argjson persisted "$persisted_history" '
@@ -218,6 +221,9 @@ history_restore_status="pending"
 dnd_restore_status="unchanged"
 workspace_restore_status="pending"
 shell_identity_status="unchanged"
+publication_started=false
+publication_complete=false
+published_assets=()
 close_capture_notification() {
   if [[ $notification_visible == true ]]; then
     qs ipc --pid "$shell_pid" call notifications dismiss "$notification_summary" >/dev/null 2>&1 || true
@@ -282,10 +288,25 @@ restore_desktop() {
     restored=true
     report_restoration
   fi
-  rm -rf -- "$capture_dir"
   [[ $restore_failed == false ]]
 }
-trap restore_desktop EXIT INT TERM
+rollback_publication() {
+  local relative
+  [[ $publication_started == true && $publication_complete == false ]] || return 0
+  for relative in "${published_assets[@]}"; do
+    install -m "$(stat -c '%a' "$publish_backup_dir/$relative")" \
+      "$publish_backup_dir/$relative" "$relative"
+  done
+  printf 'Rolled back incomplete screenshot publication.\n' >&2
+}
+cleanup_capture() {
+  local cleanup_failed=false
+  restore_desktop || cleanup_failed=true
+  rollback_publication || cleanup_failed=true
+  rm -rf -- "$capture_dir"
+  [[ $cleanup_failed == false ]]
+}
+trap cleanup_capture EXIT INT TERM
 
 settings_file="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/shell.json"
 [[ -f $settings_file ]] || { printf 'Omarchy Shell settings not found: %s\n' "$settings_file" >&2; exit 1; }
@@ -408,27 +429,48 @@ optimize_png() {
   pngquant --force --quality=82-95 --speed 1 --strip --output "$destination" "$destination"
 }
 
-optimize_png "$capture_dir/activity.png" preview.png
-install -m 0644 preview.png docs/preview.png
-optimize_png "$capture_dir/history.png" docs/history.png
-optimize_png "$capture_dir/history-disabled.png" docs/history-disabled.png
+optimize_png "$capture_dir/activity.png" "$publish_dir/preview.png"
+install -m 0644 "$publish_dir/preview.png" "$publish_dir/docs/preview.png"
+optimize_png "$capture_dir/history.png" "$publish_dir/docs/history.png"
+optimize_png "$capture_dir/history-disabled.png" "$publish_dir/docs/history-disabled.png"
 for page in general appearance alerts monitoring; do
-  optimize_png "$capture_dir/$page.png" "docs/$page.png"
+  optimize_png "$capture_dir/$page.png" "$publish_dir/docs/$page.png"
 done
-optimize_png "$capture_dir/monitoring-private.png" docs/monitoring-private.png
-optimize_png "$capture_dir/monitoring-health.png" docs/monitoring-health.png
-optimize_png "$capture_dir/device.png" docs/device.png
-optimize_png "$capture_dir/bar.png" docs/bar.png
-optimize_png "$capture_dir/notification.png" docs/notification.png
-scripts/update-screenshot-metadata docs/index.html docs README.md
+optimize_png "$capture_dir/monitoring-private.png" "$publish_dir/docs/monitoring-private.png"
+optimize_png "$capture_dir/monitoring-health.png" "$publish_dir/docs/monitoring-health.png"
+optimize_png "$capture_dir/device.png" "$publish_dir/docs/device.png"
+optimize_png "$capture_dir/bar.png" "$publish_dir/docs/bar.png"
+optimize_png "$capture_dir/notification.png" "$publish_dir/docs/notification.png"
+cp -- docs/index.html "$publish_dir/docs/index.html"
+cp -- README.md "$publish_dir/README.md"
+scripts/update-screenshot-metadata "$publish_dir/docs/index.html" "$publish_dir/docs" "$publish_dir/README.md"
 
 magick docs/social-card.png -fill '#0d110d' -draw 'rectangle 895,35 1729,875' "$capture_dir/social-base.png"
 magick "$capture_dir/activity.png" -resize 720x720 "$capture_dir/social-panel.png"
 magick "$capture_dir/social-base.png" "$capture_dir/social-panel.png" -geometry +950+95 -composite \
-  -strip -define png:compression-level=9 docs/social-card.png
-pngquant --force --quality=82-95 --speed 1 --strip --output docs/social-card.png docs/social-card.png
+  -strip -define png:compression-level=9 "$publish_dir/docs/social-card.png"
+pngquant --force --quality=82-95 --speed 1 --strip \
+  --output "$publish_dir/docs/social-card.png" "$publish_dir/docs/social-card.png"
 
 restore_desktop
+
+published_assets=(
+  README.md preview.png docs/preview.png docs/history.png docs/history-disabled.png
+  docs/general.png docs/appearance.png docs/alerts.png docs/monitoring.png
+  docs/monitoring-private.png docs/monitoring-health.png docs/device.png docs/bar.png
+  docs/notification.png docs/social-card.png docs/index.html
+)
+for relative in "${published_assets[@]}"; do
+  mkdir -p "$publish_backup_dir/$(dirname "$relative")"
+  cp -- "$relative" "$publish_backup_dir/$relative"
+done
+publication_started=true
+for relative in "${published_assets[@]}"; do
+  install -m "$(stat -c '%a' "$relative")" "$publish_dir/$relative" "$relative"
+done
+publication_complete=true
+
+cleanup_capture
 trap - EXIT INT TERM
 
 printf 'Updated screenshots from %s workspace %s; restored workspace %s.\n' \
