@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict")
 const fs = require("node:fs")
 const path = require("node:path")
+const vm = require("node:vm")
 
 const root = path.join(__dirname, "..")
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"))
@@ -9,6 +10,9 @@ const surface = fs.readFileSync(path.join(root, "SettingsSurface.qml"), "utf8")
 const integer = fs.readFileSync(path.join(root, "IntegerSetting.qml"), "utf8")
 const activityCard = fs.readFileSync(path.join(root, "PrivacyActivityCard.qml"), "utf8")
 const defaults = manifest.barWidget.defaults
+const modelContext = {}
+vm.createContext(modelContext)
+vm.runInContext(fs.readFileSync(path.join(root, "Model.js"), "utf8").replace(/^\.pragma library\s*/, ""), modelContext)
 const schema = new Map(manifest.barWidget.schema.map(entry => [entry.key, entry]))
 const globalKeys = [
   "enabledKinds", "showIdle", "displayMode", "showControls", "idleOpacity", "deduplicateApps",
@@ -18,6 +22,12 @@ const globalKeys = [
   "activeColorRole", "inactiveColorRole", "disabledColorRole", "disabledOpacity",
   "statusMarkerMode", "statePillStyle", "popupDensity", "showStatePills", "showSessionCounts", "animatePending"
 ]
+
+assert.deepEqual(
+  JSON.parse(JSON.stringify(modelContext.sanitizeSettings(defaults))),
+  Object.assign({}, defaults, {_privacySettingsVersion: 1}),
+  "every manifest default must survive the shared settings sanitizer"
+)
 
 for (const key of globalKeys) {
   assert.ok(Object.hasOwn(defaults, key), `global default missing: ${key}`)
@@ -56,6 +66,9 @@ assert.match(bar, /monitoringTelemetryText\(\)/, "the Monitoring page must expos
 assert.match(bar, /settingsMutationPending/, "settings writes must preserve the open editor across shell config reloads")
 assert.match(bar, /Model\.sanitizeSettings\(candidate\)/, "settings writes must pass through the versioned sanitizer")
 assert.match(bar, /privacy-settings[\s\S]*?settingsTransferProc/, "settings transfer must use the bounded helper")
+assert.ok(bar.indexOf("Private data") > bar.indexOf("id: monitoringSettingsPage"), "private storage controls belong on Monitoring")
+assert.equal((bar.match(/label: "Keep recent activity"/g) || []).length, 1, "history controls must not be duplicated across settings pages")
+assert.equal((bar.match(/text: "Export settings"/g) || []).length, 1, "settings transfer must have one clear home")
 assert.match(activityCard, /HoverHandler[\s\S]*?selectedKind/, "hover should track keyboard selection without polling")
 assert.match(activityCard, /itemStateLabel\(entry\)/, "every popup row must expose a textual semantic state")
 assert.match(bar, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")

@@ -69,7 +69,7 @@ Panel {
   function showGlobalSettings(page) {
     editingKind = ""
     showingGlobalSettings = true
-    globalSettingsPage = page || "general"
+    globalSettingsPage = Model.settingsPage(page)
     contentFlick.contentY = 0
   }
 
@@ -1220,18 +1220,6 @@ Panel {
         Toggle { Layout.fillWidth: true; label: "Show session counts"; description: "Display a badge and bar count when several sessions share an item."; checked: root.showSessionCounts; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showSessionCounts: !checked}) }
         Toggle { Layout.fillWidth: true; label: "Animate verification"; description: "Pulse pending bar items until observed state confirms the action."; checked: root.animatePending; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({animatePending: !checked}) }
       }
-      SettingsSurface {
-        accent: root.activeThemeColor
-        PanelSectionHeader { Layout.fillWidth: true; text: "Settings transfer" }
-        Text { Layout.fillWidth: true; text: "Export or restore a versioned settings file stored privately in your user data directory."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-        RowLayout {
-          Layout.fillWidth: true
-          Button { text: "Export"; enabled: !settingsTransferProc.running; onClicked: root.exportSettings() }
-          Button { text: "Import"; enabled: !settingsTransferProc.running; onClicked: root.importSettings() }
-          Item { Layout.fillWidth: true }
-        }
-        Text { visible: root.settingsTransferStatus !== ""; Layout.fillWidth: true; text: root.settingsTransferStatus; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-      }
     }
   }
 
@@ -1252,12 +1240,6 @@ Panel {
           TextField { id: suppressedAppsEditor; Layout.fillWidth: true; text: Model.arraySetting(root.setting("notificationSuppressedApps", []), []).join(", "); placeholderText: "Firefox, OBS"; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistSettings({notificationSuppressedApps: root.commaList(text)}) }
           Button { text: "Save"; onClicked: root.persistSettings({notificationSuppressedApps: root.commaList(suppressedAppsEditor.text)}) }
         }
-      }
-      SettingsSurface {
-        accent: root.activeThemeColor
-        PanelSectionHeader { Layout.fillWidth: true; text: "Local history" }
-        Toggle { Layout.fillWidth: true; label: "Keep recent activity"; description: "Store private metadata for seven days or 100 completed sessions."; checked: root.setting("historyEnabled", false) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({historyEnabled: !checked}) }
-        Button { text: "Clear stored history"; enabled: privacyService !== null; onClicked: privacyService.clearHistory() }
       }
     }
   }
@@ -1280,6 +1262,20 @@ Panel {
         IntegerSetting { controller: root; settingKey: "locationPollSeconds"; label: "Location refresh, seconds"; minimum: 5; maximum: 300; fallback: 15; stepSize: 5 }
         IntegerSetting { controller: root; settingKey: "recordingPollSeconds"; label: "Recorder refresh, seconds"; minimum: 1; maximum: 60; fallback: 2 }
         Text { Layout.fillWidth: true; text: "PipeWire activity remains event-backed. These intervals affect only enhanced and fallback observers."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+      }
+      SettingsSurface {
+        accent: root.activeThemeColor
+        PanelSectionHeader { Layout.fillWidth: true; text: "Private data" }
+        Toggle { Layout.fillWidth: true; label: "Keep recent activity"; description: "Store private metadata for seven days or 100 completed sessions."; checked: root.setting("historyEnabled", false) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({historyEnabled: !checked}) }
+        Button { text: "Clear stored history"; enabled: privacyService !== null; onClicked: privacyService.clearHistory() }
+        Text { Layout.fillWidth: true; text: "Export or restore a versioned settings file stored privately in your user data directory."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+        RowLayout {
+          Layout.fillWidth: true
+          Button { text: "Export settings"; enabled: !settingsTransferProc.running; onClicked: root.exportSettings() }
+          Button { text: "Import settings"; enabled: !settingsTransferProc.running; onClicked: root.importSettings() }
+          Item { Layout.fillWidth: true }
+        }
+        Text { visible: root.settingsTransferStatus !== ""; Layout.fillWidth: true; text: root.settingsTransferStatus; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
       }
       SettingsSurface {
         accent: root.activeThemeColor
