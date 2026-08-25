@@ -18,8 +18,16 @@ Panel {
   readonly property string displayMode: String(setting("displayMode", "icons"))
   readonly property bool showControls: setting("showControls", true) === true
   readonly property real idleOpacity: Math.max(0.1, Math.min(1, Number(setting("idleOpacity", 0.45))))
+  readonly property real disabledOpacity: Math.max(0.25, Math.min(1, Number(setting("disabledOpacity", 1))))
+  readonly property string statusMarkerMode: String(setting("statusMarkerMode", "symbols"))
+  readonly property string statePillStyle: String(setting("statePillStyle", "filled"))
+  readonly property string popupDensity: String(setting("popupDensity", "comfortable"))
+  readonly property bool showStatePills: setting("showStatePills", true) === true
+  readonly property bool showSessionCounts: setting("showSessionCounts", true) === true
+  readonly property bool animatePending: setting("animatePending", true) === true
   readonly property color activeThemeColor: themeColor(String(setting("activeColorRole", "bar-active")), true)
   readonly property color inactiveThemeColor: themeColor(String(setting("inactiveColorRole", "muted")), false)
+  readonly property color disabledThemeColor: themeColor(String(setting("disabledColorRole", "urgent")), true)
   readonly property color mutedThemeColor: themeColor(String(setting("mutedColorRole", "urgent")), true)
   readonly property color unmutedThemeColor: themeColor(String(setting("unmutedColorRole", "foreground")), false)
   readonly property var visibleItems: buildVisibleItems()
@@ -193,14 +201,41 @@ Panel {
     return entry.kind === "microphone" || entry.kind === "audio-output"
   }
 
+  function isPreventativeControl(entry) {
+    return ["camera", "screen-share", "location"].indexOf(entry.kind) >= 0
+  }
+
+  function itemVisualState(entry) {
+    return Model.privacyVisualState(entry)
+  }
+
+  function itemStateLabel(entry) { return Model.privacyStateLabel(entry) }
+  function itemStatusMarkerVisible(kind) {
+    var visibility = setting("itemStatusMarkerVisibility", {}) || {}
+    return visibility[kind] === undefined ? true : visibility[kind] === true
+  }
+  function itemStateMarker(entry) {
+    return Model.privacyStateMarker(entry, statusMarkerMode, itemStatusMarkerVisible(entry.kind))
+  }
+  function itemSessionCount(entry) { return Model.privacySessionCount(entry, showSessionCounts) }
+
+  function barItemText(entry) {
+    var suffix = itemStateMarker(entry)
+    var count = itemSessionCount(entry)
+    return entry.icon + (suffix ? " " + suffix : "") + (count ? String(count) : "")
+  }
+
   function itemColor(entry) {
-    if (entry.health && entry.health.status !== "healthy") return Color.urgent
+    var state = itemVisualState(entry)
+    if (state === "unavailable") return Color.urgent
+    if (state === "pending") return Color.accent
     var roles = setting("itemColorRoles", {}) || {}
     var override = roles[entry.kind] || {}
     if (isAudioControl(entry)) return entry.controlEnabled
       ? themeColor(String(override.unmuted || setting("unmutedColorRole", "foreground")), false)
       : themeColor(String(override.muted || setting("mutedColorRole", "urgent")), true)
-    return entry.active
+    if (state === "disabled") return themeColor(String(override.disabled || setting("disabledColorRole", "urgent")), true)
+    return state === "active"
       ? themeColor(String(override.active || setting("activeColorRole", "bar-active")), true)
       : themeColor(String(override.inactive || setting("inactiveColorRole", "muted")), false)
   }
@@ -263,6 +298,13 @@ Panel {
       displayMode: "icons",
       showControls: true,
       idleOpacity: 0.45,
+      disabledOpacity: 1,
+      statusMarkerMode: "symbols",
+      statePillStyle: "filled",
+      popupDensity: "comfortable",
+      showStatePills: true,
+      showSessionCounts: true,
+      animatePending: true,
       deduplicateApps: true,
       notifyOnActivity: true,
       notifyOnStop: false,
@@ -278,6 +320,7 @@ Panel {
       popupMaxHeight: 620,
       activeColorRole: "bar-active",
       inactiveColorRole: "muted",
+      disabledColorRole: "urgent",
       mutedColorRole: "urgent",
       unmutedColorRole: "foreground"
     })
@@ -307,6 +350,12 @@ Panel {
     if (!roles[kind]) roles[kind] = {}
     roles[kind][state] = role
     persistSettings({itemColorRoles: roles})
+  }
+
+  function persistItemStatusMarker(kind, visible) {
+    var visibility = JSON.parse(JSON.stringify(setting("itemStatusMarkerVisibility", {}) || {}))
+    visibility[kind] = visible === true
+    persistSettings({itemStatusMarkerVisibility: visibility})
   }
 
   function itemColorRole(kind, state, fallback) {
@@ -353,13 +402,15 @@ Panel {
     var roles = JSON.parse(JSON.stringify(setting("itemColorRoles", {}) || {}))
     var visibility = JSON.parse(JSON.stringify(setting("itemIdleVisibility", {}) || {}))
     var opacity = JSON.parse(JSON.stringify(setting("itemIdleOpacity", {}) || {}))
+    var markerVisibility = JSON.parse(JSON.stringify(setting("itemStatusMarkerVisibility", {}) || {}))
     var labels = JSON.parse(JSON.stringify(setting("itemLabels", {}) || {}))
     delete icons[kind]
     delete roles[kind]
     delete visibility[kind]
     delete opacity[kind]
+    delete markerVisibility[kind]
     delete labels[kind]
-    persistSettings({icons: icons, itemColorRoles: roles, itemIdleVisibility: visibility, itemIdleOpacity: opacity, itemLabels: labels})
+    persistSettings({icons: icons, itemColorRoles: roles, itemIdleVisibility: visibility, itemIdleOpacity: opacity, itemStatusMarkerVisibility: markerVisibility, itemLabels: labels})
   }
 
   function toggleEntry(entry) {
@@ -451,9 +502,10 @@ Panel {
   function itemTooltip(entry) {
     if (entry.kind === "summary") return tooltip()
     var label = sharedText(entry.label)
-    var state = entry.active
-      ? (entry.apps.length ? entry.apps.map(sharedText).join(", ") : "In use")
-      : "Idle"
+    var visualState = itemVisualState(entry)
+    var state = itemStateLabel(entry)
+    if (visualState === "active" && entry.apps.length) state += " — " + entry.apps.map(sharedText).join(", ")
+    else if (visualState === "unavailable" && entry.health.summary) state += " — " + sharedText(entry.health.summary)
     var action = !entry.dependenciesReady
       ? "Left click to install requirements"
       : entry.controllable
@@ -541,12 +593,19 @@ Panel {
         delegate: WidgetButton {
           required property var modelData
           bar: root.bar
-          text: root.sharedText(modelData.icon)
+          text: root.sharedText(root.barItemText(modelData))
           active: modelData.active
           dimmed: false
           foreground: root.itemColor(modelData)
           activeColor: root.itemColor(modelData)
-          opacity: modelData.active ? 1 : root.itemIdleOpacity(modelData.kind)
+          opacity: root.itemVisualState(modelData) === "idle" ? root.itemIdleOpacity(modelData.kind)
+            : (root.itemVisualState(modelData) === "disabled" ? root.disabledOpacity : 1)
+          SequentialAnimation on opacity {
+            running: modelData.pending && root.animatePending
+            loops: Animation.Infinite
+            NumberAnimation { to: 0.45; duration: 450; easing.type: Easing.InOutQuad }
+            NumberAnimation { to: 1; duration: 450; easing.type: Easing.InOutQuad }
+          }
           horizontalMargin: modelData.kind === "summary" ? 8.5 : 5
           tooltipText: root.itemTooltip(modelData)
           onPressed: function(buttonCode) { root.pressItem(modelData, buttonCode) }
@@ -702,7 +761,7 @@ Panel {
               anchors.fill: parent
               anchors.margins: Style.spacing.md
               Text {
-                text: root.iconFor(root.editingKind)
+                text: root.barItemText(root.item(root.editingKind))
                 textFormat: Text.PlainText
                 color: root.itemColor(root.item(root.editingKind))
                 font.family: Style.font.family
@@ -772,6 +831,15 @@ Panel {
           }
 
           Dropdown {
+            visible: root.isPreventativeControl({kind: root.editingKind})
+            Layout.fillWidth: true
+            label: "Disabled color"
+            options: ["bar-active", "urgent", "accent", "foreground", "muted"]
+            value: root.itemColorRole(root.editingKind, "disabled", String(root.setting("disabledColorRole", "urgent")))
+            onChanged: function(value) { root.persistItemColor(root.editingKind, "disabled", value) }
+          }
+
+          Dropdown {
             Layout.fillWidth: true
             label: root.isAudioControl({kind: root.editingKind}) ? "Unmuted color" : "Inactive color"
             options: ["bar-active", "urgent", "accent", "foreground", "muted"]
@@ -791,6 +859,17 @@ Panel {
             accent: root.activeThemeColor
             fontFamily: Style.font.family
             onModified: function(value) { root.persistItemIdleOpacity(root.editingKind, value) }
+          }
+
+          Toggle {
+            Layout.fillWidth: true
+            label: "Show bar status marker"
+            description: "Override marker visibility for this item."
+            checked: root.itemStatusMarkerVisible(root.editingKind)
+            foreground: Color.popups.text
+            accent: root.activeThemeColor
+            fontFamily: Style.font.family
+            onClicked: root.persistItemStatusMarker(root.editingKind, !checked)
           }
 
           PanelSectionHeader {
@@ -1128,6 +1207,18 @@ Panel {
         PanelSectionHeader { Layout.fillWidth: true; text: "Theme colors" }
         Dropdown { Layout.fillWidth: true; label: "Active"; options: ["bar-active", "urgent", "accent", "foreground"]; value: String(root.setting("activeColorRole", "bar-active")); onChanged: function(value) { root.persistSettings({activeColorRole: value}) } }
         Dropdown { Layout.fillWidth: true; label: "Inactive"; options: ["muted", "foreground", "accent"]; value: String(root.setting("inactiveColorRole", "muted")); onChanged: function(value) { root.persistSettings({inactiveColorRole: value}) } }
+        Dropdown { Layout.fillWidth: true; label: "Disabled"; options: ["urgent", "muted", "accent", "foreground", "bar-active"]; value: String(root.setting("disabledColorRole", "urgent")); onChanged: function(value) { root.persistSettings({disabledColorRole: value}) } }
+        NumberField { label: "Disabled opacity (%)"; from: 25; to: 100; stepSize: 5; value: Math.round(root.disabledOpacity * 100); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { root.persistSettings({disabledOpacity: Number(value) / 100}) } }
+      }
+      SettingsSurface {
+        accent: root.activeThemeColor
+        PanelSectionHeader { Layout.fillWidth: true; text: "Status presentation" }
+        Dropdown { Layout.fillWidth: true; label: "Bar status markers"; options: ["symbols", "letters", "off"]; value: root.statusMarkerMode; onChanged: function(value) { root.persistSettings({statusMarkerMode: value}) } }
+        Dropdown { Layout.fillWidth: true; label: "Popup state pills"; options: ["filled", "outline", "minimal"]; value: root.statePillStyle; onChanged: function(value) { root.persistSettings({statePillStyle: value}) } }
+        Dropdown { Layout.fillWidth: true; label: "Popup density"; options: ["comfortable", "compact"]; value: root.popupDensity; onChanged: function(value) { root.persistSettings({popupDensity: value}) } }
+        Toggle { Layout.fillWidth: true; label: "Show state pills"; description: "Keep textual state visible beside each popup row."; checked: root.showStatePills; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showStatePills: !checked}) }
+        Toggle { Layout.fillWidth: true; label: "Show session counts"; description: "Display a badge and bar count when several sessions share an item."; checked: root.showSessionCounts; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showSessionCounts: !checked}) }
+        Toggle { Layout.fillWidth: true; label: "Animate verification"; description: "Pulse pending bar items until observed state confirms the action."; checked: root.animatePending; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({animatePending: !checked}) }
       }
       SettingsSurface {
         accent: root.activeThemeColor
@@ -1189,6 +1280,12 @@ Panel {
         IntegerSetting { controller: root; settingKey: "locationPollSeconds"; label: "Location refresh, seconds"; minimum: 5; maximum: 300; fallback: 15; stepSize: 5 }
         IntegerSetting { controller: root; settingKey: "recordingPollSeconds"; label: "Recorder refresh, seconds"; minimum: 1; maximum: 60; fallback: 2 }
         Text { Layout.fillWidth: true; text: "PipeWire activity remains event-backed. These intervals affect only enhanced and fallback observers."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+      }
+      SettingsSurface {
+        accent: root.activeThemeColor
+        PanelSectionHeader { Layout.fillWidth: true; text: "Status legend" }
+        Text { Layout.fillWidth: true; text: "● Active    ⊘ Disabled    … Verifying    ! Degraded    Idle uses no marker"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+        Text { Layout.fillWidth: true; text: "Color, opacity, text, and markers reinforce each other so status never depends on color alone."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
       }
       SettingsSurface {
         accent: root.monitoringDegraded ? Color.urgent : root.activeThemeColor

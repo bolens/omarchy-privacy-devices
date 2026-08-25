@@ -15,7 +15,8 @@ const globalKeys = [
   "notificationKinds", "notifyOnActivity", "notifyOnStop", "notifyOnControlChanges",
   "notificationSuppressedApps", "historyEnabled", "blockableKinds", "directDeviceMonitoring",
   "directDevicePollSeconds", "showInferredAttribution", "locationPollSeconds", "recordingPollSeconds", "popupMaxHeight",
-  "activeColorRole", "inactiveColorRole"
+  "activeColorRole", "inactiveColorRole", "disabledColorRole", "disabledOpacity",
+  "statusMarkerMode", "statePillStyle", "popupDensity", "showStatePills", "showSessionCounts", "animatePending"
 ]
 
 for (const key of globalKeys) {
@@ -56,6 +57,14 @@ assert.match(bar, /settingsMutationPending/, "settings writes must preserve the 
 assert.match(bar, /Model\.sanitizeSettings\(candidate\)/, "settings writes must pass through the versioned sanitizer")
 assert.match(bar, /privacy-settings[\s\S]*?settingsTransferProc/, "settings transfer must use the bounded helper")
 assert.match(activityCard, /HoverHandler[\s\S]*?selectedKind/, "hover should track keyboard selection without polling")
+assert.match(activityCard, /itemStateLabel\(entry\)/, "every popup row must expose a textual semantic state")
+assert.match(bar, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")
+for (const label of ["Bar status markers", "Popup state pills", "Popup density", "Show state pills", "Show session counts", "Animate verification", "Disabled opacity"])
+  assert.match(bar, new RegExp(label), `${label} must be exposed in global visual settings`)
+assert.match(bar, /persistItemStatusMarker/, "per-item settings must control marker visibility")
+assert.match(activityCard, /controller\.statePillStyle === "filled"[\s\S]*?controller\.statePillStyle === "minimal"/, "state-pill styles must alter fill and border presentation")
+assert.match(activityCard, /controller\.popupDensity === "compact"[\s\S]*?verticalPadding/, "popup density must alter row spacing")
+assert.match(bar, /running:\s*modelData\.pending && root\.animatePending/, "pending animation must honor its visual setting")
 assert.match(bar, /!contentFlick\.moving/, "duration refreshes must not churn the layout while the user scrolls")
 
 console.log("global settings contract tests passed")
