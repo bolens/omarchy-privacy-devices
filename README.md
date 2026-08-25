@@ -12,7 +12,14 @@ screenshots, and screen recording.
 Maintainers: [architecture](ARCHITECTURE.md) · [testing](TESTING.md) ·
 [release playbook](RELEASING.md)
 
-![Privacy Devices popup](preview.png)
+![Privacy Devices activity panel showing live device state and controls](preview.png)
+
+<details>
+<summary>Appearance settings</summary>
+
+![Privacy Devices Appearance page with bar layout and theme controls](docs/appearance.png)
+
+</details>
 
 ## Highlights
 
@@ -20,13 +27,14 @@ Maintainers: [architecture](ARCHITECTURE.md) · [testing](TESTING.md) ·
 - Session duration, device, detection source, confidence, and monitoring-health details.
 - Optional same-user direct camera and microphone device monitoring for applications that bypass PipeWire.
 - Optional bounded local history plus independently reversible display and notification policies.
-- In-widget global settings for activity coverage, presentation, alerts, history, monitoring, polling, and popup sizing.
+- Four focused global-settings pages for behavior, appearance, alerts, and monitoring.
+- Independent bar icon scale, item spacing, padding, status-marker position, session counts, colors, and idle appearance.
 - Live observer freshness, mode, heartbeat, and retry diagnostics on the Monitoring settings page.
 - One persistent structured observer replaces per-second screenshot and recorder subprocess polling.
 - Private-by-default diagnostic export redacts application and device identities.
 - Versioned, bounded settings export/import with private file permissions and atomic replacement.
 - Control actions remain pending until a state probe verifies the requested result.
-- Keyboard navigation: arrows select activity, Enter opens details, `s` opens settings, `r` rescans, and `1`–`3` switch settings tabs.
+- Keyboard navigation: arrows select activity, Enter opens details, `s` opens settings, `r` rescans, and `1`–`4` switch settings tabs.
 - Inline mute, recording, and preventative privacy controls.
 - Configurable activity, ordering, icons, visibility, actions, semantic status markers, state pills, popup density, pending animation, session counts, disabled appearance, and
   capture backends.
@@ -61,6 +69,7 @@ node tests/security.test.js
 node tests/settings.test.js
 node tests/runtime.test.js
 node tests/release.test.js
+node tests/site.test.js
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 

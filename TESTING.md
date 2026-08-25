@@ -12,13 +12,15 @@ node tests/settings.test.js
 node tests/runtime.test.js
 node tests/security.test.js
 node tests/release.test.js
+node tests/site.test.js
 python3 -m unittest discover -s tests -p 'test_*.py'
 shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
 ```
 
 The JavaScript suites cover classification, settings sanitation, normalized
 sessions, control transitions, visual-state policy, manifest/UI contracts,
-runtime process topology, and static security invariants. Python tests execute
+runtime process topology, static security invariants, and documentation asset
+dimensions and references. Python tests execute
 the helpers against temporary state and fake commands so privileged services,
 devices, screenshots, and recordings are never modified.
 

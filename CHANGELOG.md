@@ -5,6 +5,13 @@ All notable changes to Privacy Devices are documented here. The project follows
 
 ## [Unreleased]
 
+### Added
+
+- Add a dedicated Appearance settings page with independent bar icon scale,
+  item spacing, padding, status-marker position, and session-count controls.
+- Refresh the activity, Appearance, and social-preview screenshots from the
+  live plugin.
+
 ## [0.2.0] - 2026-08-24
 
 ### Added

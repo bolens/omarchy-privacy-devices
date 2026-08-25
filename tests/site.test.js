@@ -8,11 +8,26 @@ const { JSDOM } = require("jsdom");
 const root = path.resolve(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "docs/index.html"), "utf8");
 
+function pngDimensions(relativePath) {
+  const image = fs.readFileSync(path.join(root, relativePath));
+  assert.deepEqual([...image.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  return [image.readUInt32BE(16), image.readUInt32BE(20)];
+}
+
 assert.match(html, /<main id="main">/);
 assert.match(html, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(html, /property="og:site_name"/);
 assert.match(html, /name="twitter:title"/);
 assert.equal((html.match(/data-copy=/g) || []).length, 4);
+assert.deepEqual(pngDimensions("preview.png"), [480, 480]);
+assert.deepEqual(pngDimensions("docs/preview.png"), [480, 480]);
+assert.deepEqual(pngDimensions("docs/appearance.png"), [500, 660]);
+assert.equal(
+  Buffer.compare(fs.readFileSync(path.join(root, "preview.png")), fs.readFileSync(path.join(root, "docs/preview.png"))),
+  0
+);
+assert.match(html, /src="appearance\.png"[^>]+width="500" height="660"/);
+assert.match(fs.readFileSync(path.join(root, "README.md"), "utf8"), /docs\/appearance\.png/);
 
 let copied = "";
 const dom = new JSDOM(html, {
