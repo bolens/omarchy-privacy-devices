@@ -80,7 +80,8 @@ assert.ok(bar.indexOf("Private data") > bar.indexOf("id: monitoringSettingsPage"
 assert.equal((bar.match(/label: "Keep recent activity"/g) || []).length, 1, "history controls must not be duplicated across settings pages")
 assert.equal((bar.match(/text: "Export settings"/g) || []).length, 1, "settings transfer must have one clear home")
 assert.match(activityCard, /HoverHandler[\s\S]*?selectedKind/, "hover should track keyboard selection without polling")
-assert.match(activityCard, /itemStateLabel\(entry\)/, "every popup row must expose a textual semantic state")
+assert.match(activityCard, /text: !entry\.dependenciesReady \? "INSTALL" : \(entry\.kind === "screenshot" \? "CAPTURE" : controller\.itemStateLabel\(entry\)\)/,
+  "every popup row must expose an explicit install, capture, or tested semantic state")
 assert.match(bar, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")
 for (const label of ["Icon scale", "Space between bar items", "Bar item padding", "Bar status markers", "Marker position", "Show active status marker", "Show disabled status marker", "Show verifying status marker", "Show degraded status marker", "Popup state pills", "Popup density", "Show state pills", "Show popup session counts", "Show bar session counts", "Animate verification", "Disabled opacity"])
   assert.match(bar, new RegExp(label), `${label} must be exposed in global visual settings`)

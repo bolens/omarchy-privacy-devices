@@ -42,6 +42,8 @@ ShellRoot {
     var telemetry = Model.monitoringTelemetryText({pipewireReactive:true,lastSessionRefreshAgeSeconds:1,lastFallbackRefreshAgeSeconds:2,fallbackObserverRunning:true,fallbackObserverHeartbeatAgeSeconds:1,fallbackObserverRetryMilliseconds:1000,directDeviceEnabled:false})
     if (telemetry.indexOf("Fallback probes: 2s ago · observer running · heartbeat 1s ago · retry 1000ms") < 0)
       throw new Error("monitoring telemetry presentation failed")
+    if (Model.itemTooltipAction({kind:"microphone",dependenciesReady:true,controllable:true,controlEnabled:false}) !== "Left click to unmute")
+      throw new Error("item tooltip action policy failed")
     console.log("PRIVACY_QML_RUNTIME_OK")
     Qt.quit()
   }

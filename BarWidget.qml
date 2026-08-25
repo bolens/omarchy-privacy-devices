@@ -202,19 +202,6 @@ Panel {
     return activeFallback ? Color.bar.active : Color.muted
   }
 
-  function controlDescription(entry) {
-    if (!entry.dependenciesReady && privacyService) return privacyService.dependencyDescription(entry.kind) + ". Click to install."
-    if (entry.pending) return "Waiting for authorization; the device state will be verified when the action finishes"
-    if (entry.kind === "microphone") return entry.controlEnabled ? "Input is available; turn off to mute" : "Input is muted; turn on to unmute"
-    if (entry.kind === "audio-output") return entry.controlEnabled ? "Output is available; turn off to mute" : "Output is muted; turn on to unmute"
-    if (entry.kind === "screen-recording") return entry.controlEnabled ? "Recording is active; turn off to stop" : "Turn on to open the recording picker"
-    if (entry.kind === "screenshot") return "Take a screenshot"
-    if (entry.kind === "camera") return entry.controlEnabled ? "Camera is allowed; turn off to block the camera driver" : "Camera is blocked; turn on to allow it"
-    if (entry.kind === "screen-share") return entry.controlEnabled ? "Screen sharing is allowed; turn off to block the Hyprland portal" : "Screen sharing is blocked; turn on to allow it"
-    if (entry.kind === "location") return entry.controlEnabled ? "Location is allowed; turn off to block GeoClue" : "Location is blocked; turn on to allow it"
-    return "Status only"
-  }
-
   function deviceDiagnostic(kind) {
     if (!privacyService || typeof privacyService.diagnostic !== "function") return {
       healthStatus: "unavailable", dependenciesReady: true, dependencyDescription: "",
@@ -609,17 +596,7 @@ Panel {
     var state = itemStateLabel(entry)
     if (visualState === "active" && entry.apps.length) state += " — " + entry.apps.map(sharedText).join(", ")
     else if (visualState === "unavailable" && entry.health.summary) state += " — " + sharedText(entry.health.summary)
-    var action = !entry.dependenciesReady
-      ? "Left click to install requirements"
-      : entry.controllable
-      ? (entry.kind === "screenshot"
-          ? "Left click to take a screenshot"
-          : entry.kind === "screen-recording"
-          ? (entry.controlEnabled ? "Left click to stop recording" : "Left click to start recording")
-          : root.isAudioControl(entry)
-          ? (entry.controlEnabled ? "Left click to mute" : "Left click to unmute")
-          : (entry.controlEnabled ? "Left click to block" : "Left click to allow"))
-      : "Left click for details"
+    var action = Model.itemTooltipAction(entry)
     return label + " · " + state
       + "\n" + action
       + "\nMiddle click for " + label.toLowerCase() + " settings"

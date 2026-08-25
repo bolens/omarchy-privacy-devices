@@ -146,6 +146,9 @@ assert.match(service, /function toggle\(kind: string\): string[\s\S]*?root\.cont
   "control IPC must report why an action was not accepted")
 assert.match(bar, /function toggleEntry\(entry\)[\s\S]*?if \(!privacyService \|\| !entry\.controllable \|\| entry\.pending\) return/,
   "bar controls must ignore repeated input while verification is pending")
+assert.match(bar, /function itemTooltip\(entry\)[\s\S]*?var action = Model\.itemTooltipAction\(entry\)/,
+  "bar action guidance must use the behavior-tested device policy")
+assert.doesNotMatch(bar, /function controlDescription\(/, "unused duplicate control guidance must not return")
 assert.match(bar, /if \(!privacyService\.beginExternalControl\("screen-recording", !entry\.controlEnabled\)\) return/,
   "recording commands must not run unless their transaction is accepted")
 assert.match(service, /function refreshPreventativeControls\(\)[\s\S]*?Model\.scheduleProbeRefresh\(busy, preventativeProbeKinds\)/,

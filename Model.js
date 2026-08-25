@@ -617,6 +617,18 @@ function deviceDiagnosticPresentation(data) {
   }
 }
 
+function itemTooltipAction(entry) {
+  entry = entry || {}
+  if (entry.dependenciesReady !== true) return "Left click to install requirements"
+  if (entry.controllable !== true) return "Left click for details"
+  if (entry.kind === "screenshot") return "Left click to take a screenshot"
+  if (entry.kind === "screen-recording") return entry.controlEnabled === true
+    ? "Left click to stop recording" : "Left click to start recording"
+  if (entry.kind === "microphone" || entry.kind === "audio-output") return entry.controlEnabled === true
+    ? "Left click to mute" : "Left click to unmute"
+  return entry.controlEnabled === true ? "Left click to block" : "Left click to allow"
+}
+
 // Appearance and policy edits must not launch subprocess probes. Keep this list
 // explicit so only monitoring changes invalidate the operational cache.
 function operationalSignature(settings) {

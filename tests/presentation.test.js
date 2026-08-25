@@ -75,4 +75,25 @@ assert.equal(emptyDiagnostics.rows[4].value, "None detected")
 assert.equal(emptyDiagnostics.rows[5].value, "Unavailable · Transaction: None")
 assert.equal(emptyDiagnostics.rows[6].value, "Probe not run · Control not used")
 
+assert.equal(model.itemTooltipAction({kind: "camera", dependenciesReady: false, controllable: true}),
+  "Left click to install requirements", "missing dependencies take precedence over device actions")
+assert.equal(model.itemTooltipAction({kind: "camera", dependenciesReady: true, controllable: false}),
+  "Left click for details")
+assert.equal(model.itemTooltipAction({kind: "screenshot", dependenciesReady: true, controllable: true}),
+  "Left click to take a screenshot")
+assert.equal(model.itemTooltipAction({kind: "screen-recording", dependenciesReady: true, controllable: true, controlEnabled: false}),
+  "Left click to start recording")
+assert.equal(model.itemTooltipAction({kind: "screen-recording", dependenciesReady: true, controllable: true, controlEnabled: true}),
+  "Left click to stop recording")
+for (const kind of ["microphone", "audio-output"]) {
+  assert.equal(model.itemTooltipAction({kind, dependenciesReady: true, controllable: true, controlEnabled: true}),
+    "Left click to mute")
+  assert.equal(model.itemTooltipAction({kind, dependenciesReady: true, controllable: true, controlEnabled: false}),
+    "Left click to unmute")
+}
+assert.equal(model.itemTooltipAction({kind: "location", dependenciesReady: true, controllable: true, controlEnabled: true}),
+  "Left click to block")
+assert.equal(model.itemTooltipAction({kind: "camera", dependenciesReady: true, controllable: true, controlEnabled: false}),
+  "Left click to allow")
+
 console.log("presentation policy tests passed")
