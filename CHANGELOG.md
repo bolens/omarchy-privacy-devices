@@ -30,9 +30,13 @@ maintainer guides that define release and validation procedures.
   behavior-tested FIFO and refresh-supersession policy.
 - Replace the activity footer's implementation notes with a concise keyboard
   command guide whose advertised actions are checked against their handlers.
+- Make popup selection, activation, editor navigation, and layered dismissal
+  behavior-tested, including empty, stale, and boundary states.
 
 ### Fixed
 
+- Select the first activity row on initial keyboard navigation and prevent Enter
+  from opening a selection removed by a reactive update.
 - Prevent unsaved device fields and armed shared-reset confirmations from
   carrying across devices, and make global reset cover every bar appearance
   default.

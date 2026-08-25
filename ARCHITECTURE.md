@@ -83,6 +83,8 @@ normal operation poll-driven.
 - Diagnostics are redacted by default and bounded before clipboard transfer.
 - Disabled, active, idle, pending, and degraded presentation derives from the
   shared visual-state policy rather than independent QML conditions.
+- Popup selection, activation, navigation boundaries, and layered dismissal
+  derive from shared policies so reactive row changes cannot leave stale focus.
 
 ## Security boundaries
 
