@@ -210,24 +210,28 @@ Panel {
     return "Status only"
   }
 
-  function diagnosticText(kind) {
-    if (!privacyService || typeof privacyService.diagnostic !== "function") return "Diagnostics unavailable"
+  function deviceDiagnostic(kind) {
+    if (!privacyService || typeof privacyService.diagnostic !== "function") return {
+      healthStatus: "unavailable", dependenciesReady: true, dependencyDescription: "",
+      rows: [{label: "Status", value: "Diagnostics unavailable", urgent: true}]
+    }
     var data = privacyService.diagnostic(kind)
-    var apps = data.apps && data.apps.length ? data.apps.join(", ") : "None detected"
-    var probe = data.probeExitCode < 0 ? "Not run" : String(data.probeExitCode)
-    var control = data.controlExitCode < 0 ? "Not used" : String(data.controlExitCode)
-    var codes = data.health.codes && data.health.codes.length ? data.health.codes.join(", ") : "ok"
+    var health = data.health || {status: "unavailable", summary: ""}
     var transaction = data.controlTransaction ? data.controlTransaction.status + " (" + data.controlTransaction.code + ")" : "None"
-    return "Backend: " + data.backend
-      + "\nDependencies: " + (data.dependenciesReady ? "Ready" : data.dependencyDescription)
-      + "\nMonitoring: " + data.health.status + (data.health.summary ? " · " + data.health.summary : "")
-      + "\nDiagnostic codes: " + codes
-      + "\nActivity: " + (data.active ? "Active" : "Idle")
-      + "\nApplications: " + apps
-      + "\nControl: " + data.controlState
-      + " · Transaction: " + transaction
-      + "\nLast probe exit: " + probe
-      + " · Last control exit: " + control
+    return {
+      healthStatus: String(health.status || "unavailable"),
+      dependenciesReady: data.dependenciesReady === true,
+      dependencyDescription: String(data.dependencyDescription || ""),
+      rows: [
+        {label: "Backend", value: String(data.backend || "Unknown"), urgent: false},
+        {label: "Dependencies", value: data.dependenciesReady ? "Ready" : String(data.dependencyDescription || "Missing"), urgent: !data.dependenciesReady},
+        {label: "Monitoring", value: String(health.status || "unavailable") + (health.summary ? " · " + health.summary : ""), urgent: health.status !== "healthy"},
+        {label: "Activity", value: data.active ? "Active" : "Idle", urgent: false},
+        {label: "Applications", value: data.apps && data.apps.length ? data.apps.join(", ") : "None detected", urgent: false},
+        {label: "Control", value: String(data.controlState || "Unavailable") + " · Transaction: " + transaction, urgent: false},
+        {label: "Exit codes", value: "Probe " + (data.probeExitCode < 0 ? "not run" : data.probeExitCode) + " · Control " + (data.controlExitCode < 0 ? "not used" : data.controlExitCode), urgent: false}
+      ]
+    }
   }
 
   function isAudioControl(entry) {
@@ -835,39 +839,10 @@ Panel {
           Button { Layout.alignment: Qt.AlignRight; text: "Reset global settings"; onClicked: root.resetGlobalSettings() }
         }
 
-        ColumnLayout {
+        DeviceSettingsEditor {
           visible: root.editingKind !== "" && !root.showingGlobalSettings
-          Layout.fillWidth: true
-          spacing: Style.spacing.md
-
-          RowLayout {
-            Layout.fillWidth: true
-            Button {
-              iconText: "󰁍"
-              tooltipText: "Back"
-              horizontalPadding: Style.spacing.controlGap
-              onClicked: root.editingKind = ""
-            }
-            Text {
-              Layout.fillWidth: true
-              text: Model.label(root.editingKind) + " settings"
-              textFormat: Text.PlainText
-              color: Color.popups.text
-              font.family: Style.font.family
-              font.pixelSize: Style.font.title
-              font.weight: Font.DemiBold
-            }
-            Button {
-              text: "Previous device"
-              enabled: root.canMoveItem(root.editingKind, -1)
-              onClicked: root.moveDeviceEditor(-1)
-            }
-            Button {
-              text: "Next device"
-              enabled: root.canMoveItem(root.editingKind, 1)
-              onClicked: root.moveDeviceEditor(1)
-            }
-          }
+          controller: root
+          onBackRequested: root.editingKind = ""
 
           SettingsSurface {
             Layout.fillWidth: true
@@ -1223,27 +1198,7 @@ Panel {
             }
           }
 
-          SettingsSurface {
-            Layout.fillWidth: true
-            accent: root.monitoringDegraded ? Color.urgent : root.activeThemeColor
-            PanelSectionHeader { Layout.fillWidth: true; text: "Diagnostics" }
-            Button {
-              visible: root.editingKind !== "" && privacyService && !privacyService.dependenciesReady(root.editingKind)
-              text: "Install requirements"
-              tooltipText: privacyService ? privacyService.dependencyDescription(root.editingKind) : ""
-              onClicked: privacyService.installDependencies(root.editingKind)
-            }
-            Text {
-              id: diagnosticsText
-              Layout.fillWidth: true
-              text: root.diagnosticText(root.editingKind)
-              textFormat: Text.PlainText
-              color: Color.muted
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
-              wrapMode: Text.WordWrap
-            }
-          }
+          DeviceDiagnostics { controller: root; kind: root.editingKind }
 
           SettingsSurface {
             Layout.fillWidth: true

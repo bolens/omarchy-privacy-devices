@@ -9,6 +9,9 @@ const bar = fs.readFileSync(path.join(root, "BarWidget.qml"), "utf8")
 const surface = fs.readFileSync(path.join(root, "SettingsSurface.qml"), "utf8")
 const integer = fs.readFileSync(path.join(root, "IntegerSetting.qml"), "utf8")
 const activityCard = fs.readFileSync(path.join(root, "PrivacyActivityCard.qml"), "utf8")
+const deviceEditor = fs.readFileSync(path.join(root, "DeviceSettingsEditor.qml"), "utf8")
+const deviceDiagnostics = fs.readFileSync(path.join(root, "DeviceDiagnostics.qml"), "utf8")
+const deviceSettings = bar + deviceEditor + deviceDiagnostics
 const defaults = manifest.barWidget.defaults
 const modelContext = {}
 vm.createContext(modelContext)
@@ -98,7 +101,7 @@ assert.match(bar, /text: "Move right"[\s\S]*?enabled: root\.canMoveItem\(root\.e
 assert.match(bar, /visible: root\.editingKind !== "" && !root\.showingGlobalSettings[\s\S]*?SettingsSurface\s*\{[\s\S]*?text: "Appearance"/,
   "device appearance must use the shared settings surface")
 for (const section of ["Bar placement", "Backend", "Diagnostics", "Reset device appearance"])
-  assert.match(bar, new RegExp(`SettingsSurface\\s*\\{[\\s\\S]*?text: "${section}"`), `${section} must use the shared device settings structure`)
+  assert.match(deviceSettings, new RegExp(`SettingsSurface\\s*\\{[\\s\\S]*?text: "${section}"`), `${section} must use the shared device settings structure`)
 assert.match(bar, /label: "Show status markers for this device"[\s\S]*?Global status-marker rules still apply/,
   "device marker wording must explain its relationship to global rules")
 for (const label of ["Bar preview", "Display label", "Device icon"])
@@ -107,7 +110,7 @@ assert.match(bar, /Shared by microphone and audio output/, "shared audio backend
 assert.match(bar, /function moveDeviceEditor\(delta\)/, "device editor must support adjacent navigation")
 assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceEditor\(dx\)/,
   "left and right keys must navigate device editors")
-assert.match(bar, /text: "Previous device"[\s\S]*?text: "Next device"/, "device pages must expose visible adjacent navigation")
+assert.match(deviceEditor, /tooltipText: "Previous device"[\s\S]*?tooltipText: "Next device"/, "device pages must expose accessible adjacent navigation")
 assert.match(bar, /function resetDeviceBackend\(kind\)/, "backend reset must be scoped by device")
 assert.match(bar, /text: "Reset all device settings"/, "device pages must offer a complete reset")
 assert.match(bar, /property bool dirty:[\s\S]*?Unsaved changes[\s\S]*?enabled: parent\.dirty/,
@@ -119,6 +122,10 @@ assert.match(bar, /Model\.deviceBackendValidation\("screen-recording"[\s\S]*?ena
 assert.match(bar, /maximumLength: 4096/, "custom command editors must expose sanitizer-aligned bounds")
 assert.match(bar, /root\.deviceAppearanceCustomized\(root\.editingKind\) \? "Customized" : "Using global defaults"/,
   "device appearance must identify inherited versus customized state")
+assert.match(bar, /DeviceSettingsEditor\s*\{[\s\S]*?controller: root/, "device editor navigation must use a narrow controller interface")
+assert.match(deviceDiagnostics, /required property var controller[\s\S]*?required property string kind/, "device diagnostics must expose a narrow controller and device interface")
+for (const label of ["Backend", "Dependencies", "Monitoring", "Activity", "Applications", "Control", "Exit codes"])
+  assert.match(bar, new RegExp(`label: "${label}"`), `structured diagnostics must include ${label}`)
 assert.match(bar, /text: "Reset device appearance"[\s\S]*?default label, icon, colors, idle visibility, idle opacity, and status-marker visibility/,
   "device reset copy must match every reset field")
 assert.match(activityCard, /controller\.statePillStyle === "filled"[\s\S]*?controller\.statePillStyle === "minimal"/, "state-pill styles must alter fill and border presentation")
