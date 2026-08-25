@@ -10,6 +10,7 @@ const manifest = JSON.parse(read("manifest.json"));
 const changelog = read("CHANGELOG.md");
 const bugTemplate = read(".github/ISSUE_TEMPLATE/bug.yml");
 const releaseWorkflow = read(".github/workflows/release.yml");
+const ciWorkflow = read(".github/workflows/ci.yml");
 
 assert.match(
   manifest.version,
@@ -43,5 +44,9 @@ assert.match(
   /test "\$RELEASE_TAG" = "v\$\(jq -r \.version manifest\.json\)"/,
   "release workflow must reject tags that differ from the manifest version"
 );
+assert.match(ciWorkflow, /name: Inspect release archive[\s\S]*?git archive HEAD \| tar -t[\s\S]*?__pycache__[\s\S]*?node_modules/,
+  "CI must reject generated files from the release archive");
+assert.match(ciWorkflow, /git grep -IlE[\s\S]*?PRIVATE KEY[\s\S]*?gh\[pousr\]/,
+  "CI must reject credential-like material from tracked release files");
 
 console.log(`release metadata checks passed for v${manifest.version}`);

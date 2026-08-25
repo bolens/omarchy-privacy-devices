@@ -37,6 +37,18 @@ jobs:
           git archive HEAD | tar -x -C "$RUNNER_TEMP/plugin"
           .omarchy/bin/omarchy-plugin-validate "$RUNNER_TEMP/plugin"
 
+      - name: Inspect release archive
+        run: |
+          archive_files=$(git archive HEAD | tar -t)
+          if grep -E '(^|/)(__pycache__|node_modules|\.pytest_cache)(/|$)|\.py[co]$|\.tar\.gz(\.sha256)?$' <<<"$archive_files"; then
+            echo "Release archive contains generated or forbidden files" >&2
+            exit 1
+          fi
+          if git grep -IlE -- 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gh[pousr]_[A-Za-z0-9_]{20,}' -- .; then
+            echo "Tracked files contain credential-like material" >&2
+            exit 1
+          fi
+
       - name: Lint QML
         run: |
           docker run --rm \
