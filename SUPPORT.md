@@ -23,3 +23,8 @@ unsafe IPC mode.
 
 This project is maintained on a best-effort basis. Response and resolution
 times are not guaranteed.
+
+## Related documentation
+
+See the [documentation index](DOCUMENTATION.md), [security policy](SECURITY.md),
+and public [user guide](https://bolens.github.io/omarchy-privacy-devices/).

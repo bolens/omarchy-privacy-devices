@@ -28,19 +28,8 @@ restore.
 ## Validation
 
 Run the full validation set in [TESTING.md](TESTING.md) before submitting a
-pull request. The fast behavior checks are:
-
-```sh
-shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
-node tests/model.test.js
-node tests/controls.test.js
-node tests/sessions.test.js
-node tests/settings.test.js
-node tests/runtime.test.js
-node tests/security.test.js
-node tests/release.test.js
-python3 -m unittest discover -s tests -p 'test_*.py'
-```
+pull request. Keep commands and validation procedures there rather than
+duplicating them in contributor documentation.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) before changing ownership or runtime
 boundaries, and [RELEASING.md](RELEASING.md) for the release playbook.
@@ -61,3 +50,8 @@ boundaries, and [RELEASING.md](RELEASING.md) for the release playbook.
 Explain the problem, the chosen behavior, and how you tested it. CI must pass
 before merge. Maintainers may ask for changes that keep controls reversible or
 reduce privilege and process-management risk.
+
+## Related documentation
+
+See the [documentation index](DOCUMENTATION.md), [security policy](SECURITY.md),
+and [code of conduct](CODE_OF_CONDUCT.md).

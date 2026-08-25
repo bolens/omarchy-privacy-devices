@@ -424,6 +424,9 @@
         font: 0.9rem/1.5 system-ui, sans-serif;
       }
 
+      .screenshot-card.bar-shot { grid-column: 1 / -1; }
+      .screenshot-card.bar-shot img { width: auto; max-width: 100%; margin: 0 auto; }
+
       section {
         padding: 5rem 0;
         border-top: 1px solid var(--border);
@@ -724,7 +727,7 @@
         nav ul { gap: 0.7rem; font-size: 0.8rem; }
         .theme-picker { width: 100%; }
         .hero { grid-template-columns: 1fr; padding-top: 3.5rem; }
-        .preview { max-width: 480px; }
+        .preview { max-width: 500px; }
         .features { grid-template-columns: 1fr; }
         .guide-grid, .steps, .screenshot-grid { grid-template-columns: 1fr; }
         .requirements { grid-template-columns: 1fr; }
@@ -784,7 +787,7 @@
           </div>
         </div>
         <div class="preview">
-          <img src="preview.png" alt="Privacy Devices activity panel showing live device state and controls" width="480" height="480" decoding="async" fetchpriority="high">
+          <img src="preview.png" alt="Privacy Devices activity panel showing live device state and controls" width="500" height="500" decoding="async" fetchpriority="high">
         </div>
       </div>
 
@@ -818,12 +821,28 @@
           <h2>Clear at a glance.<br>Flexible underneath.</h2>
           <div class="screenshot-grid">
             <figure class="screenshot-card">
-              <img src="preview.png" alt="Activity panel with active, idle, capture, and disabled states" width="480" height="480" loading="lazy" decoding="async">
+              <img src="preview.png" alt="Activity panel with active, idle, capture, and disabled states" width="500" height="500" loading="lazy" decoding="async">
               <figcaption>Distinct state pills, session context, and direct controls keep activity understandable without opening settings.</figcaption>
+            </figure>
+            <figure class="screenshot-card bar-shot">
+              <img src="bar.png" alt="Privacy Devices indicators occupying their exact center-bar footprint" width="182" height="50" loading="lazy" decoding="async">
+              <figcaption>The bar view uses only its measured 182-pixel widget footprint in this configuration; neighboring widgets are not included.</figcaption>
+            </figure>
+            <figure class="screenshot-card">
+              <img src="general.png" alt="General settings page" width="500" height="660" loading="lazy" decoding="async">
+              <figcaption>General keeps monitored activity, idle visibility, controls, and application-name behavior together.</figcaption>
             </figure>
             <figure class="screenshot-card">
               <img src="appearance.png" alt="Appearance settings page with bar layout and theme controls" width="500" height="660" loading="lazy" decoding="async">
               <figcaption>The dedicated Appearance page separates bar layout, theme colors, and status presentation from behavior and monitoring.</figcaption>
+            </figure>
+            <figure class="screenshot-card">
+              <img src="alerts.png" alt="Alerts settings page" width="500" height="660" loading="lazy" decoding="async">
+              <figcaption>Alerts owns activity-start, activity-stop, control-result, and application-suppression notification policy.</figcaption>
+            </figure>
+            <figure class="screenshot-card">
+              <img src="monitoring.png" alt="Monitoring settings page" width="500" height="660" loading="lazy" decoding="async">
+              <figcaption>Monitoring groups enhanced coverage, fallback intervals, private data, transfer, and live observer diagnostics.</figcaption>
             </figure>
           </div>
         </div>

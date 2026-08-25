@@ -46,7 +46,7 @@ jobs:
             bash -lc 'pacman -Syu --noconfirm quickshell qt6-declarative >/dev/null && /usr/lib/qt6/bin/qmllint -I .omarchy/shell BarWidget.qml Service.qml SettingsSurface.qml IntegerSetting.qml PrivacyActivityCard.qml'
 
       - name: Check helper scripts
-        run: shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
+        run: shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot scripts/capture-screenshots
 
       - name: Check Python helpers
         run: |
@@ -84,6 +84,9 @@ jobs:
 
       - name: Validate release metadata
         run: node tests/release.test.js
+
+      - name: Validate documentation structure
+        run: npm run test:docs
 
       - name: Validate HTML and XML
         run: |

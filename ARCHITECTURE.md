@@ -90,3 +90,8 @@ captures media, or sends telemetry over the network.
 
 Changes that weaken these constraints require focused tests and live
 Quickshell verification.
+
+## Related documentation
+
+See the [documentation index](DOCUMENTATION.md), canonical
+[validation matrix](TESTING.md), and [security policy](SECURITY.md).

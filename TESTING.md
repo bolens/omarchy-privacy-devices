@@ -13,6 +13,7 @@ node tests/runtime.test.js
 node tests/security.test.js
 node tests/release.test.js
 node tests/site.test.js
+node tests/documentation.test.js
 python3 -m unittest discover -s tests -p 'test_*.py'
 shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
 ```
@@ -20,7 +21,7 @@ shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
 The JavaScript suites cover classification, settings sanitation, normalized
 sessions, control transitions, visual-state policy, manifest/UI contracts,
 runtime process topology, static security invariants, and documentation asset
-dimensions and references. Python tests execute
+dimensions, references, ownership, and local cross-links. Python tests execute
 the helpers against temporary state and fake commands so privileged services,
 devices, screenshots, and recordings are never modified.
 
@@ -63,6 +64,22 @@ npm run test:site
 CI additionally checks links and requires a Lighthouse accessibility score of
 at least 0.95.
 
+## Refreshing screenshots
+
+Capture the activity view, exact bar footprint, and all four settings pages
+from the live plugin on an otherwise empty workspace:
+
+```sh
+scripts/capture-screenshots --monitor DP-1 --workspace 10
+```
+
+The script validates that the capture workspace is empty, discovers the live
+Omarchy Shell process and measured widget geometry, updates every repository
+image and the social card, and restores the monitor's original workspace even
+when capture fails. Review the resulting images before committing them. See
+the [documentation ownership map](DOCUMENTATION.md) for where screenshots are
+consumed.
+
 ## Live verification
 
 After changing monitoring, IPC, settings, controls, or layout:
@@ -85,3 +102,9 @@ qs ipc --pid "$shell_pid" call privacy-devices status
 ```
 
 Do not copy unredacted diagnostics into issues or CI logs.
+
+## Related documentation
+
+See the [documentation index](DOCUMENTATION.md),
+[contribution expectations](CONTRIBUTING.md), and
+[release playbook](RELEASING.md).

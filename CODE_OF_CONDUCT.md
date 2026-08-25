@@ -20,3 +20,7 @@ This policy applies in repository issues, pull requests, reviews, discussions,
 and other project spaces, including public interactions representing the
 project.
 
+## Related documentation
+
+See the [documentation index](DOCUMENTATION.md),
+[contribution guide](CONTRIBUTING.md), and [support policy](SUPPORT.md).

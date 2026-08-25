@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build:site": "bash scripts/build-site.sh",
+    "test:docs": "node tests/documentation.test.js",
     "test:site": "node tests/site.test.js"
   },
   "devDependencies": {

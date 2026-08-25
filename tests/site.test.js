@@ -19,15 +19,25 @@ assert.match(html, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(html, /property="og:site_name"/);
 assert.match(html, /name="twitter:title"/);
 assert.equal((html.match(/data-copy=/g) || []).length, 4);
-assert.deepEqual(pngDimensions("preview.png"), [480, 480]);
-assert.deepEqual(pngDimensions("docs/preview.png"), [480, 480]);
+assert.deepEqual(pngDimensions("preview.png"), [500, 500]);
+assert.deepEqual(pngDimensions("docs/preview.png"), [500, 500]);
 assert.deepEqual(pngDimensions("docs/appearance.png"), [500, 660]);
+for (const page of ["general", "alerts", "monitoring"])
+  assert.deepEqual(pngDimensions(`docs/${page}.png`), [500, 660]);
+assert.deepEqual(pngDimensions("docs/bar.png"), [182, 50]);
+assert.equal(new Set(
+  ["general", "appearance", "alerts", "monitoring"]
+    .map((page) => fs.readFileSync(path.join(root, `docs/${page}.png`)).toString("base64"))
+).size, 4, "each settings page must have a distinct capture");
 assert.equal(
   Buffer.compare(fs.readFileSync(path.join(root, "preview.png")), fs.readFileSync(path.join(root, "docs/preview.png"))),
   0
 );
 assert.match(html, /src="appearance\.png"[^>]+width="500" height="660"/);
-assert.match(fs.readFileSync(path.join(root, "README.md"), "utf8"), /docs\/appearance\.png/);
+for (const image of ["bar", "general", "appearance", "alerts", "monitoring"]) {
+  assert.match(html, new RegExp(`src="${image}\\.png"`));
+  assert.match(fs.readFileSync(path.join(root, "README.md"), "utf8"), new RegExp(`docs/${image}\\.png`));
+}
 
 let copied = "";
 const dom = new JSDOM(html, {

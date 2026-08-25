@@ -6,18 +6,27 @@ screenshots, and screen recording.
 
 [Website and user guide](https://bolens.github.io/omarchy-privacy-devices/) ·
 [Official plugin listing](https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices) ·
+[Documentation](DOCUMENTATION.md) ·
 [Get support](SUPPORT.md) ·
 [Report an issue](https://github.com/bolens/omarchy-privacy-devices/issues/new/choose)
 
-Maintainers: [architecture](ARCHITECTURE.md) · [testing](TESTING.md) ·
-[release playbook](RELEASING.md)
+Contributors: [contributing guide](CONTRIBUTING.md) ·
+[architecture](ARCHITECTURE.md) · [security policy](SECURITY.md)
 
 ![Privacy Devices activity panel showing live device state and controls](preview.png)
 
-<details>
-<summary>Appearance settings</summary>
+The widget occupies only its privacy-device indicators in the center bar:
 
-![Privacy Devices Appearance page with bar layout and theme controls](docs/appearance.png)
+![Privacy Devices indicators in their exact bar footprint](docs/bar.png)
+
+<details>
+<summary>All global settings pages</summary>
+
+| General | Appearance |
+| --- | --- |
+| <img src="docs/general.png" alt="General settings page" width="360"> | <img src="docs/appearance.png" alt="Appearance settings page" width="360"> |
+| Alerts | Monitoring |
+| <img src="docs/alerts.png" alt="Alerts settings page" width="360"> | <img src="docs/monitoring.png" alt="Monitoring settings page" width="360"> |
 
 </details>
 
@@ -58,23 +67,13 @@ omarchy bar move io.github.bolens.privacy-devices --section center
 
 ## Development
 
-```sh
-omarchy plugin validate .
-qmllint -I "$OMARCHY_PATH/shell" BarWidget.qml Service.qml SettingsSurface.qml IntegerSetting.qml PrivacyActivityCard.qml
-shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
-node tests/model.test.js
-node tests/controls.test.js
-node tests/sessions.test.js
-node tests/security.test.js
-node tests/settings.test.js
-node tests/runtime.test.js
-node tests/release.test.js
-node tests/site.test.js
-python3 -m unittest discover -s tests -p 'test_*.py'
-```
+Start with the [contributing guide](CONTRIBUTING.md). The canonical validation
+matrix, including clean-archive, QML runtime, site, and live checks, is in
+[TESTING.md](TESTING.md). Review [ARCHITECTURE.md](ARCHITECTURE.md) before
+changing runtime ownership or performance constraints.
 
-See [TESTING.md](TESTING.md) for clean-archive validation, QML runtime checks,
-site validation, and live verification.
+Maintainers can refresh all live interface images with the safe, restoring
+[screenshot workflow](TESTING.md#refreshing-screenshots).
 
 Enhanced monitoring reads same-user `/proc/<pid>/fd` links for open V4L2 and
 ALSA capture devices. It never opens devices or reads media. Recent history is

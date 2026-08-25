@@ -3,10 +3,16 @@ const fs = require("node:fs")
 const path = require("node:path")
 
 const service = fs.readFileSync(path.join(__dirname, "..", "Service.qml"), "utf8")
+const screenshotWorkflow = fs.readFileSync(path.join(__dirname, "..", "scripts/capture-screenshots"), "utf8")
 const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
 
 assert.match(service, /function monitoringTelemetry\(\)/, "service must expose monitoring telemetry")
 assert.match(service, /requestedSettingsPage = Model\.settingsPage\(page\)/, "settings IPC pages must pass through the shared allowlist")
+assert.match(screenshotWorkflow, /trap restore_desktop EXIT INT TERM/, "screenshot capture must restore the user's workspace on failure")
+assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must reject workspaces containing user windows")
+assert.match(screenshotWorkflow, /debugBarGeometry/, "bar screenshots must use measured live widget geometry")
+assert.ok(fs.statSync(path.join(__dirname, "..", "scripts/capture-screenshots")).mode & 0o111,
+  "screenshot workflow must remain executable")
 assert.match(service, /id:\s*fallbackObserverProc/, "process fallbacks must share one persistent structured observer")
 assert.match(service, /"watch-fallbacks"/, "fallback observer must use the structured watch protocol")
 assert.match(service, /settings\.recordingPollSeconds/, "the persistent fallback observer must honor the configured scan interval")

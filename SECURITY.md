@@ -50,7 +50,8 @@ command explicitly supplied by the user are not vulnerabilities in the plugin.
 
 Before tagging a release:
 
-1. Run the full matrix in `TESTING.md`, including `tests/security.test.js`.
+1. Run the full matrix in [TESTING.md](TESTING.md), including
+   `tests/security.test.js`.
 2. Review new process launches for argument separation and allowlisted values.
 3. Review new file writes for bounded input, private permissions, and atomic
    replacement.
@@ -60,3 +61,9 @@ Before tagging a release:
 6. Inspect the clean `git archive` used for release and scan tracked files for
    credentials, private diagnostics, generated output, and dependency trees.
 7. Audit site-tooling dependencies and resolve production-impacting findings.
+
+## Related documentation
+
+See the [documentation index](DOCUMENTATION.md), documented runtime
+[security boundaries](ARCHITECTURE.md#security-boundaries), and private-report
+[support guidance](SUPPORT.md).

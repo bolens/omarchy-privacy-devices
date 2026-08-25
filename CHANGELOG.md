@@ -2,6 +2,8 @@
 
 All notable changes to Privacy Devices are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
+See the [documentation index](DOCUMENTATION.md) for topic ownership and the
+maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
@@ -9,8 +11,15 @@ All notable changes to Privacy Devices are documented here. The project follows
 
 - Add a dedicated Appearance settings page with independent bar icon scale,
   item spacing, padding, status-marker position, and session-count controls.
-- Refresh the activity, Appearance, and social-preview screenshots from the
-  live plugin.
+- Refresh the activity, exact bar footprint, all four settings pages, and
+  social-preview screenshots from the live plugin on the primary monitor.
+- Establish a canonical documentation index and cross-linked ownership map to
+  reduce duplicated maintainer guidance.
+
+### Fixed
+
+- Apply settings-page IPC changes while the popup is already open so external
+  navigation can switch among every global settings page.
 
 ## [0.2.0] - 2026-08-24
 

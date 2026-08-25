@@ -15,10 +15,11 @@
 
 - [ ] Not user-facing
 - [ ] Documentation updated
+- [ ] Canonical document selected using [`DOCUMENTATION.md`](../DOCUMENTATION.md)
 - [ ] Screenshot or recording included for visual changes
+- [ ] Live screenshots refreshed with `scripts/capture-screenshots` when needed
 - [ ] `CHANGELOG.md` updated
 
 ## Privacy and security
 
 <!-- Describe changes to privileges, commands, process handling, local data, or device controls. Write “None” when not applicable. -->
-

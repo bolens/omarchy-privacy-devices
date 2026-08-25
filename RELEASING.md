@@ -22,7 +22,7 @@ issue-template examples when they display a concrete version.
    - The new version compares the previous tag to the new tag.
 4. Confirm user-visible behavior is reflected in `README.md` and the Pages
    guide. Update `ARCHITECTURE.md` or `TESTING.md` when their contracts change.
-5. Run the validation matrix in `TESTING.md`.
+5. Run the validation matrix in [TESTING.md](TESTING.md).
 
 Keep the release commit limited to version and documentation changes whenever
 possible. Do not tag a dirty worktree or a commit that differs from the green
@@ -96,3 +96,8 @@ Never move or overwrite a published tag.
 
 After recovery, verify installation, Pages, checksums, and the plugin directory
 again.
+
+## Related documentation
+
+See the [documentation index](DOCUMENTATION.md), [changelog](CHANGELOG.md),
+[testing guide](TESTING.md), and release [security checklist](SECURITY.md#release-security-checklist).

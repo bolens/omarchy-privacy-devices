@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+plugin_id="io.github.bolens.privacy-devices"
+monitor=""
+capture_workspace=""
+settle_seconds=1
+
+usage() {
+  cat <<'EOF'
+Usage: scripts/capture-screenshots [--monitor NAME] [--workspace ID]
+
+Capture the live plugin on an empty workspace, update repository screenshots,
+and restore the monitor's original workspace. Defaults to the focused monitor
+and the highest-numbered empty workspace already assigned to it.
+EOF
+}
+
+while (($#)); do
+  case "$1" in
+    --monitor) monitor=${2:-}; shift 2 ;;
+    --workspace) capture_workspace=${2:-}; shift 2 ;;
+    --help|-h) usage; exit 0 ;;
+    *) printf 'Unknown argument: %s\n' "$1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+for command in qs hyprctl jq grim magick pngquant wtype; do
+  command -v "$command" >/dev/null || { printf 'Missing required command: %s\n' "$command" >&2; exit 1; }
+done
+
+monitor_json=$(hyprctl monitors -j)
+if [[ -z $monitor ]]; then
+  monitor=$(jq -r '.[] | select(.focused) | .name' <<<"$monitor_json" | head -n 1)
+fi
+[[ $monitor =~ ^[A-Za-z0-9_.-]+$ ]] || { printf 'Invalid monitor name: %s\n' "$monitor" >&2; exit 2; }
+
+monitor_width=$(jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .width' <<<"$monitor_json")
+original_workspace=$(jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .activeWorkspace.id' <<<"$monitor_json")
+[[ $monitor_width =~ ^[1-9][0-9]*$ && $original_workspace =~ ^-?[0-9]+$ ]] || {
+  printf 'Monitor is not active: %s\n' "$monitor" >&2
+  exit 2
+}
+
+if [[ -z $capture_workspace ]]; then
+  capture_workspace=$(jq -r --arg monitor "$monitor" '
+    [.[] | select(.monitor == $monitor and (.id > 0)) | .id] | sort | reverse | .[0] // empty
+  ' < <(hyprctl workspaces -j))
+fi
+[[ $capture_workspace =~ ^[1-9][0-9]*$ ]] || { printf 'Capture workspace must be a positive integer.\n' >&2; exit 2; }
+
+window_count=$(jq -r --argjson workspace "$capture_workspace" '[.[] | select(.workspace.id == $workspace)] | length' < <(hyprctl clients -j))
+((window_count == 0)) || {
+  printf 'Workspace %s is not empty; choose another with --workspace.\n' "$capture_workspace" >&2
+  exit 2
+}
+
+shell_pid=$(qs list --all | awk '
+  /Process ID:/ { pid=$3 }
+  /Config path: .*omarchy-overlay\/shell\/shell.qml/ { print pid; exit }
+')
+[[ $shell_pid =~ ^[1-9][0-9]*$ ]] || { printf 'No running Omarchy Shell instance found.\n' >&2; exit 1; }
+
+capture_dir=$(mktemp -d)
+restored=false
+restore_desktop() {
+  if [[ $restored == false ]]; then
+    qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
+    hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null 2>&1 || true
+    hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$original_workspace\" }))" >/dev/null 2>&1 || true
+    restored=true
+  fi
+  rm -rf -- "$capture_dir"
+}
+trap restore_desktop EXIT INT TERM
+
+hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null
+hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$capture_workspace\" }))" >/dev/null
+
+for page in general appearance alerts monitoring; do
+  qs ipc --pid "$shell_pid" call privacy-devices-settings open "$page" >/dev/null
+  sleep "$settle_seconds"
+  grim -o "$monitor" "$capture_dir/$page-full.png"
+done
+
+wtype -k escape
+sleep "$settle_seconds"
+grim -o "$monitor" "$capture_dir/activity-full.png"
+qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null
+sleep "$settle_seconds"
+grim -o "$monitor" "$capture_dir/bar-full.png"
+
+geometry=$(qs ipc --pid "$shell_pid" call shell debugBarGeometry)
+widget_row=$(jq -c --arg id "$plugin_id" --argjson width "$monitor_width" '
+  [.[] | select(.id == $id and .visible and .width > 0)]
+  | sort_by((((.x + (.width / 2)) - ($width / 2)) | fabs))
+  | .[0]
+' <<<"$geometry")
+widget_x=$(jq -r '.x' <<<"$widget_row")
+widget_width=$(jq -r '.width' <<<"$widget_row")
+[[ $widget_x =~ ^[0-9]+$ && $widget_width =~ ^[1-9][0-9]*$ ]] || {
+  printf 'Could not resolve live bar geometry for %s on %s.\n' "$plugin_id" "$monitor" >&2
+  exit 1
+}
+
+panel_x=$((widget_x - 168))
+((panel_x >= 0 && panel_x + 500 <= monitor_width)) || {
+  printf 'Resolved panel crop is outside %s.\n' "$monitor" >&2
+  exit 1
+}
+
+magick "$capture_dir/activity-full.png" -crop "500x500+${panel_x}+20" +repage "$capture_dir/activity.png"
+for page in general appearance alerts monitoring; do
+  magick "$capture_dir/$page-full.png" -crop "500x660+${panel_x}+20" +repage "$capture_dir/$page.png"
+done
+magick "$capture_dir/bar-full.png" -crop "${widget_width}x50+${widget_x}+0" +repage "$capture_dir/bar.png"
+
+optimize_png() {
+  local source=$1 destination=$2
+  magick "$source" -strip -define png:compression-level=9 "$destination"
+  pngquant --force --quality=82-95 --speed 1 --strip --output "$destination" "$destination"
+}
+
+optimize_png "$capture_dir/activity.png" preview.png
+install -m 0644 preview.png docs/preview.png
+for page in general appearance alerts monitoring; do
+  optimize_png "$capture_dir/$page.png" "docs/$page.png"
+done
+optimize_png "$capture_dir/bar.png" docs/bar.png
+
+magick docs/social-card.png -fill '#0d110d' -draw 'rectangle 895,35 1729,875' "$capture_dir/social-base.png"
+magick "$capture_dir/activity.png" -resize 720x720 "$capture_dir/social-panel.png"
+magick "$capture_dir/social-base.png" "$capture_dir/social-panel.png" -geometry +950+95 -composite \
+  -strip -define png:compression-level=9 docs/social-card.png
+pngquant --force --quality=82-95 --speed 1 --strip --output docs/social-card.png docs/social-card.png
+
+restore_desktop
+trap - EXIT INT TERM
+
+printf 'Updated screenshots from %s workspace %s; restored workspace %s.\n' \
+  "$monitor" "$capture_workspace" "$original_workspace"
