@@ -4,6 +4,7 @@
 import json
 import ctypes
 import errno
+import math
 import os
 import re
 import select
@@ -21,6 +22,16 @@ IN_OPEN = 0x00000020
 IN_CLOSE = 0x00000008 | 0x00000010
 IN_DIRECTORY_CHANGE = 0x00000100 | 0x00000200 | 0x00000040 | 0x00000080
 MIN_EVENT_SCAN_INTERVAL = 2.0
+MAX_PROCESS_NAME_CHARS = 256
+MAX_PATTERN_CHARS = 1024
+
+
+def bounded_heartbeat(value: str, fallback: float = 5.0) -> float:
+    try:
+        parsed = float(value)
+    except ValueError:
+        return fallback
+    return min(60.0, max(1.0, parsed)) if math.isfinite(parsed) else fallback
 
 
 def process_name(process: Path) -> str:
@@ -243,19 +254,21 @@ def main() -> int:
     if len(sys.argv) > 1:
         if sys.argv[1] == "watch-fallbacks":
             try:
-                heartbeat = float(sys.argv[sys.argv.index("--heartbeat") + 1]) if "--heartbeat" in sys.argv else 5.0
+                heartbeat = bounded_heartbeat(sys.argv[sys.argv.index("--heartbeat") + 1]) if "--heartbeat" in sys.argv else 5.0
                 recording = sys.argv[sys.argv.index("--recording") + 1] if "--recording" in sys.argv else "gpu-screen-recorder"
                 screenshot = sys.argv[sys.argv.index("--screenshot-pattern") + 1] if "--screenshot-pattern" in sys.argv else r"^(grim|slurp|satty|hyprpicker|hyprshot|flameshot)(\s|$)"
             except (ValueError, IndexError):
                 return 2
-            return watch_fallbacks(max(1.0, heartbeat), recording, screenshot)
+            if len(recording) > MAX_PROCESS_NAME_CHARS or len(screenshot) > MAX_PATTERN_CHARS:
+                return 2
+            return watch_fallbacks(heartbeat, recording, screenshot)
         if sys.argv[1] != "watch":
             return 2
         try:
-            heartbeat = float(sys.argv[sys.argv.index("--heartbeat") + 1]) if "--heartbeat" in sys.argv else 5.0
+            heartbeat = bounded_heartbeat(sys.argv[sys.argv.index("--heartbeat") + 1]) if "--heartbeat" in sys.argv else 5.0
         except (ValueError, IndexError):
             return 2
-        return watch(max(1.0, heartbeat))
+        return watch(heartbeat)
     try:
         print(json.dumps({"observations": observations()}, separators=(",", ":")))
     except OSError as error:

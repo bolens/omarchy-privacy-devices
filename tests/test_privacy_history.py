@@ -1,5 +1,7 @@
 import importlib.machinery
 import importlib.util
+import json
+import math
 import os
 import tempfile
 import unittest
@@ -35,11 +37,34 @@ class HistoryTests(unittest.TestCase):
             self.assertNotIn("unexpected", stored[0])
             self.assertEqual(path.stat().st_mode & 0o777, 0o600)
             self.assertEqual(path.parent.stat().st_mode & 0o777, 0o700)
-            self.assertFalse(path.with_suffix(".json.new").exists())
+            self.assertEqual(list(path.parent.glob(".history-*")), [])
 
     def test_rejects_entries_without_lifecycle_fields(self):
         with self.assertRaises(ValueError):
             MODULE.sanitize({"kind": "camera", "application": "Browser"})
+        invalid_number = self.entry(1, 1_000_000_000)
+        invalid_number["endedAt"] = math.nan
+        with self.assertRaises(ValueError):
+            MODULE.sanitize(invalid_number)
+
+    def test_bounds_persisted_text_and_incoming_batch(self):
+        now = 1_000_000_000
+        oversized = self.entry(1, now)
+        oversized["application"] = "x" * (MODULE.MAX_FIELD_CHARS + 10)
+        result = MODULE.append_entries([], [oversized] * (MODULE.MAX_ENTRIES + 5), now)
+
+        self.assertEqual(len(result), MODULE.MAX_ENTRIES)
+        self.assertEqual(len(result[0]["application"]), MODULE.MAX_FIELD_CHARS)
+
+    def test_load_resanitizes_and_rejects_oversized_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "history.json"
+            entry = self.entry(1, 1_000_000_000)
+            path.write_text(json.dumps([entry]))
+            self.assertNotIn("unexpected", MODULE.load(path)[0])
+
+            path.write_text(" " * (MODULE.MAX_FILE_BYTES + 1))
+            self.assertEqual(MODULE.load(path), [])
 
     def test_batches_simultaneous_stops_in_one_ordered_transaction(self):
         now = 1_000_000_000

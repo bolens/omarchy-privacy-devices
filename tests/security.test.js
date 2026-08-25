@@ -11,6 +11,7 @@ const recording = read("privacy-recording")
 const observer = read("privacy-observe")
 const history = read("privacy-history")
 const manifest = read("manifest.json")
+const workflowsDirectory = path.join(root, ".github", "workflows")
 
 if (!bar.includes("textFormat: Text.PlainText")) throw new Error("plain-text QML enforcement missing")
 if (!bar.includes("Model.autoTextSafe(value)")) throw new Error("shared AutoText boundary missing")
@@ -31,5 +32,15 @@ for (const required of ["os.getuid()", "process.stat().st_uid", "os.readlink", "
 for (const required of ["FIELDS =", "MAX_ENTRIES = 100", "MAX_AGE_MS", "0o700", "0o600", "temporary.replace(path)"])
   if (!history.includes(required)) throw new Error(`private bounded history invariant missing: ${required}`)
 if (/window.title|commandLine|cmdline/.test(history)) throw new Error("history stores unnecessarily sensitive metadata")
+
+for (const workflowName of fs.readdirSync(workflowsDirectory)) {
+  const workflow = read(path.join(".github", "workflows", workflowName))
+  for (const match of workflow.matchAll(/^\s*uses:\s*([^\s#]+)(?:\s+#.*)?$/gm)) {
+    const reference = match[1]
+    if (reference.startsWith("./")) continue
+    if (!/@[0-9a-f]{40}$/i.test(reference))
+      throw new Error(`external action is not pinned to a full commit SHA: ${workflowName}: ${reference}`)
+  }
+}
 
 console.log("security tests passed")

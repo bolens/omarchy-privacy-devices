@@ -6,6 +6,7 @@ const service = fs.readFileSync(path.join(__dirname, "..", "Service.qml"), "utf8
 const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
 
 assert.match(service, /function monitoringTelemetry\(\)/, "service must expose monitoring telemetry")
+assert.match(service, /requestedSettingsPage = Model\.settingsPage\(page\)/, "settings IPC pages must pass through the shared allowlist")
 assert.match(service, /id:\s*fallbackObserverProc/, "process fallbacks must share one persistent structured observer")
 assert.match(service, /"watch-fallbacks"/, "fallback observer must use the structured watch protocol")
 assert.match(service, /settings\.recordingPollSeconds/, "the persistent fallback observer must honor the configured scan interval")

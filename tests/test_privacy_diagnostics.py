@@ -20,6 +20,8 @@ class DiagnosticCopyTests(unittest.TestCase):
             self.assertEqual(MODULE.main(), 2)
         with patch.object(sys, "argv", ["privacy-diagnostics", "x" * (MODULE.MAX_BYTES + 1)]):
             self.assertEqual(MODULE.main(), 2)
+        with patch.object(sys, "argv", ["privacy-diagnostics", '{"version":1,"value":NaN}']):
+            self.assertEqual(MODULE.main(), 2)
 
     def test_passes_only_normalized_json_to_wl_copy(self):
         payload = {"version": 1, "redacted": True, "sessions": []}

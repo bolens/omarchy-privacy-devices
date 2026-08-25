@@ -2,6 +2,12 @@
 
 var KINDS = ["microphone", "audio-output", "camera", "screen-share", "screenshot", "screen-recording", "location"]
 var SETTINGS_VERSION = 1
+var SETTINGS_PAGES = ["general", "alerts", "monitoring"]
+
+function settingsPage(value) {
+  var page = String(value || "general")
+  return SETTINGS_PAGES.indexOf(page) >= 0 ? page : "general"
+}
 
 function sanitizeSettings(data) {
   var source = data && typeof data === "object" && !Array.isArray(data) ? data : {}
@@ -35,8 +41,10 @@ function sanitizeSettings(data) {
     activeColorRole:["bar-active","urgent","accent","foreground"], inactiveColorRole:["muted","foreground","accent"], disabledColorRole:["urgent","muted","accent","foreground","bar-active"],
     mutedColorRole:["urgent","muted","bar-active","accent","foreground"], unmutedColorRole:["foreground","bar-active","accent","muted","urgent"]}
   for (key in enums) if (source[key] !== undefined) clean[key] = enums[key].indexOf(source[key]) >= 0 ? source[key] : enums[key][0]
-  var strings = ["screenshotCustomCommand", "screenshotProcessName", "recordingProcessName", "recordingCustomStartCommand", "recordingCustomStopCommand"]
-  for (index = 0; index < strings.length; index++) if (source[strings[index]] !== undefined) clean[strings[index]] = String(source[strings[index]] || "").slice(0, 4096)
+  var commands = ["screenshotCustomCommand", "recordingCustomStartCommand", "recordingCustomStopCommand"]
+  for (index = 0; index < commands.length; index++) if (source[commands[index]] !== undefined) clean[commands[index]] = String(source[commands[index]] || "").slice(0, 4096)
+  var processNames = ["screenshotProcessName", "recordingProcessName"]
+  for (index = 0; index < processNames.length; index++) if (source[processNames[index]] !== undefined) clean[processNames[index]] = String(source[processNames[index]] || "").slice(0, 256)
   var maps = ["icons", "itemColorRoles", "itemIdleOpacity", "itemIdleVisibility", "itemStatusMarkerVisibility", "itemLabels"]
   for (index = 0; index < maps.length; index++) if (source[maps[index]] && typeof source[maps[index]] === "object" && !Array.isArray(source[maps[index]])) {
     var mapName = maps[index], map = {}, keys = Object.keys(source[mapName]).filter(function(value) { return KINDS.indexOf(value) >= 0 }).slice(0, KINDS.length)
@@ -48,8 +56,18 @@ function sanitizeSettings(data) {
         map[mapKey] = Math.max(0.1, Math.min(1, isFinite(itemOpacity) ? itemOpacity : 0.45))
       } else if (mapName === "itemColorRoles") {
         if (!mapValue || typeof mapValue !== "object" || Array.isArray(mapValue)) continue
-        var roles = {}, roleNames = ["active", "inactive", "disabled", "muted", "unmuted"]
-        for (var roleIndex = 0; roleIndex < roleNames.length; roleIndex++) if (typeof mapValue[roleNames[roleIndex]] === "string") roles[roleNames[roleIndex]] = mapValue[roleNames[roleIndex]].slice(0, 32)
+        var roles = {}, roleOptions = {
+          active:["bar-active","urgent","accent","foreground"],
+          inactive:["muted","foreground","accent"],
+          disabled:["urgent","muted","accent","foreground","bar-active"],
+          muted:["urgent","muted","bar-active","accent","foreground"],
+          unmuted:["foreground","bar-active","accent","muted","urgent"]
+        }
+        var roleNames = Object.keys(roleOptions)
+        for (var roleIndex = 0; roleIndex < roleNames.length; roleIndex++) {
+          var roleName = roleNames[roleIndex]
+          if (roleOptions[roleName].indexOf(mapValue[roleName]) >= 0) roles[roleName] = mapValue[roleName]
+        }
         map[mapKey] = roles
       } else map[mapKey] = String(mapValue || "").slice(0, 128)
     }
@@ -156,7 +174,7 @@ function classifyNode(node, settings) {
   if (klass.indexOf("video") !== -1) {
     if (containsAny(search, cameras)) return "camera"
     if (containsAny(search, shares)) return "screen-share"
-    return settings.unknownVideoKind === "camera" ? "camera" : "screen-share"
+    return "screen-share"
   }
   if (klass.indexOf("stream/input/audio") !== -1 || (node.isSink === false && node.audio)) return "microphone"
   if (klass.indexOf("stream/output/audio") !== -1 || (node.isSink === true && node.audio)) return "audio-output"
@@ -359,9 +377,8 @@ function operationalSignature(settings) {
   settings = settings || {}
   var keys = [
     "enabledKinds", "blockableKinds", "directDeviceMonitoring", "directDevicePollSeconds",
-    "microphoneBackend", "audioOutputBackend", "cameraBackend", "screenShareBackend",
-    "locationBackend", "recordingBackend", "screenshotBackend",
-    "locationProcessName", "recordingProcessName", "screenshotProcessName",
+    "audioControlBackend", "recordingBackend", "screenshotBackend", "recordingPollSeconds",
+    "recordingProcessName", "screenshotProcessName",
     "cameraKeywords", "screenShareKeywords", "excludedApps"
   ]
   var snapshot = {}

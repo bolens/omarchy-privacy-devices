@@ -2,13 +2,17 @@
 """Atomically maintain bounded privacy-session metadata in user state."""
 
 import json
+import math
 import os
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 MAX_ENTRIES = 100
 MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+MAX_FIELD_CHARS = 512
+MAX_FILE_BYTES = 1048576
 FIELDS = ("id", "kind", "application", "device", "source", "confidence", "detail", "startedAt", "endedAt", "durationMs")
 
 
@@ -19,16 +23,35 @@ def state_file() -> Path:
 
 def load(path: Path) -> list[dict]:
     try:
-        value = json.loads(path.read_text())
-        return value if isinstance(value, list) else []
-    except (OSError, json.JSONDecodeError):
+        with path.open() as stream:
+            raw = stream.read(MAX_FILE_BYTES + 1)
+        if len(raw.encode()) > MAX_FILE_BYTES:
+            return []
+        value = json.loads(raw)
+        if not isinstance(value, list):
+            return []
+        clean = []
+        for entry in value[:MAX_ENTRIES]:
+            try:
+                clean.append(sanitize(entry))
+            except ValueError:
+                continue
+        return clean
+    except (OSError, json.JSONDecodeError, RecursionError):
         return []
 
 
 def sanitize(entry: object) -> dict:
     if not isinstance(entry, dict):
         raise ValueError("history entry must be an object")
-    clean = {key: entry[key] for key in FIELDS if key in entry and isinstance(entry[key], (str, int, float))}
+    clean = {}
+    for key in FIELDS:
+        if key not in entry or not isinstance(entry[key], (str, int, float)):
+            continue
+        if isinstance(entry[key], str):
+            clean[key] = entry[key][:MAX_FIELD_CHARS]
+        elif not isinstance(entry[key], bool) and math.isfinite(entry[key]):
+            clean[key] = entry[key]
     if not all(key in clean for key in ("kind", "application", "startedAt", "endedAt")):
         raise ValueError("history entry is missing required fields")
     return clean
@@ -43,17 +66,25 @@ def bounded(entries: list[dict], now_ms: int) -> list[dict]:
 
 def append_entries(existing: list[dict], incoming: object, now_ms: int) -> list[dict]:
     values = incoming if isinstance(incoming, list) else [incoming]
-    clean = [sanitize(entry) for entry in values]
+    clean = [sanitize(entry) for entry in values[:MAX_ENTRIES]]
     return bounded(clean + existing, now_ms)
 
 
 def save(path: Path, entries: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(path.parent, 0o700)
-    temporary = path.with_suffix(".json.new")
-    temporary.write_text(json.dumps(entries, separators=(",", ":")))
-    os.chmod(temporary, 0o600)
-    temporary.replace(path)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=".history-", dir=path.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w") as stream:
+            json.dump(entries, stream, separators=(",", ":"))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temporary, 0o600)
+        temporary.replace(path)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
 
 
 def main() -> int:

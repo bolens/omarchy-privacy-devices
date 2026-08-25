@@ -4,16 +4,21 @@
 import json
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 MAX_BYTES = 131072
 EXPORT_PATH = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "omarchy-privacy-devices/settings-export.json"
 
 
+def reject_constant(value: str):
+    raise ValueError(f"invalid number: {value}")
+
+
 def validated(raw: str) -> dict:
     if len(raw.encode()) > MAX_BYTES:
         raise ValueError("settings payload is too large")
-    value = json.loads(raw)
+    value = json.loads(raw, parse_constant=reject_constant)
     if not isinstance(value, dict) or value.get("_privacySettingsVersion") != 1:
         raise ValueError("settings payload is not a supported object")
     return value
@@ -23,15 +28,25 @@ def export_settings(raw: str, target: Path = EXPORT_PATH) -> Path:
     value = validated(raw)
     target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     os.chmod(target.parent, 0o700)
-    temporary = target.with_suffix(".tmp")
-    temporary.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
-    os.chmod(temporary, 0o600)
-    temporary.replace(target)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=".settings-", dir=target.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w") as stream:
+            json.dump(value, stream, indent=2, sort_keys=True)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temporary, 0o600)
+        temporary.replace(target)
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
     return target
 
 
 def import_settings(target: Path = EXPORT_PATH) -> dict:
-    return validated(target.read_text())
+    with target.open() as stream:
+        return validated(stream.read(MAX_BYTES + 1))
 
 
 def main() -> int:
@@ -40,7 +55,7 @@ def main() -> int:
             print(export_settings(sys.argv[2])); return 0
         if len(sys.argv) == 2 and sys.argv[1] == "import":
             print(json.dumps(import_settings(), separators=(",", ":"))); return 0
-    except (OSError, ValueError, json.JSONDecodeError) as error:
+    except (OSError, ValueError, json.JSONDecodeError, RecursionError) as error:
         print(str(error), file=sys.stderr); return 1
     return 2
 

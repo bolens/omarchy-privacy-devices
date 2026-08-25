@@ -35,7 +35,7 @@ const hardenedSettings = context.sanitizeSettings({
   itemIdleOpacity: {camera: 9, bogus: 0.2},
   itemIdleVisibility: {camera: "yes", microphone: true},
   itemLabels: {camera: "C".repeat(200), bogus: "ignored"},
-  itemColorRoles: {camera: {active: "accent", unexpected: "danger"}, bogus: {active: "urgent"}},
+  itemColorRoles: {camera: {active: "accent", inactive: "danger", unexpected: "danger"}, bogus: {active: "urgent"}},
   itemStatusMarkerVisibility: {camera: false, bogus: true},
   disabledOpacity: 0,
   statusMarkerMode: "invalid",
@@ -53,6 +53,8 @@ if (JSON.stringify(hardenedSettings.itemStatusMarkerVisibility) !== JSON.stringi
 if (hardenedSettings.disabledOpacity !== 0.25) throw new Error("disabled opacity bounds")
 if (hardenedSettings.statusMarkerMode !== "symbols" || hardenedSettings.statePillStyle !== "filled" || hardenedSettings.popupDensity !== "comfortable") throw new Error("visual enum defaults")
 if (hardenedSettings.showStatePills !== true) throw new Error("visual boolean normalization")
+if (context.settingsPage("monitoring") !== "monitoring" || context.settingsPage("unexpected") !== "general") throw new Error("settings page allowlist")
+if (context.sanitizeSettings({recordingProcessName: "x".repeat(300)}).recordingProcessName.length !== 256) throw new Error("process-name bound")
 if (context.classifyNode(node("Stream/Input/Audio", "Firefox"), defaults) !== "microphone") throw new Error("microphone classification")
 if (context.classifyNode(node("Stream/Output/Audio", "Firefox"), defaults) !== "audio-output") throw new Error("audio output classification")
 if (context.classifyNode(node("Stream/Input/Video", "Firefox", {"media.name":"Integrated Camera"}), defaults) !== "camera") throw new Error("camera classification")
@@ -81,6 +83,8 @@ const cosmeticConfig = Object.assign({}, baseConfig, {displayMode: "active-only"
 if (context.operationalSignature(baseConfig) !== context.operationalSignature(cosmeticConfig)) throw new Error("cosmetic settings must not rerun operational probes")
 if (context.operationalSignature(baseConfig) === context.operationalSignature(Object.assign({}, baseConfig, {directDeviceMonitoring: true}))) throw new Error("monitoring changes must refresh operational probes")
 if (context.operationalSignature(baseConfig) === context.operationalSignature(Object.assign({}, baseConfig, {directDevicePollSeconds: 9}))) throw new Error("observer heartbeat changes must restart the observer")
+if (context.operationalSignature(baseConfig) === context.operationalSignature(Object.assign({}, baseConfig, {audioControlBackend: "wpctl"}))) throw new Error("audio backend changes must refresh dependencies")
+if (context.operationalSignature(baseConfig) === context.operationalSignature(Object.assign({}, baseConfig, {recordingPollSeconds: 9}))) throw new Error("fallback heartbeat changes must restart the observer")
 const degraded = context.aggregateHealth([{status: "degraded", source: "watcher", code: "heartbeat_stale", reason: "late"}])
 if (degraded.codes[0] !== "heartbeat_stale") throw new Error("stable health codes must survive aggregation")
 const hostileText = '<img src="https://attacker.invalid/pixel"> & camera'

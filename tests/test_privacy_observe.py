@@ -3,7 +3,9 @@ import importlib.util
 import os
 import tempfile
 import unittest
+import sys
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -58,6 +60,12 @@ class DirectDeviceObservationTests(unittest.TestCase):
 
     def test_event_scan_rate_is_explicitly_bounded(self):
         self.assertGreaterEqual(MODULE.MIN_EVENT_SCAN_INTERVAL, 2.0)
+
+    def test_cli_bounds_heartbeat_and_pattern_inputs(self):
+        self.assertEqual(MODULE.bounded_heartbeat("nan"), 5.0)
+        self.assertEqual(MODULE.bounded_heartbeat("999"), 60.0)
+        with patch.object(sys, "argv", ["privacy-observe", "watch-fallbacks", "--recording", "x" * (MODULE.MAX_PROCESS_NAME_CHARS + 1)]):
+            self.assertEqual(MODULE.main(), 2)
 
     def test_process_activity_is_structured_and_matches_literal_or_pattern(self):
         with tempfile.TemporaryDirectory() as directory:

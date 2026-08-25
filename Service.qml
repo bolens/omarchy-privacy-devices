@@ -897,7 +897,7 @@ Item {
   IpcHandler {
     target: "privacy-devices-settings"
     function open(page: string): string {
-      root.requestedSettingsPage = page || "general"
+      root.requestedSettingsPage = Model.settingsPage(page)
       root.settingsRequestSerial++
       return root.shell && typeof root.shell.summon === "function" && root.shell.summon("io.github.bolens.privacy-devices", "") ? root.requestedSettingsPage : "unavailable"
     }
