@@ -8,6 +8,7 @@ Tests are organized around stable behavior boundaries rather than QML internals.
 node tests/model.test.js
 node tests/controls.test.js
 node tests/sessions.test.js
+node tests/monitoring.test.js
 node tests/settings.test.js
 node tests/runtime.test.js
 node tests/security.test.js
@@ -20,7 +21,8 @@ shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
 
 The JavaScript suites cover classification, settings sanitation, normalized
 sessions, control transitions and request outcomes, observer invalidation and
-recovery, history-generation acceptance, visual-state policy, manifest/UI
+recovery, heartbeat boundaries and clock skew, idempotent health updates,
+history-generation acceptance, visual-state policy, manifest/UI
 contracts, runtime process topology and policy wiring, static security
 invariants, and documentation asset dimensions, references, ownership, and
 local cross-links. Python tests execute
@@ -50,6 +52,10 @@ engine:
 ```sh
 tests/run_qml_runtime.sh
 ```
+
+This smoke test covers settings and notification policies plus control
+acceptance, observer heartbeat/invalidation, and idempotent health updates in
+QML's JavaScript engine.
 
 ## Repository and site checks
 

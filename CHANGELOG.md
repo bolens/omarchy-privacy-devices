@@ -23,6 +23,9 @@ maintainer guides that define release and validation procedures.
 - Move control acceptance, observer invalidation/recovery, and history-load
   acceptance behind behavior-tested model policies while retaining QML wiring
   contracts.
+- Replace heartbeat and observer-health implementation checks with boundary,
+  clock-skew, identity, and QML-engine behavior tests backed by shared model
+  policies.
 
 ### Fixed
 
