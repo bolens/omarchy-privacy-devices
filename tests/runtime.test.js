@@ -41,7 +41,7 @@ assert.match(service, /readonly property var enabledKindList:\s*Model\.arraySett
   "enabled kinds must be normalized once per settings update")
 assert.match(service, /function enabledKinds\(\)\s*{\s*return enabledKindList\s*}/,
   "hot service paths must reuse normalized enabled kinds")
-assert.match(service, /id:\s*preventativeControlTimer[\s\S]*?running:\s*root\.enabledPreventativeKinds\.length > 0/,
+assert.match(service, /id:\s*preventativeControlTimer[\s\S]*?running:\s*root\.preventativeProbeKinds\.length > 0/,
   "preventative control polling must sleep when no enabled kind supports it")
 assert.match(service, /id:\s*muteRefreshTimer[\s\S]*?running:\s*root\.audioMonitoringEnabled/,
   "mute polling must sleep when audio devices are disabled")
@@ -110,5 +110,27 @@ assert.match(service, /function discardObserverSessions\(source\)[\s\S]*?suppres
   "observer invalidation must remember uncertain sessions across recovery")
 assert.match(service, /if \(suppressedObserverStarts\[started\.source\]\)[\s\S]*?continue/,
   "observer recovery must not announce uncertain sessions as new activity")
+assert.match(service, /function serviceControllable\(kind\)[\s\S]*?\["microphone", "audio-output", "camera", "screen-share", "location"\]/,
+  "headless control must be limited to actions owned by the singleton service")
+assert.match(service, /function toggleControl\(kind\)[\s\S]*?if \(!kindEnabled\(kind\) \|\| !serviceControllable\(kind\) \|\| controlPending\(kind\) \|\| !dependenciesReady\(kind\)\) return false/,
+  "control requests must reject disabled, unsupported, and pending devices")
+assert.match(service, /function toggle\(kind: string\): string[\s\S]*?return "disabled"[\s\S]*?return "unsupported"[\s\S]*?return "busy"/,
+  "control IPC must report why an action was not accepted")
+assert.match(bar, /function toggleEntry\(entry\)[\s\S]*?if \(!privacyService \|\| !entry\.controllable \|\| entry\.pending\) return/,
+  "bar controls must ignore repeated input while verification is pending")
+assert.match(bar, /if \(!privacyService\.beginExternalControl\("screen-recording", !entry\.controlEnabled\)\) return/,
+  "recording commands must not run unless their transaction is accepted")
+assert.match(service, /property bool privacyStateRefreshPending:\s*false/,
+  "preventative state refreshes must survive an in-flight probe")
+assert.match(service, /function refreshPreventativeControls\(\)[\s\S]*?privacyStateRefreshPending = true[\s\S]*?privacyStateQueue = \[\]/,
+  "new preventative settings must supersede queued stale probes")
+assert.match(service, /function runNextPrivacyState\(\)[\s\S]*?if \(privacyStateRefreshPending\) refreshPreventativeControls\(\)/,
+  "preventative probes must coalesce a refresh after the active probe exits")
+assert.match(service, /readonly property bool audioMonitoringEnabled:[\s\S]*?controlPending\("microphone"\)[\s\S]*?controlPending\("audio-output"\)/,
+  "audio verification probes must survive device monitoring changes")
+assert.match(service, /readonly property var preventativeProbeKinds:[\s\S]*?controlPending\(kind\)/,
+  "preventative verification probes must survive device monitoring changes")
+assert.match(service, /id:\s*preventativeControlTimer[\s\S]*?running:\s*root\.preventativeProbeKinds\.length > 0/,
+  "preventative polling must remain active only for enabled or verifying kinds")
 
 console.log("runtime behavior contract tests passed")

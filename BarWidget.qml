@@ -546,13 +546,13 @@ Panel {
   }
 
   function toggleEntry(entry) {
-    if (!privacyService || !entry.controllable) return
+    if (!privacyService || !entry.controllable || entry.pending) return
     if (!entry.dependenciesReady) {
       privacyService.installDependencies(entry.kind)
       return
     }
     if (entry.kind === "screen-recording") {
-      privacyService.beginExternalControl("screen-recording", !entry.controlEnabled)
+      if (!privacyService.beginExternalControl("screen-recording", !entry.controlEnabled)) return
       var backend = String(setting("recordingBackend", "omarchy"))
       if (backend === "wf-recorder")
         bar.run(privacyService.dependencyHelperPath().replace("privacy-deps", "privacy-recording") + (entry.controlEnabled ? " stop wf-recorder" : " start wf-recorder"))

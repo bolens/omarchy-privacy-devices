@@ -84,6 +84,16 @@ Item {
   })
   readonly property bool audioMonitoringEnabled: enabledKindList.indexOf("microphone") !== -1
     || enabledKindList.indexOf("audio-output") !== -1
+    || controlPending("microphone") || controlPending("audio-output")
+  readonly property var preventativeProbeKinds: {
+    var result = enabledPreventativeKinds.slice()
+    var kinds = ["camera", "screen-share", "location"]
+    for (var index = 0; index < kinds.length; index++) {
+      var kind = kinds[index]
+      if (controlPending(kind) && result.indexOf(kind) === -1) result.push(kind)
+    }
+    return result
+  }
 
   onObservedPipewireSessionsChanged: scheduleSessionRefresh()
   onLocationAppsChanged: scheduleSessionRefresh()
@@ -445,6 +455,11 @@ Item {
     return kind === "screen-recording" || kind === "screenshot"
   }
 
+  function serviceControllable(kind) {
+    return ["microphone", "audio-output", "camera", "screen-share", "location"].indexOf(kind) !== -1
+      && controllable(kind)
+  }
+
   function controlEnabled(kind) {
     if (kind === "microphone") return !microphoneMuted
     if (kind === "audio-output") return !outputMuted
@@ -491,8 +506,10 @@ Item {
   }
 
   function beginExternalControl(kind, expectedEnabled) {
+    if (kind !== "screen-recording" || !kindEnabled(kind) || controlPending(kind)) return false
     beginControlTransaction(kind, expectedEnabled)
     beginControlVerification(kind, 0)
+    return true
   }
 
   function dependenciesReady(kind) {
@@ -576,15 +593,18 @@ Item {
   }
 
   function toggleControl(kind) {
+    if (!kindEnabled(kind) || !serviceControllable(kind) || controlPending(kind) || !dependenciesReady(kind)) return false
     if (kind === "microphone" && !microphoneControlProc.running) {
       beginControlTransaction(kind, microphoneMuted)
       microphoneControlProc.command = audioToggleCommand(kind)
       microphoneControlProc.running = true
+      return true
     }
     else if (kind === "audio-output" && !outputControlProc.running) {
       beginControlTransaction(kind, outputMuted)
       outputControlProc.command = audioToggleCommand(kind)
       outputControlProc.running = true
+      return true
     }
     else if ((kind === "camera" || kind === "location" || kind === "screen-share") && !privacyControlProc.running) {
       beginControlTransaction(kind, !controlEnabled(kind))
@@ -593,7 +613,9 @@ Item {
       if (privacyStateProc.running) privacyStateProc.running = false
       privacyControlProc.command = [helperPath(), "toggle", kind]
       privacyControlProc.running = true
+      return true
     }
+    return false
   }
 
   function helperPath() {
@@ -675,27 +697,37 @@ Item {
   }
 
   function refreshPreventativeControls() {
-    if (privacyControlProc.running || privacyControlKind !== "" || privacyStateProc.running) return
-    privacyStateQueue = enabledPreventativeKinds.slice()
+    if (privacyControlProc.running || privacyControlKind !== "" || privacyStateProc.running) {
+      privacyStateRefreshPending = true
+      privacyStateQueue = []
+      return
+    }
+    privacyStateRefreshPending = false
+    privacyStateQueue = preventativeProbeKinds.slice()
     runNextPrivacyState()
   }
 
   property var privacyStateQueue: []
   property string privacyStateKind: ""
+  property bool privacyStateRefreshPending: false
 
   function runNextPrivacyState() {
-    if (privacyStateQueue.length === 0 || privacyStateProc.running) return
+    if (privacyStateProc.running) return
+    if (privacyStateQueue.length === 0) {
+      if (privacyStateRefreshPending) refreshPreventativeControls()
+      return
+    }
     privacyStateKind = privacyStateQueue.shift()
     privacyStateProc.command = [helperPath(), "status", privacyStateKind]
     privacyStateProc.running = true
   }
 
   function refreshMuteState() {
-    if (kindEnabled("microphone") && !microphoneStateProc.running) {
+    if ((kindEnabled("microphone") || controlPending("microphone")) && !microphoneStateProc.running) {
       microphoneStateProc.command = audioStateCommand("microphone")
       microphoneStateProc.running = true
     }
-    if (kindEnabled("audio-output") && !outputStateProc.running) {
+    if ((kindEnabled("audio-output") || controlPending("audio-output")) && !outputStateProc.running) {
       outputStateProc.command = audioStateCommand("audio-output")
       outputStateProc.running = true
     }
@@ -762,7 +794,7 @@ Item {
     id: preventativeControlTimer
     interval: 15000
     repeat: true
-    running: root.enabledPreventativeKinds.length > 0
+    running: root.preventativeProbeKinds.length > 0
     onTriggered: root.refreshPreventativeControls()
   }
 
@@ -979,9 +1011,12 @@ Item {
     function rescan(): string { root.refreshFallbacks(); root.refreshDirectDevices(); root.refreshSessions(); return "ok" }
     function refresh(): string { root.refreshFallbacks(); return "ok" }
     function toggle(kind: string): string {
-      if (!root.controllable(kind)) return "unsupported"
-      root.toggleControl(kind)
-      return "ok"
+      if (Model.KINDS.indexOf(kind) === -1) return "unsupported"
+      if (!root.kindEnabled(kind)) return "disabled"
+      if (!root.serviceControllable(kind)) return "unsupported"
+      if (!root.dependenciesReady(kind)) return "unavailable"
+      if (root.controlPending(kind)) return "busy"
+      return root.toggleControl(kind) ? "ok" : "busy"
     }
   }
 
