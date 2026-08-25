@@ -24,6 +24,11 @@ maintainer guides that define release and validation procedures.
   carrying across devices, and make global reset cover every bar appearance
   default.
 
+### Security
+
+- Apply printable-text and length bounds consistently to imported and edited
+  device labels, icons, and process identifiers, and discard empty overrides.
+
 ## [0.3.0] - 2026-08-25
 
 ### Added
