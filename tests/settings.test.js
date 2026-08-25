@@ -13,6 +13,10 @@ const deviceEditor = fs.readFileSync(path.join(root, "DeviceSettingsEditor.qml")
 const deviceDiagnostics = fs.readFileSync(path.join(root, "DeviceDiagnostics.qml"), "utf8")
 const settingsNavigation = fs.readFileSync(path.join(root, "PrivacySettingsNavigation.qml"), "utf8")
 const confirmationController = fs.readFileSync(path.join(root, "PrivacyConfirmationController.qml"), "utf8")
+const mutationController = fs.readFileSync(path.join(root, "PrivacySettingsMutationController.qml"), "utf8")
+const messageSurface = fs.readFileSync(path.join(root, "PrivacyMessageSurface.qml"), "utf8")
+const settingToggle = fs.readFileSync(path.join(root, "PrivacySettingToggle.qml"), "utf8")
+const transferResult = fs.readFileSync(path.join(root, "PrivacySettingsTransferResult.qml"), "utf8")
 const monitoringSettings = fs.readFileSync(path.join(root, "PrivacyMonitoringSettings.qml"), "utf8")
 const globalSettings = ["PrivacyGeneralSettings.qml", "PrivacyAppearanceSettings.qml", "PrivacyAlertsSettings.qml", "PrivacyMonitoringSettings.qml", "PrivacyMarkerGlyphEditor.qml"]
   .map(file => fs.readFileSync(path.join(root, file), "utf8")).join("\n")
@@ -91,8 +95,22 @@ assert.match(globalSettings, /PanelSectionHeader \{ Layout\.fillWidth: true; tex
   "the Monitoring page must render live observer telemetry in its health section")
 assert.match(bar, /function monitoringTelemetryText\(\)[\s\S]*?Model\.monitoringTelemetryText\(data\)/,
   "observer telemetry copy must use the behavior-tested formatter")
-assert.match(bar, /function persistSettings\(values\)[\s\S]*?settingsMutationPending = true[\s\S]*?onOpenedChanged:[\s\S]*?else if \(settingsMutationPending\) Qt\.callLater\(root\.open\)/,
+assert.match(bar, /function commitSettings\(candidate\)[\s\S]*?settingsMutationPending = true[\s\S]*?onOpenedChanged:[\s\S]*?else if \(settingsMutationPending\) Qt\.callLater\(root\.open\)/,
   "settings writes must preserve the open editor across shell config reloads")
+assert.match(bar, /function persistSettings\(values\)[\s\S]*?settingsMutationController\.submit\(settings, values\)/,
+  "settings edits must enter the coalescing mutation boundary")
+assert.match(mutationController, /function submit\(current, patch\)[\s\S]*?pending \|\| current[\s\S]*?commitTimer\.restart\(\)/,
+  "rapid mutations must merge onto the newest pending settings")
+assert.match(mutationController, /function complete\(success, message\)[\s\S]*?"saved"[\s\S]*?"failed"/,
+  "settings commits must publish explicit success and failure feedback")
+assert.match(messageSurface, /required property string message[\s\S]*?kind === "error"[\s\S]*?Text\.PlainText/,
+  "shared status messages must distinguish failures and render literal text")
+assert.match(settingToggle, /required property string settingKey[\s\S]*?patch\[settingKey\] = !checked[\s\S]*?controller\.persistSettings\(patch\)/,
+  "boolean settings must share one tested persistence contract")
+assert.doesNotMatch(globalSettings, /\bToggle\s*\{/,
+  "global pages must not duplicate raw toggle styling and persistence wiring")
+assert.match(transferResult, /function apply\(mode, payload\)[\s\S]*?!parsed \|\| typeof parsed !== "object" \|\| Array\.isArray\(parsed\)[\s\S]*?Model\.sanitizeSettings\(parsed\)/,
+  "transferred settings must reject non-objects and use the canonical sanitizer")
 assert.match(bar, /Model\.sanitizeSettings\(candidate\)/, "settings writes must pass through the versioned sanitizer")
 assert.match(bar, /privacy-settings[\s\S]*?PrivacySettingsTransferController/, "settings transfer must use the bounded helper controller")
 assert.match(monitoringSettings, /text: "Private data"[\s\S]*?text: "Export settings"[\s\S]*?text: "Import settings"[\s\S]*?text: "Undo last change"/,

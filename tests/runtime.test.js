@@ -36,16 +36,27 @@ assert.ok(fs.statSync(path.join(__dirname, "..", "scripts/capture-screenshots"))
 for (const qml of [
   "DeviceSettingsEditor.qml", "DeviceDiagnostics.qml", "RuntimeModelTest.qml",
   "PrivacySettingsNavigation.qml", "PrivacyConfirmationController.qml",
-  "PrivacySettingsTransferController.qml", "RuntimeSettingsNavigationTest.qml",
+  "PrivacySettingsTransferController.qml", "PrivacySettingsMutationController.qml",
+  "PrivacySettingsTransferResult.qml", "PrivacySettingToggle.qml",
+  "PrivacyMessageSurface.qml", "RuntimeSettingsNavigationTest.qml",
   "RuntimeConfirmationTest.qml", "RuntimeObserverLifecycleTest.qml",
-  "RuntimeSettingsTransferTest.qml"
+  "RuntimeSettingsTransferTest.qml", "RuntimeSettingsMutationTest.qml",
+  "RuntimeSettingsTransferFailureTest.qml", "RuntimeObserverRecoveryTest.qml",
+  "RuntimePluginSmokeTest.qml", "RuntimeSettingToggleTest.qml",
+  "RuntimeSettingsTransferResultTest.qml"
 ])
   assert.match(ci, new RegExp(`qmllint[^']*${qml}`), `CI must lint ${qml}`)
 for (const [harness, marker] of [
   ["RuntimeSettingsNavigationTest.qml", "PRIVACY_QML_SETTINGS_NAVIGATION_OK"],
   ["RuntimeConfirmationTest.qml", "PRIVACY_QML_CONFIRMATION_OK"],
   ["RuntimeObserverLifecycleTest.qml", "PRIVACY_QML_OBSERVER_LIFECYCLE_OK"],
-  ["RuntimeSettingsTransferTest.qml", "PRIVACY_QML_SETTINGS_TRANSFER_OK"]
+  ["RuntimeSettingsTransferTest.qml", "PRIVACY_QML_SETTINGS_TRANSFER_OK"],
+  ["RuntimeSettingsMutationTest.qml", "PRIVACY_QML_SETTINGS_MUTATION_OK"],
+  ["RuntimeSettingsTransferFailureTest.qml", "PRIVACY_QML_SETTINGS_TRANSFER_FAILURE_OK"],
+  ["RuntimeObserverRecoveryTest.qml", "PRIVACY_QML_OBSERVER_RECOVERY_OK"],
+  ["RuntimePluginSmokeTest.qml", "PRIVACY_QML_PLUGIN_SMOKE_OK"],
+  ["RuntimeSettingToggleTest.qml", "PRIVACY_QML_SETTING_TOGGLE_OK"],
+  ["RuntimeSettingsTransferResultTest.qml", "PRIVACY_QML_SETTINGS_TRANSFER_RESULT_OK"]
 ])
   assert.match(qmlRuntime, new RegExp(`run_harness ${harness} ${marker}`), `${harness} must run in the real QML suite`)
 assert.match(screenshotWorkflow, /capture_panel device device/, "screenshot workflow must capture an individual device settings page")
@@ -105,6 +116,10 @@ assert.match(screenshotWorkflow, /capture_panel\(\)[\s\S]*?for attempt in \{1\.\
 assert.ok(screenshotWorkflow.lastIndexOf("resolve_geometry", screenshotWorkflow.indexOf("capture_panel history history")) >= 0,
   "bar geometry must be resolved before long-running capture operations")
 assert.match(service, /id:\s*fallbackObserverProc/, "process fallbacks must share one persistent structured observer")
+assert.match(service, /function handleFallbackSnapshot\(line\) \{[\s\S]*?fallbackObserverRetiring[\s\S]*?return/,
+  "retired fallback observers must reject buffered output")
+assert.match(service, /function handleDirectDeviceSnapshot\(text\) \{[\s\S]*?directObserverRetiring[\s\S]*?return/,
+  "retired direct observers must reject buffered output")
 assert.match(service, /"watch-fallbacks"/, "fallback observer must use the structured watch protocol")
 assert.match(service, /settings\.recordingPollSeconds/, "the persistent fallback observer must honor the configured scan interval")
 assert.doesNotMatch(service, /id:\s*(?:recordingProc|screenshotProc)/, "recording and screenshot detection must not spawn periodic QML processes")
