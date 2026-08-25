@@ -1,6 +1,8 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import qs.Commons
 import qs.Ui
 import "Model.js" as Model
@@ -8,6 +10,7 @@ import "Model.js" as Model
 Panel {
   id: root
   moduleName: "io.github.bolens.privacy-devices"
+  manageIpc: false
 
   readonly property var privacyService: bar && bar.shell ? bar.shell.serviceFor(moduleName) : null
   readonly property var configuredOrder: Model.arraySetting(setting("order", []), Model.KINDS)
@@ -20,12 +23,31 @@ Panel {
   readonly property color mutedThemeColor: themeColor(String(setting("mutedColorRole", "urgent")), true)
   readonly property color unmutedThemeColor: themeColor(String(setting("unmutedColorRole", "foreground")), false)
   readonly property var visibleItems: buildVisibleItems()
+  readonly property var activitySourceItems: orderedKinds().map(function(kind) { return item(kind) })
   readonly property int activeCount: activeItems().length
-  readonly property var barItems: displayMode === "active-count"
-    ? [{kind: "summary", label: "Privacy", icon: activeCount > 0 ? "󰒃 " + activeCount : "󰒃", active: activeCount > 0, apps: [], controllable: false, controlEnabled: false}]
+  readonly property bool monitoringDegraded: privacyService && typeof privacyService.monitoringDegraded === "function" ? privacyService.monitoringDegraded() : false
+  readonly property var kindOptions: [
+    {value: "microphone", label: "Microphone"}, {value: "audio-output", label: "Audio output"},
+    {value: "camera", label: "Camera"}, {value: "screen-share", label: "Screen sharing"},
+    {value: "screenshot", label: "Screenshot"}, {value: "screen-recording", label: "Screen recording"},
+    {value: "location", label: "Location"}
+  ]
+  readonly property var normalBarItems: displayMode === "active-count"
+    ? [{kind: "summary", label: "Privacy", icon: activeCount > 0 ? "󰒃 " + activeCount : "󰒃", active: activeCount > 0, apps: [], controllable: false, controlEnabled: false, health: {status: "healthy"}, sessions: []}]
     : (displayMode === "active-only" ? activeItems() : visibleItems)
-  manageIpc: true
+  readonly property var barItems: monitoringDegraded && normalBarItems.length === 0
+    ? [{kind: "summary", label: "Privacy", icon: "󰀦", active: false, apps: [], controllable: false, controlEnabled: false, health: {status: "degraded"}, sessions: []}]
+    : normalBarItems
   property string editingKind: ""
+  property bool showingGlobalSettings: false
+  property bool settingsMutationPending: false
+  property string globalSettingsPage: "general"
+  property string selectedKind: ""
+  property var displayedActivityItems: []
+  property var deferredActivityItems: null
+  property int handledSettingsRequestSerial: 0
+  property double durationNow: Date.now()
+  property string settingsTransferStatus: ""
   readonly property real openPanelIndicatorWidth: button.labelWidth
 
   function setting(key, fallback) {
@@ -33,7 +55,79 @@ Panel {
   }
 
   function syncService() {
-    if (privacyService && typeof privacyService.configure === "function") privacyService.configure(settings)
+    if (privacyService && typeof privacyService.configure === "function") privacyService.configure(Model.sanitizeSettings(settings))
+  }
+
+  function showGlobalSettings(page) {
+    editingKind = ""
+    showingGlobalSettings = true
+    globalSettingsPage = page || "general"
+    contentFlick.contentY = 0
+  }
+
+  function showActivity() {
+    editingKind = ""
+    showingGlobalSettings = false
+    contentFlick.contentY = 0
+  }
+
+  function closeCurrentLayer() {
+    if (editingKind !== "") { editingKind = ""; return }
+    if (showingGlobalSettings) { showActivity(); return }
+    close()
+  }
+
+  function moveActivitySelection(delta) {
+    var rows = displayedActivityItems
+    if (!rows.length) { selectedKind = ""; return }
+    var index = rows.findIndex(function(entry) { return entry.kind === selectedKind })
+    index = Math.max(0, Math.min(rows.length - 1, (index < 0 ? 0 : index) + delta))
+    selectedKind = rows[index].kind
+  }
+
+  function activateActivitySelection() {
+    if (!selectedKind && displayedActivityItems.length) selectedKind = displayedActivityItems[0].kind
+    if (selectedKind) { showingGlobalSettings = false; editingKind = selectedKind; contentFlick.contentY = 0 }
+  }
+
+  function activityStateChanged(next) {
+    if (next.length !== displayedActivityItems.length) return true
+    for (var index = 0; index < next.length; index++) {
+      var old = displayedActivityItems[index]
+      if (!old || old.kind !== next[index].kind || old.active !== next[index].active
+          || old.controlEnabled !== next[index].controlEnabled || old.pending !== next[index].pending
+          || old.health.status !== next[index].health.status) return true
+    }
+    return false
+  }
+
+  function syncDisplayedItems() {
+    var next = activitySourceItems
+    // Never defer privacy state changes; only defer non-critical text/session churn.
+    if (contentFlick.moving && !activityStateChanged(next)) deferredActivityItems = next
+    else { displayedActivityItems = next; deferredActivityItems = null }
+  }
+
+  function flushDeferredItems() {
+    if (deferredActivityItems !== null) {
+      displayedActivityItems = deferredActivityItems
+      deferredActivityItems = null
+    }
+  }
+
+  function monitoringTelemetryText() {
+    if (!privacyService || typeof privacyService.monitoringTelemetry !== "function") return "Monitoring telemetry unavailable"
+    var data = privacyService.monitoringTelemetry()
+    return "PipeWire: " + (data.pipewireReactive ? "reactive" : "unavailable")
+      + "\nSession state: " + (data.lastSessionRefreshAgeSeconds < 0 ? "waiting" : data.lastSessionRefreshAgeSeconds + "s ago")
+      + "\nFallback probes: " + (data.lastFallbackRefreshAgeSeconds < 0 ? "waiting" : data.lastFallbackRefreshAgeSeconds + "s ago")
+      + " · observer " + (data.fallbackObserverRunning ? "running" : "retrying")
+      + "\nDirect-device observer: " + (data.directDeviceEnabled ? (data.directObserverRunning ? "running" : "retrying") : "disabled")
+      + (data.directDeviceEnabled ? " · heartbeat " + (data.directHeartbeatAgeSeconds < 0 ? "waiting" : data.directHeartbeatAgeSeconds + "s ago") + " · retry " + data.directObserverRetryMilliseconds + "ms" : "")
+  }
+
+  function commaList(value) {
+    return Model.unique(String(value || "").split(",").map(function(entry) { return entry.trim() }).filter(Boolean))
   }
 
   function item(kind) {
@@ -47,7 +141,9 @@ Panel {
       controllable: privacyService ? privacyService.controllable(kind) : false,
       controlEnabled: privacyService ? privacyService.controlEnabled(kind) : false,
       pending: privacyService && typeof privacyService.controlPending === "function" ? privacyService.controlPending(kind) : false,
-      dependenciesReady: privacyService && typeof privacyService.dependenciesReady === "function" ? privacyService.dependenciesReady(kind) : true
+      dependenciesReady: privacyService && typeof privacyService.dependenciesReady === "function" ? privacyService.dependenciesReady(kind) : true,
+      health: privacyService && typeof privacyService.healthFor === "function" ? privacyService.healthFor(kind) : {status: "healthy", summary: ""},
+      sessions: privacyService && typeof privacyService.attributedSessionsFor === "function" ? privacyService.attributedSessionsFor(kind) : []
     }
   }
 
@@ -79,11 +175,16 @@ Panel {
     var apps = data.apps && data.apps.length ? data.apps.join(", ") : "None detected"
     var probe = data.probeExitCode < 0 ? "Not run" : String(data.probeExitCode)
     var control = data.controlExitCode < 0 ? "Not used" : String(data.controlExitCode)
+    var codes = data.health.codes && data.health.codes.length ? data.health.codes.join(", ") : "ok"
+    var transaction = data.controlTransaction ? data.controlTransaction.status + " (" + data.controlTransaction.code + ")" : "None"
     return "Backend: " + data.backend
       + "\nDependencies: " + (data.dependenciesReady ? "Ready" : data.dependencyDescription)
+      + "\nMonitoring: " + data.health.status + (data.health.summary ? " · " + data.health.summary : "")
+      + "\nDiagnostic codes: " + codes
       + "\nActivity: " + (data.active ? "Active" : "Idle")
       + "\nApplications: " + apps
       + "\nControl: " + data.controlState
+      + " · Transaction: " + transaction
       + "\nLast probe exit: " + probe
       + " · Last control exit: " + control
   }
@@ -93,6 +194,7 @@ Panel {
   }
 
   function itemColor(entry) {
+    if (entry.health && entry.health.status !== "healthy") return Color.urgent
     var roles = setting("itemColorRoles", {}) || {}
     var override = roles[entry.kind] || {}
     if (isAudioControl(entry)) return entry.controlEnabled
@@ -104,13 +206,81 @@ Panel {
   }
 
   function persistSettings(values) {
+    var candidate = {}
+    for (var existing in settings) if (existing !== "id") candidate[existing] = settings[existing]
+    for (var key in values) candidate[key] = values[key]
+    var clean = Model.sanitizeSettings(candidate)
     var entry = {id: moduleName}
-    for (var existing in settings) if (existing !== "id") entry[existing] = settings[existing]
-    for (var key in values) entry[key] = values[key]
+    for (var sanitizedKey in clean) entry[sanitizedKey] = clean[sanitizedKey]
     settings = entry
     syncService()
-    if (bar && bar.shell && typeof bar.shell.updateEntryInline === "function")
+    settingsMutationPending = true
+    settingsMutationGuard.restart()
+    if (bar && bar.shell && typeof bar.shell.updateEntryInline === "function") {
       bar.shell.updateEntryInline(moduleName, entry)
+      Qt.callLater(function() { if (!root.opened) root.open() })
+    }
+  }
+
+  function settingsHelperPath() {
+    return String(Qt.resolvedUrl("privacy-settings")).replace(/^file:\/\//, "")
+  }
+
+  function exportSettings() {
+    settingsTransferStatus = "Exporting…"
+    settingsTransferProc.mode = "export"
+    settingsTransferProc.command = [settingsHelperPath(), "export", JSON.stringify(Model.sanitizeSettings(settings))]
+    settingsTransferProc.running = true
+  }
+
+  function importSettings() {
+    settingsTransferStatus = "Importing…"
+    settingsTransferProc.mode = "import"
+    settingsTransferProc.command = [settingsHelperPath(), "import"]
+    settingsTransferProc.running = true
+  }
+
+  function addPolicyValue(key, value) {
+    var values = Model.arraySetting(setting(key, []), [])
+    if (values.map(function(entry) { return entry.toLowerCase() }).indexOf(String(value).toLowerCase()) === -1) values.push(String(value))
+    var update = {}
+    update[key] = values
+    persistSettings(update)
+  }
+
+  function clearPolicy(key) {
+    var update = {}
+    update[key] = []
+    persistSettings(update)
+  }
+
+  function resetGlobalSettings() {
+    persistSettings({
+      enabledKinds: Model.KINDS.slice(),
+      notificationKinds: ["microphone", "camera", "screen-share", "screen-recording", "location"],
+      blockableKinds: ["camera", "screen-share", "location"],
+      showIdle: true,
+      displayMode: "icons",
+      showControls: true,
+      idleOpacity: 0.45,
+      deduplicateApps: true,
+      notifyOnActivity: true,
+      notifyOnStop: false,
+      notifyOnControlChanges: true,
+      historyEnabled: false,
+      hiddenApps: [],
+      notificationSuppressedApps: [],
+      directDeviceMonitoring: false,
+      showInferredAttribution: true,
+      directDevicePollSeconds: 5,
+      locationPollSeconds: 15,
+      recordingPollSeconds: 2,
+      popupMaxHeight: 620,
+      activeColorRole: "bar-active",
+      inactiveColorRole: "muted",
+      mutedColorRole: "urgent",
+      unmutedColorRole: "foreground"
+    })
   }
 
   function persistIcon(kind, value) {
@@ -199,6 +369,7 @@ Panel {
       return
     }
     if (entry.kind === "screen-recording") {
+      privacyService.beginExternalControl("screen-recording", !entry.controlEnabled)
       var backend = String(setting("recordingBackend", "omarchy"))
       if (backend === "wf-recorder")
         bar.run(privacyService.dependencyHelperPath().replace("privacy-deps", "privacy-recording") + (entry.controlEnabled ? " stop wf-recorder" : " start wf-recorder"))
@@ -302,7 +473,8 @@ Panel {
 
   function pressItem(entry, buttonCode) {
     if (buttonCode === Qt.MiddleButton) {
-      if (entry.kind !== "summary") editingKind = entry.kind
+      if (entry.kind === "summary") showGlobalSettings("general")
+      else { showingGlobalSettings = false; editingKind = entry.kind }
       root.open()
       return
     }
@@ -320,7 +492,38 @@ Panel {
 
   onSettingsChanged: Qt.callLater(syncService)
   onPrivacyServiceChanged: Qt.callLater(syncService)
-  Component.onCompleted: Qt.callLater(syncService)
+  onActivitySourceItemsChanged: syncDisplayedItems()
+  onOpenedChanged: {
+    if (opened) {
+      durationNow = Date.now()
+      if (privacyService && privacyService.settingsRequestSerial > handledSettingsRequestSerial) {
+        handledSettingsRequestSerial = privacyService.settingsRequestSerial
+        showGlobalSettings(privacyService.requestedSettingsPage)
+      }
+    }
+    else if (settingsMutationPending) Qt.callLater(root.open)
+    else {
+      editingKind = ""
+      showingGlobalSettings = false
+      globalSettingsPage = "general"
+      contentFlick.contentY = 0
+    }
+  }
+  Component.onCompleted: { syncDisplayedItems(); Qt.callLater(syncService) }
+
+  Timer {
+    id: settingsMutationGuard
+    interval: 2000
+    onTriggered: root.settingsMutationPending = false
+  }
+
+  Timer {
+    interval: 1000
+    repeat: true
+    running: root.opened
+    triggeredOnStart: true
+    onTriggered: if (!contentFlick.moving) root.durationNow = Date.now()
+  }
 
   Item {
     id: button
@@ -359,22 +562,49 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: keyCatcher
-    contentWidth: fittedContentWidth(Style.space(440))
-    contentHeight: fittedContentHeight(content.implicitHeight)
+    contentWidth: fittedContentWidth(Style.space(460))
+    contentHeight: fittedContentHeight(content.implicitHeight, Style.space(Math.max(360, Math.min(900, Number(root.setting("popupMaxHeight", 620)) || 620))))
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      onCloseRequested: root.close()
+      onCloseRequested: root.closeCurrentLayer()
+      onMoveRequested: function(dx, dy) {
+        if (dy !== 0 && root.editingKind === "" && !root.showingGlobalSettings) root.moveActivitySelection(dy)
+      }
+      onActivateRequested: {
+        if (root.editingKind === "" && !root.showingGlobalSettings) root.activateActivitySelection()
+      }
+      onTextKey: function(text) {
+        if ((text === "s" || text === "S") && root.editingKind === "") root.showGlobalSettings("general")
+        else if ((text === "r" || text === "R") && !root.showingGlobalSettings && privacyService) privacyService.refreshFallbacks()
+        else if (root.showingGlobalSettings && "123".indexOf(text) >= 0) {
+          root.globalSettingsPage = ["general", "alerts", "monitoring"][Number(text) - 1]
+          contentFlick.contentY = 0
+        }
+      }
       onTabRequested: function(direction) { if (bar && typeof bar.switchPanelFrom === "function") bar.switchPanelFrom(root, direction) }
 
-      ColumnLayout {
-        id: content
-        width: parent.width
-        spacing: Style.spacing.md
+      Flickable {
+        id: contentFlick
+        anchors.fill: parent
+        contentWidth: width
+        contentHeight: content.implicitHeight
+        clip: true
+        pixelAligned: true
+        boundsBehavior: Flickable.StopAtBounds
+        flickableDirection: Flickable.VerticalFlick
+        interactive: contentHeight > height
+        onMovementEnded: root.flushDeferredItems()
+        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+        ColumnLayout {
+          id: content
+          width: contentFlick.width - (contentFlick.contentHeight > contentFlick.height ? Style.spacing.sm : 0)
+          spacing: Style.spacing.md
 
         RowLayout {
-          visible: root.editingKind === ""
+          visible: root.editingKind === "" && !root.showingGlobalSettings
           Layout.fillWidth: true
           Text {
             text: "Privacy activity"
@@ -385,17 +615,62 @@ Panel {
             font.weight: Font.DemiBold
           }
           Item { Layout.fillWidth: true }
-          Text {
-            text: root.activeCount > 0 ? root.activeCount + " active" : "All idle"
-            textFormat: Text.PlainText
-            color: root.activeCount > 0 ? root.activeThemeColor : root.inactiveThemeColor
-            font.family: Style.font.family
-            font.pixelSize: Style.font.bodySmall
+          Rectangle {
+            implicitWidth: statusText.implicitWidth + Style.spacing.md * 2
+            implicitHeight: statusText.implicitHeight + Style.spacing.sm
+            radius: implicitHeight / 2
+            color: Util.alpha(root.monitoringDegraded ? Color.urgent : (root.activeCount > 0 ? root.activeThemeColor : root.inactiveThemeColor), 0.14)
+            Text {
+              id: statusText
+              anchors.centerIn: parent
+              text: root.monitoringDegraded ? "󰀦  Degraded" : (root.activeCount > 0 ? root.activeCount + " active" : "All idle")
+              textFormat: Text.PlainText
+              color: root.monitoringDegraded ? Color.urgent : (root.activeCount > 0 ? root.activeThemeColor : root.inactiveThemeColor)
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+              font.weight: Font.DemiBold
+            }
+          }
+          Button {
+            iconText: "󰒓"
+            tooltipText: "Global settings"
+            horizontalPadding: Style.spacing.controlGap
+            onClicked: root.showGlobalSettings("general")
           }
         }
 
         ColumnLayout {
-          visible: root.editingKind !== ""
+          id: globalSettingsEditor
+          visible: root.showingGlobalSettings
+          Layout.fillWidth: true
+          spacing: Style.spacing.md
+
+          RowLayout {
+            Layout.fillWidth: true
+            Button { iconText: "󰁍"; tooltipText: "Back"; horizontalPadding: Style.spacing.controlGap; onClicked: root.showActivity() }
+            Text { Layout.fillWidth: true; text: "Global settings"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
+          }
+
+          RowLayout {
+            Layout.fillWidth: true
+            spacing: Style.spacing.sm
+            GlobalSettingsTab { label: "General"; value: "general" }
+            GlobalSettingsTab { label: "Alerts & data"; value: "alerts" }
+            GlobalSettingsTab { label: "Monitoring"; value: "monitoring" }
+          }
+
+          Loader {
+            id: globalSettingsPageLoader
+            Layout.fillWidth: true
+            sourceComponent: root.globalSettingsPage === "general" ? generalSettingsPage
+              : (root.globalSettingsPage === "alerts" ? alertsSettingsPage : monitoringSettingsPage)
+          }
+
+          Button { Layout.alignment: Qt.AlignRight; text: "Reset global settings"; onClicked: root.resetGlobalSettings() }
+        }
+
+        ColumnLayout {
+          visible: root.editingKind !== "" && !root.showingGlobalSettings
           Layout.fillWidth: true
           spacing: Style.spacing.md
 
@@ -741,105 +1016,200 @@ Panel {
           }
         }
 
-        Repeater {
-          visible: root.editingKind === ""
-          model: root.orderedKinds().map(function(kind) { return root.item(kind) })
-          delegate: Rectangle {
-            required property var modelData
-            Layout.fillWidth: true
-            implicitHeight: row.implicitHeight + Style.spacing.md * 2
-            radius: Style.cornerRadius
-            color: Util.alpha(modelData.active ? root.activeThemeColor : root.inactiveThemeColor, modelData.active ? 0.12 : 0.05)
-            border.width: modelData.active ? 1 : 0
-            border.color: Util.alpha(root.activeThemeColor, 0.45)
+        ColumnLayout {
+          id: activityRows
+          visible: root.editingKind === "" && !root.showingGlobalSettings
+          Layout.fillWidth: true
+          spacing: Style.spacing.md
 
-            MouseArea {
-              anchors.fill: parent
-              acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: function(mouse) {
-                if (mouse.button === Qt.MiddleButton) {
-                  root.editingKind = modelData.kind
-                  return
-                }
-                if (root.showControls && modelData.controllable && !modelData.pending) root.toggleEntry(modelData)
-              }
-            }
-
-            RowLayout {
-              id: row
-              anchors.left: parent.left
-              anchors.right: parent.right
-              anchors.verticalCenter: parent.verticalCenter
-              anchors.margins: Style.spacing.md
-              spacing: Style.spacing.md
-
-              Text {
-                text: modelData.icon
-                textFormat: Text.PlainText
-                color: root.itemColor(modelData)
-                opacity: modelData.active ? 1 : root.itemIdleOpacity(modelData.kind)
-                font.family: Style.font.family
-                font.pixelSize: Style.font.icon
-              }
-              ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 1
-                Text {
-                  Layout.fillWidth: true
-                  text: modelData.label
-                  textFormat: Text.PlainText
-                  color: Color.popups.text
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.body
-                  font.weight: modelData.active ? Font.DemiBold : Font.Normal
-                }
-                Text {
-                  Layout.fillWidth: true
-                  text: modelData.active ? (modelData.apps.length ? modelData.apps.join(", ") : "In use") : "Idle"
-                  textFormat: Text.PlainText
-                  color: modelData.active ? Color.popups.text : root.inactiveThemeColor
-                  font.family: Style.font.family
-                  font.pixelSize: Style.font.caption
-                  elide: Text.ElideRight
-                }
-              }
-              Text {
-                visible: !root.showControls || !modelData.controllable || modelData.kind === "screenshot" || !modelData.dependenciesReady
-                text: !modelData.dependenciesReady ? "INSTALL" : (modelData.kind === "screenshot" ? "CAPTURE" : (modelData.active ? "ACTIVE" : "IDLE"))
-                textFormat: Text.PlainText
-                color: root.itemColor(modelData)
-                font.family: Style.font.family
-                font.pixelSize: Style.font.caption
-                font.weight: Font.DemiBold
-              }
-
-              ToggleSwitch {
-                visible: root.showControls && modelData.controllable && modelData.kind !== "screenshot" && modelData.dependenciesReady
-                checked: modelData.controlEnabled
-                busy: modelData.pending
-                interactive: false
-                foreground: Color.popups.text
-                accent: root.isAudioControl(modelData)
-                  ? (modelData.controlEnabled ? root.unmutedThemeColor : root.mutedThemeColor)
-                  : root.activeThemeColor
-              }
+          Repeater {
+            // Do not retain main-widget delegates behind a settings/editor page.
+            // An empty model prevents both visual leakage and needless bindings.
+            model: root.editingKind === "" && !root.showingGlobalSettings
+              ? root.displayedActivityItems
+              : []
+            delegate: PrivacyActivityCard {
+              required property var modelData
+              entry: modelData
+              controller: root
             }
           }
         }
 
-        Text {
-          visible: root.editingKind === ""
+        ColumnLayout {
+          visible: root.editingKind === "" && !root.showingGlobalSettings && Model.arraySetting(root.setting("hiddenApps", []), []).length > 0
           Layout.fillWidth: true
-          text: "PipeWire activity updates live. Location and recorder detection use bounded fallback polling. Middle-click an item for settings."
+          spacing: Style.spacing.sm
+          PanelSectionHeader { Layout.fillWidth: true; text: "Hidden applications" }
+          Text {
+            Layout.fillWidth: true
+            text: Model.arraySetting(root.setting("hiddenApps", []), []).join(", ")
+            textFormat: Text.PlainText
+            color: Color.muted
+            font.family: Style.font.family
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.WordWrap
+          }
+          Button { text: "Restore all"; onClicked: root.clearPolicy("hiddenApps") }
+        }
+
+        ColumnLayout {
+          visible: root.editingKind === "" && !root.showingGlobalSettings && root.setting("historyEnabled", false) === true && privacyService && privacyService.recentHistory.length > 0
+          Layout.fillWidth: true
+          spacing: Style.spacing.sm
+          PanelSectionHeader { Layout.fillWidth: true; text: "Recent activity" }
+          Repeater {
+            model: privacyService ? privacyService.recentHistory.slice(0, 5) : []
+            delegate: Text {
+              required property var modelData
+              Layout.fillWidth: true
+              text: Model.label(modelData.kind) + " · " + modelData.application + " · " + Model.formatDuration(modelData.durationMs) + " · " + modelData.source
+              textFormat: Text.PlainText
+              color: Color.muted
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+              elide: Text.ElideRight
+            }
+          }
+          Button { text: "Clear history"; onClicked: privacyService.clearHistory() }
+        }
+
+        Text {
+          visible: root.editingKind === "" && !root.showingGlobalSettings
+          Layout.fillWidth: true
+          text: "Activity details distinguish observation source, attribution confidence, and control state. Middle-click an item for settings."
           textFormat: Text.PlainText
           color: Color.muted
           font.family: Style.font.family
           font.pixelSize: Style.font.caption
           wrapMode: Text.WordWrap
         }
+        }
       }
     }
+  }
+
+  Process {
+    id: settingsTransferProc
+    property string mode: ""
+    stdout: StdioCollector { id: settingsTransferOutput; waitForEnd: true }
+    stderr: StdioCollector { id: settingsTransferError; waitForEnd: true }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) {
+        root.settingsTransferStatus = "Transfer failed" + (settingsTransferError.text ? ": " + settingsTransferError.text.trim() : "")
+        return
+      }
+      if (mode === "import") {
+        try {
+          root.persistSettings(JSON.parse(settingsTransferOutput.text))
+          root.settingsTransferStatus = "Settings imported"
+        } catch (error) { root.settingsTransferStatus = "Import returned invalid settings" }
+      } else root.settingsTransferStatus = "Settings exported privately"
+    }
+  }
+
+  Component {
+    id: generalSettingsPage
+    ColumnLayout {
+      spacing: Style.spacing.md
+      SettingsSurface {
+        accent: root.activeThemeColor
+        PanelSectionHeader { Layout.fillWidth: true; text: "Behavior" }
+        MultiSelect { Layout.fillWidth: true; label: "Monitored activity"; options: root.kindOptions; values: Model.arraySetting(root.setting("enabledKinds", Model.KINDS), Model.KINDS); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { root.persistSettings({enabledKinds: values}) } }
+        Toggle { Layout.fillWidth: true; label: "Show idle devices"; description: "Keep enabled privacy-device icons visible while idle."; checked: root.setting("showIdle", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showIdle: !checked}) }
+        Toggle { Layout.fillWidth: true; label: "Show privacy controls"; description: "Show inline control switches and enable row actions."; checked: root.setting("showControls", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showControls: !checked}) }
+        Toggle { Layout.fillWidth: true; label: "Deduplicate application names"; description: "List an application once when it owns several matching sessions."; checked: root.setting("deduplicateApps", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({deduplicateApps: !checked}) }
+        Dropdown { Layout.fillWidth: true; label: "Bar presentation"; options: ["icons", "active-count", "active-only"]; value: String(root.setting("displayMode", "icons")); onChanged: function(value) { root.persistSettings({displayMode: value}) } }
+        NumberField { label: "Default idle opacity (%)"; from: 10; to: 100; stepSize: 5; value: Math.round(Number(root.setting("idleOpacity", 0.45)) * 100); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { root.persistSettings({idleOpacity: Number(value) / 100}) } }
+        IntegerSetting { controller: root; settingKey: "popupMaxHeight"; label: "Popup maximum height"; minimum: 360; maximum: 900; fallback: 620; stepSize: 20 }
+      }
+      SettingsSurface {
+        accent: root.activeThemeColor
+        PanelSectionHeader { Layout.fillWidth: true; text: "Theme colors" }
+        Dropdown { Layout.fillWidth: true; label: "Active"; options: ["bar-active", "urgent", "accent", "foreground"]; value: String(root.setting("activeColorRole", "bar-active")); onChanged: function(value) { root.persistSettings({activeColorRole: value}) } }
+        Dropdown { Layout.fillWidth: true; label: "Inactive"; options: ["muted", "foreground", "accent"]; value: String(root.setting("inactiveColorRole", "muted")); onChanged: function(value) { root.persistSettings({inactiveColorRole: value}) } }
+      }
+      SettingsSurface {
+        accent: root.activeThemeColor
+        PanelSectionHeader { Layout.fillWidth: true; text: "Settings transfer" }
+        Text { Layout.fillWidth: true; text: "Export or restore a versioned settings file stored privately in your user data directory."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+        RowLayout {
+          Layout.fillWidth: true
+          Button { text: "Export"; enabled: !settingsTransferProc.running; onClicked: root.exportSettings() }
+          Button { text: "Import"; enabled: !settingsTransferProc.running; onClicked: root.importSettings() }
+          Item { Layout.fillWidth: true }
+        }
+        Text { visible: root.settingsTransferStatus !== ""; Layout.fillWidth: true; text: root.settingsTransferStatus; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+      }
+    }
+  }
+
+  Component {
+    id: alertsSettingsPage
+    ColumnLayout {
+      spacing: Style.spacing.md
+      SettingsSurface {
+        accent: root.activeThemeColor
+        PanelSectionHeader { Layout.fillWidth: true; text: "Notifications" }
+        MultiSelect { Layout.fillWidth: true; label: "Activity notifications"; options: root.kindOptions; values: Model.arraySetting(root.setting("notificationKinds", ["microphone", "camera", "screen-share", "screen-recording", "location"]), []); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { root.persistSettings({notificationKinds: values}) } }
+        Toggle { Layout.fillWidth: true; label: "Activity started"; description: "Notify when selected privacy activity begins."; checked: root.setting("notifyOnActivity", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({notifyOnActivity: !checked}) }
+        Toggle { Layout.fillWidth: true; label: "Activity stopped"; description: "Notify when activity ends and include its duration."; checked: root.setting("notifyOnStop", false) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({notifyOnStop: !checked}) }
+        Toggle { Layout.fillWidth: true; label: "Control results"; description: "Notify when privacy control changes succeed or fail."; checked: root.setting("notifyOnControlChanges", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({notifyOnControlChanges: !checked}) }
+        Text { Layout.fillWidth: true; text: "Applications without alerts (comma-separated exact names)"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+        RowLayout {
+          Layout.fillWidth: true
+          TextField { id: suppressedAppsEditor; Layout.fillWidth: true; text: Model.arraySetting(root.setting("notificationSuppressedApps", []), []).join(", "); placeholderText: "Firefox, OBS"; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistSettings({notificationSuppressedApps: root.commaList(text)}) }
+          Button { text: "Save"; onClicked: root.persistSettings({notificationSuppressedApps: root.commaList(suppressedAppsEditor.text)}) }
+        }
+      }
+      SettingsSurface {
+        accent: root.activeThemeColor
+        PanelSectionHeader { Layout.fillWidth: true; text: "Local history" }
+        Toggle { Layout.fillWidth: true; label: "Keep recent activity"; description: "Store private metadata for seven days or 100 completed sessions."; checked: root.setting("historyEnabled", false) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({historyEnabled: !checked}) }
+        Button { text: "Clear stored history"; enabled: privacyService !== null; onClicked: privacyService.clearHistory() }
+      }
+    }
+  }
+
+  Component {
+    id: monitoringSettingsPage
+    ColumnLayout {
+      spacing: Style.spacing.md
+      SettingsSurface {
+        accent: root.activeThemeColor
+        PanelSectionHeader { Layout.fillWidth: true; text: "Enhanced coverage" }
+        MultiSelect { Layout.fillWidth: true; label: "Preventative controls"; options: root.kindOptions.filter(function(option) { return ["camera", "screen-share", "location"].indexOf(option.value) !== -1 }); values: Model.arraySetting(root.setting("blockableKinds", ["camera", "screen-share", "location"]), []); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { root.persistSettings({blockableKinds: values}) } }
+        Toggle { Layout.fillWidth: true; label: "Direct-device monitoring"; description: "Inspect same-user V4L2 and ALSA capture handles for applications that bypass PipeWire."; checked: root.setting("directDeviceMonitoring", false) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({directDeviceMonitoring: !checked}) }
+        Toggle { Layout.fillWidth: true; label: "Show inferred attribution"; description: "Show heuristic application and device names; activity remains visible when disabled."; checked: root.setting("showInferredAttribution", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showInferredAttribution: !checked}) }
+        IntegerSetting { controller: root; settingKey: "directDevicePollSeconds"; label: "Direct-device heartbeat, seconds"; minimum: 2; maximum: 60; fallback: 5 }
+      }
+      SettingsSurface {
+        accent: root.activeThemeColor
+        PanelSectionHeader { Layout.fillWidth: true; text: "Fallback polling" }
+        IntegerSetting { controller: root; settingKey: "locationPollSeconds"; label: "Location refresh, seconds"; minimum: 5; maximum: 300; fallback: 15; stepSize: 5 }
+        IntegerSetting { controller: root; settingKey: "recordingPollSeconds"; label: "Recorder refresh, seconds"; minimum: 1; maximum: 60; fallback: 2 }
+        Text { Layout.fillWidth: true; text: "PipeWire activity remains event-backed. These intervals affect only enhanced and fallback observers."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+      }
+      SettingsSurface {
+        accent: root.monitoringDegraded ? Color.urgent : root.activeThemeColor
+        PanelSectionHeader { Layout.fillWidth: true; text: "Observer health" }
+        Text { Layout.fillWidth: true; text: root.monitoringTelemetryText(); textFormat: Text.PlainText; color: root.monitoringDegraded ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+        Button { text: "Copy private diagnostics"; enabled: privacyService !== null; tooltipText: "Copy health and timing data with application and device names redacted"; onClicked: privacyService.copyDiagnostics(true) }
+      }
+    }
+  }
+
+  component GlobalSettingsTab: Button {
+    required property string label
+    required property string value
+    Layout.fillWidth: true
+    text: label
+    active: root.globalSettingsPage === value
+    selected: active
+    bordered: true
+    fontSize: Style.font.bodySmall
+    horizontalPadding: Style.spacing.controlPaddingX
+    verticalPadding: Style.spacing.controlPaddingY
+    onClicked: { root.globalSettingsPage = value; contentFlick.contentY = 0 }
   }
 }
