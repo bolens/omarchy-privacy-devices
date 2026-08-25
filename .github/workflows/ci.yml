@@ -97,6 +97,7 @@ jobs:
           args: >-
             --no-progress
             --accept 200,204,206,429
+            --exclude '^https://github\.com/bolens/omarchy-privacy-devices/compare/'
             './**/*.md'
             './docs/**/*.html'
           fail: true
