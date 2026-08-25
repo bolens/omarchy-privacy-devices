@@ -61,6 +61,7 @@ jobs:
           node tests/monitoring.test.js
           node tests/queues.test.js
           node tests/navigation.test.js
+          node tests/presentation.test.js
           node tests/settings.test.js
           node tests/runtime.test.js
 

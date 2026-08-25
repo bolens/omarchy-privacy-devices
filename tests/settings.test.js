@@ -151,13 +151,16 @@ assert.match(bar, /root\.deviceAppearanceCustomized\(root\.editingKind\) \? "Cus
   "device appearance must identify inherited versus customized state")
 assert.match(bar, /DeviceSettingsEditor\s*\{[\s\S]*?controller: root/, "device editor navigation must use a narrow controller interface")
 assert.match(deviceDiagnostics, /required property var controller[\s\S]*?required property string kind/, "device diagnostics must expose a narrow controller and device interface")
-for (const label of ["Backend", "Dependencies", "Monitoring", "Activity", "Applications", "Control", "Exit codes"])
-  assert.match(bar, new RegExp(`label: "${label}"`), `structured diagnostics must include ${label}`)
+assert.match(bar, /function deviceDiagnostic\(kind\)[\s\S]*?Model\.deviceDiagnosticPresentation\(privacyService\.diagnostic\(kind\)\)/,
+  "diagnostic content must use the behavior-tested presentation policy")
+assert.match(deviceDiagnostics, /model: diagnostics\.data\.rows[\s\S]*?text: modelData\.label[\s\S]*?text: modelData\.value/,
+  "the diagnostics component must render every tested label/value row")
 assert.match(bar, /text: "Reset device appearance"[\s\S]*?default label, icon, colors, idle visibility, idle opacity, and status-marker visibility/,
   "device reset copy must match every reset field")
 assert.match(activityCard, /controller\.statePillStyle === "filled"[\s\S]*?controller\.statePillStyle === "minimal"/, "state-pill styles must alter fill and border presentation")
 assert.match(activityCard, /controller\.popupDensity === "compact"[\s\S]*?verticalPadding/, "popup density must alter row spacing")
 assert.match(bar, /running:\s*modelData\.pending && root\.animatePending/, "pending animation must honor its visual setting")
-assert.match(bar, /!contentFlick\.moving/, "duration refreshes must not churn the layout while the user scrolls")
+assert.match(bar, /Timer \{[\s\S]*?running: root\.opened[\s\S]*?onTriggered: if \(!contentFlick\.moving\) root\.durationNow = Date\.now\(\)/,
+  "the duration timer must pause rendered time updates while the user scrolls")
 
 console.log("global settings contract tests passed")

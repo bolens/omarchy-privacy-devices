@@ -31,6 +31,14 @@ ShellRoot {
       throw new Error("popup navigation policy failed")
     if (Model.activationKind(["camera"], "stale") !== "camera")
       throw new Error("popup activation policy failed")
+    var stableActivity = {kind:"camera",active:false,controlEnabled:true,pending:false,health:{status:"healthy"}}
+    var changedActivity = {kind:"camera",active:true,controlEnabled:true,pending:false,health:{status:"healthy"}}
+    if (!Model.activityCriticalStateEquivalent([stableActivity], [stableActivity])
+        || Model.activityCriticalStateEquivalent([stableActivity], [changedActivity]))
+      throw new Error("presentation deferral policy failed")
+    var diagnostic = Model.deviceDiagnosticPresentation({dependenciesReady:true,health:{status:"healthy"},probeExitCode:-1,controlExitCode:-1})
+    if (diagnostic.rows.length !== 7 || diagnostic.rows[1].value !== "Ready")
+      throw new Error("diagnostic presentation policy failed")
     console.log("PRIVACY_QML_RUNTIME_OK")
     Qt.quit()
   }

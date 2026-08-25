@@ -547,6 +547,53 @@ function sessionsEquivalent(left, right) {
   return true
 }
 
+// While a user scrolls, defer text/session churn but never delay a privacy
+// state, health, membership, or order change that affects visible meaning.
+function activityCriticalStateEquivalent(left, right) {
+  left = Array.isArray(left) ? left : []
+  right = Array.isArray(right) ? right : []
+  if (left.length !== right.length) return false
+  var fields = ["kind", "active", "controlEnabled", "pending"]
+  for (var index = 0; index < left.length; index++) {
+    var previous = left[index] || {}
+    var candidate = right[index] || {}
+    for (var fieldIndex = 0; fieldIndex < fields.length; fieldIndex++) {
+      var field = fields[fieldIndex]
+      if (previous[field] !== candidate[field]) return false
+    }
+    var previousHealth = previous.health || {}
+    var candidateHealth = candidate.health || {}
+    if (previousHealth.status !== candidateHealth.status) return false
+  }
+  return true
+}
+
+function deviceDiagnosticPresentation(data) {
+  data = data || {}
+  var health = data.health || {status: "unavailable", summary: ""}
+  var healthStatus = String(health.status || "unavailable")
+  var dependenciesReady = data.dependenciesReady === true
+  var probeExitCode = Number(data.probeExitCode)
+  var controlExitCode = Number(data.controlExitCode)
+  var transaction = data.controlTransaction
+    ? String(data.controlTransaction.status || "unknown") + " (" + String(data.controlTransaction.code || "unknown") + ")"
+    : "None"
+  return {
+    healthStatus: healthStatus,
+    dependenciesReady: dependenciesReady,
+    dependencyDescription: String(data.dependencyDescription || ""),
+    rows: [
+      {label: "Backend", value: String(data.backend || "Unknown"), urgent: false},
+      {label: "Dependencies", value: dependenciesReady ? "Ready" : String(data.dependencyDescription || "Missing"), urgent: !dependenciesReady},
+      {label: "Monitoring", value: healthStatus + (health.summary ? " · " + String(health.summary) : ""), urgent: healthStatus !== "healthy"},
+      {label: "Activity", value: data.active ? "Active" : "Idle", urgent: false},
+      {label: "Applications", value: data.apps && data.apps.length ? data.apps.join(", ") : "None detected", urgent: false},
+      {label: "Control", value: String(data.controlState || "Unavailable") + " · Transaction: " + transaction, urgent: false},
+      {label: "Exit codes", value: "Probe " + (!isFinite(probeExitCode) || probeExitCode < 0 ? "not run" : probeExitCode) + " · Control " + (!isFinite(controlExitCode) || controlExitCode < 0 ? "not used" : controlExitCode), urgent: false}
+    ]
+  }
+}
+
 // Appearance and policy edits must not launch subprocess probes. Keep this list
 // explicit so only monitoring changes invalidate the operational cache.
 function operationalSignature(settings) {

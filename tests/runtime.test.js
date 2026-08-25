@@ -33,6 +33,10 @@ assert.doesNotMatch(service, /fallbackMicrophoneMuted\s*=\s*!fallbackMicrophoneM
 assert.doesNotMatch(service, /fallbackOutputMuted\s*=\s*!fallbackOutputMuted/, "controls must preserve the last observed output state while verification is pending")
 assert.match(bar, /pixelAligned:\s*true/, "popup scrolling should remain pixel aligned")
 assert.match(bar, /onMovementEnded:\s*root\.flushDeferredItems\(\)/, "deferred row updates must flush when scrolling ends")
+assert.match(bar, /function syncDisplayedItems\(\)[\s\S]*?contentFlick\.moving && Model\.activityCriticalStateEquivalent\(displayedActivityItems, next\)/,
+  "scroll deferral must use the behavior-tested critical-state policy")
+assert.doesNotMatch(bar, /function activityStateChanged\(/,
+  "QML must not retain a second untested presentation-state policy")
 assert.match(bar, /onCloseRequested:\s*root\.closeCurrentLayer\(\)/, "Escape must invoke layered popup dismissal")
 assert.match(bar, /function closeCurrentLayer\(\)[\s\S]*?Model\.popupDismissalAction\(editingKind, showingGlobalSettings\)/,
   "layered dismissal must use the behavior-tested priority policy")

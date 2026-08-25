@@ -152,21 +152,10 @@ Panel {
     contentFlick.contentY = 0
   }
 
-  function activityStateChanged(next) {
-    if (next.length !== displayedActivityItems.length) return true
-    for (var index = 0; index < next.length; index++) {
-      var old = displayedActivityItems[index]
-      if (!old || old.kind !== next[index].kind || old.active !== next[index].active
-          || old.controlEnabled !== next[index].controlEnabled || old.pending !== next[index].pending
-          || old.health.status !== next[index].health.status) return true
-    }
-    return false
-  }
-
   function syncDisplayedItems() {
     var next = activitySourceItems
     // Never defer privacy state changes; only defer non-critical text/session churn.
-    if (contentFlick.moving && !activityStateChanged(next)) deferredActivityItems = next
+    if (contentFlick.moving && Model.activityCriticalStateEquivalent(displayedActivityItems, next)) deferredActivityItems = next
     else { displayedActivityItems = next; deferredActivityItems = null }
   }
 
@@ -236,23 +225,7 @@ Panel {
       healthStatus: "unavailable", dependenciesReady: true, dependencyDescription: "",
       rows: [{label: "Status", value: "Diagnostics unavailable", urgent: true}]
     }
-    var data = privacyService.diagnostic(kind)
-    var health = data.health || {status: "unavailable", summary: ""}
-    var transaction = data.controlTransaction ? data.controlTransaction.status + " (" + data.controlTransaction.code + ")" : "None"
-    return {
-      healthStatus: String(health.status || "unavailable"),
-      dependenciesReady: data.dependenciesReady === true,
-      dependencyDescription: String(data.dependencyDescription || ""),
-      rows: [
-        {label: "Backend", value: String(data.backend || "Unknown"), urgent: false},
-        {label: "Dependencies", value: data.dependenciesReady ? "Ready" : String(data.dependencyDescription || "Missing"), urgent: !data.dependenciesReady},
-        {label: "Monitoring", value: String(health.status || "unavailable") + (health.summary ? " · " + health.summary : ""), urgent: health.status !== "healthy"},
-        {label: "Activity", value: data.active ? "Active" : "Idle", urgent: false},
-        {label: "Applications", value: data.apps && data.apps.length ? data.apps.join(", ") : "None detected", urgent: false},
-        {label: "Control", value: String(data.controlState || "Unavailable") + " · Transaction: " + transaction, urgent: false},
-        {label: "Exit codes", value: "Probe " + (data.probeExitCode < 0 ? "not run" : data.probeExitCode) + " · Control " + (data.controlExitCode < 0 ? "not used" : data.controlExitCode), urgent: false}
-      ]
-    }
+    return Model.deviceDiagnosticPresentation(privacyService.diagnostic(kind))
   }
 
   function isAudioControl(entry) {
