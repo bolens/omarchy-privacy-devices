@@ -32,6 +32,9 @@ maintainer guides that define release and validation procedures.
 - Reject unsupported, disabled, unavailable, busy, and duplicate control
   requests instead of reporting false success; preserve verification probes
   across concurrent monitoring-setting changes.
+- Prevent stale history loads and dependency probes from publishing after
+  their configuration is superseded, serialize history helper transactions,
+  and bound normalized session metadata before identity or presentation.
 
 ### Security
 

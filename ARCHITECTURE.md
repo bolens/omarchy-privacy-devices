@@ -73,6 +73,10 @@ normal operation poll-driven.
   IPC pages and direct helper arguments are validated again at their ingress.
 - History and exported settings use private directories, exclusive temporary
   files, atomic replacement, bounded reads, and load-time sanitation.
+- History operations serialize read-modify-write transactions, and generation
+  checks prevent asynchronous loads from crossing clear/disable boundaries.
+- Session metadata is stripped of control characters and bounded before it is
+  used for identity, rendering, IPC, notifications, or persistence.
 - Diagnostics are redacted by default and bounded before clipboard transfer.
 - Disabled, active, idle, pending, and degraded presentation derives from the
   shared visual-state policy rather than independent QML conditions.
