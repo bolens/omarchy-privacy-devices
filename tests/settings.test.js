@@ -115,6 +115,25 @@ assert.match(bar, /function resetDeviceBackend\(kind\)/, "backend reset must be 
 assert.match(bar, /"Reset all device settings"/, "device pages must offer a complete reset")
 assert.match(bar, /property string pendingReset:[\s\S]*?Confirm shared backend reset[\s\S]*?Confirm reset all/,
   "shared audio resets must require an explicit second action")
+assert.match(bar, /function syncDeviceEditors\(\)[\s\S]*?labelEditor\.text = root\.labelFor\(editingKind\)[\s\S]*?customRecorderStopEditor\.text/,
+  "changing devices must replace every editable field instead of retaining stale input")
+assert.match(bar, /onEditingKindChanged: Qt\.callLater\(syncDeviceEditors\)/,
+  "device-editor synchronization must run after every device transition")
+assert.match(bar, /Timer\s*\{[\s\S]*?running: resetSurface\.pendingReset !== ""[\s\S]*?resetSurface\.pendingReset = ""/,
+  "shared reset confirmations must expire")
+
+const resetGlobalBody = bar.slice(bar.indexOf("function resetGlobalSettings()"), bar.indexOf("function persistIcon("))
+for (const key of [
+  "barIconScale", "barItemSpacing", "barItemPadding", "barMarkerPosition", "showBarSessionCounts",
+  "showBarActiveMarker", "showBarDisabledMarker", "showBarPendingMarker", "showBarDegradedMarker",
+  "barActiveMarkerIcon", "barDisabledMarkerIcon", "barPendingMarkerIcon", "barDegradedMarkerIcon"
+]) assert.match(resetGlobalBody, new RegExp(`${key}:`), `global reset must restore ${key}`)
+assert.match(bar, /deviceColorRoleOptions:[\s\S]*?value: "inherit", label: "Use global default"/,
+  "device color inheritance must use a human-readable option")
+assert.match(bar, /deviceVisibilityOptions:[\s\S]*?value: "show", label: "Show"[\s\S]*?value: "hide", label: "Hide"/,
+  "device visibility modes must use human-readable options")
+assert.match(bar, /function resetDeviceBackend\(kind\)[\s\S]*?Qt\.callLater\(syncDeviceEditors\)/,
+  "backend resets must refresh fields whose edit bindings were replaced")
 assert.match(bar, /property bool dirty:[\s\S]*?Unsaved changes[\s\S]*?enabled: parent\.dirty/,
   "device text editors must expose dirty state and disable redundant saves")
 assert.match(bar, /Model\.deviceBackendValidation\("screenshot"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,

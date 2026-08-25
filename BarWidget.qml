@@ -56,6 +56,16 @@ Panel {
     {value: "screenshot", label: "Screenshot"}, {value: "screen-recording", label: "Screen recording"},
     {value: "location", label: "Location"}
   ]
+  readonly property var deviceColorRoleOptions: [
+    {value: "inherit", label: "Use global default"},
+    {value: "bar-active", label: "Bar active"}, {value: "urgent", label: "Urgent"},
+    {value: "accent", label: "Accent"}, {value: "foreground", label: "Foreground"},
+    {value: "muted", label: "Muted"}
+  ]
+  readonly property var deviceVisibilityOptions: [
+    {value: "inherit", label: "Use global default"},
+    {value: "show", label: "Show"}, {value: "hide", label: "Hide"}
+  ]
   readonly property var normalBarItems: displayMode === "active-count"
     ? [{kind: "summary", label: "Privacy", icon: activeCount > 0 ? "󰒃 " + activeCount : "󰒃", active: activeCount > 0, apps: [], controllable: false, controlEnabled: false, health: {status: "healthy"}, sessions: []}]
     : (displayMode === "active-only" ? activeItems() : visibleItems)
@@ -80,6 +90,18 @@ Panel {
 
   function syncService() {
     if (privacyService && typeof privacyService.configure === "function") privacyService.configure(Model.sanitizeSettings(settings))
+  }
+
+  function syncDeviceEditors() {
+    resetSurface.pendingReset = ""
+    if (!editingKind) return
+    labelEditor.text = root.labelFor(editingKind)
+    iconEditor.text = root.iconFor(editingKind)
+    customScreenshotCommandEditor.text = String(root.setting("screenshotCustomCommand", ""))
+    customScreenshotProcessEditor.text = String(root.setting("screenshotProcessName", ""))
+    customRecorderProcessEditor.text = String(root.setting("recordingProcessName", ""))
+    customRecorderStartEditor.text = String(root.setting("recordingCustomStartCommand", ""))
+    customRecorderStopEditor.text = String(root.setting("recordingCustomStopCommand", ""))
   }
 
   function showGlobalSettings(page) {
@@ -340,6 +362,19 @@ Panel {
       blockableKinds: ["camera", "screen-share", "location"],
       showIdle: true,
       displayMode: "icons",
+      barIconScale: 1,
+      barItemSpacing: 0,
+      barItemPadding: 5,
+      barMarkerPosition: "after",
+      showBarSessionCounts: true,
+      showBarActiveMarker: true,
+      showBarDisabledMarker: true,
+      showBarPendingMarker: true,
+      showBarDegradedMarker: true,
+      barActiveMarkerIcon: "●",
+      barDisabledMarkerIcon: "⊘",
+      barPendingMarkerIcon: "…",
+      barDegradedMarkerIcon: "!",
       showControls: true,
       idleOpacity: 0.45,
       disabledOpacity: 1,
@@ -484,6 +519,7 @@ Panel {
 
   function resetItemSettings(kind) {
     persistSettings(itemResetValues(kind))
+    Qt.callLater(syncDeviceEditors)
   }
 
   function deviceBackendDefaults(kind) {
@@ -495,6 +531,7 @@ Panel {
 
   function resetDeviceBackend(kind) {
     persistSettings(deviceBackendDefaults(kind))
+    Qt.callLater(syncDeviceEditors)
   }
 
   function resetAllDeviceSettings(kind) {
@@ -502,6 +539,7 @@ Panel {
     var backend = deviceBackendDefaults(kind)
     for (var key in backend) values[key] = backend[key]
     persistSettings(values)
+    Qt.callLater(syncDeviceEditors)
   }
 
   function toggleEntry(entry) {
@@ -649,6 +687,7 @@ Panel {
   visible: root.barItems.length > 0
 
   onSettingsChanged: Qt.callLater(syncService)
+  onEditingKindChanged: Qt.callLater(syncDeviceEditors)
   onPrivacyServiceChanged: Qt.callLater(syncService)
   onActivitySourceItemsChanged: syncDisplayedItems()
   onOpenedChanged: {
@@ -929,7 +968,7 @@ Panel {
             Dropdown {
             Layout.fillWidth: true
             label: root.isAudioControl({kind: root.editingKind}) ? "Muted color" : "Active color"
-            options: ["inherit", "bar-active", "urgent", "accent", "foreground", "muted"]
+            options: root.deviceColorRoleOptions
             value: root.itemColorOverrideRole(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "muted" : "active")
             onChanged: function(value) { root.persistItemColor(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "muted" : "active", value) }
           }
@@ -938,7 +977,7 @@ Panel {
             visible: root.isPreventativeControl({kind: root.editingKind})
             Layout.fillWidth: true
             label: "Disabled color"
-            options: ["inherit", "bar-active", "urgent", "accent", "foreground", "muted"]
+            options: root.deviceColorRoleOptions
             value: root.itemColorOverrideRole(root.editingKind, "disabled")
             onChanged: function(value) { root.persistItemColor(root.editingKind, "disabled", value) }
           }
@@ -946,7 +985,7 @@ Panel {
             Dropdown {
             Layout.fillWidth: true
             label: root.isAudioControl({kind: root.editingKind}) ? "Unmuted color" : "Inactive color"
-            options: ["inherit", "bar-active", "urgent", "accent", "foreground", "muted"]
+            options: root.deviceColorRoleOptions
             value: root.itemColorOverrideRole(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "unmuted" : "inactive")
             onChanged: function(value) { root.persistItemColor(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "unmuted" : "inactive", value) }
           }
@@ -975,7 +1014,7 @@ Panel {
             Dropdown {
               Layout.fillWidth: true
               label: "Show status markers for this device"
-              options: ["inherit", "show", "hide"]
+              options: root.deviceVisibilityOptions
               value: root.itemOverrideMode("itemStatusMarkerVisibility", root.editingKind)
               onChanged: function(value) { root.persistItemStatusMarker(root.editingKind, value) }
             }
@@ -1002,7 +1041,7 @@ Panel {
             Dropdown {
               Layout.fillWidth: true
               label: "Show while idle"
-              options: ["inherit", "show", "hide"]
+              options: root.deviceVisibilityOptions
               value: root.itemOverrideMode("itemIdleVisibility", root.editingKind)
               onChanged: function(value) { root.persistItemIdleVisibility(root.editingKind, value) }
             }
@@ -1205,6 +1244,11 @@ Panel {
             Layout.fillWidth: true
             accent: root.activeThemeColor
             property string pendingReset: ""
+            Timer {
+              interval: 5000
+              running: resetSurface.pendingReset !== ""
+              onTriggered: resetSurface.pendingReset = ""
+            }
             PanelSectionHeader { Layout.fillWidth: true; text: "Reset device appearance" }
             RowLayout {
               Layout.fillWidth: true
@@ -1212,6 +1256,7 @@ Panel {
                 text: "Reset device appearance"
                 tooltipText: "Restore the default label, icon, colors, idle visibility, idle opacity, and status-marker visibility"
                 onClicked: {
+                  resetSurface.pendingReset = ""
                   root.resetItemSettings(root.editingKind)
                   iconEditor.text = root.iconFor(root.editingKind)
                   labelEditor.text = root.labelFor(root.editingKind)
