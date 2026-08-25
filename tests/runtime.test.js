@@ -15,7 +15,7 @@ assert.match(service, /target:\s*"privacy-devices-settings"[\s\S]*?shell\.summon
 assert.doesNotMatch(bar, /target:\s*"privacy-devices-settings"/, "per-monitor widgets must not compete for settings IPC ownership")
 assert.match(service, /id:\s*notificationFlush[\s\S]*?interval:\s*400/, "activity notifications must use a bounded coalescing window")
 assert.match(service, /function beginControlTransaction\(kind, expectedEnabled\)[\s\S]*?function beginControlVerification\(kind, exitCode\)[\s\S]*?function verifyControlTransaction\(kind, observedEnabled, probeValid\)/, "controls must apply, probe, and verify explicit requested states")
-assert.match(service, /verification_timeout/, "verification must be bounded when an observer never confirms the requested state")
+assert.match(service, /transitionControlTransaction\(kind, \{type: "timeout"\}, now\)/, "verification must delegate bounded timeout handling to the tested reducer")
 assert.match(service, /lastFallbackRefreshAt/, "fallback refresh freshness must be observable")
 assert.match(bar, /pixelAligned:\s*true/, "popup scrolling should remain pixel aligned")
 assert.match(bar, /onMovementEnded:\s*root\.flushDeferredItems\(\)/, "deferred row updates must flush when scrolling ends")

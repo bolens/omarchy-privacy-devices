@@ -244,6 +244,47 @@ function aggregateHealth(states) {
   return {status: status, codes: unique(codes), summary: problems.length ? problems.join("; ") : "All monitoring sources healthy"}
 }
 
+function controlTransactionTransition(current, event, now) {
+  event = event || {}
+  var timestamp = Number(now)
+  if (event.type === "begin") return {
+    status: "applying", expectedEnabled: event.expectedEnabled === true,
+    startedAt: timestamp, finishedAt: 0, exitCode: -1, code: "applying"
+  }
+  if (!current || (current.status !== "applying" && current.status !== "verifying")) return current
+  if (event.type === "command" && current.status === "applying") {
+    if (Number(event.exitCode) !== 0) return {
+      status: "failed", expectedEnabled: current.expectedEnabled === true,
+      startedAt: current.startedAt, finishedAt: timestamp,
+      exitCode: Number(event.exitCode), code: "command_failed"
+    }
+    return {
+      status: "verifying", expectedEnabled: current.expectedEnabled === true,
+      startedAt: current.startedAt, finishedAt: 0, exitCode: 0,
+      deadline: timestamp + 5000, code: "verifying"
+    }
+  }
+  if (event.type === "observation" && current.status === "verifying") {
+    if (event.valid !== true) return {
+      status: "failed", expectedEnabled: current.expectedEnabled === true,
+      startedAt: current.startedAt, finishedAt: timestamp,
+      exitCode: 12, code: "verification_probe_failed"
+    }
+    if ((event.enabled === true) !== current.expectedEnabled) return current
+    return {
+      status: "succeeded", expectedEnabled: current.expectedEnabled === true,
+      startedAt: current.startedAt, finishedAt: timestamp,
+      exitCode: 0, code: "verified"
+    }
+  }
+  if (event.type === "timeout" && current.status === "verifying" && timestamp >= Number(current.deadline)) return {
+    status: "failed", expectedEnabled: current.expectedEnabled === true,
+    startedAt: current.startedAt, finishedAt: timestamp,
+    exitCode: 14, code: "verification_timeout"
+  }
+  return current
+}
+
 function appendHistory(history, session, now, limits) {
   limits = limits || {}
   var maxEntries = Math.max(1, Number(limits.maxEntries || 100))

@@ -399,31 +399,31 @@ Item {
 
   function beginControlTransaction(kind, expectedEnabled) {
     var next = Object.assign({}, controlTransactions)
-    next[kind] = {status: "applying", expectedEnabled: expectedEnabled === true, startedAt: Date.now(), finishedAt: 0, exitCode: -1, code: "applying"}
+    next[kind] = Model.controlTransactionTransition(null, {type: "begin", expectedEnabled: expectedEnabled}, Date.now())
     controlTransactions = next
   }
 
   function beginControlVerification(kind, exitCode) {
-    if (Number(exitCode) !== 0) { finishControlTransaction(kind, "failed", exitCode, "command_failed"); return }
     var next = Object.assign({}, controlTransactions)
-    var current = next[kind] || {startedAt: Date.now()}
-    next[kind] = {status: "verifying", expectedEnabled: current.expectedEnabled === true, startedAt: current.startedAt, finishedAt: 0, exitCode: 0, deadline: Date.now() + 5000, code: "verifying"}
+    var current = next[kind]
+    next[kind] = Model.controlTransactionTransition(current, {type: "command", exitCode: exitCode}, Date.now())
     controlTransactions = next
+    if (next[kind] && next[kind].status === "failed") notifyControlResult(kind, exitCode)
   }
 
-  function finishControlTransaction(kind, status, exitCode, code) {
+  function transitionControlTransaction(kind, event, now) {
     var next = Object.assign({}, controlTransactions)
-    var current = next[kind] || {startedAt: Date.now(), expectedEnabled: controlEnabled(kind)}
-    next[kind] = {status: status, expectedEnabled: current.expectedEnabled === true, startedAt: current.startedAt, finishedAt: Date.now(), exitCode: Number(exitCode), code: code}
+    var current = next[kind]
+    var updated = Model.controlTransactionTransition(current, event, now === undefined ? Date.now() : now)
+    if (updated === current) return
+    next[kind] = updated
     controlTransactions = next
-    notifyControlResult(kind, status === "succeeded" ? 0 : exitCode)
+    if (updated && (updated.status === "succeeded" || updated.status === "failed"))
+      notifyControlResult(kind, updated.status === "succeeded" ? 0 : updated.exitCode)
   }
 
   function verifyControlTransaction(kind, observedEnabled, probeValid) {
-    var current = controlTransactions[kind]
-    if (!current || current.status !== "verifying") return
-    if (probeValid !== true) { finishControlTransaction(kind, "failed", 12, "verification_probe_failed"); return }
-    if (observedEnabled === current.expectedEnabled) finishControlTransaction(kind, "succeeded", 0, "verified")
+    transitionControlTransaction(kind, {type: "observation", enabled: observedEnabled, valid: probeValid})
   }
 
   function beginExternalControl(kind, expectedEnabled) {
@@ -755,7 +755,7 @@ Item {
       for (var kind in root.controlTransactions) {
         var transaction = root.controlTransactions[kind]
         if (transaction.status === "verifying" && now >= transaction.deadline)
-          root.finishControlTransaction(kind, "failed", 14, "verification_timeout")
+          root.transitionControlTransaction(kind, {type: "timeout"}, now)
       }
     }
   }
