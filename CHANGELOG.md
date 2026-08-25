@@ -7,6 +7,11 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Changed
+
+- Align individual device settings with the global settings structure, clarify
+  shared and inherited behavior, and disable unavailable placement actions.
+
 ## [0.3.0] - 2026-08-25
 
 ### Added

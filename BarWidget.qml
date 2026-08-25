@@ -403,6 +403,12 @@ Panel {
     persistSettings({order: order})
   }
 
+  function canMoveItem(kind, delta) {
+    var order = orderedKinds()
+    var index = order.indexOf(kind)
+    return index >= 0 && index + delta >= 0 && index + delta < order.length
+  }
+
   function itemShowsWhenIdle(kind) {
     var overrides = setting("itemIdleVisibility", {}) || {}
     return overrides[kind] !== undefined ? overrides[kind] === true : showIdle
@@ -769,8 +775,9 @@ Panel {
           RowLayout {
             Layout.fillWidth: true
             Button {
-              text: "Back"
               iconText: "󰁍"
+              tooltipText: "Back"
+              horizontalPadding: Style.spacing.controlGap
               onClicked: root.editingKind = ""
             }
             Text {
@@ -784,15 +791,13 @@ Panel {
             }
           }
 
-          Rectangle {
+          SettingsSurface {
             Layout.fillWidth: true
-            implicitHeight: previewRow.implicitHeight + Style.spacing.md * 2
-            radius: Style.cornerRadius
-            color: Util.alpha(root.itemColor(root.item(root.editingKind)), 0.10)
+            accent: root.itemColor(root.item(root.editingKind))
+            PanelSectionHeader { Layout.fillWidth: true; text: "Bar preview" }
             RowLayout {
               id: previewRow
-              anchors.fill: parent
-              anchors.margins: Style.spacing.md
+              Layout.fillWidth: true
               Text {
                 text: root.barItemText(root.item(root.editingKind))
                 textFormat: Text.PlainText
@@ -812,13 +817,12 @@ Panel {
             }
           }
 
-          PanelSectionHeader {
-            Layout.fillWidth: true
-            text: "Appearance"
-          }
-
-          RowLayout {
-            Layout.fillWidth: true
+          SettingsSurface {
+            accent: root.activeThemeColor
+            PanelSectionHeader { Layout.fillWidth: true; text: "Appearance" }
+            Text { Layout.fillWidth: true; text: "Display label"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+            RowLayout {
+              Layout.fillWidth: true
             TextField {
               id: labelEditor
               Layout.fillWidth: true
@@ -830,13 +834,15 @@ Panel {
               onAccepted: root.persistLabel(root.editingKind, text)
             }
             Button {
-              text: "Save label"
+              text: "Save"
+              tooltipText: "Save display label"
               onClicked: root.persistLabel(root.editingKind, labelEditor.text)
             }
           }
 
-          RowLayout {
-            Layout.fillWidth: true
+            Text { Layout.fillWidth: true; text: "Device icon"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+            RowLayout {
+              Layout.fillWidth: true
             TextField {
               id: iconEditor
               Layout.fillWidth: true
@@ -848,12 +854,13 @@ Panel {
               onAccepted: root.persistIcon(root.editingKind, text)
             }
             Button {
-              text: "Save icon"
+              text: "Save"
+              tooltipText: "Save device icon"
               onClicked: root.persistIcon(root.editingKind, iconEditor.text)
             }
           }
 
-          Dropdown {
+            Dropdown {
             Layout.fillWidth: true
             label: root.isAudioControl({kind: root.editingKind}) ? "Muted color" : "Active color"
             options: ["bar-active", "urgent", "accent", "foreground", "muted"]
@@ -863,7 +870,7 @@ Panel {
             onChanged: function(value) { root.persistItemColor(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "muted" : "active", value) }
           }
 
-          Dropdown {
+            Dropdown {
             visible: root.isPreventativeControl({kind: root.editingKind})
             Layout.fillWidth: true
             label: "Disabled color"
@@ -872,7 +879,7 @@ Panel {
             onChanged: function(value) { root.persistItemColor(root.editingKind, "disabled", value) }
           }
 
-          Dropdown {
+            Dropdown {
             Layout.fillWidth: true
             label: root.isAudioControl({kind: root.editingKind}) ? "Unmuted color" : "Inactive color"
             options: ["bar-active", "urgent", "accent", "foreground", "muted"]
@@ -882,7 +889,7 @@ Panel {
             onChanged: function(value) { root.persistItemColor(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "unmuted" : "inactive", value) }
           }
 
-          NumberField {
+            NumberField {
             label: "Idle opacity (%)"
             from: 10
             to: 100
@@ -894,58 +901,54 @@ Panel {
             onModified: function(value) { root.persistItemIdleOpacity(root.editingKind, value) }
           }
 
-          Toggle {
-            Layout.fillWidth: true
-            label: "Show bar status marker"
-            description: "Override marker visibility for this item."
-            checked: root.itemStatusMarkerVisible(root.editingKind)
-            foreground: Color.popups.text
-            accent: root.activeThemeColor
-            fontFamily: Style.font.family
-            onClicked: root.persistItemStatusMarker(root.editingKind, !checked)
-          }
-
-          PanelSectionHeader {
-            Layout.fillWidth: true
-            text: "Placement"
-          }
-
-          RowLayout {
-            Layout.fillWidth: true
-            Button {
-              text: "Move left"
-              onClicked: root.moveItem(root.editingKind, -1)
+            Toggle {
+              Layout.fillWidth: true
+              label: "Show status markers for this device"
+              description: "Global status-marker rules still apply."
+              checked: root.itemStatusMarkerVisible(root.editingKind)
+              foreground: Color.popups.text
+              accent: root.activeThemeColor
+              fontFamily: Style.font.family
+              onClicked: root.persistItemStatusMarker(root.editingKind, !checked)
             }
-            Button {
-              text: "Move right"
-              onClicked: root.moveItem(root.editingKind, 1)
-            }
-            Item { Layout.fillWidth: true }
           }
 
-          PanelSectionHeader {
-            Layout.fillWidth: true
-            text: "Behavior"
-          }
-
-          Toggle {
-            Layout.fillWidth: true
-            label: "Show while idle"
-            description: "Keep this item visible on the bar when it is not active."
-            checked: root.itemShowsWhenIdle(root.editingKind)
-            foreground: Color.popups.text
+          SettingsSurface {
             accent: root.activeThemeColor
-            fontFamily: Style.font.family
-            onClicked: root.persistItemIdleVisibility(root.editingKind, !checked)
+            PanelSectionHeader { Layout.fillWidth: true; text: "Bar placement" }
+            RowLayout {
+              Layout.fillWidth: true
+              Button {
+                text: "Move left"
+                enabled: root.canMoveItem(root.editingKind, -1)
+                onClicked: root.moveItem(root.editingKind, -1)
+              }
+              Button {
+                text: "Move right"
+                enabled: root.canMoveItem(root.editingKind, 1)
+                onClicked: root.moveItem(root.editingKind, 1)
+              }
+              Item { Layout.fillWidth: true }
+            }
+            Toggle {
+              Layout.fillWidth: true
+              label: "Show while idle"
+              description: "Keep this device visible on the bar when it is not active."
+              checked: root.itemShowsWhenIdle(root.editingKind)
+              foreground: Color.popups.text
+              accent: root.activeThemeColor
+              fontFamily: Style.font.family
+              onClicked: root.persistItemIdleVisibility(root.editingKind, !checked)
+            }
           }
 
-          PanelSectionHeader {
+          SettingsSurface {
             visible: root.editingKind === "screen-recording" || root.editingKind === "screenshot" || root.isAudioControl({kind: root.editingKind})
             Layout.fillWidth: true
-            text: "Backend"
-          }
+            accent: root.activeThemeColor
+            PanelSectionHeader { Layout.fillWidth: true; text: "Backend" }
 
-          Dropdown {
+            Dropdown {
             visible: root.editingKind === "screen-recording"
             Layout.fillWidth: true
             label: "Recording backend"
@@ -954,7 +957,7 @@ Panel {
             onChanged: function(value) { root.persistSettings({recordingBackend: value}) }
           }
 
-          Text {
+            Text {
             visible: root.editingKind === "screen-recording"
             Layout.fillWidth: true
             text: "Omarchy follows the system capture command. Explicit and custom choices keep dependency checks and activity detection tied to that backend."
@@ -965,7 +968,7 @@ Panel {
             wrapMode: Text.WordWrap
           }
 
-          Dropdown {
+            Dropdown {
             visible: root.editingKind === "screenshot"
             Layout.fillWidth: true
             label: "Screenshot backend"
@@ -974,7 +977,7 @@ Panel {
             onChanged: function(value) { root.persistSettings({screenshotBackend: value}) }
           }
 
-          Text {
+            Text {
             visible: root.editingKind === "screenshot"
             Layout.fillWidth: true
             text: "Omarchy uses its smart flow. Grim and Hyprshot capture regions; Grim + Satty and Flameshot add annotation."
@@ -985,7 +988,7 @@ Panel {
             wrapMode: Text.WordWrap
           }
 
-          ColumnLayout {
+            ColumnLayout {
             visible: root.editingKind === "screenshot" && String(root.setting("screenshotBackend", "omarchy")) === "custom"
             Layout.fillWidth: true
             spacing: Style.spacing.sm
@@ -1018,7 +1021,7 @@ Panel {
             }
           }
 
-          ColumnLayout {
+            ColumnLayout {
             visible: root.editingKind === "screen-recording" && String(root.setting("recordingBackend", "omarchy")) === "custom"
             Layout.fillWidth: true
             spacing: Style.spacing.sm
@@ -1062,7 +1065,7 @@ Panel {
             }
           }
 
-          Dropdown {
+            Dropdown {
             visible: root.isAudioControl({kind: root.editingKind})
             Layout.fillWidth: true
             label: "Audio control backend"
@@ -1071,38 +1074,31 @@ Panel {
             onChanged: function(value) { root.persistSettings({audioControlBackend: value}) }
           }
 
-          Text {
+            Text {
             visible: root.isAudioControl({kind: root.editingKind})
             Layout.fillWidth: true
-            text: "Auto prefers pactl and falls back to wpctl. This changes mute control only; activity detection remains PipeWire-native."
+            text: "Shared by microphone and audio output. Auto prefers pactl and falls back to wpctl. This changes mute control only; activity detection remains PipeWire-native."
             textFormat: Text.PlainText
             color: Color.muted
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
             wrapMode: Text.WordWrap
+            }
           }
 
-          PanelSectionHeader {
+          SettingsSurface {
             Layout.fillWidth: true
-            text: "Diagnostics"
-          }
-
-          Button {
-            visible: root.editingKind !== "" && privacyService && !privacyService.dependenciesReady(root.editingKind)
-            text: "Install requirements"
-            tooltipText: privacyService ? privacyService.dependencyDescription(root.editingKind) : ""
-            onClicked: privacyService.installDependencies(root.editingKind)
-          }
-
-          Rectangle {
-            Layout.fillWidth: true
-            implicitHeight: diagnosticsText.implicitHeight + Style.spacing.md * 2
-            radius: Style.cornerRadius
-            color: Util.alpha(Color.popups.text, 0.04)
+            accent: root.monitoringDegraded ? Color.urgent : root.activeThemeColor
+            PanelSectionHeader { Layout.fillWidth: true; text: "Diagnostics" }
+            Button {
+              visible: root.editingKind !== "" && privacyService && !privacyService.dependenciesReady(root.editingKind)
+              text: "Install requirements"
+              tooltipText: privacyService ? privacyService.dependencyDescription(root.editingKind) : ""
+              onClicked: privacyService.installDependencies(root.editingKind)
+            }
             Text {
               id: diagnosticsText
-              anchors.fill: parent
-              anchors.margins: Style.spacing.md
+              Layout.fillWidth: true
               text: root.diagnosticText(root.editingKind)
               textFormat: Text.PlainText
               color: Color.muted
@@ -1112,18 +1108,18 @@ Panel {
             }
           }
 
-          PanelSectionHeader {
+          SettingsSurface {
             Layout.fillWidth: true
-            text: "Reset"
-          }
-
-          Button {
-            text: "Reset item settings"
-            tooltipText: "Restore the default label, icon, colors, idle opacity, and idle visibility"
-            onClicked: {
-              root.resetItemSettings(root.editingKind)
-              iconEditor.text = root.iconFor(root.editingKind)
-              labelEditor.text = root.labelFor(root.editingKind)
+            accent: root.activeThemeColor
+            PanelSectionHeader { Layout.fillWidth: true; text: "Reset device appearance" }
+            Button {
+              text: "Reset device appearance"
+              tooltipText: "Restore the default label, icon, colors, idle visibility, idle opacity, and status-marker visibility"
+              onClicked: {
+                root.resetItemSettings(root.editingKind)
+                iconEditor.text = root.iconFor(root.editingKind)
+                labelEditor.text = root.labelFor(root.editingKind)
+              }
             }
           }
         }

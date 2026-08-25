@@ -90,6 +90,22 @@ assert.ok(bar.indexOf("id: appearanceSettingsPage") < bar.indexOf("Status presen
 assert.match(bar, /"1234"[\s\S]*?\["general", "appearance", "alerts", "monitoring"\]/, "settings keyboard shortcuts must cover all pages")
 assert.match(bar, /var count = Model\.privacySessionCount\(entry, showBarSessionCounts\)/, "bar counts must not depend on popup-count visibility")
 assert.match(bar, /persistItemStatusMarker/, "per-item settings must control marker visibility")
+assert.match(bar, /function canMoveItem\(kind, delta\)/, "device placement must expose boundary-aware movement")
+assert.match(bar, /text: "Move left"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, -1\)/,
+  "device placement must disable unavailable left movement")
+assert.match(bar, /text: "Move right"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, 1\)/,
+  "device placement must disable unavailable right movement")
+assert.match(bar, /visible: root\.editingKind !== "" && !root\.showingGlobalSettings[\s\S]*?SettingsSurface\s*\{[\s\S]*?text: "Appearance"/,
+  "device appearance must use the shared settings surface")
+for (const section of ["Bar placement", "Backend", "Diagnostics", "Reset device appearance"])
+  assert.match(bar, new RegExp(`SettingsSurface\\s*\\{[\\s\\S]*?text: "${section}"`), `${section} must use the shared device settings structure`)
+assert.match(bar, /label: "Show status markers for this device"[\s\S]*?Global status-marker rules still apply/,
+  "device marker wording must explain its relationship to global rules")
+for (const label of ["Bar preview", "Display label", "Device icon"])
+  assert.match(bar, new RegExp(`text: "${label}"`), `${label} must remain visible without relying on input placeholders`)
+assert.match(bar, /Shared by microphone and audio output/, "shared audio backend scope must be explicit")
+assert.match(bar, /text: "Reset device appearance"[\s\S]*?default label, icon, colors, idle visibility, idle opacity, and status-marker visibility/,
+  "device reset copy must match every reset field")
 assert.match(activityCard, /controller\.statePillStyle === "filled"[\s\S]*?controller\.statePillStyle === "minimal"/, "state-pill styles must alter fill and border presentation")
 assert.match(activityCard, /controller\.popupDensity === "compact"[\s\S]*?verticalPadding/, "popup density must alter row spacing")
 assert.match(bar, /running:\s*modelData\.pending && root\.animatePending/, "pending animation must honor its visual setting")
