@@ -47,7 +47,7 @@ Activity notifications use the detected application icon when available:
 - Global and per-device appearance, ordering, visibility, backend, and status
   settings.
 - App-aware notifications, private diagnostics, searchable optional bounded
-  history, and versioned settings transfer.
+  history, and versioned settings transfer with one-step undo.
 - Keyboard navigation throughout the popup and settings.
 - Persistent observers and bounded background work, with no network telemetry.
 

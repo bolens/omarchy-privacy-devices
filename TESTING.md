@@ -19,7 +19,8 @@ node tests/release.test.js
 node tests/site.test.js
 node tests/documentation.test.js
 python3 -m unittest discover -s tests -p 'test_*.py'
-shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
+shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot \
+  scripts/capture-screenshots tests/run_qml_runtime.sh tests/fixtures/*
 ```
 
 The suites cover model policy, runtime wiring, settings/UI contracts, helpers,
@@ -41,7 +42,10 @@ git archive HEAD | tar -x -C "$validation_dir"
 omarchy plugin validate "$validation_dir"
 qmllint -I "$OMARCHY_PATH/shell" \
   BarWidget.qml Service.qml SettingsSurface.qml IntegerSetting.qml \
-  PrivacyActivityCard.qml DeviceSettingsEditor.qml DeviceDiagnostics.qml
+  PrivacyActivityCard.qml DeviceSettingsEditor.qml DeviceDiagnostics.qml \
+  Privacy*Settings.qml PrivacySettingsNavigation.qml \
+  PrivacyConfirmationController.qml PrivacySettingsTransferController.qml \
+  Runtime*.qml
 ```
 
 In a graphical session, exercise shared JavaScript in the real Quickshell
@@ -51,7 +55,8 @@ engine:
 tests/run_qml_runtime.sh
 ```
 
-This runs representative shared policies in QML's JavaScript engine.
+This runs shared policy, user interaction, subprocess lifecycle, confirmation,
+and private settings-transfer behavior in the real QML engine.
 
 ## Repository and site checks
 
@@ -82,7 +87,8 @@ The script requires enabled activity history and an empty workspace. It allows
 only one capture at a time, discovers the shell through IPC, uses measured
 widget geometry, and swaps in bounded example history. It restores the original
 shell settings, real history, DND state, and workspace even on failure. Review
-images before committing them.
+images before committing them. Capture fails if restored settings or history do
+not exactly match their preserved snapshots.
 
 ## Live verification
 
@@ -103,6 +109,7 @@ Example read-only checks:
 qs ipc --pid "$shell_pid" call privacy-devices health
 qs ipc --pid "$shell_pid" call privacy-devices diagnostics safe
 qs ipc --pid "$shell_pid" call privacy-devices status
+qs ipc --pid "$shell_pid" call privacy-devices-settings openSection monitoring private-data
 ```
 
 Do not copy unredacted diagnostics into issues or CI logs.

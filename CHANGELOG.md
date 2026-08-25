@@ -9,6 +9,9 @@ maintainer guides that define release and validation procedures.
 
 ### Added
 
+- Add a private one-step undo for settings imports and global resets.
+- Add validated settings deep links with focused section scrolling from disabled
+  history and per-device status-marker guidance, plus focused-monitor IPC access.
 - Add a dedicated, keyboard-accessible history view with clear disabled,
   loading, and empty states, local search, relative period groups, result
   count pills, confidence provenance, and confirmed clearing.
@@ -17,6 +20,8 @@ maintainer guides that define release and validation procedures.
 
 ### Fixed
 
+- Add real QML interaction coverage for settings navigation, destructive-action
+  confirmation, settings transfer, and observer lifecycle state.
 - Establish a silent startup activity baseline so restarting Quickshell does
   not re-notify sessions that were already using a privacy device.
 - Deduplicate replayed history records in both live and persisted retention.
