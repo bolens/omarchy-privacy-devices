@@ -2,7 +2,7 @@
 
 var KINDS = ["microphone", "audio-output", "camera", "screen-share", "screenshot", "screen-recording", "location"]
 var SETTINGS_VERSION = 1
-var SETTINGS_PAGES = ["general", "alerts", "monitoring"]
+var SETTINGS_PAGES = ["general", "appearance", "alerts", "monitoring"]
 
 function settingsPage(value) {
   var page = String(value || "general")
@@ -14,9 +14,9 @@ function sanitizeSettings(data) {
   var clean = {}, index, key
   var booleans = {showIdle:true, showControls:true, deduplicateApps:true, notifyOnActivity:true, notifyOnStop:false,
     notifyOnControlChanges:true, historyEnabled:false, directDeviceMonitoring:false, showInferredAttribution:true,
-    showStatePills:true, showSessionCounts:true, animatePending:true}
+    showStatePills:true, showSessionCounts:true, showBarSessionCounts:true, animatePending:true}
   for (key in booleans) if (source[key] !== undefined) clean[key] = typeof source[key] === "boolean" ? source[key] : booleans[key]
-  var integers = {directDevicePollSeconds:[2,60,5], locationPollSeconds:[5,300,15], recordingPollSeconds:[1,60,2], popupMaxHeight:[360,900,620]}
+  var integers = {directDevicePollSeconds:[2,60,5], locationPollSeconds:[5,300,15], recordingPollSeconds:[1,60,2], popupMaxHeight:[360,900,620], barItemSpacing:[0,12,0], barItemPadding:[2,12,5]}
   for (key in integers) if (source[key] !== undefined) {
     var bounds = integers[key], parsed = Math.round(Number(source[key]))
     if (!isFinite(parsed)) parsed = bounds[2]
@@ -30,13 +30,19 @@ function sanitizeSettings(data) {
     var disabledOpacity = Number(source.disabledOpacity)
     clean.disabledOpacity = Math.max(0.25, Math.min(1, isFinite(disabledOpacity) ? disabledOpacity : 1))
   }
+  var reals = {barIconScale:[0.75,1.5,1]}
+  for (key in reals) if (source[key] !== undefined) {
+    var realBounds = reals[key], realValue = Number(source[key])
+    if (!isFinite(realValue)) realValue = realBounds[2]
+    clean[key] = Math.max(realBounds[0], Math.min(realBounds[1], realValue))
+  }
   var kindLists = ["enabledKinds", "order", "notificationKinds", "blockableKinds"]
   for (index = 0; index < kindLists.length; index++) if (Array.isArray(source[kindLists[index]]))
     clean[kindLists[index]] = unique(source[kindLists[index]].filter(function(value) { return KINDS.indexOf(value) >= 0 })).slice(0, KINDS.length)
   var stringLists = ["excludedApps", "hiddenApps", "notificationSuppressedApps", "cameraKeywords", "screenShareKeywords"]
   for (index = 0; index < stringLists.length; index++) if (Array.isArray(source[stringLists[index]]))
     clean[stringLists[index]] = unique(source[stringLists[index]].filter(function(value) { return typeof value === "string" && value.trim() !== "" }).map(function(value) { return value.trim().slice(0, 256) })).slice(0, 256)
-  var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["symbols","letters","off"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
+  var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["symbols","letters","off"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
     audioControlBackend:["auto","pactl","wpctl"], screenshotBackend:["omarchy","grim","grim-satty","hyprshot","flameshot","custom"],
     activeColorRole:["bar-active","urgent","accent","foreground"], inactiveColorRole:["muted","foreground","accent"], disabledColorRole:["urgent","muted","accent","foreground","bar-active"],
     mutedColorRole:["urgent","muted","bar-active","accent","foreground"], unmutedColorRole:["foreground","bar-active","accent","muted","urgent"]}

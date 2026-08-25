@@ -20,10 +20,15 @@ Panel {
   readonly property real idleOpacity: Math.max(0.1, Math.min(1, Number(setting("idleOpacity", 0.45))))
   readonly property real disabledOpacity: Math.max(0.25, Math.min(1, Number(setting("disabledOpacity", 1))))
   readonly property string statusMarkerMode: String(setting("statusMarkerMode", "symbols"))
+  readonly property string barMarkerPosition: String(setting("barMarkerPosition", "after"))
+  readonly property real barIconScale: Math.max(0.75, Math.min(1.5, Number(setting("barIconScale", 1))))
+  readonly property int barItemSpacing: Math.max(0, Math.min(12, Number(setting("barItemSpacing", 0))))
+  readonly property int barItemPadding: Math.max(2, Math.min(12, Number(setting("barItemPadding", 5))))
   readonly property string statePillStyle: String(setting("statePillStyle", "filled"))
   readonly property string popupDensity: String(setting("popupDensity", "comfortable"))
   readonly property bool showStatePills: setting("showStatePills", true) === true
   readonly property bool showSessionCounts: setting("showSessionCounts", true) === true
+  readonly property bool showBarSessionCounts: setting("showBarSessionCounts", true) === true
   readonly property bool animatePending: setting("animatePending", true) === true
   readonly property color activeThemeColor: themeColor(String(setting("activeColorRole", "bar-active")), true)
   readonly property color inactiveThemeColor: themeColor(String(setting("inactiveColorRole", "muted")), false)
@@ -220,9 +225,11 @@ Panel {
   function itemSessionCount(entry) { return Model.privacySessionCount(entry, showSessionCounts) }
 
   function barItemText(entry) {
-    var suffix = itemStateMarker(entry)
-    var count = itemSessionCount(entry)
-    return entry.icon + (suffix ? " " + suffix : "") + (count ? String(count) : "")
+    var marker = itemStateMarker(entry)
+    var count = Model.privacySessionCount(entry, showBarSessionCounts)
+    var text = entry.icon
+    if (marker) text = barMarkerPosition === "before" ? marker + " " + text : text + " " + marker
+    return text + (count ? " " + String(count) : "")
   }
 
   function itemColor(entry) {
@@ -586,7 +593,7 @@ Panel {
     Row {
       id: iconRow
       anchors.centerIn: parent
-      spacing: 0
+      spacing: root.barItemSpacing
 
       Repeater {
         model: root.barItems
@@ -594,6 +601,7 @@ Panel {
           required property var modelData
           bar: root.bar
           text: root.sharedText(root.barItemText(modelData))
+          fontSize: Style.font.body * root.barIconScale
           active: modelData.active
           dimmed: false
           foreground: root.itemColor(modelData)
@@ -606,7 +614,7 @@ Panel {
             NumberAnimation { to: 0.45; duration: 450; easing.type: Easing.InOutQuad }
             NumberAnimation { to: 1; duration: 450; easing.type: Easing.InOutQuad }
           }
-          horizontalMargin: modelData.kind === "summary" ? 8.5 : 5
+          horizontalMargin: modelData.kind === "summary" ? root.barItemPadding + 3.5 : root.barItemPadding
           tooltipText: root.itemTooltip(modelData)
           onPressed: function(buttonCode) { root.pressItem(modelData, buttonCode) }
         }
@@ -637,8 +645,8 @@ Panel {
       onTextKey: function(text) {
         if ((text === "s" || text === "S") && root.editingKind === "") root.showGlobalSettings("general")
         else if ((text === "r" || text === "R") && !root.showingGlobalSettings && privacyService) privacyService.refreshFallbacks()
-        else if (root.showingGlobalSettings && "123".indexOf(text) >= 0) {
-          root.globalSettingsPage = ["general", "alerts", "monitoring"][Number(text) - 1]
+        else if (root.showingGlobalSettings && "1234".indexOf(text) >= 0) {
+          root.globalSettingsPage = ["general", "appearance", "alerts", "monitoring"][Number(text) - 1]
           contentFlick.contentY = 0
         }
       }
@@ -714,7 +722,8 @@ Panel {
             Layout.fillWidth: true
             spacing: Style.spacing.sm
             GlobalSettingsTab { label: "General"; value: "general" }
-            GlobalSettingsTab { label: "Alerts & data"; value: "alerts" }
+            GlobalSettingsTab { label: "Appearance"; value: "appearance" }
+            GlobalSettingsTab { label: "Alerts"; value: "alerts" }
             GlobalSettingsTab { label: "Monitoring"; value: "monitoring" }
           }
 
@@ -722,7 +731,8 @@ Panel {
             id: globalSettingsPageLoader
             Layout.fillWidth: true
             sourceComponent: root.globalSettingsPage === "general" ? generalSettingsPage
-              : (root.globalSettingsPage === "alerts" ? alertsSettingsPage : monitoringSettingsPage)
+              : (root.globalSettingsPage === "appearance" ? appearanceSettingsPage
+              : (root.globalSettingsPage === "alerts" ? alertsSettingsPage : monitoringSettingsPage))
           }
 
           Button { Layout.alignment: Qt.AlignRight; text: "Reset global settings"; onClicked: root.resetGlobalSettings() }
@@ -1198,9 +1208,22 @@ Panel {
         Toggle { Layout.fillWidth: true; label: "Show idle devices"; description: "Keep enabled privacy-device icons visible while idle."; checked: root.setting("showIdle", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showIdle: !checked}) }
         Toggle { Layout.fillWidth: true; label: "Show privacy controls"; description: "Show inline control switches and enable row actions."; checked: root.setting("showControls", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showControls: !checked}) }
         Toggle { Layout.fillWidth: true; label: "Deduplicate application names"; description: "List an application once when it owns several matching sessions."; checked: root.setting("deduplicateApps", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({deduplicateApps: !checked}) }
+      }
+    }
+  }
+
+  Component {
+    id: appearanceSettingsPage
+    ColumnLayout {
+      spacing: Style.spacing.md
+      SettingsSurface {
+        accent: root.activeThemeColor
+        PanelSectionHeader { Layout.fillWidth: true; text: "Bar layout" }
         Dropdown { Layout.fillWidth: true; label: "Bar presentation"; options: ["icons", "active-count", "active-only"]; value: String(root.setting("displayMode", "icons")); onChanged: function(value) { root.persistSettings({displayMode: value}) } }
+        NumberField { label: "Icon scale (%)"; from: 75; to: 150; stepSize: 5; value: Math.round(root.barIconScale * 100); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { root.persistSettings({barIconScale: Number(value) / 100}) } }
+        IntegerSetting { controller: root; settingKey: "barItemSpacing"; label: "Space between bar items"; minimum: 0; maximum: 12; fallback: 0 }
+        IntegerSetting { controller: root; settingKey: "barItemPadding"; label: "Bar item padding"; minimum: 2; maximum: 12; fallback: 5 }
         NumberField { label: "Default idle opacity (%)"; from: 10; to: 100; stepSize: 5; value: Math.round(Number(root.setting("idleOpacity", 0.45)) * 100); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { root.persistSettings({idleOpacity: Number(value) / 100}) } }
-        IntegerSetting { controller: root; settingKey: "popupMaxHeight"; label: "Popup maximum height"; minimum: 360; maximum: 900; fallback: 620; stepSize: 20 }
       }
       SettingsSurface {
         accent: root.activeThemeColor
@@ -1214,11 +1237,14 @@ Panel {
         accent: root.activeThemeColor
         PanelSectionHeader { Layout.fillWidth: true; text: "Status presentation" }
         Dropdown { Layout.fillWidth: true; label: "Bar status markers"; options: ["symbols", "letters", "off"]; value: root.statusMarkerMode; onChanged: function(value) { root.persistSettings({statusMarkerMode: value}) } }
+        Dropdown { Layout.fillWidth: true; label: "Marker position"; options: ["after", "before"]; value: root.barMarkerPosition; onChanged: function(value) { root.persistSettings({barMarkerPosition: value}) } }
         Dropdown { Layout.fillWidth: true; label: "Popup state pills"; options: ["filled", "outline", "minimal"]; value: root.statePillStyle; onChanged: function(value) { root.persistSettings({statePillStyle: value}) } }
         Dropdown { Layout.fillWidth: true; label: "Popup density"; options: ["comfortable", "compact"]; value: root.popupDensity; onChanged: function(value) { root.persistSettings({popupDensity: value}) } }
         Toggle { Layout.fillWidth: true; label: "Show state pills"; description: "Keep textual state visible beside each popup row."; checked: root.showStatePills; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showStatePills: !checked}) }
-        Toggle { Layout.fillWidth: true; label: "Show session counts"; description: "Display a badge and bar count when several sessions share an item."; checked: root.showSessionCounts; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showSessionCounts: !checked}) }
+        Toggle { Layout.fillWidth: true; label: "Show popup session counts"; description: "Display a badge when several sessions share a popup item."; checked: root.showSessionCounts; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showSessionCounts: !checked}) }
+        Toggle { Layout.fillWidth: true; label: "Show bar session counts"; description: "Append a count when several sessions share a bar item."; checked: root.showBarSessionCounts; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showBarSessionCounts: !checked}) }
         Toggle { Layout.fillWidth: true; label: "Animate verification"; description: "Pulse pending bar items until observed state confirms the action."; checked: root.animatePending; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({animatePending: !checked}) }
+        IntegerSetting { controller: root; settingKey: "popupMaxHeight"; label: "Popup maximum height"; minimum: 360; maximum: 900; fallback: 620; stepSize: 20 }
       }
     }
   }

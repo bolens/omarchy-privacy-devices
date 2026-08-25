@@ -23,6 +23,11 @@
       "order": ["screen-recording", "screenshot", "screen-share", "camera", "microphone", "audio-output", "location"],
       "showIdle": true,
       "displayMode": "icons",
+      "barIconScale": 1,
+      "barItemSpacing": 0,
+      "barItemPadding": 5,
+      "barMarkerPosition": "after",
+      "showBarSessionCounts": true,
       "activeColorRole": "bar-active",
       "inactiveColorRole": "muted",
       "disabledColorRole": "urgent",
@@ -108,6 +113,50 @@
         "label": "Bar presentation",
         "options": ["icons", "active-count", "active-only"],
         "defaultValue": "icons"
+      },
+      {
+        "key": "barIconScale",
+        "type": "number",
+        "label": "Bar icon scale",
+        "description": "Scale this widget's bar glyphs relative to the shell font size.",
+        "min": 0.75,
+        "max": 1.5,
+        "step": 0.05,
+        "defaultValue": 1
+      },
+      {
+        "key": "barItemSpacing",
+        "type": "integer",
+        "label": "Bar item spacing",
+        "description": "Space between privacy items in the bar.",
+        "min": 0,
+        "max": 12,
+        "step": 1,
+        "defaultValue": 0
+      },
+      {
+        "key": "barItemPadding",
+        "type": "integer",
+        "label": "Bar item padding",
+        "description": "Horizontal padding around each privacy item.",
+        "min": 2,
+        "max": 12,
+        "step": 1,
+        "defaultValue": 5
+      },
+      {
+        "key": "barMarkerPosition",
+        "type": "enum",
+        "label": "Bar marker position",
+        "options": ["after", "before"],
+        "defaultValue": "after"
+      },
+      {
+        "key": "showBarSessionCounts",
+        "type": "boolean",
+        "label": "Show bar session counts",
+        "description": "Append a count when multiple sessions share a bar item.",
+        "defaultValue": true
       },
       {
         "key": "activeColorRole",

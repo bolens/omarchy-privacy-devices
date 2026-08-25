@@ -20,7 +20,8 @@ const globalKeys = [
   "notificationSuppressedApps", "historyEnabled", "blockableKinds", "directDeviceMonitoring",
   "directDevicePollSeconds", "showInferredAttribution", "locationPollSeconds", "recordingPollSeconds", "popupMaxHeight",
   "activeColorRole", "inactiveColorRole", "disabledColorRole", "disabledOpacity",
-  "statusMarkerMode", "statePillStyle", "popupDensity", "showStatePills", "showSessionCounts", "animatePending"
+  "statusMarkerMode", "statePillStyle", "popupDensity", "showStatePills", "showSessionCounts", "animatePending",
+  "barIconScale", "barItemSpacing", "barItemPadding", "barMarkerPosition", "showBarSessionCounts"
 ]
 
 assert.deepEqual(
@@ -44,6 +45,7 @@ for (const key of globalKeys) {
 
 assert.match(bar, /showingGlobalSettings/)
 assert.match(bar, /GlobalSettingsTab/)
+assert.match(bar, /GlobalSettingsTab \{ label: "Appearance"; value: "appearance" \}/, "appearance settings need a dedicated page")
 assert.match(bar, /Reset global settings/)
 for (const selector of ["Monitored activity", "Activity notifications", "Preventative controls"])
   assert.match(bar, new RegExp(`label:\\s*"${selector}"`), `${selector} must remain configurable`)
@@ -72,8 +74,12 @@ assert.equal((bar.match(/text: "Export settings"/g) || []).length, 1, "settings 
 assert.match(activityCard, /HoverHandler[\s\S]*?selectedKind/, "hover should track keyboard selection without polling")
 assert.match(activityCard, /itemStateLabel\(entry\)/, "every popup row must expose a textual semantic state")
 assert.match(bar, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")
-for (const label of ["Bar status markers", "Popup state pills", "Popup density", "Show state pills", "Show session counts", "Animate verification", "Disabled opacity"])
+for (const label of ["Icon scale", "Space between bar items", "Bar item padding", "Bar status markers", "Marker position", "Popup state pills", "Popup density", "Show state pills", "Show popup session counts", "Show bar session counts", "Animate verification", "Disabled opacity"])
   assert.match(bar, new RegExp(label), `${label} must be exposed in global visual settings`)
+assert.ok(bar.indexOf("id: appearanceSettingsPage") < bar.indexOf("Theme colors"), "theme controls belong on Appearance")
+assert.ok(bar.indexOf("id: appearanceSettingsPage") < bar.indexOf("Status presentation"), "status controls belong on Appearance")
+assert.match(bar, /"1234"[\s\S]*?\["general", "appearance", "alerts", "monitoring"\]/, "settings keyboard shortcuts must cover all pages")
+assert.match(bar, /var count = Model\.privacySessionCount\(entry, showBarSessionCounts\)/, "bar counts must not depend on popup-count visibility")
 assert.match(bar, /persistItemStatusMarker/, "per-item settings must control marker visibility")
 assert.match(activityCard, /controller\.statePillStyle === "filled"[\s\S]*?controller\.statePillStyle === "minimal"/, "state-pill styles must alter fill and border presentation")
 assert.match(activityCard, /controller\.popupDensity === "compact"[\s\S]*?verticalPadding/, "popup density must alter row spacing")
