@@ -108,8 +108,11 @@ for (const label of ["Bar preview", "Display label", "Device icon"])
 assert.match(bar, /Shared by microphone and audio output/, "shared audio backend scope must be explicit")
 assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceEditor\(dx\)/,
   "left and right keys must navigate device editors")
+assert.match(bar, /function moveDeviceEditor\(delta\)[\s\S]*?Model\.nextNavigationKind\(order, editingKind, delta\)/,
+  "device editor navigation must use behavior-tested boundary handling")
 assert.match(deviceEditor, /tooltipText: "Previous device"[\s\S]*?tooltipText: "Next device"/, "device pages must expose accessible adjacent navigation")
-assert.match(bar, /"Reset all device settings"/, "device pages must offer a complete reset")
+assert.match(bar, /text: resetSurface\.pendingReset === "all" \? "Confirm reset all" : "Reset all device settings"[\s\S]*?root\.resetAllDeviceSettings\(root\.editingKind\)/,
+  "the complete device reset must invoke its scoped reset policy after confirmation")
 assert.match(bar, /property string pendingReset:[\s\S]*?Confirm shared backend reset[\s\S]*?Confirm reset all/,
   "shared audio resets must require an explicit second action")
 assert.match(bar, /function syncDeviceEditors\(\)[\s\S]*?labelEditor\.text = root\.labelFor\(editingKind\)[\s\S]*?customRecorderStopEditor\.text/,

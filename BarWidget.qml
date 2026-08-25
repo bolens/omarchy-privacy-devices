@@ -125,31 +125,29 @@ Panel {
   }
 
   function closeCurrentLayer() {
-    if (editingKind !== "") { editingKind = ""; return }
-    if (showingGlobalSettings) { showActivity(); return }
+    var action = Model.popupDismissalAction(editingKind, showingGlobalSettings)
+    if (action === "device") { editingKind = ""; return }
+    if (action === "settings") { showActivity(); return }
     close()
   }
 
   function moveActivitySelection(delta) {
-    var rows = displayedActivityItems
-    if (!rows.length) { selectedKind = ""; return }
-    var index = rows.findIndex(function(entry) { return entry.kind === selectedKind })
-    index = Math.max(0, Math.min(rows.length - 1, (index < 0 ? 0 : index) + delta))
-    selectedKind = rows[index].kind
+    var kinds = displayedActivityItems.map(function(entry) { return entry.kind })
+    selectedKind = Model.nextNavigationKind(kinds, selectedKind, delta)
   }
 
   function activateActivitySelection() {
-    if (!selectedKind && displayedActivityItems.length) selectedKind = displayedActivityItems[0].kind
-    if (selectedKind) { showingGlobalSettings = false; editingKind = selectedKind; contentFlick.contentY = 0 }
+    var kinds = displayedActivityItems.map(function(entry) { return entry.kind })
+    var target = Model.activationKind(kinds, selectedKind)
+    selectedKind = target
+    if (target) { showingGlobalSettings = false; editingKind = target; contentFlick.contentY = 0 }
   }
 
   function moveDeviceEditor(delta) {
     var order = orderedKinds()
-    var index = order.indexOf(editingKind)
-    if (index < 0) return
-    var target = Math.max(0, Math.min(order.length - 1, index + delta))
-    if (target === index) return
-    editingKind = order[target]
+    var target = Model.nextNavigationKind(order, editingKind, delta)
+    if (!target || target === editingKind) return
+    editingKind = target
     selectedKind = editingKind
     contentFlick.contentY = 0
   }

@@ -27,6 +27,10 @@ ShellRoot {
     var nextProbe = Model.nextProbeAction(scheduled.queue, scheduled.refreshPending, false)
     if (nextProbe.action !== "refresh" || nextProbe.queue.length !== 0)
       throw new Error("probe queue policy failed")
+    if (Model.nextNavigationKind(["camera", "location"], "", 1) !== "camera")
+      throw new Error("popup navigation policy failed")
+    if (Model.activationKind(["camera"], "stale") !== "camera")
+      throw new Error("popup activation policy failed")
     console.log("PRIVACY_QML_RUNTIME_OK")
     Qt.quit()
   }

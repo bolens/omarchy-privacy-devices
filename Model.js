@@ -501,6 +501,31 @@ function nextProbeAction(queue, refreshPending, processRunning) {
   return {action: "idle", kind: "", queue: remaining, refreshPending: false}
 }
 
+function nextNavigationKind(kinds, currentKind, delta) {
+  var rows = Array.isArray(kinds) ? kinds : []
+  if (!rows.length) return ""
+  var current = String(currentKind || "")
+  var index = rows.indexOf(current)
+  if (index < 0) return String(rows[0] || "")
+  var step = Number(delta)
+  if (!isFinite(step) || step === 0) return current
+  var target = Math.max(0, Math.min(rows.length - 1, index + (step < 0 ? -1 : 1)))
+  return String(rows[target] || "")
+}
+
+function activationKind(kinds, currentKind) {
+  var rows = Array.isArray(kinds) ? kinds : []
+  if (!rows.length) return ""
+  var current = String(currentKind || "")
+  return rows.indexOf(current) >= 0 ? current : String(rows[0] || "")
+}
+
+function popupDismissalAction(editingKind, showingGlobalSettings) {
+  if (String(editingKind || "") !== "") return "device"
+  if (showingGlobalSettings === true) return "settings"
+  return "popup"
+}
+
 // Ignore timestamps that naturally advance on every observation. Consumers only
 // need a new array when something they render or act upon actually changed.
 function sessionsEquivalent(left, right) {

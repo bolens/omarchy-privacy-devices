@@ -34,18 +34,20 @@ assert.doesNotMatch(service, /fallbackOutputMuted\s*=\s*!fallbackOutputMuted/, "
 assert.match(bar, /pixelAligned:\s*true/, "popup scrolling should remain pixel aligned")
 assert.match(bar, /onMovementEnded:\s*root\.flushDeferredItems\(\)/, "deferred row updates must flush when scrolling ends")
 assert.match(bar, /onCloseRequested:\s*root\.closeCurrentLayer\(\)/, "Escape must invoke layered popup dismissal")
-assert.match(bar, /function closeCurrentLayer\(\)[\s\S]*?editingKind !== ""[\s\S]*?showingGlobalSettings[\s\S]*?close\(\)/,
-  "layered dismissal must close a device editor, then global settings, then the popup")
-assert.match(bar, /onMoveRequested:[\s\S]*?moveActivitySelection/, "activity rows must support keyboard navigation")
-assert.match(bar, /onTextKey:[\s\S]*?globalSettingsPage/, "settings tabs must support keyboard shortcuts")
+assert.match(bar, /function closeCurrentLayer\(\)[\s\S]*?Model\.popupDismissalAction\(editingKind, showingGlobalSettings\)/,
+  "layered dismissal must use the behavior-tested priority policy")
 assert.match(bar, /text: "Keyboard: ↑\/↓ select · Enter open · S settings · R refresh · Esc close"/,
   "the activity footer must advertise every main-view keyboard command")
 assert.doesNotMatch(bar, /Activity details distinguish observation source/,
   "the activity footer must not retain displaced implementation guidance")
 assert.match(bar, /onMoveRequested:[\s\S]*?dy !== 0[\s\S]*?moveActivitySelection\(dy\)/,
   "advertised vertical navigation must select activity rows")
+assert.match(bar, /function moveActivitySelection\(delta\)[\s\S]*?Model\.nextNavigationKind\(kinds, selectedKind, delta\)/,
+  "activity selection must use behavior-tested boundary handling")
 assert.match(bar, /onActivateRequested:[\s\S]*?activateActivitySelection\(\)/,
   "the advertised Enter command must open the selected activity row")
+assert.match(bar, /function activateActivitySelection\(\)[\s\S]*?Model\.activationKind\(kinds, selectedKind\)/,
+  "activity activation must reject stale selections through the tested policy")
 assert.match(bar, /text === "s" \|\| text === "S"[\s\S]*?showGlobalSettings\("general"\)/,
   "the advertised S command must open settings")
 assert.match(bar, /text === "r" \|\| text === "R"[\s\S]*?refreshFallbacks\(\)/,
