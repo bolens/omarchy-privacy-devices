@@ -7,8 +7,26 @@ All notable changes to Privacy Devices are documented here. The project follows
 
 ### Added
 
+- Replace screenshot and recorder subprocess polling with a persistent structured observer.
+- Route settings IPC through the singleton service and Omarchy's focused-monitor panel resolver.
+- Coalesce notification bursts and expose explicit control transaction results.
+- Add private diagnostic export, inferred-attribution controls, and observer telemetry.
+- Extract reusable settings and activity-card components and enforce performance contracts.
+
 - Project website, complete user guide, theme presets, and theme-aware favicon.
 - Structured issue forms and repository community guidance.
+- Normalized activity sessions with duration, device, source, confidence, and start/stop transitions.
+- First-class monitoring health and degraded-state diagnostics.
+- Optional same-user direct V4L2 and ALSA capture-handle monitoring.
+- Reversible display and notification policies plus bounded, private, opt-in local history.
+- Session, health, history, and rescan IPC diagnostics.
+- Lower idle process churn through slower dependency, control-state, mute-state, screenshot, and configurable direct-device polling.
+- Batched history persistence and allocation-free idle session refreshes.
+- Tabbed in-widget global settings with scoped reset, responsive scrolling, and manifest-contract coverage.
+- Stable popup settings edits, direct popup IPC, probe invalidation keyed only to monitoring changes, and timestamp-insensitive session updates that avoid needless layout work.
+- Prevented main activity-row controls from leaking into global and per-device settings by giving generated delegates a visibility-owning container.
+- Replaced constant one-second session polling with debounced reactive reconciliation plus a slow safety pass, and routed alerts through Omarchy's DND-aware notification command.
+- Direct-device monitoring now uses a persistent inotify observer with heartbeats, stale-health detection, polling fallback, and bounded restart backoff.
 
 ## [0.1.1] - 2026-08-21
 

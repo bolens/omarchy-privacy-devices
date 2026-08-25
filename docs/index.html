@@ -898,7 +898,9 @@
           <div class="guide-grid">
             <article class="guide-card"><h3>Activity and order</h3><p>Choose monitored kinds, reorder icons, hide selected idle items, and tune idle opacity.</p></article>
             <article class="guide-card"><h3>Appearance</h3><p>Select icons, labels, display mode, tooltips, click actions, and theme color roles for every state.</p></article>
-            <article class="guide-card"><h3>Notifications</h3><p>Choose which activity starts produce notifications and whether control changes are announced.</p></article>
+            <article class="guide-card"><h3>Notifications</h3><p>Choose which activity starts and stops produce notifications, suppress alerts for selected applications, and keep control-result announcements independent.</p></article>
+            <article class="guide-card"><h3>Enhanced monitoring</h3><p>Optionally inspect same-user open device handles to detect direct V4L2 camera and ALSA microphone access that bypasses ordinary PipeWire streams.</p></article>
+            <article class="guide-card"><h3>Recent activity</h3><p>Opt in to private metadata-only history bounded to seven days or 100 completed sessions. Disabling or clearing it deletes the stored file.</p></article>
             <article class="guide-card"><h3>Audio</h3><p>Prefer <code>pactl</code>, <code>wpctl</code>, or automatic backend selection.</p></article>
             <article class="guide-card"><h3>Capture backends</h3><p>Use Omarchy, Grim, Grim + Satty, Hyprshot, Flameshot, GPU Screen Recorder, wf-recorder, or custom commands.</p></article>
             <article class="guide-card"><h3>Classification</h3><p>Exclude noisy apps and extend camera or screen-share keywords for unusual drivers and capture clients.</p></article>
@@ -916,6 +918,7 @@
             <article class="guide-card"><h3>Explicit authorization</h3><p>UVC camera and GeoClue controls request Polkit authorization before changing system state.</p></article>
             <article class="guide-card"><h3>Runtime blocking</h3><p>Location and portal masks disappear after reboot. UVC cameras normally rebind after reboot as well.</p></article>
             <article class="guide-card"><h3>Safer recorder handling</h3><p>wf-recorder PIDs stay in the owner-only runtime directory and are checked for ownership and executable identity before stopping.</p></article>
+            <article class="guide-card"><h3>Honest monitoring state</h3><p>Idle, active, and degraded are distinct states. Session details identify the device, observation source, and whether attribution is confirmed or inferred.</p></article>
           </div>
           <p class="notice"><strong>Review custom commands before saving them.</strong> Custom screenshot and recording commands run unsandboxed as your user.</p>
         </div>

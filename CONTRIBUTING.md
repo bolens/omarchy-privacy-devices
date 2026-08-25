@@ -51,6 +51,7 @@ See [RELEASING.md](RELEASING.md) for the maintainer release checklist.
 - Add or update tests for behavior, parsing, process handling, and security
   boundaries.
 - Never include secrets, personal device names, or unredacted diagnostic data.
+- Run `tests/run_qml_runtime.sh` in a graphical session to exercise shared model code in the real Quickshell JavaScript engine.
 - Document user-visible changes on the Pages site and in `CHANGELOG.md`.
 - Keep custom commands clearly identified as unsandboxed user-controlled code.
 - Include screenshots for visible interface changes.

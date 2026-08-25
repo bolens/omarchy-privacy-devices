@@ -14,6 +14,16 @@ screenshots, and screen recording.
 ## Highlights
 
 - Live per-application privacy activity in the bar and popup.
+- Session duration, device, detection source, confidence, and monitoring-health details.
+- Optional same-user direct camera and microphone device monitoring for applications that bypass PipeWire.
+- Optional bounded local history plus independently reversible display and notification policies.
+- In-widget global settings for activity coverage, presentation, alerts, history, monitoring, polling, and popup sizing.
+- Live observer freshness, mode, heartbeat, and retry diagnostics on the Monitoring settings page.
+- One persistent structured observer replaces per-second screenshot and recorder subprocess polling.
+- Private-by-default diagnostic export redacts application and device identities.
+- Versioned, bounded settings export/import with private file permissions and atomic replacement.
+- Control actions remain pending until a state probe verifies the requested result.
+- Keyboard navigation: arrows select activity, Enter opens details, `s` opens settings, `r` rescans, and `1`–`3` switch settings tabs.
 - Inline mute, recording, and preventative privacy controls.
 - Configurable activity, ordering, icons, visibility, actions, colors, and
   capture backends.
@@ -39,11 +49,25 @@ omarchy bar move io.github.bolens.privacy-devices --section center
 
 ```sh
 omarchy plugin validate .
-qmllint -I "$OMARCHY_PATH/shell" BarWidget.qml Service.qml
+qmllint -I "$OMARCHY_PATH/shell" BarWidget.qml Service.qml SettingsSurface.qml IntegerSetting.qml PrivacyActivityCard.qml
 shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
 node tests/model.test.js
+node tests/sessions.test.js
 node tests/security.test.js
+node tests/settings.test.js
+node tests/runtime.test.js
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
+
+Enhanced monitoring reads same-user `/proc/<pid>/fd` links for open V4L2 and
+ALSA capture devices. It never opens devices or reads media. Recent history is
+off by default; when enabled, it stores only session metadata under
+`$XDG_STATE_HOME/omarchy-privacy-devices`, limited to seven days or 100 entries.
+Disabling or clearing history removes the stored file.
+
+Idle probes are deliberately bounded: direct-device monitoring defaults to a
+five-second interval, dependency checks run every five minutes, and control
+actions trigger immediate verification instead of waiting for the next poll.
 
 ## License
 
