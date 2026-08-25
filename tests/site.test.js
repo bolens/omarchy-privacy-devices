@@ -19,14 +19,15 @@ assert.match(html, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(html, /property="og:site_name"/);
 assert.match(html, /name="twitter:title"/);
 assert.equal((html.match(/data-copy=/g) || []).length, 4);
-assert.deepEqual(pngDimensions("preview.png"), [500, 500]);
-assert.deepEqual(pngDimensions("docs/preview.png"), [500, 500]);
-assert.deepEqual(pngDimensions("docs/appearance.png"), [500, 660]);
+const panelCaptureWidth = 532;
+assert.deepEqual(pngDimensions("preview.png"), [panelCaptureWidth, 500]);
+assert.deepEqual(pngDimensions("docs/preview.png"), [panelCaptureWidth, 500]);
+assert.deepEqual(pngDimensions("docs/appearance.png"), [panelCaptureWidth, 660]);
 for (const page of ["general", "alerts", "monitoring", "device", "history"])
-  assert.deepEqual(pngDimensions(`docs/${page}.png`), [500, 660]);
-assert.deepEqual(pngDimensions("docs/monitoring-private.png"), [500, 330]);
-assert.deepEqual(pngDimensions("docs/monitoring-health.png"), [500, 290]);
-assert.deepEqual(pngDimensions("docs/history-disabled.png"), [500, 240],
+  assert.deepEqual(pngDimensions(`docs/${page}.png`), [panelCaptureWidth, 660]);
+assert.deepEqual(pngDimensions("docs/monitoring-private.png"), [panelCaptureWidth, 330]);
+assert.deepEqual(pngDimensions("docs/monitoring-health.png"), [panelCaptureWidth, 290]);
+assert.deepEqual(pngDimensions("docs/history-disabled.png"), [panelCaptureWidth, 240],
   "the disabled history state should be cropped to its compact content");
 const notificationDimensions = pngDimensions("docs/notification.png");
 assert.ok(notificationDimensions[0] >= 360 && notificationDimensions[0] <= 600,
@@ -44,7 +45,7 @@ assert.equal(
   Buffer.compare(fs.readFileSync(path.join(root, "preview.png")), fs.readFileSync(path.join(root, "docs/preview.png"))),
   0
 );
-assert.match(html, /src="appearance\.png"[^>]+width="500" height="660"/);
+assert.match(html, /src="appearance\.png"[^>]+width="532" height="660"/);
 for (const image of ["bar", "notification", "general", "appearance", "alerts", "monitoring", "monitoring-private", "monitoring-health", "device", "history", "history-disabled"]) {
   assert.match(html, new RegExp(`src="${image}\\.png"`));
   assert.match(fs.readFileSync(path.join(root, "README.md"), "utf8"), new RegExp(`docs/${image}\\.png`));
