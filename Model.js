@@ -9,6 +9,11 @@ function settingsPage(value) {
   return SETTINGS_PAGES.indexOf(page) >= 0 ? page : "general"
 }
 
+function boundedPlainText(value, maximumLength) {
+  if (typeof value !== "string") return ""
+  return Array.from(value.replace(/[\x00-\x1f\x7f]/g, "").trim()).slice(0, maximumLength).join("")
+}
+
 function sanitizeSettings(data) {
   var source = data && typeof data === "object" && !Array.isArray(data) ? data : {}
   var clean = {}, index, key
@@ -50,13 +55,13 @@ function sanitizeSettings(data) {
   for (key in enums) if (source[key] !== undefined) clean[key] = enums[key].indexOf(source[key]) >= 0 ? source[key] : enums[key][0]
   var markerGlyphs = {barActiveMarkerIcon:"●", barDisabledMarkerIcon:"⊘", barPendingMarkerIcon:"…", barDegradedMarkerIcon:"!"}
   for (key in markerGlyphs) if (source[key] !== undefined) {
-    var glyph = typeof source[key] === "string" ? source[key].replace(/[\x00-\x1f\x7f]/g, "").trim().slice(0, 8) : ""
+    var glyph = boundedPlainText(source[key], 8)
     clean[key] = glyph || markerGlyphs[key]
   }
   var commands = ["screenshotCustomCommand", "recordingCustomStartCommand", "recordingCustomStopCommand"]
   for (index = 0; index < commands.length; index++) if (source[commands[index]] !== undefined) clean[commands[index]] = String(source[commands[index]] || "").slice(0, 4096)
   var processNames = ["screenshotProcessName", "recordingProcessName"]
-  for (index = 0; index < processNames.length; index++) if (source[processNames[index]] !== undefined) clean[processNames[index]] = String(source[processNames[index]] || "").slice(0, 256)
+  for (index = 0; index < processNames.length; index++) if (source[processNames[index]] !== undefined) clean[processNames[index]] = boundedPlainText(source[processNames[index]], 256)
   var maps = ["icons", "itemColorRoles", "itemIdleOpacity", "itemIdleVisibility", "itemStatusMarkerVisibility", "itemLabels"]
   for (index = 0; index < maps.length; index++) if (source[maps[index]] && typeof source[maps[index]] === "object" && !Array.isArray(source[maps[index]])) {
     var mapName = maps[index], map = {}, keys = Object.keys(source[mapName]).filter(function(value) { return KINDS.indexOf(value) >= 0 }).slice(0, KINDS.length)
@@ -80,8 +85,14 @@ function sanitizeSettings(data) {
           var roleName = roleNames[roleIndex]
           if (roleOptions[roleName].indexOf(mapValue[roleName]) >= 0) roles[roleName] = mapValue[roleName]
         }
-        map[mapKey] = roles
-      } else map[mapKey] = String(mapValue || "").slice(0, 128)
+        if (Object.keys(roles).length) map[mapKey] = roles
+      } else if (mapName === "icons") {
+        var icon = boundedPlainText(mapValue, 8)
+        if (icon) map[mapKey] = icon
+      } else if (mapName === "itemLabels") {
+        var itemLabel = boundedPlainText(mapValue, 128)
+        if (itemLabel) map[mapKey] = itemLabel
+      }
     }
     clean[mapName] = map
   }

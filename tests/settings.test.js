@@ -141,6 +141,12 @@ assert.match(bar, /Model\.deviceBackendValidation\("screenshot"[\s\S]*?enabled: 
 assert.match(bar, /Model\.deviceBackendValidation\("screen-recording"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,
   "custom recording settings must validate before saving")
 assert.match(bar, /maximumLength: 4096/, "custom command editors must expose sanitizer-aligned bounds")
+assert.match(bar, /id: labelEditor[\s\S]*?maximumLength: 128/, "device label editor must match its persisted bound")
+assert.match(bar, /id: iconEditor[\s\S]*?maximumLength: 8/, "device icon editor must match its persisted bound")
+assert.match(bar, /function persistIcon\(kind, value\)[\s\S]*?Qt\.callLater[\s\S]*?iconEditor\.text = root\.iconFor\(kind\)/,
+  "sanitized icon saves must reconcile the visible field")
+assert.match(bar, /function persistLabel\(kind, value\)[\s\S]*?Qt\.callLater[\s\S]*?labelEditor\.text = root\.labelFor\(kind\)/,
+  "sanitized label saves must reconcile the visible field")
 assert.match(bar, /root\.deviceAppearanceCustomized\(root\.editingKind\) \? "Customized" : "Using global defaults"/,
   "device appearance must identify inherited versus customized state")
 assert.match(bar, /DeviceSettingsEditor\s*\{[\s\S]*?controller: root/, "device editor navigation must use a narrow controller interface")

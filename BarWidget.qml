@@ -409,6 +409,7 @@ Panel {
     var icons = JSON.parse(JSON.stringify(setting("icons", {}) || {}))
     icons[kind] = String(value || "")
     persistSettings({icons: icons})
+    Qt.callLater(function() { if (root.editingKind === kind) iconEditor.text = root.iconFor(kind) })
   }
 
   function labelFor(kind) {
@@ -422,6 +423,7 @@ Panel {
     if (text) labels[kind] = text
     else delete labels[kind]
     persistSettings({itemLabels: labels})
+    Qt.callLater(function() { if (root.editingKind === kind) labelEditor.text = root.labelFor(kind) })
   }
 
   function persistItemColor(kind, state, role) {
@@ -931,6 +933,7 @@ Panel {
               Layout.fillWidth: true
               placeholderText: "Display label"
               text: root.editingKind ? root.labelFor(root.editingKind) : ""
+              maximumLength: 128
               foreground: Color.popups.text
               accent: root.activeThemeColor
               font.family: Style.font.family
@@ -952,6 +955,7 @@ Panel {
               Layout.fillWidth: true
               placeholderText: "Icon"
               text: root.editingKind ? root.iconFor(root.editingKind) : ""
+              maximumLength: 8
               foreground: Color.popups.text
               accent: root.activeThemeColor
               font.family: Style.font.family

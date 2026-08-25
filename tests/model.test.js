@@ -35,7 +35,8 @@ const hardenedSettings = context.sanitizeSettings({
   notificationSuppressedApps: [" Firefox ", "firefox", "", 42],
   itemIdleOpacity: {camera: 9, bogus: 0.2},
   itemIdleVisibility: {camera: "yes", microphone: true},
-  itemLabels: {camera: "C".repeat(200), bogus: "ignored"},
+  icons: {camera: " 󰄀\nmoretext ", microphone: "\n\t", bogus: "ignored"},
+  itemLabels: {camera: "  Camera\nLabel  ", microphone: "\n\t", bogus: "ignored"},
   itemColorRoles: {camera: {active: "accent", inactive: "danger", unexpected: "danger"}, bogus: {active: "urgent"}},
   itemStatusMarkerVisibility: {camera: false, bogus: true},
   disabledOpacity: 0,
@@ -48,8 +49,11 @@ if (hardenedSettings.idleOpacity !== 0.1 || hardenedSettings.displayMode !== "ic
 if (JSON.stringify(hardenedSettings.notificationSuppressedApps) !== JSON.stringify(["Firefox"])) throw new Error("settings string-list normalization")
 if (JSON.stringify(hardenedSettings.itemIdleOpacity) !== JSON.stringify({camera: 1})) throw new Error("per-item opacity bounds")
 if (JSON.stringify(hardenedSettings.itemIdleVisibility) !== JSON.stringify({camera: false, microphone: true})) throw new Error("per-item boolean normalization")
-if (hardenedSettings.itemLabels.camera.length !== 128 || hardenedSettings.itemLabels.bogus !== undefined) throw new Error("per-item label bounds")
+if (hardenedSettings.icons.camera !== "󰄀moretex" || hardenedSettings.icons.microphone !== undefined || hardenedSettings.icons.bogus !== undefined) throw new Error("per-item icon sanitation")
+if (hardenedSettings.itemLabels.camera !== "CameraLabel" || hardenedSettings.itemLabels.microphone !== undefined || hardenedSettings.itemLabels.bogus !== undefined) throw new Error("per-item label sanitation")
+if (context.sanitizeSettings({itemLabels: {camera: "C".repeat(200)}}).itemLabels.camera.length !== 128) throw new Error("per-item label bound")
 if (JSON.stringify(hardenedSettings.itemColorRoles) !== JSON.stringify({camera: {active: "accent"}})) throw new Error("per-item role allowlist")
+if (JSON.stringify(context.sanitizeSettings({itemColorRoles: {camera: {active: "danger"}}}).itemColorRoles) !== "{}") throw new Error("empty per-item role overrides")
 if (JSON.stringify(hardenedSettings.itemStatusMarkerVisibility) !== JSON.stringify({camera: false})) throw new Error("per-item marker visibility allowlist")
 
 assert.equal(context.itemOverrideMode({}, "itemIdleVisibility", "camera"), "inherit")
@@ -73,6 +77,7 @@ if (hardenedSettings.showStatePills !== true) throw new Error("visual boolean no
 if (context.settingsPage("monitoring") !== "monitoring" || context.settingsPage("unexpected") !== "general") throw new Error("settings page allowlist")
 if (context.settingsPage("appearance") !== "appearance") throw new Error("appearance settings page allowlist")
 if (context.sanitizeSettings({recordingProcessName: "x".repeat(300)}).recordingProcessName.length !== 256) throw new Error("process-name bound")
+if (context.sanitizeSettings({recordingProcessName: "  recorder\nname  "}).recordingProcessName !== "recordername") throw new Error("process-name plain-text sanitation")
 const barAppearance = context.sanitizeSettings({barIconScale: 9, barItemSpacing: -4, barItemPadding: "bad", barMarkerPosition: "sideways", showBarSessionCounts: "yes"})
 if (barAppearance.barIconScale !== 1.5 || barAppearance.barItemSpacing !== 0 || barAppearance.barItemPadding !== 5) throw new Error("bar appearance numeric bounds")
 if (barAppearance.barMarkerPosition !== "after" || barAppearance.showBarSessionCounts !== true) throw new Error("bar appearance enum and boolean normalization")
