@@ -29,7 +29,7 @@ while (($#)); do
   esac
 done
 
-for command in qs quickshell timeout hyprctl jq grim magick pngquant wtype omarchy python3 flock; do
+for command in qs hyprctl jq grim magick pngquant wtype omarchy python3 flock; do
   command -v "$command" >/dev/null || { printf 'Missing required command: %s\n' "$command" >&2; exit 1; }
 done
 
@@ -84,6 +84,31 @@ wait_for_shell() {
   done
   printf 'Omarchy Shell did not become IPC-ready.\n' >&2
   return 1
+}
+
+wait_for_live_config() {
+  local attempt actual expected
+  expected=$(jq -c . "$settings_file") || return 1
+  for attempt in {1..40}; do
+    actual=$(qs ipc --pid "$shell_pid" call shell listShellConfig 2>/dev/null || true)
+    if jq -en --argjson expected "$expected" --argjson actual "${actual:-null}" '$actual == $expected' >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.1
+  done
+  printf 'Live shell configuration did not match %s.\n' "$settings_file" >&2
+  return 1
+}
+
+reload_shell_config() {
+  local reply
+  wait_for_shell || return 1
+  reply=$(qs ipc --pid "$shell_pid" call shell reloadConfig 2>/dev/null || true)
+  [[ $reply == ok ]] || {
+    printf 'Omarchy Shell rejected config reload: %s\n' "${reply:-no response}" >&2
+    return 1
+  }
+  wait_for_live_config
 }
 
 focus_capture_workspace() {
@@ -180,22 +205,8 @@ close_capture_notification() {
 }
 restore_shell_settings() {
   if [[ $settings_changed == true ]]; then
-    local session_omarchy_path config_dir
-    session_omarchy_path=$(systemctl --user show-environment 2>/dev/null | sed -n 's/^OMARCHY_PATH=//p' | tail -n 1)
-    : "${session_omarchy_path:=${OMARCHY_PATH:-}}"
-    config_dir="$session_omarchy_path/shell"
-    [[ -f $config_dir/shell.qml ]] || {
-      printf 'Omarchy shell config not found: %s\n' "$config_dir" >&2
-      return 1
-    }
-
-    # Stop the shell completely before replacing its settings. Installing the
-    # snapshot first lets the outgoing process persist temporary capture state
-    # over the restored file during shutdown.
-    while timeout 5 quickshell kill -p "$config_dir" --any-display >/dev/null 2>&1; do :; done
     install -m "$settings_mode" "$settings_snapshot" "$settings_file"
-    hyprctl dispatch 'hl.dsp.exec_cmd("omarchy-launch-shell")' >/dev/null
-    wait_for_shell
+    reload_shell_config
     settings_changed=false
   fi
 }
@@ -226,7 +237,6 @@ restore_desktop() {
     restore_history || restore_failed=true
     hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null 2>&1 || true
     hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$original_workspace\" }))" >/dev/null 2>&1 || true
-    omarchy restart shell >/dev/null 2>&1 || true
     restored=true
   fi
   rm -rf -- "$capture_dir"
@@ -251,8 +261,7 @@ set_history_enabled() {
   chmod "$settings_mode" "$temporary"
   mv -- "$temporary" "$settings_file"
   settings_changed=true
-  omarchy restart shell >/dev/null
-  wait_for_shell
+  reload_shell_config
 }
 
 set_showcase_settings() {
@@ -289,8 +298,7 @@ history_samples=$(jq -cn --argjson now "$capture_now" '[
 ./privacy-history clear >/dev/null
 ./privacy-history append "$history_samples" >/dev/null
 set_showcase_settings
-omarchy restart shell >/dev/null
-wait_for_shell
+reload_shell_config
 focus_capture_workspace
 resolve_geometry
 

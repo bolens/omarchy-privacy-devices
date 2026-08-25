@@ -39,8 +39,8 @@ assert.match(screenshotWorkflow, /restore_history\(\) \{[\s\S]*?restored_history
   "screenshot capture must verify that private history was restored exactly")
 assert.match(screenshotWorkflow, /call privacy-devices historyEnabled[\s\S]*?history_samples=\$\(jq -cn[\s\S]*?\.\/privacy-history clear[\s\S]*?\.\/privacy-history append "\$history_samples"/,
   "history screenshots must use bounded examples only after preserving the real store")
-assert.match(screenshotWorkflow, /\.\/privacy-history append "\$history_samples"[\s\S]*?omarchy restart shell[\s\S]*?wait_for_shell[\s\S]*?capture_panel history history/,
-  "sample history must be loaded into a fresh service before capture")
+assert.match(screenshotWorkflow, /\.\/privacy-history append "\$history_samples"[\s\S]*?set_showcase_settings[\s\S]*?reload_shell_config[\s\S]*?capture_panel history history/,
+  "sample history and showcase settings must be ready before capture without restarting Quickshell")
 assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must reject workspaces containing user windows")
 assert.match(screenshotWorkflow, /debugBarGeometry/, "bar screenshots must use measured live widget geometry")
 assert.match(screenshotWorkflow, /panel_capture_x=\$\(\(widget_x \+ widget_width \/ 2 - panel_width \/ 2 - panel_side_padding\)\)/,
@@ -83,8 +83,8 @@ assert.match(screenshotWorkflow, /capture_panel history history[\s\S]*set_histor
   "screenshot workflow must refresh the disabled history state and restore the real shell settings")
 assert.match(screenshotWorkflow, /set_showcase_settings\(\)[\s\S]*showBarActiveMarker: true[\s\S]*showBarDisabledMarker: true[\s\S]*statusMarkerMode: "symbols"/,
   "published captures should consistently showcase the default bar status markers")
-assert.match(screenshotWorkflow, /set_showcase_settings[\s\S]*omarchy restart shell[\s\S]*capture_panel history history/,
-  "showcase settings must be active before the interface captures")
+assert.match(screenshotWorkflow, /set_showcase_settings[\s\S]*reload_shell_config[\s\S]*capture_panel history history/,
+  "showcase settings must be live before the interface captures")
 assert.match(screenshotWorkflow, /capture_panel history-disabled history "" 240/,
   "the compact disabled-history view should not publish a mostly empty tall crop")
 assert.match(screenshotWorkflow, /capture_panel monitoring-private settings-section monitoring 330 private-data 115/,
@@ -99,10 +99,14 @@ assert.match(screenshotWorkflow, /update-screenshot-metadata docs\/index\.html d
   "capture must synchronize Pages dimensions and content-addressed README images")
 assert.match(screenshotWorkflow, /cmp -s "\$settings_snapshot" "\$settings_file"/,
   "successful capture must verify the original shell settings were restored byte-for-byte")
-assert.match(screenshotWorkflow, /quickshell kill -p "\$config_dir" --any-display[\s\S]*?install -m "\$settings_mode" "\$settings_snapshot" "\$settings_file"[\s\S]*?omarchy-launch-shell[\s\S]*?wait_for_shell[\s\S]*?settings_changed=false/,
-  "settings restoration must stop the old shell before replacing its file and clear the recovery flag only after the replacement is ready")
-assert.doesNotMatch(screenshotWorkflow, /install -m "\$settings_mode" "\$settings_snapshot" "\$settings_file"[\s\S]{0,120}?omarchy restart shell/,
-  "the outgoing shell must never receive a chance to overwrite a restored settings snapshot")
+assert.match(screenshotWorkflow, /function reload_shell_config|reload_shell_config\(\) \{[\s\S]*?call shell reloadConfig[\s\S]*?wait_for_live_config/,
+  "settings swaps must reload through shell IPC and wait for effective state")
+assert.match(screenshotWorkflow, /wait_for_live_config\(\) \{[\s\S]*?call shell listShellConfig[\s\S]*?\$actual == \$expected/,
+  "config reload verification must compare the complete live and persisted documents")
+assert.match(screenshotWorkflow, /install -m "\$settings_mode" "\$settings_snapshot" "\$settings_file"[\s\S]*?reload_shell_config[\s\S]*?settings_changed=false/,
+  "restoration must stay armed until the shell confirms the restored snapshot")
+assert.doesNotMatch(screenshotWorkflow, /omarchy restart shell|quickshell kill|omarchy-launch-shell/,
+  "settings capture must not restart or replace the Quickshell process")
 assert.match(screenshotWorkflow, /omarchy notification send[\s\S]*--app-name[\s\S]*Privacy Devices[\s\S]*--icon[\s\S]*firefox/,
   "screenshot workflow must trigger an app-icon notification")
 assert.match(screenshotWorkflow, /notifications isDnd[\s\S]*notifications setDnd/,
