@@ -202,12 +202,14 @@ Item {
       return
     }
     fallbackObserverRetiring = false
+    fallbackObserverRetry.stop()
     fallbackObserverProc.command = desired
     fallbackObserverStartedAt = Date.now()
     fallbackObserverProc.running = true
   }
 
   function handleFallbackSnapshot(line) {
+    if (fallbackObserverRetiring || (!kindEnabled("screen-recording") && !kindEnabled("screenshot"))) return
     try {
       var payload = JSON.parse(String(line || "{}"))
       if (payload.type !== "fallback-snapshot" || payload.version !== 1 || !payload.activities)
@@ -422,6 +424,7 @@ Item {
       return
     }
     directObserverRetiring = false
+    directObserverRetry.stop()
     var desiredCommand = [
       observerHelperPath(),
       "watch", "--heartbeat", String(boundedSeconds(settings.directDevicePollSeconds, 5, 2, 60))
@@ -439,6 +442,7 @@ Item {
   }
 
   function handleDirectDeviceSnapshot(text) {
+    if (directObserverRetiring || settings.directDeviceMonitoring !== true) return
     try {
       var result = JSON.parse(String(text || "{}"))
       if (result.type !== "snapshot") throw new Error("invalid direct payload")
