@@ -4,6 +4,7 @@ import json
 import fcntl
 import math
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -52,7 +53,8 @@ class HistoryTests(unittest.TestCase):
         now = 1_000_000_000
         oversized = self.entry(1, now)
         oversized["application"] = "x" * (MODULE.MAX_FIELD_CHARS + 10)
-        result = MODULE.append_entries([], [oversized] * (MODULE.MAX_ENTRIES + 5), now)
+        incoming = [dict(oversized, id=str(index), endedAt=now - index) for index in range(MODULE.MAX_ENTRIES + 5)]
+        result = MODULE.append_entries([], incoming, now)
 
         self.assertEqual(len(result), MODULE.MAX_ENTRIES)
         self.assertEqual(len(result[0]["application"]), MODULE.MAX_FIELD_CHARS)
@@ -76,6 +78,14 @@ class HistoryTests(unittest.TestCase):
 
         self.assertEqual([entry["application"] for entry in result], ["App 3", "App 2", "App 1"])
 
+    def test_replayed_entries_are_deduplicated_by_identity_and_end_time(self):
+        now = 1_000_000_000
+        entry = MODULE.sanitize(self.entry(1, now))
+
+        result = MODULE.append_entries([entry], [dict(entry), dict(entry)], now)
+
+        self.assertEqual(result, [entry])
+
     def test_state_lock_is_private_and_excludes_concurrent_writers(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "plugin" / "history.json"
@@ -85,6 +95,30 @@ class HistoryTests(unittest.TestCase):
                 with lock_path.open() as contender:
                     with self.assertRaises(BlockingIOError):
                         fcntl.flock(contender.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+    def test_cli_append_load_and_clear_round_trip(self):
+        with tempfile.TemporaryDirectory() as directory:
+            environment = dict(os.environ, XDG_STATE_HOME=directory)
+            entry = self.entry(7, int(__import__("time").time() * 1000))
+
+            appended = subprocess.run(
+                [str(ROOT / "privacy-history"), "append", json.dumps([entry])],
+                env=environment, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(appended.returncode, 0, appended.stderr)
+            loaded = subprocess.run(
+                [str(ROOT / "privacy-history"), "load"], env=environment,
+                text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(loaded.returncode, 0, loaded.stderr)
+            self.assertEqual(json.loads(loaded.stdout)[0]["application"], "App 7")
+
+            cleared = subprocess.run(
+                [str(ROOT / "privacy-history"), "clear"], env=environment,
+                text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(cleared.returncode, 0, cleared.stderr)
+            self.assertFalse((Path(directory) / "omarchy-privacy-devices" / "history.json").exists())
 
 
 if __name__ == "__main__":

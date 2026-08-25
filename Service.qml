@@ -31,6 +31,7 @@ Item {
   property double fallbackObserverStartedAt: 0
   property int fallbackObserverRetryMilliseconds: 1000
   property string requestedSettingsPage: "general"
+  property string requestedView: "settings"
   property int settingsRequestSerial: 0
   property var notificationQueue: []
   property var suppressedObserverStarts: ({})
@@ -289,14 +290,12 @@ Item {
     var now = Date.now()
     if (!activeSessions.length && !observations.length) {
       lastSessionRefreshAt = now
-      activityInitialized = true
       return
     }
     var transition = Model.reconcileSessions(activeSessions, observations, now)
     if (!Model.sessionsEquivalent(activeSessions, transition.active)) activeSessions = transition.active
     lastSessionRefreshAt = now
     handleSessionTransitions(transition)
-    activityInitialized = true
   }
 
   function scheduleSessionRefresh() {
@@ -308,15 +307,16 @@ Item {
     var recovery = Model.partitionObserverRecoveryStarts(transition.started, suppressedObserverStarts)
     if (recovery.suppressedSources !== suppressedObserverStarts)
       suppressedObserverStarts = recovery.suppressedSources
+    var publishable = Model.publishableSessionTransitions({started: recovery.notifyable, stopped: transition.stopped}, activityInitialized)
     var index
-    for (index = 0; index < recovery.notifyable.length; index++) {
-      var started = recovery.notifyable[index]
-      if (activityInitialized && settings.notifyOnActivity !== false
+    for (index = 0; index < publishable.started.length; index++) {
+      var started = publishable.started[index]
+      if (settings.notifyOnActivity !== false
           && notificationKindList.indexOf(started.kind) !== -1 && Model.shouldNotifyForSession(started, policies()))
         enqueueActivityNotification("started", started)
     }
-    for (index = 0; index < transition.stopped.length; index++) {
-      var stopped = transition.stopped[index]
+    for (index = 0; index < publishable.stopped.length; index++) {
+      var stopped = publishable.stopped[index]
       if (settings.historyEnabled === true) {
         recentHistory = Model.appendHistory(recentHistory, stopped, Date.now(), {maxEntries: 100, maxAgeMs: 7 * 24 * 60 * 60 * 1000})
         stoppedForHistory.push(stopped)
@@ -880,6 +880,7 @@ Item {
 
   Timer { id: fallbackObserverRetry; interval: root.fallbackObserverRetryMilliseconds; onTriggered: root.refreshFallbackObserver() }
   Timer { id: notificationFlush; interval: 400; onTriggered: root.flushActivityNotifications() }
+  Timer { id: activityBaseline; interval: 5000; running: true; onTriggered: root.activityInitialized = true }
 
   Timer {
     interval: 500
@@ -1002,14 +1003,15 @@ Item {
         root.historyLoaded = root.settings.historyEnabled !== true || exitCode === 0
     }
     stdout: StdioCollector {
+      id: historyLoadOutput
       waitForEnd: true
-      onStreamFinished: function(text) {
+      onStreamFinished: {
         if (!Model.historyLoadAccepted(root.historyLoadGeneration, root.historyGeneration, root.settings.historyEnabled)) {
           root.recentHistory = []
           return
         }
         try {
-          var value = JSON.parse(String(text || "[]"))
+          var value = JSON.parse(String(historyLoadOutput.text || "[]"))
           root.recentHistory = Array.isArray(value) ? value : []
         } catch (error) {
           root.recentHistory = []
@@ -1035,6 +1037,7 @@ Item {
       return JSON.stringify(result)
     }
     function history(): string { return JSON.stringify(root.recentHistory) }
+    function historyEnabled(): bool { return root.settings.historyEnabled === true }
     function diagnostics(mode: string): string { return JSON.stringify(root.diagnostics(mode !== "unsafe")) }
     function clearHistory(): string { root.clearHistory(); return "ok" }
     function rescan(): string { root.refreshFallbacks(); root.refreshDirectDevices(); root.refreshSessions(); return "ok" }
@@ -1048,9 +1051,15 @@ Item {
   IpcHandler {
     target: "privacy-devices-settings"
     function open(page: string): string {
+      root.requestedView = "settings"
       root.requestedSettingsPage = Model.settingsPage(page)
       root.settingsRequestSerial++
       return root.shell && typeof root.shell.summon === "function" && root.shell.summon("io.github.bolens.privacy-devices", "") ? root.requestedSettingsPage : "unavailable"
+    }
+    function openHistory(): string {
+      root.requestedView = "history"
+      root.settingsRequestSerial++
+      return root.shell && typeof root.shell.summon === "function" && root.shell.summon("io.github.bolens.privacy-devices", "") ? "history" : "unavailable"
     }
   }
 

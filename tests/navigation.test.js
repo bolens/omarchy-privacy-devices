@@ -23,8 +23,9 @@ assert.equal(model.activationKind([], "camera"), "")
 assert.equal(model.activationKind(kinds, "camera"), "camera")
 assert.equal(model.activationKind(kinds, "stale"), "microphone", "activation cannot open a row absent from the view")
 
-assert.equal(model.popupDismissalAction("camera", false), "device")
-assert.equal(model.popupDismissalAction("", true), "settings")
-assert.equal(model.popupDismissalAction("", false), "popup")
+assert.equal(model.popupDismissalAction("camera", false, false), "device")
+assert.equal(model.popupDismissalAction("", true, false), "settings")
+assert.equal(model.popupDismissalAction("", false, true), "history")
+assert.equal(model.popupDismissalAction("", false, false), "popup")
 
 console.log("popup navigation policy tests passed")

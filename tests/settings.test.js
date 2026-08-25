@@ -55,13 +55,13 @@ for (const selector of ["Monitored activity", "Activity notifications", "Prevent
   assert.match(bar, new RegExp(`label:\\s*"${selector}"`), `${selector} must remain configurable`)
 assert.match(bar, /ColumnLayout\s*\{\s*id:\s*activityRows[\s\S]*?visible:\s*root\.editingKind === "" && !root\.showingGlobalSettings[\s\S]*?Repeater\s*\{/,
   "activity delegates must be owned by a visual container that hides them on settings pages")
-assert.match(bar, /model:\s*root\.editingKind === "" && !root\.showingGlobalSettings\s*\?[\s\S]*?root\.displayedActivityItems[\s\S]*?:\s*\[\]/,
-  "settings pages must remove main-widget delegates from the object tree")
+assert.match(bar, /model:\s*root\.editingKind === "" && !root\.showingGlobalSettings && !root\.showingHistory\s*\?[\s\S]*?root\.displayedActivityItems[\s\S]*?:\s*\[\]/,
+  "settings and history pages must remove main-widget delegates from the object tree")
 assert.match(bar, /delegate:\s*PrivacyActivityCard\s*\{[\s\S]*?entry:\s*modelData[\s\S]*?controller:\s*root/,
   "activity presentation must be isolated in its tested card component")
 assert.match(bar, /manageIpc:\s*false/, "per-monitor panels must delegate IPC routing to the singleton service and focused-monitor shell router")
-assert.match(bar, /settingsRequestSerial <= handledSettingsRequestSerial[\s\S]*?showGlobalSettings\(privacyService\.requestedSettingsPage\)/,
-  "the focused widget must consume singleton settings requests")
+assert.match(bar, /settingsRequestSerial <= handledSettingsRequestSerial[\s\S]*?requestedView === "history"[\s\S]*?showHistory\(\)[\s\S]*?showGlobalSettings\(privacyService\.requestedSettingsPage\)/,
+  "the focused widget must consume singleton history and settings requests")
 assert.match(bar, /onSettingsRequestSerialChanged\(\) \{ root\.handleSettingsRequest\(\) \}/,
   "settings IPC page changes must apply while the popup remains open")
 assert.match(surface, /default property alias content:/, "settings groups need a reusable visual surface")

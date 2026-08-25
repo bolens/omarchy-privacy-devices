@@ -75,6 +75,9 @@ Panel {
     : normalBarItems
   property string editingKind: ""
   property bool showingGlobalSettings: false
+  property bool showingHistory: false
+  property string historyQuery: ""
+  property bool historyClearArmed: false
   property bool settingsMutationPending: false
   property string globalSettingsPage: "general"
   property string selectedKind: ""
@@ -83,6 +86,7 @@ Panel {
   property int handledSettingsRequestSerial: 0
   property double durationNow: Date.now()
   property string settingsTransferStatus: ""
+  readonly property var filteredHistory: Model.filterHistory(privacyService ? privacyService.recentHistory : [], historyQuery)
   readonly property real openPanelIndicatorWidth: button.labelWidth
 
   function setting(key, fallback) {
@@ -107,6 +111,7 @@ Panel {
 
   function showGlobalSettings(page) {
     editingKind = ""
+    showingHistory = false
     showingGlobalSettings = true
     globalSettingsPage = Model.settingsPage(page)
     contentFlick.contentY = 0
@@ -115,19 +120,42 @@ Panel {
   function showActivity() {
     editingKind = ""
     showingGlobalSettings = false
+    showingHistory = false
     contentFlick.contentY = 0
+  }
+
+  function showHistory() {
+    editingKind = ""
+    showingGlobalSettings = false
+    showingHistory = true
+    contentFlick.contentY = 0
+    if (privacyService) privacyService.loadHistory()
+  }
+
+  function requestHistoryClear() {
+    var action = Model.historyClearAction(historyClearArmed)
+    if (action === "confirm") {
+      historyClearArmed = true
+      historyClearGuard.restart()
+      return
+    }
+    if (privacyService) privacyService.clearHistory()
+    historyClearArmed = false
+    historyClearGuard.stop()
   }
 
   function handleSettingsRequest() {
     if (!opened || !privacyService || privacyService.settingsRequestSerial <= handledSettingsRequestSerial) return
     handledSettingsRequestSerial = privacyService.settingsRequestSerial
-    showGlobalSettings(privacyService.requestedSettingsPage)
+    if (privacyService.requestedView === "history") showHistory()
+    else showGlobalSettings(privacyService.requestedSettingsPage)
   }
 
   function closeCurrentLayer() {
-    var action = Model.popupDismissalAction(editingKind, showingGlobalSettings)
+    var action = Model.popupDismissalAction(editingKind, showingGlobalSettings, showingHistory)
     if (action === "device") { editingKind = ""; return }
     if (action === "settings") { showActivity(); return }
+    if (action === "history") { showActivity(); return }
     close()
   }
 
@@ -140,7 +168,7 @@ Panel {
     var kinds = displayedActivityItems.map(function(entry) { return entry.kind })
     var target = Model.activationKind(kinds, selectedKind)
     selectedKind = target
-    if (target) { showingGlobalSettings = false; editingKind = target; contentFlick.contentY = 0 }
+    if (target) { showingGlobalSettings = false; showingHistory = false; editingKind = target; contentFlick.contentY = 0 }
   }
 
   function moveDeviceEditor(delta) {
@@ -606,12 +634,14 @@ Panel {
   function pressItem(entry, buttonCode) {
     if (buttonCode === Qt.MiddleButton) {
       if (entry.kind === "summary") showGlobalSettings("general")
-      else { showingGlobalSettings = false; editingKind = entry.kind }
+      else { showingGlobalSettings = false; showingHistory = false; editingKind = entry.kind }
       root.open()
       return
     }
     if (buttonCode === Qt.RightButton || entry.kind === "summary" || !entry.controllable) {
       editingKind = ""
+      showingGlobalSettings = false
+      showingHistory = false
       root.toggle()
       return
     }
@@ -635,6 +665,7 @@ Panel {
     else {
       editingKind = ""
       showingGlobalSettings = false
+      showingHistory = false
       globalSettingsPage = "general"
       contentFlick.contentY = 0
     }
@@ -649,6 +680,12 @@ Panel {
     id: settingsMutationGuard
     interval: 2000
     onTriggered: root.settingsMutationPending = false
+  }
+
+  Timer {
+    id: historyClearGuard
+    interval: 5000
+    onTriggered: root.historyClearArmed = false
   }
 
   Timer {
@@ -713,14 +750,15 @@ Panel {
       onCloseRequested: root.closeCurrentLayer()
       onMoveRequested: function(dx, dy) {
         if (root.editingKind !== "" && dx !== 0) root.moveDeviceEditor(dx)
-        else if (dy !== 0 && root.editingKind === "" && !root.showingGlobalSettings) root.moveActivitySelection(dy)
+        else if (dy !== 0 && root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory) root.moveActivitySelection(dy)
       }
       onActivateRequested: {
-        if (root.editingKind === "" && !root.showingGlobalSettings) root.activateActivitySelection()
+        if (root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory) root.activateActivitySelection()
       }
       onTextKey: function(text) {
-        if ((text === "s" || text === "S") && root.editingKind === "") root.showGlobalSettings("general")
-        else if ((text === "r" || text === "R") && !root.showingGlobalSettings && privacyService) privacyService.refreshFallbacks()
+        if ((text === "h" || text === "H") && root.editingKind === "") root.showHistory()
+        else if ((text === "s" || text === "S") && root.editingKind === "") root.showGlobalSettings("general")
+        else if ((text === "r" || text === "R") && !root.showingGlobalSettings && !root.showingHistory && privacyService) privacyService.refreshFallbacks()
         else if (root.showingGlobalSettings && "1234".indexOf(text) >= 0) {
           root.globalSettingsPage = ["general", "appearance", "alerts", "monitoring"][Number(text) - 1]
           contentFlick.contentY = 0
@@ -747,7 +785,7 @@ Panel {
           spacing: Style.spacing.md
 
         RowLayout {
-          visible: root.editingKind === "" && !root.showingGlobalSettings
+          visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory
           Layout.fillWidth: true
           Text {
             text: "Privacy activity"
@@ -775,10 +813,143 @@ Panel {
             }
           }
           Button {
+            iconText: "󰋚"
+            tooltipText: "Activity history"
+            horizontalPadding: Style.spacing.controlGap
+            onClicked: root.showHistory()
+          }
+          Button {
             iconText: "󰒓"
             tooltipText: "Global settings"
             horizontalPadding: Style.spacing.controlGap
             onClicked: root.showGlobalSettings("general")
+          }
+        }
+
+        ColumnLayout {
+          id: historyView
+          visible: root.showingHistory
+          Layout.fillWidth: true
+          spacing: Style.spacing.md
+
+          RowLayout {
+            Layout.fillWidth: true
+            Button { iconText: "󰁍"; tooltipText: "Back"; horizontalPadding: Style.spacing.controlGap; onClicked: root.showActivity() }
+            Text { Layout.fillWidth: true; text: "Activity history"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
+            Button {
+              visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.recentHistory.length > 0
+              text: root.historyClearArmed ? "Confirm clear" : "Clear history"
+              onClicked: root.requestHistoryClear()
+            }
+          }
+
+          RowLayout {
+            visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.recentHistory.length > 0
+            Layout.fillWidth: true
+            TextField {
+              id: historySearch
+              Layout.fillWidth: true
+              placeholderText: "Search history"
+              foreground: Color.popups.text
+              accent: root.activeThemeColor
+              font.family: Style.font.family
+              onTextChanged: root.historyQuery = text
+            }
+            Rectangle {
+              id: historyCountPill
+              implicitWidth: historyCountText.implicitWidth + Style.spacing.md * 2
+              implicitHeight: historyCountText.implicitHeight + Style.spacing.sm
+              radius: implicitHeight / 2
+              color: Util.alpha(root.activeThemeColor, 0.14)
+              border.width: 1
+              border.color: Util.alpha(root.activeThemeColor, 0.28)
+              Text {
+                id: historyCountText
+                anchors.centerIn: parent
+                text: Model.historyCountLabel(root.filteredHistory.length, privacyService.recentHistory.length)
+                textFormat: Text.PlainText
+                color: root.activeThemeColor
+                font.family: Style.font.family
+                font.pixelSize: Style.font.caption
+                font.weight: Font.DemiBold
+              }
+            }
+          }
+
+          SettingsSurface {
+            visible: root.setting("historyEnabled", false) !== true
+            Layout.fillWidth: true
+            PanelSectionHeader { Layout.fillWidth: true; text: "History is off" }
+            Text { Layout.fillWidth: true; text: "Enable history to keep completed activity on this device for up to seven days."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+            Button { text: "Open monitoring settings"; onClicked: root.showGlobalSettings("monitoring") }
+          }
+
+          Text {
+            visible: root.setting("historyEnabled", false) === true && privacyService && !privacyService.historyLoaded
+            Layout.fillWidth: true
+            text: "Loading history…"
+            textFormat: Text.PlainText
+            color: Color.muted
+            font.family: Style.font.family
+            font.pixelSize: Style.font.body
+            horizontalAlignment: Text.AlignHCenter
+          }
+
+          Text {
+            visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.historyLoaded && privacyService.recentHistory.length === 0
+            Layout.fillWidth: true
+            text: "No completed activity yet."
+            textFormat: Text.PlainText
+            color: Color.muted
+            font.family: Style.font.family
+            font.pixelSize: Style.font.body
+            horizontalAlignment: Text.AlignHCenter
+          }
+
+          Text {
+            visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.recentHistory.length > 0 && root.filteredHistory.length === 0
+            Layout.fillWidth: true
+            text: "No history matches your search."
+            textFormat: Text.PlainText
+            color: Color.muted
+            font.family: Style.font.family
+            font.pixelSize: Style.font.body
+            horizontalAlignment: Text.AlignHCenter
+          }
+
+          Repeater {
+            model: root.filteredHistory
+            delegate: ColumnLayout {
+              required property var modelData
+              required property int index
+              Layout.fillWidth: true
+              spacing: Style.spacing.sm
+              Text {
+                visible: index === 0 || Model.historyPeriodLabel(modelData.endedAt, root.durationNow) !== Model.historyPeriodLabel(root.filteredHistory[index - 1].endedAt, root.durationNow)
+                Layout.fillWidth: true
+                text: Model.historyPeriodLabel(modelData.endedAt, root.durationNow)
+                textFormat: Text.PlainText
+                color: Color.muted
+                font.family: Style.font.family
+                font.pixelSize: Style.font.caption
+                font.weight: Font.DemiBold
+              }
+              SettingsSurface {
+                Layout.fillWidth: true
+                RowLayout {
+                  Layout.fillWidth: true
+                  spacing: Style.spacing.md
+                  Text { text: root.iconFor(modelData.kind); textFormat: Text.PlainText; color: root.activeThemeColor; font.family: Style.font.family; font.pixelSize: Style.font.icon }
+                  ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: Style.spacing.xs
+                    Text { Layout.fillWidth: true; text: modelData.application || "Unknown application"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; font.weight: Font.DemiBold; elide: Text.ElideRight }
+                    Text { Layout.fillWidth: true; text: Model.label(modelData.kind) + " · " + Model.formatDuration(modelData.durationMs) + " · " + Model.historyAgeLabel(modelData.endedAt, root.durationNow); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; elide: Text.ElideRight }
+                    Text { Layout.fillWidth: true; text: modelData.source + " · " + (modelData.confidence || "unknown") + (modelData.device ? " · " + modelData.device : ""); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; elide: Text.ElideRight }
+                  }
+                }
+              }
+            }
           }
         }
 
@@ -815,7 +986,7 @@ Panel {
         }
 
         DeviceSettingsEditor {
-          visible: root.editingKind !== "" && !root.showingGlobalSettings
+          visible: root.editingKind !== "" && !root.showingGlobalSettings && !root.showingHistory
           controller: root
           onBackRequested: root.editingKind = ""
 
@@ -1232,14 +1403,14 @@ Panel {
 
         ColumnLayout {
           id: activityRows
-          visible: root.editingKind === "" && !root.showingGlobalSettings
+          visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory
           Layout.fillWidth: true
           spacing: Style.spacing.md
 
           Repeater {
             // Do not retain main-widget delegates behind a settings/editor page.
             // An empty model prevents both visual leakage and needless bindings.
-            model: root.editingKind === "" && !root.showingGlobalSettings
+            model: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory
               ? root.displayedActivityItems
               : []
             delegate: PrivacyActivityCard {
@@ -1251,7 +1422,7 @@ Panel {
         }
 
         ColumnLayout {
-          visible: root.editingKind === "" && !root.showingGlobalSettings && Model.arraySetting(root.setting("hiddenApps", []), []).length > 0
+          visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory && Model.arraySetting(root.setting("hiddenApps", []), []).length > 0
           Layout.fillWidth: true
           spacing: Style.spacing.sm
           PanelSectionHeader { Layout.fillWidth: true; text: "Hidden applications" }
@@ -1267,31 +1438,10 @@ Panel {
           Button { text: "Restore all"; onClicked: root.clearPolicy("hiddenApps") }
         }
 
-        ColumnLayout {
-          visible: root.editingKind === "" && !root.showingGlobalSettings && root.setting("historyEnabled", false) === true && privacyService && privacyService.recentHistory.length > 0
-          Layout.fillWidth: true
-          spacing: Style.spacing.sm
-          PanelSectionHeader { Layout.fillWidth: true; text: "Recent activity" }
-          Repeater {
-            model: privacyService ? privacyService.recentHistory.slice(0, 5) : []
-            delegate: Text {
-              required property var modelData
-              Layout.fillWidth: true
-              text: Model.label(modelData.kind) + " · " + modelData.application + " · " + Model.formatDuration(modelData.durationMs) + " · " + modelData.source
-              textFormat: Text.PlainText
-              color: Color.muted
-              font.family: Style.font.family
-              font.pixelSize: Style.font.caption
-              elide: Text.ElideRight
-            }
-          }
-          Button { text: "Clear history"; onClicked: privacyService.clearHistory() }
-        }
-
         Text {
-          visible: root.editingKind === "" && !root.showingGlobalSettings
+          visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory
           Layout.fillWidth: true
-          text: "Keyboard: ↑/↓ select · Enter open · S settings · R refresh · Esc close"
+          text: "Keyboard: ↑/↓ select · Enter open · H history · S settings · R refresh · Esc close"
           textFormat: Text.PlainText
           color: Color.muted
           font.family: Style.font.family

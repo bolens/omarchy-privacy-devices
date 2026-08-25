@@ -336,6 +336,13 @@ function partitionObserverRecoveryStarts(started, suppressedSources) {
   return {notifyable: notifyable, suppressedSources: remaining}
 }
 
+function publishableSessionTransitions(transition, initialized) {
+  transition = transition || {}
+  return initialized === true
+    ? {started: Array.isArray(transition.started) ? transition.started : [], stopped: Array.isArray(transition.stopped) ? transition.stopped : []}
+    : {started: [], stopped: []}
+}
+
 function applicationsForSessions(sessions, kind, deduplicate) {
   var values = (Array.isArray(sessions) ? sessions : []).filter(function(session) {
     return !kind || session.kind === kind
@@ -442,8 +449,16 @@ function appendHistory(history, session, now, limits) {
   var maxEntries = Math.max(1, Number(limits.maxEntries || 100))
   var maxAgeMs = Math.max(1, Number(limits.maxAgeMs || 7 * 24 * 60 * 60 * 1000))
   var cutoff = Number(now) - maxAgeMs
+  var seen = {}
   var result = [session].concat(Array.isArray(history) ? history : []).filter(function(entry) {
+    entry = entry || {}
     return Number(entry.endedAt || entry.startedAt || 0) >= cutoff
+  }).filter(function(entry) {
+    var identity = String(entry.id || [entry.kind, entry.application, entry.device, entry.source].join("|"))
+      + "\u0000" + String(entry.endedAt || 0)
+    if (seen[identity]) return false
+    seen[identity] = true
+    return true
   })
   return result.slice(0, maxEntries)
 }
@@ -544,9 +559,10 @@ function activationKind(kinds, currentKind) {
   return rows.indexOf(current) >= 0 ? current : String(rows[0] || "")
 }
 
-function popupDismissalAction(editingKind, showingGlobalSettings) {
+function popupDismissalAction(editingKind, showingGlobalSettings, showingHistory) {
   if (String(editingKind || "") !== "") return "device"
   if (showingGlobalSettings === true) return "settings"
+  if (showingHistory === true) return "history"
   return "popup"
 }
 
@@ -651,6 +667,47 @@ function formatDuration(milliseconds) {
   var minutes = Math.floor(seconds / 60)
   if (minutes < 60) return minutes + "m " + (seconds % 60) + "s"
   return Math.floor(minutes / 60) + "h " + (minutes % 60) + "m"
+}
+
+function historyAgeLabel(endedAt, now) {
+  var ageSeconds = Math.max(0, Math.floor((Number(now || Date.now()) - Number(endedAt || 0)) / 1000))
+  if (ageSeconds < 60) return "Just now"
+  var minutes = Math.floor(ageSeconds / 60)
+  if (minutes < 60) return minutes + "m ago"
+  var hours = Math.floor(minutes / 60)
+  if (hours < 24) return hours + "h ago"
+  return Math.floor(hours / 24) + "d ago"
+}
+
+function filterHistory(history, query) {
+  var rows = Array.isArray(history) ? history : []
+  var needle = String(query || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().toLowerCase().slice(0, 128)
+  if (!needle) return rows.slice()
+  return rows.filter(function(entry) {
+    entry = entry || {}
+    return [entry.application, entry.device, entry.source, entry.confidence, label(entry.kind)]
+      .map(function(value) { return String(value || "").toLowerCase() })
+      .join("\n").indexOf(needle) !== -1
+  })
+}
+
+function historyPeriodLabel(endedAt, now) {
+  var age = Math.max(0, Number(now || Date.now()) - Number(endedAt || 0))
+  var day = 24 * 60 * 60 * 1000
+  if (age < day) return "Today"
+  if (age < 2 * day) return "Yesterday"
+  return "Earlier this week"
+}
+
+function historyClearAction(armed) {
+  return armed === true ? "clear" : "confirm"
+}
+
+function historyCountLabel(visibleCount, totalCount) {
+  var visible = Math.max(0, Math.floor(Number(visibleCount) || 0))
+  var total = Math.max(visible, Math.floor(Number(totalCount) || 0))
+  if (visible !== total) return visible + " of " + total
+  return visible + (visible === 1 ? " entry" : " entries")
 }
 
 function coalesceNotificationEvents(events) {

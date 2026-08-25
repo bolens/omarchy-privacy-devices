@@ -109,8 +109,38 @@ const observation = (overrides = {}) => Object.assign({
   assert.equal(history.length, 75, "both count and age limits are enforced")
   assert.equal(history[0].application, "App 104", "newest history appears first")
   assert.equal(history.at(-1).application, "App 30")
+  const duplicate = Object.assign({}, history[0])
+  assert.equal(model.appendHistory(history, duplicate, 200_000, {maxEntries: 100, maxAgeMs: 170_000}).length, history.length,
+    "replayed history entries must not create duplicates")
   assert.equal(model.formatDuration(3_723_000), "1h 2m")
   assert.equal(model.formatDuration(12_000), "12s")
+  assert.equal(model.historyAgeLabel(199_000, 200_000), "Just now")
+  assert.equal(model.historyAgeLabel(80_000, 200_000), "2m ago")
+  assert.equal(model.historyAgeLabel(20_000, 7_220_000), "2h ago")
+  assert.equal(model.historyAgeLabel(20_000, 180_020_000), "2d ago")
+  assert.equal(model.historyAgeLabel(210_000, 200_000), "Just now", "clock skew must not produce a negative age")
+
+  const searchable = [
+    {kind: "microphone", application: "Firefox", device: "USB Mic", source: "pipewire", confidence: "confirmed", endedAt: 300_000},
+    {kind: "screen-share", application: "Chromium", device: "Desktop portal", source: "portal", confidence: "inferred", endedAt: 200_000},
+    {kind: "camera", application: "OBS Studio", device: "Webcam", source: "pipewire", confidence: "confirmed", endedAt: 100_000}
+  ]
+  assert.equal(model.filterHistory(searchable, " FIREfox ").length, 1, "search is normalized and case-insensitive")
+  assert.equal(model.filterHistory(searchable, "usb mic")[0].application, "Firefox", "search includes devices")
+  assert.equal(model.filterHistory(searchable, "screen sharing")[0].application, "Chromium", "search includes friendly activity labels")
+  assert.equal(model.filterHistory(searchable, "confirmed").length, 2, "search includes confidence provenance")
+  assert.equal(model.filterHistory(searchable, "").length, 3, "an empty query preserves all bounded entries")
+  assert.doesNotThrow(() => model.filterHistory([null, {}], "camera"), "partial stored rows cannot break filtering")
+
+  const day = 24 * 60 * 60 * 1000
+  assert.equal(model.historyPeriodLabel(10 * day - 1000, 10 * day), "Today")
+  assert.equal(model.historyPeriodLabel(10 * day - day - 1000, 10 * day), "Yesterday")
+  assert.equal(model.historyPeriodLabel(10 * day - 3 * day, 10 * day), "Earlier this week")
+  assert.equal(model.historyClearAction(false), "confirm")
+  assert.equal(model.historyClearAction(true), "clear")
+  assert.equal(model.historyCountLabel(1, 1), "1 entry")
+  assert.equal(model.historyCountLabel(3, 3), "3 entries")
+  assert.equal(model.historyCountLabel(2, 8), "2 of 8")
 }
 
 {
@@ -125,6 +155,14 @@ const observation = (overrides = {}) => Object.assign({
   assert.equal(continued.active.length, 5_000)
   assert.equal(continued.started.length, 0)
   assert.ok(elapsedMs < 500, `5,000-session reconciliation took ${elapsedMs.toFixed(1)}ms`)
+}
+
+{
+  const transition = {started: [{id: "existing"}], stopped: [{id: "ended"}]}
+  assert.equal(JSON.stringify(model.publishableSessionTransitions(transition, false)), JSON.stringify({started: [], stopped: []}),
+    "sessions discovered during startup must establish a silent baseline")
+  assert.equal(JSON.stringify(model.publishableSessionTransitions(transition, true)), JSON.stringify(transition),
+    "transitions after startup must remain publishable")
 }
 
 {

@@ -77,7 +77,15 @@ def bounded(entries: list[dict], now_ms: int) -> list[dict]:
     cutoff = now_ms - MAX_AGE_MS
     valid = [entry for entry in entries if isinstance(entry.get("endedAt"), (int, float)) and entry["endedAt"] >= cutoff]
     valid.sort(key=lambda entry: entry["endedAt"], reverse=True)
-    return valid[:MAX_ENTRIES]
+    unique = []
+    seen = set()
+    for entry in valid:
+        identity = (entry.get("id") or (entry.get("kind"), entry.get("application"), entry.get("device"), entry.get("source")), entry["endedAt"])
+        if identity in seen:
+            continue
+        seen.add(identity)
+        unique.append(entry)
+    return unique[:MAX_ENTRIES]
 
 
 def append_entries(existing: list[dict], incoming: object, now_ms: int) -> list[dict]:
