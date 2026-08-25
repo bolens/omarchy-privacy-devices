@@ -7,6 +7,8 @@ plugin_id="io.github.bolens.privacy-devices"
 monitor=""
 capture_workspace=""
 settle_seconds=1
+panel_width=500
+panel_side_padding=16
 
 usage() {
   cat <<'EOF'
@@ -64,7 +66,7 @@ window_count=$(jq -r --argjson workspace "$capture_workspace" '[.[] | select(.wo
 shell_pid=""
 widget_x=""
 widget_width=""
-panel_x=""
+panel_capture_x=""
 
 wait_for_shell() {
   local attempt candidate shell_reply history_reply
@@ -111,8 +113,8 @@ resolve_geometry() {
     widget_x=$(jq -r '.x // empty' <<<"${widget_row:-null}")
     widget_width=$(jq -r '.width // empty' <<<"${widget_row:-null}")
     if [[ $widget_x =~ ^[0-9]+$ && $widget_width =~ ^[1-9][0-9]*$ ]]; then
-      panel_x=$((widget_x - 168))
-      if ((panel_x >= 0 && panel_x + 500 <= monitor_width)); then return 0; fi
+      panel_capture_x=$((widget_x + widget_width / 2 - panel_width / 2 - panel_side_padding))
+      if ((panel_capture_x >= 0 && panel_capture_x + panel_width + panel_side_padding * 2 <= monitor_width)); then return 0; fi
     fi
     sleep 0.25
   done
@@ -147,7 +149,9 @@ capture_panel() {
     esac
     sleep "$settle_seconds"
     grim -o "$monitor" "$capture_dir/$name-full.png"
-    magick "$capture_dir/$name-full.png" -crop "500x${height}+${panel_x}+${crop_top}" +repage "$capture_dir/$name.png"
+    magick "$capture_dir/$name-full.png" \
+      -crop "$((panel_width + panel_side_padding * 2))x${height}+${panel_capture_x}+${crop_top}" \
+      +repage "$capture_dir/$name.png"
     if capture_has_content "$capture_dir/$name.png"; then return 0; fi
   done
   printf 'Could not capture populated %s view after four attempts.\n' "$name" >&2

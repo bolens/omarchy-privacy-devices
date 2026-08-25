@@ -43,6 +43,10 @@ assert.match(screenshotWorkflow, /\.\/privacy-history append "\$history_samples"
   "sample history must be loaded into a fresh service before capture")
 assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must reject workspaces containing user windows")
 assert.match(screenshotWorkflow, /debugBarGeometry/, "bar screenshots must use measured live widget geometry")
+assert.match(screenshotWorkflow, /panel_capture_x=\$\(\(widget_x \+ widget_width \/ 2 - panel_width \/ 2 - panel_side_padding\)\)/,
+  "panel captures must center on live widget geometry instead of using a stale offset")
+assert.match(screenshotWorkflow, /panel_width \+ panel_side_padding \* 2/,
+  "panel captures must retain desktop context on both horizontal edges")
 assert.ok(fs.statSync(path.join(__dirname, "..", "scripts/capture-screenshots")).mode & 0o111,
   "screenshot workflow must remain executable")
 for (const qml of [
