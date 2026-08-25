@@ -26,6 +26,14 @@ Panel {
   readonly property int barItemPadding: Math.max(2, Math.min(12, Number(setting("barItemPadding", 5))))
   readonly property string statePillStyle: String(setting("statePillStyle", "filled"))
   readonly property string popupDensity: String(setting("popupDensity", "comfortable"))
+  readonly property string popupLayout: String(setting("popupLayout", "adaptive"))
+  readonly property string popupWidth: String(setting("popupWidth", "standard"))
+  readonly property real popupItemScale: Math.max(0.85, Math.min(1.3, Number(setting("popupItemScale", 1))))
+  readonly property real popupIdleOpacity: Math.max(0.45, Math.min(1, Number(setting("popupIdleOpacity", 0.72))))
+  readonly property int selectedPopupWidth: popupWidth === "narrow" ? 400 : (popupWidth === "wide" ? 720 : 460)
+  readonly property int popupBaseWidth: popupLayout === "grid" ? Math.max(620, selectedPopupWidth) : selectedPopupWidth
+  readonly property int popupGridColumns: popupLayout === "list" ? 1
+    : (popup.width >= Style.space(600) && (popupLayout === "grid" || popupWidth === "wide") ? 2 : 1)
   readonly property bool showStatePills: setting("showStatePills", true) === true
   readonly property bool showSessionCounts: setting("showSessionCounts", true) === true
   readonly property bool showBarSessionCounts: setting("showBarSessionCounts", true) === true
@@ -397,6 +405,10 @@ Panel {
       statusMarkerMode: "symbols",
       statePillStyle: "filled",
       popupDensity: "comfortable",
+      popupLayout: "adaptive",
+      popupWidth: "standard",
+      popupItemScale: 1,
+      popupIdleOpacity: 0.72,
       showStatePills: true,
       showSessionCounts: true,
       animatePending: true,
@@ -781,7 +793,7 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: keyCatcher
-    contentWidth: fittedContentWidth(Style.space(460))
+    contentWidth: fittedContentWidth(Style.space(root.popupBaseWidth))
     contentHeight: fittedContentHeight(content.implicitHeight, Style.space(Math.max(360, Math.min(900, Number(root.setting("popupMaxHeight", 620)) || 620))))
 
     PanelKeyCatcher {
@@ -840,6 +852,8 @@ Panel {
             implicitHeight: statusText.implicitHeight + Style.spacing.sm
             radius: implicitHeight / 2
             color: Util.alpha(root.monitoringDegraded ? Color.urgent : (root.activeCount > 0 ? root.activeThemeColor : root.inactiveThemeColor), 0.14)
+            border.width: 1
+            border.color: Util.alpha(root.monitoringDegraded ? Color.urgent : (root.activeCount > 0 ? root.activeThemeColor : root.inactiveThemeColor), 0.32)
             Text {
               id: statusText
               anchors.centerIn: parent
@@ -938,35 +952,35 @@ Panel {
             message: "No history matches your search."
           }
 
-          Repeater {
-            model: root.filteredHistory
-            delegate: ColumnLayout {
-              required property var modelData
-              required property int index
-              Layout.fillWidth: true
-              spacing: Style.spacing.sm
-              Text {
-                visible: index === 0 || Model.historyPeriodLabel(modelData.endedAt, root.durationNow) !== Model.historyPeriodLabel(root.filteredHistory[index - 1].endedAt, root.durationNow)
+          GridLayout {
+            id: historyRows
+            Layout.fillWidth: true
+            columns: root.popupGridColumns
+            columnSpacing: root.popupDensity === "compact" ? Style.spacing.sm : Style.spacing.md
+            rowSpacing: root.popupDensity === "compact" ? Style.spacing.sm : Style.spacing.md
+            Repeater {
+              model: root.filteredHistory
+              delegate: SettingsSurface {
+                required property var modelData
+                required property int index
                 Layout.fillWidth: true
-                text: Model.historyPeriodLabel(modelData.endedAt, root.durationNow)
-                textFormat: Text.PlainText
-                color: Color.muted
-                font.family: Style.font.family
-                font.pixelSize: Style.font.caption
-                font.weight: Font.DemiBold
-              }
-              SettingsSurface {
-                Layout.fillWidth: true
+                Layout.columnSpan: root.popupGridColumns === 2 && index === root.filteredHistory.length - 1 && root.filteredHistory.length % 2 === 1 ? 2 : 1
+                accent: root.itemColor(root.item(modelData.kind))
                 RowLayout {
                   Layout.fillWidth: true
-                  spacing: Style.spacing.md
-                  Text { text: root.iconFor(modelData.kind); textFormat: Text.PlainText; color: root.activeThemeColor; font.family: Style.font.family; font.pixelSize: Style.font.icon }
+                  spacing: Style.spacing.md * root.popupItemScale
+                  Text { text: root.iconFor(modelData.kind); textFormat: Text.PlainText; color: root.itemColor(root.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.icon * root.popupItemScale }
                   ColumnLayout {
                     Layout.fillWidth: true
                     spacing: Style.spacing.xs
-                    Text { Layout.fillWidth: true; text: modelData.application || "Unknown application"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; font.weight: Font.DemiBold; elide: Text.ElideRight }
-                    Text { Layout.fillWidth: true; text: Model.label(modelData.kind) + " · " + Model.formatDuration(modelData.durationMs) + " · " + Model.historyAgeLabel(modelData.endedAt, root.durationNow); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; elide: Text.ElideRight }
-                    Text { Layout.fillWidth: true; text: modelData.source + " · " + (modelData.confidence || "unknown") + (modelData.device ? " · " + modelData.device : ""); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; elide: Text.ElideRight }
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: Style.spacing.sm
+                      Text { Layout.fillWidth: true; text: modelData.application || "Unknown application"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * root.popupItemScale; font.weight: Font.DemiBold; elide: Text.ElideRight }
+                      Text { text: Model.historyPeriodLabel(modelData.endedAt, root.durationNow); textFormat: Text.PlainText; color: root.itemColor(root.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; font.weight: Font.DemiBold }
+                    }
+                    Text { Layout.fillWidth: true; text: Model.label(modelData.kind) + " · " + Model.formatDuration(modelData.durationMs) + " · " + Model.historyAgeLabel(modelData.endedAt, root.durationNow) + (modelData.confidence && String(modelData.confidence).toLowerCase() !== "confirmed" ? " · Inferred" : ""); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, root.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
+                    Text { visible: root.popupDensity !== "compact" && Boolean(modelData.device); Layout.fillWidth: true; text: String(modelData.device || ""); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, root.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
                   }
                 }
               }
@@ -1051,74 +1065,62 @@ Panel {
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
             }
-            Text { Layout.fillWidth: true; text: "Display label"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
-            RowLayout {
+            GridLayout {
               Layout.fillWidth: true
-            TextField {
-              id: labelEditor
+              columns: root.popupWidth === "wide" ? 2 : 1
+              columnSpacing: Style.spacing.md
+              rowSpacing: Style.spacing.md
+              ColumnLayout {
+                Layout.fillWidth: true
+                spacing: Style.spacing.xs
+                Text { Layout.fillWidth: true; text: "Display label"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+                RowLayout {
+                  Layout.fillWidth: true
+                  TextField { id: labelEditor; Layout.fillWidth: true; placeholderText: "Display label"; text: root.editingKind ? root.labelFor(root.editingKind) : ""; maximumLength: 128; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistLabel(root.editingKind, text) }
+                  Button { text: "Save"; tooltipText: "Save display label"; enabled: appearanceSurface.labelDirty; onClicked: root.persistLabel(root.editingKind, labelEditor.text) }
+                }
+              }
+              ColumnLayout {
+                Layout.fillWidth: true
+                spacing: Style.spacing.xs
+                Text { Layout.fillWidth: true; text: "Device icon"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+                RowLayout {
+                  Layout.fillWidth: true
+                  TextField { id: iconEditor; Layout.fillWidth: true; placeholderText: "Icon"; text: root.editingKind ? root.iconFor(root.editingKind) : ""; maximumLength: 8; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistIcon(root.editingKind, text) }
+                  Button { text: "Save"; tooltipText: "Save device icon"; enabled: appearanceSurface.iconDirty; onClicked: root.persistIcon(root.editingKind, iconEditor.text) }
+                }
+              }
+            }
+
+            GridLayout {
               Layout.fillWidth: true
-              placeholderText: "Display label"
-              text: root.editingKind ? root.labelFor(root.editingKind) : ""
-              maximumLength: 128
-              foreground: Color.popups.text
-              accent: root.activeThemeColor
-              font.family: Style.font.family
-              onAccepted: root.persistLabel(root.editingKind, text)
+              columns: root.popupWidth === "wide" ? 2 : 1
+              columnSpacing: Style.spacing.md
+              rowSpacing: Style.spacing.md
+              Dropdown {
+                Layout.fillWidth: true
+                label: root.isAudioControl({kind: root.editingKind}) ? "Muted color" : "Active color"
+                options: root.deviceColorRoleOptions
+                value: root.itemColorOverrideRole(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "muted" : "active")
+                onChanged: function(value) { root.persistItemColor(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "muted" : "active", value) }
+              }
+              Dropdown {
+                Layout.fillWidth: true
+                label: root.isAudioControl({kind: root.editingKind}) ? "Unmuted color" : "Inactive color"
+                options: root.deviceColorRoleOptions
+                value: root.itemColorOverrideRole(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "unmuted" : "inactive")
+                onChanged: function(value) { root.persistItemColor(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "unmuted" : "inactive", value) }
+              }
+              Dropdown {
+                visible: root.isPreventativeControl({kind: root.editingKind})
+                Layout.fillWidth: true
+                Layout.columnSpan: root.popupWidth === "wide" ? 2 : 1
+                label: "Disabled color"
+                options: root.deviceColorRoleOptions
+                value: root.itemColorOverrideRole(root.editingKind, "disabled")
+                onChanged: function(value) { root.persistItemColor(root.editingKind, "disabled", value) }
+              }
             }
-            Button {
-              text: "Save"
-              tooltipText: "Save display label"
-              enabled: appearanceSurface.labelDirty
-              onClicked: root.persistLabel(root.editingKind, labelEditor.text)
-            }
-          }
-
-            Text { Layout.fillWidth: true; text: "Device icon"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
-            RowLayout {
-              Layout.fillWidth: true
-            TextField {
-              id: iconEditor
-              Layout.fillWidth: true
-              placeholderText: "Icon"
-              text: root.editingKind ? root.iconFor(root.editingKind) : ""
-              maximumLength: 8
-              foreground: Color.popups.text
-              accent: root.activeThemeColor
-              font.family: Style.font.family
-              onAccepted: root.persistIcon(root.editingKind, text)
-            }
-            Button {
-              text: "Save"
-              tooltipText: "Save device icon"
-              enabled: appearanceSurface.iconDirty
-              onClicked: root.persistIcon(root.editingKind, iconEditor.text)
-            }
-          }
-
-            Dropdown {
-            Layout.fillWidth: true
-            label: root.isAudioControl({kind: root.editingKind}) ? "Muted color" : "Active color"
-            options: root.deviceColorRoleOptions
-            value: root.itemColorOverrideRole(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "muted" : "active")
-            onChanged: function(value) { root.persistItemColor(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "muted" : "active", value) }
-          }
-
-            Dropdown {
-            visible: root.isPreventativeControl({kind: root.editingKind})
-            Layout.fillWidth: true
-            label: "Disabled color"
-            options: root.deviceColorRoleOptions
-            value: root.itemColorOverrideRole(root.editingKind, "disabled")
-            onChanged: function(value) { root.persistItemColor(root.editingKind, "disabled", value) }
-          }
-
-            Dropdown {
-            Layout.fillWidth: true
-            label: root.isAudioControl({kind: root.editingKind}) ? "Unmuted color" : "Inactive color"
-            options: root.deviceColorRoleOptions
-            value: root.itemColorOverrideRole(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "unmuted" : "inactive")
-            onChanged: function(value) { root.persistItemColor(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "unmuted" : "inactive", value) }
-          }
 
             RowLayout {
               Layout.fillWidth: true
@@ -1414,11 +1416,13 @@ Panel {
           }
         }
 
-        ColumnLayout {
+        GridLayout {
           id: activityRows
           visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory
           Layout.fillWidth: true
-          spacing: Style.spacing.md
+          columns: root.popupGridColumns
+          columnSpacing: root.popupDensity === "compact" ? Style.spacing.sm : Style.spacing.md
+          rowSpacing: root.popupDensity === "compact" ? Style.spacing.sm : Style.spacing.md
 
           Repeater {
             // Do not retain main-widget delegates behind a settings/editor page.
@@ -1428,6 +1432,8 @@ Panel {
               : []
             delegate: PrivacyActivityCard {
               required property var modelData
+              required property int index
+              Layout.columnSpan: root.popupGridColumns === 2 && index === root.displayedActivityItems.length - 1 && root.displayedActivityItems.length % 2 === 1 ? 2 : 1
               entry: modelData
               controller: root
             }

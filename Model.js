@@ -60,7 +60,7 @@ function sanitizeSettings(data) {
     var disabledOpacity = Number(source.disabledOpacity)
     clean.disabledOpacity = Math.max(0.25, Math.min(1, isFinite(disabledOpacity) ? disabledOpacity : 1))
   }
-  var reals = {barIconScale:[0.75,1.5,1]}
+  var reals = {barIconScale:[0.75,1.5,1], popupItemScale:[0.85,1.3,1], popupIdleOpacity:[0.45,1,0.72]}
   for (key in reals) if (source[key] !== undefined) {
     var realBounds = reals[key], realValue = Number(source[key])
     if (!isFinite(realValue)) realValue = realBounds[2]
@@ -72,7 +72,7 @@ function sanitizeSettings(data) {
   var stringLists = ["excludedApps", "hiddenApps", "notificationSuppressedApps", "cameraKeywords", "screenShareKeywords"]
   for (index = 0; index < stringLists.length; index++) if (Array.isArray(source[stringLists[index]]))
     clean[stringLists[index]] = unique(source[stringLists[index]].map(function(value) { return boundedPlainText(value, 256) }).filter(Boolean)).slice(0, 256)
-  var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["symbols","letters","custom","off"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
+  var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["symbols","letters","custom","off"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], popupLayout:["adaptive","list","grid"], popupWidth:["narrow","standard","wide"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
     audioControlBackend:["auto","pactl","wpctl"], screenshotBackend:["omarchy","grim","grim-satty","hyprshot","flameshot","custom"],
     activeColorRole:["bar-active","urgent","accent","foreground"], inactiveColorRole:["muted","foreground","accent"], disabledColorRole:["urgent","muted","accent","foreground","bar-active"],
     mutedColorRole:["urgent","muted","bar-active","accent","foreground"], unmutedColorRole:["foreground","bar-active","accent","muted","urgent"]}

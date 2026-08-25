@@ -33,7 +33,7 @@ const globalKeys = [
   "notificationSuppressedApps", "historyEnabled", "blockableKinds", "directDeviceMonitoring",
   "directDevicePollSeconds", "showInferredAttribution", "locationPollSeconds", "recordingPollSeconds", "popupMaxHeight",
   "activeColorRole", "inactiveColorRole", "disabledColorRole", "disabledOpacity",
-  "statusMarkerMode", "statePillStyle", "popupDensity", "showStatePills", "showSessionCounts", "animatePending",
+  "statusMarkerMode", "statePillStyle", "popupDensity", "popupLayout", "popupWidth", "popupItemScale", "popupIdleOpacity", "showStatePills", "showSessionCounts", "animatePending",
   "barIconScale", "barItemSpacing", "barItemPadding", "barMarkerPosition", "showBarSessionCounts",
   "showBarActiveMarker", "showBarDisabledMarker", "showBarPendingMarker", "showBarDegradedMarker"
   , "barActiveMarkerIcon", "barDisabledMarkerIcon", "barPendingMarkerIcon", "barDegradedMarkerIcon"
@@ -66,7 +66,7 @@ assert.match(bar, /function requestGlobalSettingsReset\(\)[\s\S]*?request\("chec
   "the global reset request must preserve an undo point before reset policy")
 for (const selector of ["Monitored activity", "Activity notifications", "Preventative controls"])
   assert.match(globalSettings, new RegExp(`label:\\s*"${selector}"`), `${selector} must remain configurable`)
-assert.match(bar, /ColumnLayout\s*\{\s*id:\s*activityRows[\s\S]*?visible:\s*root\.editingKind === "" && !root\.showingGlobalSettings[\s\S]*?Repeater\s*\{/,
+assert.match(bar, /GridLayout\s*\{\s*id:\s*activityRows[\s\S]*?visible:\s*root\.editingKind === "" && !root\.showingGlobalSettings[\s\S]*?Repeater\s*\{/,
   "activity delegates must be owned by a visual container that hides them on settings pages")
 assert.match(bar, /model:\s*root\.editingKind === "" && !root\.showingGlobalSettings && !root\.showingHistory\s*\?[\s\S]*?root\.displayedActivityItems[\s\S]*?:\s*\[\]/,
   "settings and history pages must remove main-widget delegates from the object tree")
@@ -121,7 +121,7 @@ assert.match(activityCard, /HoverHandler[\s\S]*?selectedKind/, "hover should tra
 assert.match(activityCard, /text: !entry\.dependenciesReady \? "INSTALL" : \(entry\.kind === "screenshot" \? "CAPTURE" : controller\.itemStateLabel\(entry\)\)/,
   "every popup row must expose an explicit install, capture, or tested semantic state")
 assert.match(globalSettings, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")
-for (const label of ["Icon scale", "Space between bar items", "Bar item padding", "Bar status markers", "Marker position", "Show active status marker", "Show disabled status marker", "Show verifying status marker", "Show degraded status marker", "Popup state pills", "Popup density", "Show state pills", "Show popup session counts", "Show bar session counts", "Animate verification", "Disabled opacity"])
+for (const label of ["Icon scale", "Space between bar items", "Bar item padding", "Bar status markers", "Marker position", "Active marker", "Disabled marker", "Verifying marker", "Degraded marker", "Popup state pills", "Popup density", "Popup layout", "Popup width", "Popup item scale", "Popup idle visibility", "State pills", "Popup session counts", "Bar session counts", "Animate verification", "Disabled opacity"])
   assert.match(globalSettings, new RegExp(label), `${label} must be exposed in global visual settings`)
 assert.match(bar, /state === "active" \? showBarActiveMarker[\s\S]*?state === "disabled" \? showBarDisabledMarker[\s\S]*?state === "pending" \? showBarPendingMarker[\s\S]*?state === "unavailable" \? showBarDegradedMarker/,
   "bar status classes must have independent marker visibility")
@@ -129,6 +129,10 @@ for (const label of ["Active marker icon", "Disabled marker icon", "Verifying ma
   assert.match(globalSettings, new RegExp(label), `${label} must be exposed for custom marker mode`)
 assert.match(globalSettings, /options: \["symbols", "letters", "custom", "off"\]/, "bar marker mode must expose custom glyphs")
 assert.match(fs.readFileSync(path.join(root, "PrivacyAppearanceSettings.qml"), "utf8"), /Theme colors[\s\S]*Status presentation/, "visual sections belong on Appearance")
+assert.match(fs.readFileSync(path.join(root, "PrivacyAppearanceSettings.qml"), "utf8"), /GridLayout\s*\{[\s\S]*?columns: width >= Style\.space\(650\) \? 2 : 1[\s\S]*?Layout\.columnSpan: page\.columns/,
+  "wide appearance settings must pair lightweight sections while keeping status presentation full-width")
+assert.match(monitoringSettings, /GridLayout\s*\{[\s\S]*?columns: width >= Style\.space\(650\) \? 2 : 1[\s\S]*?id: privateDataSettings[\s\S]*?Layout\.columnSpan: page\.columns/,
+  "wide monitoring settings must pair related sections while keeping private data full-width")
 assert.match(bar, /"1234"[\s\S]*?\["general", "appearance", "alerts", "monitoring"\]/, "settings keyboard shortcuts must cover all pages")
 assert.match(bar, /var count = Model\.privacySessionCount\(entry, showBarSessionCounts\)/, "bar counts must not depend on popup-count visibility")
 assert.match(bar, /Grid\s*\{\s*id:\s*iconGrid[\s\S]*?columns:\s*root\.verticalBar \? 1/,
@@ -168,7 +172,7 @@ assert.match(confirmationController, /guardMilliseconds:\s*5000[\s\S]*?onTrigger
 
 const resetGlobalBody = bar.slice(bar.indexOf("function resetGlobalSettings()"), bar.indexOf("function persistIcon("))
 for (const key of [
-  "barIconScale", "barItemSpacing", "barItemPadding", "barMarkerPosition", "showBarSessionCounts",
+  "barIconScale", "barItemSpacing", "barItemPadding", "barMarkerPosition", "showBarSessionCounts", "popupLayout", "popupWidth", "popupItemScale", "popupIdleOpacity",
   "showBarActiveMarker", "showBarDisabledMarker", "showBarPendingMarker", "showBarDegradedMarker",
   "barActiveMarkerIcon", "barDisabledMarkerIcon", "barPendingMarkerIcon", "barDegradedMarkerIcon"
 ]) assert.match(resetGlobalBody, new RegExp(`${key}:`), `global reset must restore ${key}`)
@@ -203,6 +207,12 @@ assert.match(bar, /text: "Reset device appearance"[\s\S]*?default label, icon, c
   "device reset copy must match every reset field")
 assert.match(activityCard, /controller\.statePillStyle === "filled"[\s\S]*?controller\.statePillStyle === "minimal"/, "state-pill styles must alter fill and border presentation")
 assert.match(activityCard, /controller\.popupDensity === "compact"[\s\S]*?verticalPadding/, "popup density must alter row spacing")
+assert.match(activityCard, /visible: card\.visualState !== "idle" \|\| !controller\.showStatePills/,
+  "idle cards must not repeat state text already carried by the visible pill")
+assert.match(activityCard, /function sessionSummary\(session\)[\s\S]*?session\.device[\s\S]*?formatDuration[\s\S]*?Inferred/,
+  "activity summaries must prioritize device, duration, and attribution quality over backend jargon")
+assert.match(bar, /Layout\.columnSpan: root\.popupGridColumns === 2[\s\S]*?root\.displayedActivityItems\.length % 2 === 1 \? 2 : 1/,
+  "an odd final grid card must consume the otherwise empty column")
 assert.match(bar, /running:\s*modelData\.pending && root\.animatePending/, "pending animation must honor its visual setting")
 assert.match(bar, /Timer \{[\s\S]*?running: root\.opened[\s\S]*?onTriggered: if \(!contentFlick\.moving\) root\.durationNow = Date\.now\(\)/,
   "the duration timer must pause rendered time updates while the user scrolls")

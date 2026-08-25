@@ -11,9 +11,9 @@ Rectangle {
   Layout.fillWidth: true
   implicitHeight: surfaceColumn.implicitHeight + Style.spacing.md * 2
   radius: Style.cornerRadius
-  color: Util.alpha(accent, 0.035)
+  color: Util.alpha(accent, 0.05)
   border.width: 1
-  border.color: Util.alpha(accent, 0.13)
+  border.color: Util.alpha(accent, 0.18)
 
   ColumnLayout {
     id: surfaceColumn

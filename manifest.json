@@ -43,6 +43,10 @@
       "statusMarkerMode": "symbols",
       "statePillStyle": "filled",
       "popupDensity": "comfortable",
+      "popupLayout": "adaptive",
+      "popupWidth": "standard",
+      "popupItemScale": 1,
+      "popupIdleOpacity": 0.72,
       "showStatePills": true,
       "showSessionCounts": true,
       "animatePending": true,
@@ -275,6 +279,41 @@
       "label": "Popup density",
       "options": ["comfortable", "compact"],
       "defaultValue": "comfortable"
+    },
+    {
+      "key": "popupLayout",
+      "type": "enum",
+      "label": "Popup layout",
+      "description": "Use a list, a two-column grid, or adapt the layout when the popup is wide.",
+      "options": ["adaptive", "list", "grid"],
+      "defaultValue": "adaptive"
+    },
+    {
+      "key": "popupWidth",
+      "type": "enum",
+      "label": "Popup width",
+      "options": ["narrow", "standard", "wide"],
+      "defaultValue": "standard"
+    },
+    {
+      "key": "popupItemScale",
+      "type": "number",
+      "label": "Popup item scale",
+      "description": "Scale activity-row icons and text without changing the rest of the popup.",
+      "min": 0.85,
+      "max": 1.3,
+      "step": 0.05,
+      "defaultValue": 1
+    },
+    {
+      "key": "popupIdleOpacity",
+      "type": "number",
+      "label": "Popup idle visibility",
+      "description": "Keep inactive devices readable while preserving active-state emphasis.",
+      "min": 0.45,
+      "max": 1,
+      "step": 0.05,
+      "defaultValue": 0.72
     },
     {
       "key": "showStatePills",
