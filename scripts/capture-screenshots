@@ -64,6 +64,7 @@ window_count=$(jq -r --argjson workspace "$capture_workspace" '[.[] | select(.wo
 }
 
 shell_pid=""
+initial_shell_pid=""
 widget_x=""
 widget_width=""
 panel_capture_x=""
@@ -198,6 +199,7 @@ capture_panel() {
 }
 
 wait_for_shell
+initial_shell_pid=$shell_pid
 
 capture_dir=$(mktemp -d)
 live_history=$(qs ipc --pid "$shell_pid" call privacy-devices history)
@@ -211,6 +213,11 @@ settings_changed=false
 notification_visible=false
 notification_summary="Privacy activity started · Screenshot example"
 dnd_state=""
+settings_restore_status="unchanged"
+history_restore_status="pending"
+dnd_restore_status="unchanged"
+workspace_restore_status="pending"
+shell_identity_status="unchanged"
 close_capture_notification() {
   if [[ $notification_visible == true ]]; then
     qs ipc --pid "$shell_pid" call notifications dismiss "$notification_summary" >/dev/null 2>&1 || true
@@ -221,7 +228,12 @@ restore_shell_settings() {
   if [[ $settings_changed == true ]]; then
     install -m "$settings_mode" "$settings_snapshot" "$settings_file"
     reload_shell_config
+    cmp -s "$settings_snapshot" "$settings_file" || {
+      printf 'Restored shell settings do not match the preserved snapshot.\n' >&2
+      return 1
+    }
     settings_changed=false
+    settings_restore_status="ok"
   fi
 }
 restore_history() {
@@ -237,20 +249,38 @@ restore_history() {
     return 1
   }
   history_restored=true
+  history_restore_status="ok"
+}
+restore_dnd() {
+  local actual reply
+  [[ -n $dnd_state ]] || return 0
+  reply=$(qs ipc --pid "$shell_pid" call notifications setDnd "$dnd_state" 2>/dev/null || true)
+  actual=$(qs ipc --pid "$shell_pid" call notifications isDnd 2>/dev/null || true)
+  [[ $reply == ok && $actual == "$dnd_state" ]] || {
+    printf 'Could not restore DND state to %s.\n' "$dnd_state" >&2
+    return 1
+  }
+  dnd_state=""
+  dnd_restore_status="ok"
+}
+report_restoration() {
+  [[ $shell_pid == "$initial_shell_pid" ]] || shell_identity_status="replaced:$initial_shell_pid->$shell_pid"
+  printf 'Restoration: settings=%s history=%s dnd=%s workspace=%s shell=%s\n' \
+    "$settings_restore_status" "$history_restore_status" "$dnd_restore_status" \
+    "$workspace_restore_status" "$shell_identity_status"
 }
 restore_desktop() {
   local restore_failed=false
   if [[ $restored == false ]]; then
     close_capture_notification
-    if [[ $dnd_state == on ]]; then
-      qs ipc --pid "$shell_pid" call notifications setDnd on >/dev/null 2>&1 || true
-      dnd_state=""
-    fi
-    restore_shell_settings >/dev/null 2>&1 || true
+    wait_for_shell || restore_failed=true
+    restore_dnd || restore_failed=true
+    restore_shell_settings || restore_failed=true
     qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
     restore_history || restore_failed=true
-    restore_original_workspace || restore_failed=true
+    if restore_original_workspace; then workspace_restore_status="ok"; else restore_failed=true; fi
     restored=true
+    report_restoration
   fi
   rm -rf -- "$capture_dir"
   [[ $restore_failed == false ]]
@@ -348,10 +378,7 @@ if [[ $dismiss_result != ok ]]; then
   printf 'Capture notification dismissal was unavailable; it will expire automatically.\n' >&2
 fi
 notification_visible=false
-if [[ $dnd_state == on ]]; then
-  qs ipc --pid "$shell_pid" call notifications setDnd on >/dev/null
-fi
-dnd_state=""
+restore_dnd
 
 magick "$capture_dir/bar-full.png" -crop "${widget_width}x50+${widget_x}+0" +repage "$capture_dir/bar.png"
 notification_x=$((monitor_width - 428))

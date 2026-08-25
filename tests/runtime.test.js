@@ -44,6 +44,14 @@ assert.match(screenshotWorkflow, /\.\/privacy-history append "\$history_samples"
 assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must reject workspaces containing user windows")
 assert.match(screenshotWorkflow, /restore_original_workspace\(\) \{[\s\S]*?for attempt in \{1\.\.20\}[\s\S]*?workspace == \"\$original_workspace\"/,
   "workspace restoration must wait until the compositor confirms the original workspace")
+assert.match(screenshotWorkflow, /restore_shell_settings\(\) \{[\s\S]*?cmp -s \"\$settings_snapshot\" \"\$settings_file\"[\s\S]*?settings_restore_status=\"ok\"/,
+  "settings restoration must verify the preserved bytes before reporting success")
+assert.match(screenshotWorkflow, /restore_dnd\(\) \{[\s\S]*?call notifications setDnd[\s\S]*?call notifications isDnd[\s\S]*?actual == \"\$dnd_state\"/,
+  "DND restoration must read back the requested state")
+assert.match(screenshotWorkflow, /Restoration: settings=%s history=%s dnd=%s workspace=%s shell=%s/,
+  "capture must report every restored desktop-state category")
+assert.doesNotMatch(screenshotWorkflow, /restore_shell_settings >\/dev\/null 2>&1 \|\| true/,
+  "settings restoration failures must not be suppressed")
 assert.match(screenshotWorkflow, /debugBarGeometry/, "bar screenshots must use measured live widget geometry")
 assert.match(screenshotWorkflow, /panel_capture_x=\$\(\(widget_x \+ widget_width \/ 2 - panel_width \/ 2 - panel_side_padding\)\)/,
   "panel captures must center on live widget geometry instead of using a stale offset")
