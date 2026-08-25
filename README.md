@@ -19,6 +19,10 @@ The widget occupies only its privacy-device indicators in the center bar:
 
 ![Privacy Devices indicators in their exact bar footprint](docs/bar.png)
 
+Activity notifications use the detected application icon when available:
+
+![Privacy Devices notification with an application icon](docs/notification.png)
+
 <details>
 <summary>Settings pages</summary>
 

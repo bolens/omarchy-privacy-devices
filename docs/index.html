@@ -413,6 +413,11 @@
         margin-bottom: 2.5rem;
       }
 
+      .interface-supporting {
+        display: grid;
+        gap: 1rem;
+      }
+
       .settings-gallery {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -855,10 +860,16 @@
               <img src="preview.png" alt="Activity panel with active, idle, capture, and disabled states" width="500" height="500" loading="lazy" decoding="async">
               <figcaption>Activity, session context, and controls.</figcaption>
             </figure>
-            <figure class="screenshot-card bar-shot">
-              <img src="bar.png" alt="Privacy Devices indicators occupying their exact center-bar footprint" width="141" height="50" loading="lazy" decoding="async">
-              <figcaption>Distinct markers keep active, disabled, verifying, and degraded states visible.</figcaption>
-            </figure>
+            <div class="interface-supporting">
+              <figure class="screenshot-card bar-shot">
+                <img src="bar.png" alt="Privacy Devices indicators occupying their exact center-bar footprint" width="141" height="50" loading="lazy" decoding="async">
+                <figcaption>Distinct markers keep active, disabled, verifying, and degraded states visible.</figcaption>
+              </figure>
+              <figure class="screenshot-card notification-shot">
+                <img src="notification.png" alt="Privacy Devices notification showing a detected application icon" width="420" height="160" loading="lazy" decoding="async">
+                <figcaption>Activity alerts identify the application and affected privacy device.</figcaption>
+              </figure>
+            </div>
           </div>
           <h3 class="gallery-title">Settings</h3>
           <div class="settings-gallery">
