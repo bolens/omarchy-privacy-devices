@@ -49,6 +49,12 @@ for (const file of markdownFiles) {
 const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
 assert.match(readme, /!\[Privacy Devices activity panel[^\]]*\]\(preview\.png\?v=[0-9a-f]{12}\)/,
   "README must show a content-addressed current primary preview");
+const readmeImages = [...readme.matchAll(/(?:!\[[^\]]*\]\(|<img\s+[^>]*?src=")((?:docs\/)?[A-Za-z0-9_-]+\.png)\?v=([0-9a-f]{12})/g)];
+assert.ok(readmeImages.length >= 12, "README screenshot references must be content-addressed");
+for (const [, image, token] of readmeImages) {
+  const digest = require("node:crypto").createHash("sha256").update(fs.readFileSync(path.join(root, image))).digest("hex").slice(0, 12);
+  assert.equal(token, digest, `README cache token must match ${image}`);
+}
 assert.match(readme, /docs\/device\.png/, "README must show the individual device settings page");
 assert.match(readme, /docs\/notification\.png/, "README must show the app-aware notification example");
 assert.match(readme, /docs\/monitoring-private\.png/, "README must show private history and transfer settings");
