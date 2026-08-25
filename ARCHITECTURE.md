@@ -38,7 +38,13 @@ multiple displays do not duplicate observers or race for IPC ownership.
   `IntegerSetting.qml` own the global settings interface.
 - `PrivacyConfirmationController.qml` and
   `PrivacySettingsTransferController.qml` isolate timed confirmation and
-  private import/export/undo state from presentation.
+  private import/export/undo state. `PrivacySettingsMutationController.qml`
+  coalesces rapid edits and owns persistence feedback.
+- `PrivacyMessageSurface.qml` presents shared loading, empty, success, and
+  failure states. `PrivacySettingToggle.qml` owns the common boolean-setting
+  binding, styling, and persistence contract.
+- `PrivacySettingsTransferResult.qml` validates and applies transfer results;
+  the process controller owns only subprocess lifecycle.
 - `privacy-*` helpers isolate bounded filesystem, process, dependency, capture,
   and privileged-control boundaries.
 
@@ -78,6 +84,8 @@ normal operation poll-driven.
   optimistic result.
 - Settings are allowlisted, bounded, and versioned before reaching runtime;
   IPC pages and direct helper arguments are validated again at their ingress.
+- Rapid settings edits merge before one shell update; submission failures
+  restore the previous in-memory settings and remain visible to the user.
 - History and exported settings use private directories, exclusive temporary
   files, atomic replacement, bounded reads, and load-time sanitation.
 - History operations serialize read-modify-write transactions, and generation
@@ -109,6 +117,8 @@ captures media, or sends telemetry over the network.
   equivalent.
 - Suspend periodic probes when no enabled device consumes their results, and
   retain one coalesced refresh when configuration changes during a probe.
+- Cancel stale retry timers when observers restart and reject buffered output
+  after an observer has been retired.
 - Run animation timers only while their corresponding pending state exists.
 - Bound scans, retries, stored entries, payload sizes, and rendered history.
 

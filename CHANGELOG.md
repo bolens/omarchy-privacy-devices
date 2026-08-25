@@ -9,6 +9,12 @@ maintainer guides that define release and validation procedures.
 
 ### Added
 
+- Add coalesced settings writes, visible save/failure feedback, shared status
+  surfaces, and an assembled-plugin QML smoke test.
+- Unify global boolean controls and settings-transfer result handling behind
+  focused, runtime-tested components.
+- Add QML failure and recovery coverage for settings transfer and persistent
+  observers.
 - Add a private one-step undo for settings imports and global resets.
 - Add validated settings deep links with focused section scrolling from disabled
   history and per-device status-marker guidance, plus focused-monitor IPC access.
@@ -20,6 +26,8 @@ maintainer guides that define release and validation procedures.
 
 ### Fixed
 
+- Cancel pending observer retries on manual recovery and ignore buffered
+  snapshots after monitoring is disabled.
 - Add real QML interaction coverage for settings navigation, destructive-action
   confirmation, settings transfer, and observer lifecycle state.
 - Establish a silent startup activity baseline so restarting Quickshell does
