@@ -7,6 +7,13 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-08-25
+
+### Fixed
+
+- Content-address README screenshot URLs so GitHub cannot retain stale captures
+  after the screenshot workflow refreshes their files.
+
 ## [0.5.1] - 2026-08-25
 
 ### Fixed
@@ -193,7 +200,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.3.0...v0.4.0
