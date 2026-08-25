@@ -800,22 +800,20 @@ Item {
 
   function refreshLocation() {
     if (locationProc.running) return
-    locationProc.command = ["sh", "-c",
-      "inuse=$(timeout 2 busctl get-property org.freedesktop.GeoClue2 /org/freedesktop/GeoClue2/Manager org.freedesktop.GeoClue2.Manager InUse 2>/dev/null || true); "
-      + "[ \"$inuse\" = 'b true' ] || { printf 'inactive\\n'; exit; }; printf 'active\\n'; "
-      + "for p in $(timeout 2 busctl tree org.freedesktop.GeoClue2 2>/dev/null | sed -n 's,.*\\(/org/freedesktop/GeoClue2/Client/[0-9][0-9]*\\).*,\\1,p'); do "
-      + "a=$(timeout 2 busctl get-property org.freedesktop.GeoClue2 \"$p\" org.freedesktop.GeoClue2.Client Active 2>/dev/null || true); [ \"$a\" = 'b true' ] || continue; "
-      + "d=$(timeout 2 busctl get-property org.freedesktop.GeoClue2 \"$p\" org.freedesktop.GeoClue2.Client DesktopId 2>/dev/null | cut -d' ' -f2- | tr -d '\"'); "
-      + "[ -n \"$d\" ] && printf '%s\\n' \"$d\"; done"]
+    locationProc.command = [String(Qt.resolvedUrl("privacy-location")).replace(/^file:\/\//, "")]
     locationProc.running = true
   }
 
-  function parseFallback(text, kind) {
-    var lines = String(text || "").trim().split("\n")
-    var isActive = lines.length > 0 && lines[0] === "active"
-    var apps = isActive ? Model.unique(lines.slice(1).filter(Boolean)) : []
-    if (kind === "location") { locationActive = isActive; locationApps = apps }
-    else { recordingActive = isActive; recordingApps = apps }
+  function parseLocation(text) {
+    try {
+      var result = JSON.parse(String(text || "{}"))
+      if (result.type !== "location-snapshot" || !Array.isArray(result.applications)) throw new Error("invalid location payload")
+      locationActive = result.active === true
+      locationApps = locationActive ? Model.unique(result.applications.map(Model.autoTextSafe).filter(Boolean)) : []
+    } catch (error) {
+      locationActive = false
+      locationApps = []
+    }
   }
 
   Timer {
@@ -924,7 +922,7 @@ Item {
   Process {
     id: locationProc
     onExited: function(exitCode) { root.setResult("probe", "location", exitCode) }
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: function(text) { root.parseFallback(text, "location") } }
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: function(text) { root.parseLocation(text) } }
   }
 
   Process {

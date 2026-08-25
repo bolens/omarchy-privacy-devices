@@ -29,7 +29,11 @@ managed_recorder() {
 
 case "$backend:$action" in
   wf-recorder:start)
-    output_dir=${XDG_VIDEOS_DIR:-"$HOME/Videos"}
+    output_dir=${XDG_VIDEOS_DIR:-}
+    if [ -z "$output_dir" ] && command -v xdg-user-dir >/dev/null 2>&1; then
+      output_dir=$(xdg-user-dir VIDEOS 2>/dev/null || true)
+    fi
+    output_dir=${output_dir:-"$HOME/Videos"}
     case "$output_dir" in /*) ;; *) output_dir="$HOME/Videos" ;; esac
     mkdir -p -- "$output_dir"
     if [ ! -L "$pid_file" ] && [ -f "$pid_file" ] && managed_recorder "$(cat -- "$pid_file")"; then exit 0; fi
