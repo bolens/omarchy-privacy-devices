@@ -26,6 +26,9 @@ maintainer guides that define release and validation procedures.
 - Prevent unsaved device fields and armed shared-reset confirmations from
   carrying across devices, and make global reset cover every bar appearance
   default.
+- Clear stale direct-device and capture activity when an observer fails,
+  surface fallback observer health, and avoid treating monitoring loss or
+  uncertain recovery as genuine activity transitions.
 
 ### Security
 

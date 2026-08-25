@@ -58,6 +58,9 @@ normal operation poll-driven.
 
 - Session identity is derived from kind, application, device, and source.
 - Timestamps do not cause consumer churn when visible session data is stable.
+- Observer failure invalidates source-owned sessions without recording a real
+  stop, and the first uncertain recovery snapshot is not announced as new
+  activity.
 - Control commands are not successful until an observed state matches the
   requested state; verification has a bounded timeout.
 - Pending controls retain the last observed state rather than presenting an
