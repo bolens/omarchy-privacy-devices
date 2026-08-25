@@ -1,6 +1,7 @@
 import importlib.machinery
 import importlib.util
 import json
+import fcntl
 import math
 import os
 import tempfile
@@ -74,6 +75,16 @@ class HistoryTests(unittest.TestCase):
         result = MODULE.append_entries([older], simultaneous, now)
 
         self.assertEqual([entry["application"] for entry in result], ["App 3", "App 2", "App 1"])
+
+    def test_state_lock_is_private_and_excludes_concurrent_writers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "plugin" / "history.json"
+            with MODULE.locked(path):
+                lock_path = path.parent / ".history.lock"
+                self.assertEqual(lock_path.stat().st_mode & 0o777, 0o600)
+                with lock_path.open() as contender:
+                    with self.assertRaises(BlockingIOError):
+                        fcntl.flock(contender.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
 
 
 if __name__ == "__main__":
