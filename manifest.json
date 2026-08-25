@@ -34,11 +34,19 @@
       "itemIdleOpacity": {},
       "itemLabels": {},
       "notifyOnActivity": true,
+      "notifyOnStop": false,
       "notifyOnControlChanges": true,
       "notificationKinds": ["microphone", "camera", "screen-share", "screen-recording", "location"],
       "idleOpacity": 0.45,
       "deduplicateApps": true,
       "excludedApps": ["cava"],
+      "hiddenApps": [],
+      "notificationSuppressedApps": [],
+      "historyEnabled": false,
+      "directDeviceMonitoring": false,
+      "showInferredAttribution": true,
+      "directDevicePollSeconds": 5,
+      "popupMaxHeight": 620,
       "cameraKeywords": ["camera", "webcam", "v4l2", "libcamera", "kamera"],
       "screenShareKeywords": ["portal", "screencast", "screen cast", "screen share", "desktop capture", "monitor"],
       "locationPollSeconds": 15,
@@ -148,6 +156,13 @@
         "defaultValue": true
       },
       {
+        "key": "notifyOnStop",
+        "type": "boolean",
+        "label": "Notify when privacy activity stops",
+        "description": "Include the session duration in stop notifications.",
+        "defaultValue": false
+      },
+      {
         "key": "notifyOnControlChanges",
         "type": "boolean",
         "label": "Notify after privacy control changes",
@@ -202,6 +217,61 @@
         "label": "Ignored applications",
         "description": "Case-insensitive exact or substring matches, such as cava.",
         "defaultValue": ["cava"]
+      },
+      {
+        "key": "hiddenApps",
+        "type": "string-list",
+        "label": "Hidden applications",
+        "description": "Hide matching application sessions from the bar while retaining alerts and diagnostics.",
+        "defaultValue": []
+      },
+      {
+        "key": "notificationSuppressedApps",
+        "type": "string-list",
+        "label": "Applications without alerts",
+        "description": "Suppress start and stop notifications for exact application names without hiding their activity.",
+        "defaultValue": []
+      },
+      {
+        "key": "historyEnabled",
+        "type": "boolean",
+        "label": "Keep recent activity",
+        "description": "Retain local metadata for up to seven days or 100 completed sessions. Disabling this deletes stored history.",
+        "defaultValue": false
+      },
+      {
+        "key": "directDeviceMonitoring",
+        "type": "boolean",
+        "label": "Enhanced direct-device monitoring",
+        "description": "Also inspect same-user open handles for V4L2 cameras and ALSA capture devices. No media is opened or read.",
+        "defaultValue": false
+      },
+      {
+        "key": "directDevicePollSeconds",
+        "type": "integer",
+        "label": "Direct-device refresh interval",
+        "description": "How often enhanced monitoring scans same-user open device handles.",
+        "min": 2,
+        "max": 60,
+        "step": 1,
+        "defaultValue": 5
+      },
+      {
+        "key": "showInferredAttribution",
+        "type": "boolean",
+        "label": "Show inferred attribution",
+        "description": "Display application and device names from heuristic observers. Activity remains visible when this is disabled.",
+        "defaultValue": true
+      },
+      {
+        "key": "popupMaxHeight",
+        "type": "integer",
+        "label": "Popup maximum height",
+        "description": "Cap the activity and settings popup height before it becomes scrollable.",
+        "min": 360,
+        "max": 900,
+        "step": 20,
+        "defaultValue": 620
       },
       {
         "key": "cameraKeywords",

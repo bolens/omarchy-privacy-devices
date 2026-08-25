@@ -1,0 +1,267 @@
+#!/usr/bin/env python3
+"""Report same-user processes holding camera or ALSA capture device handles."""
+
+import json
+import ctypes
+import errno
+import os
+import re
+import select
+import signal
+import struct
+import sys
+import time
+from pathlib import Path
+
+
+CAMERA = re.compile(r"^/dev/video\d+$")
+ALSA_CAPTURE = re.compile(r"^/dev/snd/pcmC\d+D\d+c$")
+EVENT_HEADER = struct.Struct("iIII")
+IN_OPEN = 0x00000020
+IN_CLOSE = 0x00000008 | 0x00000010
+IN_DIRECTORY_CHANGE = 0x00000100 | 0x00000200 | 0x00000040 | 0x00000080
+MIN_EVENT_SCAN_INTERVAL = 2.0
+
+
+def process_name(process: Path) -> str:
+    try:
+        value = (process / "comm").read_text(errors="replace").strip()
+        return value or f"PID {process.name}"
+    except OSError:
+        return f"PID {process.name}"
+
+
+def observations(proc_root: Path = Path("/proc"), uid: int | None = None) -> list[dict[str, str]]:
+    expected_uid = os.getuid() if uid is None else uid
+    result: list[dict[str, str]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for process in proc_root.iterdir():
+        if not process.name.isdigit():
+            continue
+        try:
+            if process.stat().st_uid != expected_uid:
+                continue
+            descriptors = (process / "fd").iterdir()
+            name = process_name(process)
+            for descriptor in descriptors:
+                try:
+                    target = os.readlink(descriptor)
+                except OSError:
+                    continue
+                kind = "camera" if CAMERA.fullmatch(target) else "microphone" if ALSA_CAPTURE.fullmatch(target) else ""
+                if not kind:
+                    continue
+                key = (kind, name.casefold(), target)
+                if key in seen:
+                    continue
+                seen.add(key)
+                result.append({
+                    "kind": kind,
+                    "application": name,
+                    "device": target,
+                    "source": "direct-device",
+                    "confidence": "confirmed",
+                    "detail": f"same-user process {process.name} holds an open device handle",
+                })
+        except (OSError, PermissionError):
+            continue
+    return sorted(result, key=lambda item: (item["kind"], item["application"].casefold(), item["device"]))
+
+
+def process_activity(
+    proc_root: Path = Path("/proc"),
+    recording_name: str = "gpu-screen-recorder",
+    screenshot_pattern: str = r"^(grim|slurp|satty|hyprpicker|hyprshot|flameshot)(\s|$)",
+) -> dict[str, list[str]]:
+    """Inspect same-user command lines without spawning pgrep/ps pipelines."""
+    expected_uid = os.getuid()
+    recording: set[str] = set()
+    screenshots: set[str] = set()
+    screenshot_re = re.compile(screenshot_pattern) if screenshot_pattern else None
+    for process in proc_root.iterdir():
+        if not process.name.isdigit():
+            continue
+        try:
+            if process.stat().st_uid != expected_uid:
+                continue
+            command = (process / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace").strip()
+        except (OSError, PermissionError):
+            continue
+        if not command:
+            continue
+        if "privacy-observe watch-fallbacks" in command:
+            continue
+        executable = Path(command.split(None, 1)[0]).name
+        if recording_name and recording_name in command:
+            recording.add(executable or recording_name)
+        if screenshot_re and screenshot_re.search(command):
+            screenshots.add(executable or "Screenshot tool")
+    return {"screen-recording": sorted(recording), "screenshot": sorted(screenshots)}
+
+
+def fallback_snapshot(activities: dict[str, list[str]], *, healthy: bool = True, error: str = "", code: str = "ok") -> dict:
+    payload = {"type": "fallback-snapshot", "version": 1, "healthy": healthy, "code": code, "activities": activities}
+    if error:
+        payload["error"] = error
+    return payload
+
+
+def watch_fallbacks(heartbeat: float, recording_name: str, screenshot_pattern: str) -> int:
+    stopping = False
+
+    def stop(_signal, _frame):
+        nonlocal stopping
+        stopping = True
+
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+    previous = None
+    last_emit = 0.0
+    while not stopping:
+        now = time.monotonic()
+        try:
+            current = process_activity(recording_name=recording_name, screenshot_pattern=screenshot_pattern)
+            if should_emit(previous, current, now=now, last_emit=last_emit, heartbeat=heartbeat):
+                print(json.dumps(fallback_snapshot(current), separators=(",", ":")), flush=True)
+                previous, last_emit = current, now
+        except (OSError, re.error) as error:
+            print(json.dumps(fallback_snapshot(previous or {}, healthy=False, error=str(error), code="process_scan_error"), separators=(",", ":")), flush=True)
+        time.sleep(max(0.25, heartbeat))
+    return 0
+
+
+def should_emit(previous, current, *, now: float, last_emit: float, heartbeat: float) -> bool:
+    return current != previous or now - last_emit >= heartbeat
+
+
+class DeviceEvents:
+    """Wait for capture-device opens/closes without repeatedly walking /proc."""
+
+    def __init__(self, dev_root: Path = Path("/dev")):
+        libc = ctypes.CDLL(None, use_errno=True)
+        self._add_watch = libc.inotify_add_watch
+        self._add_watch.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_uint32]
+        self.fd = libc.inotify_init1(os.O_CLOEXEC | os.O_NONBLOCK)
+        if self.fd < 0:
+            code = ctypes.get_errno()
+            raise OSError(code, os.strerror(code))
+        self._watch(dev_root, IN_DIRECTORY_CHANGE)
+        self._watch(dev_root / "snd", IN_DIRECTORY_CHANGE)
+        for device in list(dev_root.glob("video*")) + list((dev_root / "snd").glob("pcmC*D*c")):
+            self._watch(device, IN_OPEN | IN_CLOSE)
+
+    def _watch(self, path: Path, mask: int) -> None:
+        if path.exists():
+            self._add_watch(self.fd, os.fsencode(path), mask)
+
+    def wait(self, timeout: float) -> bool:
+        ready, _, _ = select.select([self.fd], [], [], max(0.0, timeout))
+        if not ready:
+            return False
+        changed = False
+        while True:
+            try:
+                payload = os.read(self.fd, 65536)
+            except BlockingIOError:
+                break
+            except OSError as error:
+                if error.errno == errno.EINTR:
+                    continue
+                raise
+            if not payload:
+                break
+            offset = 0
+            while offset + EVENT_HEADER.size <= len(payload):
+                _watch, mask, _cookie, length = EVENT_HEADER.unpack_from(payload, offset)
+                offset += EVENT_HEADER.size + length
+                changed = changed or bool(mask & (IN_OPEN | IN_CLOSE | IN_DIRECTORY_CHANGE))
+        return changed
+
+    def close(self) -> None:
+        if self.fd >= 0:
+            os.close(self.fd)
+            self.fd = -1
+
+
+def emit(current, mode: str, healthy: bool = True, error: str = "", code: str = "ok") -> None:
+    payload = {"type": "snapshot", "healthy": healthy, "code": code, "monitorMode": mode, "observations": current}
+    if error:
+        payload["error"] = error
+    print(json.dumps(payload, separators=(",", ":")), flush=True)
+
+
+def watch(heartbeat: float) -> int:
+    stopping = False
+
+    def stop(_signal, _frame):
+        nonlocal stopping
+        stopping = True
+
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+    try:
+        events = DeviceEvents()
+        mode = "inotify"
+    except OSError:
+        events = None
+        mode = "poll"
+    previous = observations()
+    emit(previous, mode)
+    last_emit = time.monotonic()
+    last_scan = last_emit
+    scan_interval = max(MIN_EVENT_SCAN_INTERVAL, heartbeat)
+    try:
+        while not stopping:
+            changed = events.wait(heartbeat) if events else False
+            if not events:
+                time.sleep(heartbeat)
+                changed = True
+            elif changed:
+                # Audio devices can emit dense open/close bursts. Coalesce them
+                # before the comparatively expensive same-user /proc scan.
+                remaining = scan_interval - (time.monotonic() - last_scan)
+                if remaining > 0:
+                    time.sleep(remaining)
+            now = time.monotonic()
+            current = observations() if changed else previous
+            if changed:
+                last_scan = now
+            if should_emit(previous, current, now=now, last_emit=last_emit, heartbeat=heartbeat):
+                emit(current, mode)
+                previous, last_emit = current, now
+    except OSError as error:
+        emit(previous, mode, False, str(error))
+        return 1
+    finally:
+        if events:
+            events.close()
+    return 0
+
+
+def main() -> int:
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "watch-fallbacks":
+            try:
+                heartbeat = float(sys.argv[sys.argv.index("--heartbeat") + 1]) if "--heartbeat" in sys.argv else 5.0
+                recording = sys.argv[sys.argv.index("--recording") + 1] if "--recording" in sys.argv else "gpu-screen-recorder"
+                screenshot = sys.argv[sys.argv.index("--screenshot-pattern") + 1] if "--screenshot-pattern" in sys.argv else r"^(grim|slurp|satty|hyprpicker|hyprshot|flameshot)(\s|$)"
+            except (ValueError, IndexError):
+                return 2
+            return watch_fallbacks(max(1.0, heartbeat), recording, screenshot)
+        if sys.argv[1] != "watch":
+            return 2
+        try:
+            heartbeat = float(sys.argv[sys.argv.index("--heartbeat") + 1]) if "--heartbeat" in sys.argv else 5.0
+        except (ValueError, IndexError):
+            return 2
+        return watch(max(1.0, heartbeat))
+    try:
+        print(json.dumps({"observations": observations()}, separators=(",", ":")))
+    except OSError as error:
+        print(json.dumps({"error": str(error)}, separators=(",", ":")))
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
