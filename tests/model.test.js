@@ -16,6 +16,21 @@ function node(mediaClass, name, extra = {}) {
 const defaults = {excludedApps: ["cava"], cameraKeywords: ["camera", "v4l2"], screenShareKeywords: ["portal", "screencast"]}
 const sanitized = context.sanitizeSettings({showIdle: "yes", popupMaxHeight: 9999, enabledKinds: ["camera", "camera", "bogus"], unknown: "discard"})
 if (JSON.stringify(sanitized) !== JSON.stringify({showIdle: true, popupMaxHeight: 900, enabledKinds: ["camera"], _privacySettingsVersion: 1})) throw new Error("settings sanitizer")
+const hardenedSettings = context.sanitizeSettings({
+  idleOpacity: -4,
+  displayMode: "invalid",
+  notificationSuppressedApps: [" Firefox ", "firefox", "", 42],
+  itemIdleOpacity: {camera: 9, bogus: 0.2},
+  itemIdleVisibility: {camera: "yes", microphone: true},
+  itemLabels: {camera: "C".repeat(200), bogus: "ignored"},
+  itemColorRoles: {camera: {active: "accent", unexpected: "danger"}, bogus: {active: "urgent"}},
+})
+if (hardenedSettings.idleOpacity !== 0.1 || hardenedSettings.displayMode !== "icons") throw new Error("numeric and enum settings bounds")
+if (JSON.stringify(hardenedSettings.notificationSuppressedApps) !== JSON.stringify(["Firefox"])) throw new Error("settings string-list normalization")
+if (JSON.stringify(hardenedSettings.itemIdleOpacity) !== JSON.stringify({camera: 1})) throw new Error("per-item opacity bounds")
+if (JSON.stringify(hardenedSettings.itemIdleVisibility) !== JSON.stringify({camera: false, microphone: true})) throw new Error("per-item boolean normalization")
+if (hardenedSettings.itemLabels.camera.length !== 128 || hardenedSettings.itemLabels.bogus !== undefined) throw new Error("per-item label bounds")
+if (JSON.stringify(hardenedSettings.itemColorRoles) !== JSON.stringify({camera: {active: "accent"}})) throw new Error("per-item role allowlist")
 if (context.classifyNode(node("Stream/Input/Audio", "Firefox"), defaults) !== "microphone") throw new Error("microphone classification")
 if (context.classifyNode(node("Stream/Output/Audio", "Firefox"), defaults) !== "audio-output") throw new Error("audio output classification")
 if (context.classifyNode(node("Stream/Input/Video", "Firefox", {"media.name":"Integrated Camera"}), defaults) !== "camera") throw new Error("camera classification")

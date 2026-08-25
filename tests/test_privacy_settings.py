@@ -22,6 +22,8 @@ class SettingsTransferTests(unittest.TestCase):
 
     def test_rejects_unknown_version_and_oversize(self):
         with self.assertRaises(ValueError): MODULE.validated("{}")
+        with self.assertRaises(ValueError): MODULE.validated("[]")
+        with self.assertRaises(ValueError): MODULE.validated("not-json")
         with self.assertRaises(ValueError): MODULE.validated('{"_privacySettingsVersion":1,"x":"' + "x" * MODULE.MAX_BYTES + '"}')
 
 

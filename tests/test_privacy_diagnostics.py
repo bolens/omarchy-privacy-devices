@@ -30,6 +30,12 @@ class DiagnosticCopyTests(unittest.TestCase):
         self.assertEqual(json.loads(run.call_args.kwargs["input"]), payload)
         self.assertTrue(run.call_args.kwargs["text"])
 
+    def test_fails_closed_when_clipboard_tool_is_missing(self):
+        payload = {"version": 1, "redacted": True}
+        with patch.object(sys, "argv", ["privacy-diagnostics", json.dumps(payload)]), patch.object(MODULE.shutil, "which", return_value=None), patch.object(MODULE.subprocess, "run") as run:
+            self.assertEqual(MODULE.main(), 1)
+        run.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
