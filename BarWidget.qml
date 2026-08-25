@@ -73,6 +73,8 @@ Panel {
   readonly property var barItems: monitoringDegraded && normalBarItems.length === 0
     ? [{kind: "summary", label: "Privacy", icon: "󰀦", active: false, apps: [], controllable: false, controlEnabled: false, health: {status: "degraded"}, sessions: []}]
     : normalBarItems
+  readonly property bool verticalBar: bar && bar.vertical === true
+  readonly property int barFlowColumns: iconGrid.columns
   property string editingKind: ""
   property bool showingGlobalSettings: false
   property bool showingHistory: false
@@ -239,7 +241,7 @@ Panel {
     if (role === "bar-active") return Color.bar.active
     if (role === "urgent") return Color.urgent
     if (role === "accent") return Color.accent
-    if (role === "foreground") return bar ? bar.barForeground : Color.foreground
+    if (role === "foreground") return bar ? bar.foreground : Color.foreground
     if (role === "muted") return Color.muted
     return activeFallback ? Color.bar.active : Color.muted
   }
@@ -730,13 +732,14 @@ Panel {
 
   Item {
     id: button
-    implicitWidth: iconRow.implicitWidth
-    implicitHeight: root.bar ? root.bar.barSize : Style.bar.sizeHorizontal
+    implicitWidth: root.verticalBar && root.bar ? root.bar.barSize : iconGrid.implicitWidth
+    implicitHeight: root.verticalBar ? iconGrid.implicitHeight : (root.bar ? root.bar.barSize : Style.bar.sizeHorizontal)
     property real labelWidth: implicitWidth
 
-    Row {
-      id: iconRow
+    Grid {
+      id: iconGrid
       anchors.centerIn: parent
+      columns: root.verticalBar ? 1 : Math.max(1, root.barItems.length)
       spacing: root.barItemSpacing
 
       Repeater {

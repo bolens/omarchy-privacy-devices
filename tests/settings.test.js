@@ -131,6 +131,10 @@ assert.match(globalSettings, /options: \["symbols", "letters", "custom", "off"\]
 assert.match(fs.readFileSync(path.join(root, "PrivacyAppearanceSettings.qml"), "utf8"), /Theme colors[\s\S]*Status presentation/, "visual sections belong on Appearance")
 assert.match(bar, /"1234"[\s\S]*?\["general", "appearance", "alerts", "monitoring"\]/, "settings keyboard shortcuts must cover all pages")
 assert.match(bar, /var count = Model\.privacySessionCount\(entry, showBarSessionCounts\)/, "bar counts must not depend on popup-count visibility")
+assert.match(bar, /Grid\s*\{\s*id:\s*iconGrid[\s\S]*?columns:\s*root\.verticalBar \? 1/,
+  "bar items must stack on vertical Omarchy bars")
+assert.match(bar, /role === "foreground"[\s\S]*?bar\.foreground/,
+  "theme-role fallback must use the documented Omarchy bar foreground")
 assert.match(bar, /label: "Show status markers for this device"[\s\S]*?onChanged: function\(value\) \{ root\.persistItemStatusMarker\(root\.editingKind, value\) \}/,
   "per-item marker settings must persist the selected override")
 assert.match(bar, /text: "Move left"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, -1\)/,

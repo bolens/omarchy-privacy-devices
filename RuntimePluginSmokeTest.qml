@@ -65,9 +65,14 @@ ShellRoot {
         root.stage = 2
       } else {
         if (widget.editingKind !== "camera" || widget.showingHistory || widget.showingGlobalSettings) throw new Error("device editor integration failed")
+        barMock.vertical = true
+        root.stage = 3
+      }
+      if (root.stage === 3) Qt.callLater(function() {
+        if (!widget.verticalBar || widget.barFlowColumns !== 1) throw new Error("vertical bar layout did not stack items")
         console.log("PRIVACY_QML_PLUGIN_SMOKE_OK")
         Qt.quit()
-      }
+      })
     }
   }
 }

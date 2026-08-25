@@ -13,8 +13,10 @@ if [[ -z $shell_root ]]; then
     if [[ -d "$candidate/Commons" && -d "$candidate/Ui" ]]; then shell_root=$candidate; break; fi
   done
 fi
-runtime_dir="$(mktemp -d)"
-trap 'rm -rf -- "$runtime_dir"' EXIT
+runtime_parent="$(mktemp -d)"
+runtime_dir="$runtime_parent/runtime tree"
+mkdir "$runtime_dir"
+trap 'rm -rf -- "$runtime_parent"' EXIT
 
 [[ -d "$shell_root/Commons" && -d "$shell_root/Ui" ]] || {
   printf 'Omarchy Shell modules not found under %s\n' "$shell_root" >&2
