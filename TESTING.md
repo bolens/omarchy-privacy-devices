@@ -39,7 +39,7 @@ git archive HEAD | tar -x -C "$validation_dir"
 omarchy plugin validate "$validation_dir"
 qmllint -I "$OMARCHY_PATH/shell" \
   BarWidget.qml Service.qml SettingsSurface.qml IntegerSetting.qml \
-  PrivacyActivityCard.qml
+  PrivacyActivityCard.qml DeviceSettingsEditor.qml DeviceDiagnostics.qml
 ```
 
 In a graphical session, exercise shared JavaScript in the real Quickshell

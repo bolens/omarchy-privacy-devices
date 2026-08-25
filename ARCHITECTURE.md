@@ -31,7 +31,8 @@ multiple displays do not duplicate observers or race for IPC ownership.
   sanitized settings through Omarchy Shell.
 - `Model.js` contains pure classification, normalization, reconciliation,
   health, settings, and visual-state policy shared by runtime and tests.
-- `PrivacyActivityCard.qml`, `SettingsSurface.qml`, and `IntegerSetting.qml`
+- `PrivacyActivityCard.qml`, `DeviceSettingsEditor.qml`,
+  `DeviceDiagnostics.qml`, `SettingsSurface.qml`, and `IntegerSetting.qml`
   contain reusable presentation components without monitoring ownership.
 - `privacy-*` helpers isolate bounded filesystem, process, dependency, capture,
   and privileged-control boundaries.

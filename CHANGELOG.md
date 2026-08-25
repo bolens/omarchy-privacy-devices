@@ -7,6 +7,12 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Added
+
+- Add explicit per-device inheritance, customized-state indicators, adjacent
+  navigation, scoped resets, and validated custom-backend save feedback.
+- Present device diagnostics as labeled, actionable rows.
+
 ### Changed
 
 - Align individual device settings with the global settings structure, clarify
