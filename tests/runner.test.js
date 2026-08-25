@@ -15,6 +15,9 @@ for (const helper of ["privacy-history", "privacy-location", "privacy-observe", 
   assert.match(runner, new RegExp(`python3 -m py_compile[^\\n]*${helper}`), `the canonical runner must compile ${helper}`)
 assert.match(runner, /shellcheck[\s\S]*?privacy-control[\s\S]*?tests\/run_qml_runtime\.sh[\s\S]*?tests\/fixtures\/\*/, "the canonical runner must lint runtime, maintainer, and fixture shell scripts")
 assert.match(ci, /name: Run behavior suite[\s\S]*?run: tests\/run_all\.sh/, "CI must delegate the behavior suite to the canonical runner")
+const pluginJob = ci.slice(ci.indexOf("\n  plugin:\n"), ci.indexOf("\n  repository:\n"))
+assert.ok(pluginJob.indexOf("run: npm ci") >= 0 && pluginJob.indexOf("run: npm ci") < pluginJob.indexOf("run: tests/run_all.sh"),
+  "the plugin job must install declared test dependencies before the canonical suite")
 assert.equal(packageJson.scripts.test, "bash tests/run_all.sh", "npm test must delegate to the canonical runner")
 assert.match(testing, /npm test/, "the contributor testing entry point must use the canonical runner")
 
