@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+
+case "${1:-}" in
+  watch-fallbacks)
+    while :; do
+      printf '%s\n' '{"type":"fallback-snapshot","version":1,"activities":{"screen-recording":[],"screenshot":[]}}'
+      sleep 0.05
+    done
+    ;;
+  watch)
+    while :; do
+      printf '%s\n' '{"type":"snapshot","version":1,"healthy":true,"observations":[]}'
+      sleep 0.05
+    done
+    ;;
+  *) exit 2 ;;
+esac

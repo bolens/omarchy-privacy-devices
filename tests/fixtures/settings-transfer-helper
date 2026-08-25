@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+case "${1:-}" in
+  can-undo) exit 1 ;;
+  export) printf '%s\n' exported ;;
+  import) printf '%s\n' '{"_privacySettingsVersion":1,"showIdle":false}' ;;
+  checkpoint) printf '%s\n' checkpointed ;;
+  undo) printf '%s\n' '{"_privacySettingsVersion":1,"showIdle":true}' ;;
+  *) exit 2 ;;
+esac

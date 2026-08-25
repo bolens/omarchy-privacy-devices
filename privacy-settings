@@ -9,6 +9,7 @@ from pathlib import Path
 
 MAX_BYTES = 131072
 EXPORT_PATH = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "omarchy-privacy-devices/settings-export.json"
+UNDO_PATH = EXPORT_PATH.with_name("settings-undo.json")
 
 
 def reject_constant(value: str):
@@ -24,8 +25,7 @@ def validated(raw: str) -> dict:
     return value
 
 
-def export_settings(raw: str, target: Path = EXPORT_PATH) -> Path:
-    value = validated(raw)
+def atomic_write(value: dict, target: Path) -> Path:
     target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     os.chmod(target.parent, 0o700)
     descriptor, temporary_name = tempfile.mkstemp(prefix=".settings-", dir=target.parent)
@@ -44,17 +44,44 @@ def export_settings(raw: str, target: Path = EXPORT_PATH) -> Path:
     return target
 
 
+def export_settings(raw: str, target: Path = EXPORT_PATH) -> Path:
+    return atomic_write(validated(raw), target)
+
+
 def import_settings(target: Path = EXPORT_PATH) -> dict:
     with target.open() as stream:
         return validated(stream.read(MAX_BYTES + 1))
+
+
+def import_with_undo(current_raw: str, source: Path = EXPORT_PATH, undo: Path = UNDO_PATH) -> dict:
+    current = validated(current_raw)
+    incoming = import_settings(source)
+    atomic_write(current, undo)
+    return incoming
+
+
+def checkpoint_settings(current_raw: str, undo: Path = UNDO_PATH) -> Path:
+    return atomic_write(validated(current_raw), undo)
+
+
+def undo_settings(target: Path = UNDO_PATH) -> dict:
+    value = import_settings(target)
+    target.unlink()
+    return value
 
 
 def main() -> int:
     try:
         if len(sys.argv) == 3 and sys.argv[1] == "export":
             print(export_settings(sys.argv[2])); return 0
-        if len(sys.argv) == 2 and sys.argv[1] == "import":
-            print(json.dumps(import_settings(), separators=(",", ":"))); return 0
+        if len(sys.argv) == 3 and sys.argv[1] == "import":
+            print(json.dumps(import_with_undo(sys.argv[2]), separators=(",", ":"))); return 0
+        if len(sys.argv) == 3 and sys.argv[1] == "checkpoint":
+            print(checkpoint_settings(sys.argv[2])); return 0
+        if len(sys.argv) == 2 and sys.argv[1] == "undo":
+            print(json.dumps(undo_settings(), separators=(",", ":"))); return 0
+        if len(sys.argv) == 2 and sys.argv[1] == "can-undo":
+            import_settings(UNDO_PATH); print("true"); return 0
     except (OSError, ValueError, json.JSONDecodeError, RecursionError) as error:
         print(str(error), file=sys.stderr); return 1
     return 2

@@ -23,6 +23,8 @@ assert.match(screenshotWorkflow, /flock -n 9/,
   "screenshot capture must prevent concurrent runs from racing over user state")
 assert.match(screenshotWorkflow, /live_history=\$\(qs ipc --pid "\$shell_pid" call privacy-devices history\)[\s\S]*?persisted_history=\$\(\.\/privacy-history load\)[\s\S]*?unique_by\(\[\.id, \.endedAt\]\)[\s\S]*?\.\/privacy-history append "\$history_snapshot"/,
   "screenshot capture must merge and restore deduplicated live and persisted pre-capture history")
+assert.match(screenshotWorkflow, /restore_history\(\) \{[\s\S]*?restored_history=\$\(\.\/privacy-history load\)[\s\S]*?\$actual == \$expected[\s\S]*?Restored history does not match/,
+  "screenshot capture must verify that private history was restored exactly")
 assert.match(screenshotWorkflow, /call privacy-devices historyEnabled[\s\S]*?history_samples=\$\(jq -cn[\s\S]*?\.\/privacy-history clear[\s\S]*?\.\/privacy-history append "\$history_samples"/,
   "history screenshots must use bounded examples only after preserving the real store")
 assert.match(screenshotWorkflow, /\.\/privacy-history append "\$history_samples"[\s\S]*?omarchy restart shell[\s\S]*?wait_for_shell[\s\S]*?capture_panel history history/,
@@ -31,8 +33,21 @@ assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must r
 assert.match(screenshotWorkflow, /debugBarGeometry/, "bar screenshots must use measured live widget geometry")
 assert.ok(fs.statSync(path.join(__dirname, "..", "scripts/capture-screenshots")).mode & 0o111,
   "screenshot workflow must remain executable")
-for (const qml of ["DeviceSettingsEditor.qml", "DeviceDiagnostics.qml", "RuntimeModelTest.qml"])
+for (const qml of [
+  "DeviceSettingsEditor.qml", "DeviceDiagnostics.qml", "RuntimeModelTest.qml",
+  "PrivacySettingsNavigation.qml", "PrivacyConfirmationController.qml",
+  "PrivacySettingsTransferController.qml", "RuntimeSettingsNavigationTest.qml",
+  "RuntimeConfirmationTest.qml", "RuntimeObserverLifecycleTest.qml",
+  "RuntimeSettingsTransferTest.qml"
+])
   assert.match(ci, new RegExp(`qmllint[^']*${qml}`), `CI must lint ${qml}`)
+for (const [harness, marker] of [
+  ["RuntimeSettingsNavigationTest.qml", "PRIVACY_QML_SETTINGS_NAVIGATION_OK"],
+  ["RuntimeConfirmationTest.qml", "PRIVACY_QML_CONFIRMATION_OK"],
+  ["RuntimeObserverLifecycleTest.qml", "PRIVACY_QML_OBSERVER_LIFECYCLE_OK"],
+  ["RuntimeSettingsTransferTest.qml", "PRIVACY_QML_SETTINGS_TRANSFER_OK"]
+])
+  assert.match(qmlRuntime, new RegExp(`run_harness ${harness} ${marker}`), `${harness} must run in the real QML suite`)
 assert.match(screenshotWorkflow, /capture_panel device device/, "screenshot workflow must capture an individual device settings page")
 assert.match(screenshotWorkflow, /docs\/device\.png/, "screenshot workflow must publish the device settings capture")
 assert.match(screenshotWorkflow, /privacy-devices-settings openHistory[\s\S]*capture_panel history history/,
@@ -95,6 +110,10 @@ assert.match(service, /settings\.recordingPollSeconds/, "the persistent fallback
 assert.doesNotMatch(service, /id:\s*(?:recordingProc|screenshotProc)/, "recording and screenshot detection must not spawn periodic QML processes")
 assert.doesNotMatch(service, /id:\s*(?:recordingTimer|screenshotTimer)/, "persistent observation must replace recording and screenshot polling timers")
 assert.match(service, /target:\s*"privacy-devices-settings"[\s\S]*?shell\.summon/, "singleton service must route settings to the focused monitor")
+assert.match(service, /function openSection\(page: string, section: string\): string[\s\S]*?Model\.settingsDeepLink\(page, section\)[\s\S]*?requestedSettingsSection = target\.section[\s\S]*?shell\.summon/,
+  "settings IPC must expose validated section deep links through focused-monitor routing")
+assert.match(service, /function open\(page: string\): string[\s\S]*?requestedSettingsSection = ""/,
+  "page-only IPC navigation must clear stale section targets")
 assert.match(service, /function openHistory\(\): string[\s\S]*?requestedView = "history"[\s\S]*?shell\.summon/,
   "history IPC must use the singleton service's focused-monitor routing")
 assert.doesNotMatch(bar, /target:\s*"privacy-devices-settings"/, "per-monitor widgets must not compete for settings IPC ownership")
@@ -147,8 +166,8 @@ assert.match(bar, /No history matches your search\./,
   "history must distinguish a filtered-empty result from an empty store")
 assert.match(bar, /Model\.historyPeriodLabel\(modelData\.endedAt, root\.durationNow\)/,
   "history entries must expose behavior-tested relative period groups")
-assert.match(bar, /Model\.historyClearAction\((?:root\.)?historyClearArmed\)/,
-  "destructive history clearing must use the behavior-tested confirmation policy")
+assert.match(bar, /function requestHistoryClear\(\)[\s\S]*?confirmationState\.request\("history"\)[\s\S]*?privacyService\.clearHistory\(\)/,
+  "destructive history clearing must use the runtime-tested confirmation controller")
 assert.doesNotMatch(bar, /Activity details distinguish observation source/,
   "the activity footer must not retain displaced implementation guidance")
 assert.match(bar, /onMoveRequested:[\s\S]*?dy !== 0[\s\S]*?moveActivitySelection\(dy\)/,

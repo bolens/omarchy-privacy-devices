@@ -11,6 +11,12 @@ const integer = fs.readFileSync(path.join(root, "IntegerSetting.qml"), "utf8")
 const activityCard = fs.readFileSync(path.join(root, "PrivacyActivityCard.qml"), "utf8")
 const deviceEditor = fs.readFileSync(path.join(root, "DeviceSettingsEditor.qml"), "utf8")
 const deviceDiagnostics = fs.readFileSync(path.join(root, "DeviceDiagnostics.qml"), "utf8")
+const settingsNavigation = fs.readFileSync(path.join(root, "PrivacySettingsNavigation.qml"), "utf8")
+const confirmationController = fs.readFileSync(path.join(root, "PrivacyConfirmationController.qml"), "utf8")
+const monitoringSettings = fs.readFileSync(path.join(root, "PrivacyMonitoringSettings.qml"), "utf8")
+const globalSettings = ["PrivacyGeneralSettings.qml", "PrivacyAppearanceSettings.qml", "PrivacyAlertsSettings.qml", "PrivacyMonitoringSettings.qml", "PrivacyMarkerGlyphEditor.qml"]
+  .map(file => fs.readFileSync(path.join(root, file), "utf8")).join("\n")
+const settingsUi = bar + "\n" + globalSettings
 const deviceSettings = bar + deviceEditor + deviceDiagnostics
 const defaults = manifest.barWidget.defaults
 const modelContext = {}
@@ -39,7 +45,7 @@ for (const key of globalKeys) {
   assert.ok(Object.hasOwn(defaults, key), `global default missing: ${key}`)
   assert.ok(schema.has(key), `global schema missing: ${key}`)
   if (!["enabledKinds", "notificationKinds", "blockableKinds"].includes(key))
-    assert.ok(bar.includes(`{${key}:`) || bar.includes(`{${key}: `) || bar.includes(`settingKey: "${key}"`), `global editor is not wired to persist ${key}`)
+    assert.ok(settingsUi.includes(`{${key}:`) || settingsUi.includes(`{${key}: `) || settingsUi.includes(`settingKey: "${key}"`), `global editor is not wired to persist ${key}`)
   const entry = schema.get(key)
   assert.deepEqual(entry.defaultValue, defaults[key], `schema/default mismatch: ${key}`)
   if (entry.type === "enum") assert.ok(entry.options.includes(entry.defaultValue), `enum default is unavailable: ${key}`)
@@ -48,11 +54,14 @@ for (const key of globalKeys) {
   }
 }
 
-assert.match(bar, /GlobalSettingsTab \{ label: "Appearance"; value: "appearance" \}/, "appearance settings need a dedicated page")
-assert.match(bar, /Button \{ Layout\.alignment: Qt\.AlignRight; text: "Reset global settings"; onClicked: root\.resetGlobalSettings\(\) \}/,
-  "the global reset action must invoke the complete reset policy")
+assert.match(settingsNavigation, /value:"appearance"/, "appearance settings need a dedicated page")
+assert.match(settingsNavigation, /objectName: "settingsPageButton-" \+ modelData\.value/, "settings tabs must be addressable by runtime interaction tests")
+assert.match(bar, /text: "Reset global settings"[\s\S]*?onClicked: root\.requestGlobalSettingsReset\(\)/,
+  "the global reset action must use the guarded request path")
+assert.match(bar, /function requestGlobalSettingsReset\(\)[\s\S]*?request\("checkpoint"/,
+  "the global reset request must preserve an undo point before reset policy")
 for (const selector of ["Monitored activity", "Activity notifications", "Preventative controls"])
-  assert.match(bar, new RegExp(`label:\\s*"${selector}"`), `${selector} must remain configurable`)
+  assert.match(globalSettings, new RegExp(`label:\\s*"${selector}"`), `${selector} must remain configurable`)
 assert.match(bar, /ColumnLayout\s*\{\s*id:\s*activityRows[\s\S]*?visible:\s*root\.editingKind === "" && !root\.showingGlobalSettings[\s\S]*?Repeater\s*\{/,
   "activity delegates must be owned by a visual container that hides them on settings pages")
 assert.match(bar, /model:\s*root\.editingKind === "" && !root\.showingGlobalSettings && !root\.showingHistory\s*\?[\s\S]*?root\.displayedActivityItems[\s\S]*?:\s*\[\]/,
@@ -60,38 +69,48 @@ assert.match(bar, /model:\s*root\.editingKind === "" && !root\.showingGlobalSett
 assert.match(bar, /delegate:\s*PrivacyActivityCard\s*\{[\s\S]*?entry:\s*modelData[\s\S]*?controller:\s*root/,
   "activity presentation must be isolated in its tested card component")
 assert.match(bar, /manageIpc:\s*false/, "per-monitor panels must delegate IPC routing to the singleton service and focused-monitor shell router")
-assert.match(bar, /settingsRequestSerial <= handledSettingsRequestSerial[\s\S]*?requestedView === "history"[\s\S]*?showHistory\(\)[\s\S]*?showGlobalSettings\(privacyService\.requestedSettingsPage\)/,
+assert.match(bar, /settingsRequestSerial <= handledSettingsRequestSerial[\s\S]*?requestedView === "history"[\s\S]*?showHistory\(\)[\s\S]*?showGlobalSettings\(privacyService\.requestedSettingsPage, privacyService\.requestedSettingsSection\)/,
   "the focused widget must consume singleton history and settings requests")
 assert.match(bar, /onSettingsRequestSerialChanged\(\) \{ root\.handleSettingsRequest\(\) \}/,
   "settings IPC page changes must apply while the popup remains open")
 assert.match(surface, /default property alias content:/, "settings groups need a reusable visual surface")
 assert.match(integer, /IntValidator[\s\S]*?bottom:[\s\S]*?top:/, "integer settings must enforce their declared bounds")
 assert.match(bar, /Loader\s*\{\s*id:\s*globalSettingsPageLoader[\s\S]*?sourceComponent:[\s\S]*?globalSettingsPage/, "only the active settings page should be instantiated")
+assert.match(bar, /function showGlobalSettings\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)[\s\S]*?pendingSettingsSection = target\.section[\s\S]*?Qt\.callLater\(root\.scrollToSettingsSection\)/,
+  "settings navigation must preserve a validated section deep link until layout completes")
+assert.match(bar, /function scrollToSettingsSection\(\)[\s\S]*?globalSettingsPageLoader\.item\.sectionItems[\s\S]*?mapToItem\(contentFlick\.contentItem[\s\S]*?Model\.settingsScrollPosition/,
+  "deep links must resolve the live lazy-loaded section and clamp its scroll position")
+assert.match(bar, /id:\s*globalSettingsPageLoader[\s\S]*?onLoaded:\s*Qt\.callLater\(root\.scrollToSettingsSection\)/,
+  "lazy settings pages must complete pending deep links after loading")
+assert.match(bar, /History is off[\s\S]*?Open monitoring settings[\s\S]*?showGlobalSettings\("monitoring", "private-data"\)/,
+  "disabled history must link directly to its opt-in control")
+assert.match(bar, /Global status-marker rules still apply[\s\S]*?Global marker settings[\s\S]*?showGlobalSettings\("appearance", "status-presentation"\)/,
+  "per-device marker guidance must link directly to the governing global rules")
 assert.match(activityCard, /required property var controller[\s\S]*?property var entry:/, "activity card must expose one deep controller/entry interface")
-assert.match(bar, /PanelSectionHeader \{ Layout\.fillWidth: true; text: "Observer health" \}[\s\S]*?text: root\.monitoringTelemetryText\(\)/,
+assert.match(globalSettings, /PanelSectionHeader \{ Layout\.fillWidth: true; text: "Observer health" \}[\s\S]*?text: page\.controller\.monitoringTelemetryText\(\)/,
   "the Monitoring page must render live observer telemetry in its health section")
 assert.match(bar, /function monitoringTelemetryText\(\)[\s\S]*?Model\.monitoringTelemetryText\(data\)/,
   "observer telemetry copy must use the behavior-tested formatter")
 assert.match(bar, /function persistSettings\(values\)[\s\S]*?settingsMutationPending = true[\s\S]*?onOpenedChanged:[\s\S]*?else if \(settingsMutationPending\) Qt\.callLater\(root\.open\)/,
   "settings writes must preserve the open editor across shell config reloads")
 assert.match(bar, /Model\.sanitizeSettings\(candidate\)/, "settings writes must pass through the versioned sanitizer")
-assert.match(bar, /privacy-settings[\s\S]*?settingsTransferProc/, "settings transfer must use the bounded helper")
-assert.ok(bar.indexOf("Private data") > bar.indexOf("id: monitoringSettingsPage"), "private storage controls belong on Monitoring")
-assert.equal((bar.match(/label: "Keep recent activity"/g) || []).length, 1, "history controls must not be duplicated across settings pages")
-assert.equal((bar.match(/text: "Export settings"/g) || []).length, 1, "settings transfer must have one clear home")
+assert.match(bar, /privacy-settings[\s\S]*?PrivacySettingsTransferController/, "settings transfer must use the bounded helper controller")
+assert.match(monitoringSettings, /text: "Private data"[\s\S]*?text: "Export settings"[\s\S]*?text: "Import settings"[\s\S]*?text: "Undo last change"/,
+  "Monitoring must own the complete private settings-transfer workflow")
+assert.equal((globalSettings.match(/label: "Keep recent activity"/g) || []).length, 1, "history controls must not be duplicated across settings pages")
+assert.equal((globalSettings.match(/text: "Export settings"/g) || []).length, 1, "settings transfer must have one clear home")
 assert.match(activityCard, /HoverHandler[\s\S]*?selectedKind/, "hover should track keyboard selection without polling")
 assert.match(activityCard, /text: !entry\.dependenciesReady \? "INSTALL" : \(entry\.kind === "screenshot" \? "CAPTURE" : controller\.itemStateLabel\(entry\)\)/,
   "every popup row must expose an explicit install, capture, or tested semantic state")
-assert.match(bar, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")
+assert.match(globalSettings, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")
 for (const label of ["Icon scale", "Space between bar items", "Bar item padding", "Bar status markers", "Marker position", "Show active status marker", "Show disabled status marker", "Show verifying status marker", "Show degraded status marker", "Popup state pills", "Popup density", "Show state pills", "Show popup session counts", "Show bar session counts", "Animate verification", "Disabled opacity"])
-  assert.match(bar, new RegExp(label), `${label} must be exposed in global visual settings`)
+  assert.match(globalSettings, new RegExp(label), `${label} must be exposed in global visual settings`)
 assert.match(bar, /state === "active" \? showBarActiveMarker[\s\S]*?state === "disabled" \? showBarDisabledMarker[\s\S]*?state === "pending" \? showBarPendingMarker[\s\S]*?state === "unavailable" \? showBarDegradedMarker/,
   "bar status classes must have independent marker visibility")
 for (const label of ["Active marker icon", "Disabled marker icon", "Verifying marker icon", "Degraded marker icon"])
-  assert.match(bar, new RegExp(label), `${label} must be exposed for custom marker mode`)
-assert.match(bar, /options: \["symbols", "letters", "custom", "off"\]/, "bar marker mode must expose custom glyphs")
-assert.ok(bar.indexOf("id: appearanceSettingsPage") < bar.indexOf("Theme colors"), "theme controls belong on Appearance")
-assert.ok(bar.indexOf("id: appearanceSettingsPage") < bar.indexOf("Status presentation"), "status controls belong on Appearance")
+  assert.match(globalSettings, new RegExp(label), `${label} must be exposed for custom marker mode`)
+assert.match(globalSettings, /options: \["symbols", "letters", "custom", "off"\]/, "bar marker mode must expose custom glyphs")
+assert.match(fs.readFileSync(path.join(root, "PrivacyAppearanceSettings.qml"), "utf8"), /Theme colors[\s\S]*Status presentation/, "visual sections belong on Appearance")
 assert.match(bar, /"1234"[\s\S]*?\["general", "appearance", "alerts", "monitoring"\]/, "settings keyboard shortcuts must cover all pages")
 assert.match(bar, /var count = Model\.privacySessionCount\(entry, showBarSessionCounts\)/, "bar counts must not depend on popup-count visibility")
 assert.match(bar, /label: "Show status markers for this device"[\s\S]*?onChanged: function\(value\) \{ root\.persistItemStatusMarker\(root\.editingKind, value\) \}/,
@@ -114,15 +133,15 @@ assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceE
 assert.match(bar, /function moveDeviceEditor\(delta\)[\s\S]*?Model\.nextNavigationKind\(order, editingKind, delta\)/,
   "device editor navigation must use behavior-tested boundary handling")
 assert.match(deviceEditor, /tooltipText: "Previous device"[\s\S]*?tooltipText: "Next device"/, "device pages must expose accessible adjacent navigation")
-assert.match(bar, /text: resetSurface\.pendingReset === "all" \? "Confirm reset all" : "Reset all device settings"[\s\S]*?root\.resetAllDeviceSettings\(root\.editingKind\)/,
+assert.match(bar, /text: confirmationState\.pending === "all" \? "Confirm reset all" : "Reset all device settings"[\s\S]*?root\.resetAllDeviceSettings\(root\.editingKind\)/,
   "the complete device reset must invoke its scoped reset policy after confirmation")
-assert.match(bar, /property string pendingReset:[\s\S]*?Confirm shared backend reset[\s\S]*?Confirm reset all/,
+assert.match(bar, /confirmationState\.pending === "backend"[\s\S]*?Confirm shared backend reset[\s\S]*?confirmationState\.pending === "all"[\s\S]*?Confirm reset all/,
   "shared audio resets must require an explicit second action")
 assert.match(bar, /function syncDeviceEditors\(\)[\s\S]*?labelEditor\.text = root\.labelFor\(editingKind\)[\s\S]*?customRecorderStopEditor\.text/,
   "changing devices must replace every editable field instead of retaining stale input")
 assert.match(bar, /onEditingKindChanged: Qt\.callLater\(syncDeviceEditors\)/,
   "device-editor synchronization must run after every device transition")
-assert.match(bar, /Timer\s*\{[\s\S]*?running: resetSurface\.pendingReset !== ""[\s\S]*?resetSurface\.pendingReset = ""/,
+assert.match(confirmationController, /guardMilliseconds:\s*5000[\s\S]*?onTriggered: controller\.pending = ""/,
   "shared reset confirmations must expire")
 
 const resetGlobalBody = bar.slice(bar.indexOf("function resetGlobalSettings()"), bar.indexOf("function persistIcon("))

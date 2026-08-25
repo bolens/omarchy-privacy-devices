@@ -136,8 +136,6 @@ const observation = (overrides = {}) => Object.assign({
   assert.equal(model.historyPeriodLabel(10 * day - 1000, 10 * day), "Today")
   assert.equal(model.historyPeriodLabel(10 * day - day - 1000, 10 * day), "Yesterday")
   assert.equal(model.historyPeriodLabel(10 * day - 3 * day, 10 * day), "Earlier this week")
-  assert.equal(model.historyClearAction(false), "confirm")
-  assert.equal(model.historyClearAction(true), "clear")
   assert.equal(model.historyCountLabel(1, 1), "1 entry")
   assert.equal(model.historyCountLabel(3, 3), "3 entries")
   assert.equal(model.historyCountLabel(2, 8), "2 of 8")

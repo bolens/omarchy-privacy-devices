@@ -28,4 +28,29 @@ assert.equal(model.popupDismissalAction("", true, false), "settings")
 assert.equal(model.popupDismissalAction("", false, true), "history")
 assert.equal(model.popupDismissalAction("", false, false), "popup")
 
+assert.deepEqual(
+  JSON.parse(JSON.stringify(model.settingsDeepLink("monitoring", "private-data"))),
+  {page: "monitoring", section: "private-data"},
+  "history recovery must target the private-data settings section"
+)
+assert.deepEqual(
+  JSON.parse(JSON.stringify(model.settingsDeepLink("appearance", "status-presentation"))),
+  {page: "appearance", section: "status-presentation"},
+  "device marker guidance must target the global marker section"
+)
+assert.deepEqual(
+  JSON.parse(JSON.stringify(model.settingsDeepLink("appearance", "private-data"))),
+  {page: "appearance", section: ""},
+  "sections from another page must not produce a misleading scroll target"
+)
+assert.deepEqual(
+  JSON.parse(JSON.stringify(model.settingsDeepLink("unknown", "private-data"))),
+  {page: "general", section: ""},
+  "invalid deep links must fall back to the safe default page"
+)
+assert.equal(model.settingsScrollPosition(420, 1200, 600), 420)
+assert.equal(model.settingsScrollPosition(900, 1200, 600), 600, "deep links clamp at the scroll extent")
+assert.equal(model.settingsScrollPosition(-20, 1200, 600), 0, "deep links never overscroll above content")
+assert.equal(model.settingsScrollPosition(100, 400, 600), 0, "short settings pages remain at the top")
+
 console.log("popup navigation policy tests passed")

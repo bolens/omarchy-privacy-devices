@@ -162,6 +162,7 @@ history_snapshot=$(jq -cn --argjson live "$live_history" --argjson persisted "$p
   $live + $persisted | unique_by([.id, .endedAt]) | sort_by(.endedAt) | reverse | .[:100]
 ')
 restored=false
+history_restored=false
 settings_changed=false
 notification_visible=false
 notification_summary="Privacy activity started · Screenshot example"
@@ -180,7 +181,22 @@ restore_shell_settings() {
     wait_for_shell
   fi
 }
+restore_history() {
+  local restored_history
+  [[ $history_restored == false ]] || return 0
+  ./privacy-history clear >/dev/null
+  if [[ $history_snapshot != "[]" ]]; then
+    ./privacy-history append "$history_snapshot" >/dev/null
+  fi
+  restored_history=$(./privacy-history load)
+  jq -en --argjson expected "$history_snapshot" --argjson actual "$restored_history" '$actual == $expected' >/dev/null || {
+    printf 'Restored history does not match the preserved snapshot.\n' >&2
+    return 1
+  }
+  history_restored=true
+}
 restore_desktop() {
+  local restore_failed=false
   if [[ $restored == false ]]; then
     close_capture_notification
     if [[ $dnd_state == on ]]; then
@@ -189,16 +205,14 @@ restore_desktop() {
     fi
     restore_shell_settings >/dev/null 2>&1 || true
     qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
-    ./privacy-history clear >/dev/null 2>&1 || true
-    if [[ $history_snapshot != "[]" ]]; then
-      ./privacy-history append "$history_snapshot" >/dev/null 2>&1 || true
-    fi
+    restore_history || restore_failed=true
     hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null 2>&1 || true
     hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$original_workspace\" }))" >/dev/null 2>&1 || true
     omarchy restart shell >/dev/null 2>&1 || true
     restored=true
   fi
   rm -rf -- "$capture_dir"
+  [[ $restore_failed == false ]]
 }
 trap restore_desktop EXIT INT TERM
 

@@ -3,10 +3,34 @@
 var KINDS = ["microphone", "audio-output", "camera", "screen-share", "screenshot", "screen-recording", "location"]
 var SETTINGS_VERSION = 1
 var SETTINGS_PAGES = ["general", "appearance", "alerts", "monitoring"]
+var SETTINGS_SECTIONS = {
+  general: ["behavior"],
+  appearance: ["bar-layout", "theme-colors", "status-presentation"],
+  alerts: ["notifications"],
+  monitoring: ["enhanced-coverage", "fallback-polling", "private-data", "status-legend", "observer-health"]
+}
 
 function settingsPage(value) {
   var page = String(value || "general")
   return SETTINGS_PAGES.indexOf(page) >= 0 ? page : "general"
+}
+
+function settingsDeepLink(page, section) {
+  var requestedPage = String(page || "general")
+  var normalizedPage = settingsPage(requestedPage)
+  var requestedSection = String(section || "")
+  var sections = SETTINGS_SECTIONS[normalizedPage] || []
+  return {
+    page: normalizedPage,
+    section: normalizedPage === requestedPage && sections.indexOf(requestedSection) >= 0 ? requestedSection : ""
+  }
+}
+
+function settingsScrollPosition(targetY, contentHeight, viewportHeight) {
+  var target = Number(targetY)
+  var maximum = Math.max(0, Number(contentHeight) - Number(viewportHeight))
+  if (!isFinite(target) || !isFinite(maximum)) return 0
+  return Math.max(0, Math.min(target, maximum))
 }
 
 function boundedPlainText(value, maximumLength) {
@@ -697,10 +721,6 @@ function historyPeriodLabel(endedAt, now) {
   if (age < day) return "Today"
   if (age < 2 * day) return "Yesterday"
   return "Earlier this week"
-}
-
-function historyClearAction(armed) {
-  return armed === true ? "clear" : "confirm"
 }
 
 function historyCountLabel(visibleCount, totalCount) {

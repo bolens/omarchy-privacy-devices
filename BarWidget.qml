@@ -77,15 +77,17 @@ Panel {
   property bool showingGlobalSettings: false
   property bool showingHistory: false
   property string historyQuery: ""
-  property bool historyClearArmed: false
   property bool settingsMutationPending: false
   property string globalSettingsPage: "general"
+  property string pendingSettingsSection: ""
   property string selectedKind: ""
   property var displayedActivityItems: []
   property var deferredActivityItems: null
   property int handledSettingsRequestSerial: 0
   property double durationNow: Date.now()
   property string settingsTransferStatus: ""
+  readonly property bool settingsTransferRunning: settingsTransferController.running
+  readonly property bool settingsUndoAvailable: settingsTransferController.undoAvailable
   readonly property var filteredHistory: Model.filterHistory(privacyService ? privacyService.recentHistory : [], historyQuery)
   readonly property real openPanelIndicatorWidth: button.labelWidth
 
@@ -98,7 +100,7 @@ Panel {
   }
 
   function syncDeviceEditors() {
-    resetSurface.pendingReset = ""
+    confirmationState.clear()
     if (!editingKind) return
     labelEditor.text = root.labelFor(editingKind)
     iconEditor.text = root.iconFor(editingKind)
@@ -109,15 +111,29 @@ Panel {
     customRecorderStopEditor.text = String(root.setting("recordingCustomStopCommand", ""))
   }
 
-  function showGlobalSettings(page) {
+  function showGlobalSettings(page, section) {
+    confirmationState.clear()
+    var target = Model.settingsDeepLink(page, section)
     editingKind = ""
     showingHistory = false
     showingGlobalSettings = true
-    globalSettingsPage = Model.settingsPage(page)
+    globalSettingsPage = target.page
+    pendingSettingsSection = target.section
     contentFlick.contentY = 0
+    Qt.callLater(root.scrollToSettingsSection)
+  }
+
+  function scrollToSettingsSection() {
+    if (!pendingSettingsSection || !globalSettingsPageLoader.item || !globalSettingsPageLoader.item.sectionItems) return
+    var target = globalSettingsPageLoader.item.sectionItems[pendingSettingsSection]
+    if (!target) { pendingSettingsSection = ""; return }
+    var position = target.mapToItem(contentFlick.contentItem, 0, 0)
+    contentFlick.contentY = Model.settingsScrollPosition(position.y, contentFlick.contentHeight, contentFlick.height)
+    pendingSettingsSection = ""
   }
 
   function showActivity() {
+    confirmationState.clear()
     editingKind = ""
     showingGlobalSettings = false
     showingHistory = false
@@ -125,6 +141,7 @@ Panel {
   }
 
   function showHistory() {
+    confirmationState.clear()
     editingKind = ""
     showingGlobalSettings = false
     showingHistory = true
@@ -133,22 +150,15 @@ Panel {
   }
 
   function requestHistoryClear() {
-    var action = Model.historyClearAction(historyClearArmed)
-    if (action === "confirm") {
-      historyClearArmed = true
-      historyClearGuard.restart()
-      return
-    }
+    if (!confirmationState.request("history")) return
     if (privacyService) privacyService.clearHistory()
-    historyClearArmed = false
-    historyClearGuard.stop()
   }
 
   function handleSettingsRequest() {
     if (!opened || !privacyService || privacyService.settingsRequestSerial <= handledSettingsRequestSerial) return
     handledSettingsRequestSerial = privacyService.settingsRequestSerial
     if (privacyService.requestedView === "history") showHistory()
-    else showGlobalSettings(privacyService.requestedSettingsPage)
+    else showGlobalSettings(privacyService.requestedSettingsPage, privacyService.requestedSettingsSection)
   }
 
   function closeCurrentLayer() {
@@ -311,16 +321,31 @@ Panel {
 
   function exportSettings() {
     settingsTransferStatus = "Exporting…"
-    settingsTransferProc.mode = "export"
-    settingsTransferProc.command = [settingsHelperPath(), "export", JSON.stringify(Model.sanitizeSettings(settings))]
-    settingsTransferProc.running = true
+    if (!settingsTransferController.request("export", Model.sanitizeSettings(settings))) settingsTransferStatus = "Transfer busy"
   }
 
   function importSettings() {
     settingsTransferStatus = "Importing…"
-    settingsTransferProc.mode = "import"
-    settingsTransferProc.command = [settingsHelperPath(), "import"]
-    settingsTransferProc.running = true
+    if (!settingsTransferController.request("import", Model.sanitizeSettings(settings))) settingsTransferStatus = "Transfer busy"
+  }
+
+  function undoSettingsChange() {
+    settingsTransferStatus = "Restoring…"
+    if (!settingsTransferController.request("undo", {})) settingsTransferStatus = "Transfer busy"
+  }
+
+  function requestGlobalSettingsReset() {
+    settingsTransferStatus = "Saving undo point…"
+    if (!settingsTransferController.request("checkpoint", Model.sanitizeSettings(settings))) settingsTransferStatus = "Transfer busy"
+  }
+
+  function handleSettingsTransfer(mode, payload) {
+    if (mode === "export") { settingsTransferStatus = "Settings exported privately"; return }
+    if (mode === "checkpoint") { resetGlobalSettings(); settingsTransferStatus = "Global settings reset · undo available"; return }
+    try {
+      persistSettings(JSON.parse(payload))
+      settingsTransferStatus = mode === "undo" ? "Previous settings restored" : "Settings imported"
+    } catch (error) { settingsTransferStatus = mode === "undo" ? "Undo returned invalid settings" : "Import returned invalid settings" }
   }
 
   function addPolicyValue(key, value) {
@@ -682,11 +707,7 @@ Panel {
     onTriggered: root.settingsMutationPending = false
   }
 
-  Timer {
-    id: historyClearGuard
-    interval: 5000
-    onTriggered: root.historyClearArmed = false
-  }
+  PrivacyConfirmationController { id: confirmationState }
 
   Timer {
     interval: 1000
@@ -760,8 +781,7 @@ Panel {
         else if ((text === "s" || text === "S") && root.editingKind === "") root.showGlobalSettings("general")
         else if ((text === "r" || text === "R") && !root.showingGlobalSettings && !root.showingHistory && privacyService) privacyService.refreshFallbacks()
         else if (root.showingGlobalSettings && "1234".indexOf(text) >= 0) {
-          root.globalSettingsPage = ["general", "appearance", "alerts", "monitoring"][Number(text) - 1]
-          contentFlick.contentY = 0
+          root.showGlobalSettings(["general", "appearance", "alerts", "monitoring"][Number(text) - 1], "")
         }
       }
       onTabRequested: function(direction) { if (bar && typeof bar.switchPanelFrom === "function") bar.switchPanelFrom(root, direction) }
@@ -838,7 +858,7 @@ Panel {
             Text { Layout.fillWidth: true; text: "Activity history"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
             Button {
               visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.recentHistory.length > 0
-              text: root.historyClearArmed ? "Confirm clear" : "Clear history"
+              text: confirmationState.pending === "history" ? "Confirm clear" : "Clear history"
               onClicked: root.requestHistoryClear()
             }
           }
@@ -881,7 +901,7 @@ Panel {
             Layout.fillWidth: true
             PanelSectionHeader { Layout.fillWidth: true; text: "History is off" }
             Text { Layout.fillWidth: true; text: "Enable history to keep completed activity on this device for up to seven days."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-            Button { text: "Open monitoring settings"; onClicked: root.showGlobalSettings("monitoring") }
+            Button { text: "Open monitoring settings"; onClicked: root.showGlobalSettings("monitoring", "private-data") }
           }
 
           Text {
@@ -959,20 +979,7 @@ Panel {
           Layout.fillWidth: true
           spacing: Style.spacing.md
 
-          RowLayout {
-            Layout.fillWidth: true
-            Button { iconText: "󰁍"; tooltipText: "Back"; horizontalPadding: Style.spacing.controlGap; onClicked: root.showActivity() }
-            Text { Layout.fillWidth: true; text: "Global settings"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
-          }
-
-          RowLayout {
-            Layout.fillWidth: true
-            spacing: Style.spacing.sm
-            GlobalSettingsTab { label: "General"; value: "general" }
-            GlobalSettingsTab { label: "Appearance"; value: "appearance" }
-            GlobalSettingsTab { label: "Alerts"; value: "alerts" }
-            GlobalSettingsTab { label: "Monitoring"; value: "monitoring" }
-          }
+          PrivacySettingsNavigation { controller: root }
 
           Loader {
             id: globalSettingsPageLoader
@@ -980,9 +987,10 @@ Panel {
             sourceComponent: root.globalSettingsPage === "general" ? generalSettingsPage
               : (root.globalSettingsPage === "appearance" ? appearanceSettingsPage
               : (root.globalSettingsPage === "alerts" ? alertsSettingsPage : monitoringSettingsPage))
+            onLoaded: Qt.callLater(root.scrollToSettingsSection)
           }
 
-          Button { Layout.alignment: Qt.AlignRight; text: "Reset global settings"; onClicked: root.resetGlobalSettings() }
+          Button { Layout.alignment: Qt.AlignRight; text: "Reset global settings"; enabled: !root.settingsTransferRunning; onClicked: root.requestGlobalSettingsReset() }
         }
 
         DeviceSettingsEditor {
@@ -1127,7 +1135,11 @@ Panel {
               value: root.itemOverrideMode("itemStatusMarkerVisibility", root.editingKind)
               onChanged: function(value) { root.persistItemStatusMarker(root.editingKind, value) }
             }
-            Text { Layout.fillWidth: true; text: "Global status-marker rules still apply when this device is set to show."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+            RowLayout {
+              Layout.fillWidth: true
+              Text { Layout.fillWidth: true; text: "Global status-marker rules still apply when this device is set to show."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+              Button { text: "Global marker settings"; onClicked: root.showGlobalSettings("appearance", "status-presentation") }
+            }
           }
 
           SettingsSurface {
@@ -1352,12 +1364,6 @@ Panel {
             id: resetSurface
             Layout.fillWidth: true
             accent: root.activeThemeColor
-            property string pendingReset: ""
-            Timer {
-              interval: 5000
-              running: resetSurface.pendingReset !== ""
-              onTriggered: resetSurface.pendingReset = ""
-            }
             PanelSectionHeader { Layout.fillWidth: true; text: "Reset device appearance" }
             RowLayout {
               Layout.fillWidth: true
@@ -1365,7 +1371,7 @@ Panel {
                 text: "Reset device appearance"
                 tooltipText: "Restore the default label, icon, colors, idle visibility, idle opacity, and status-marker visibility"
                 onClicked: {
-                  resetSurface.pendingReset = ""
+                  confirmationState.clear()
                   root.resetItemSettings(root.editingKind)
                   iconEditor.text = root.iconFor(root.editingKind)
                   labelEditor.text = root.labelFor(root.editingKind)
@@ -1373,29 +1379,23 @@ Panel {
               }
               Button {
                 visible: root.editingKind === "screen-recording" || root.editingKind === "screenshot" || root.isAudioControl({kind: root.editingKind})
-                text: resetSurface.pendingReset === "backend" ? "Confirm shared backend reset" : (root.isAudioControl({kind: root.editingKind}) ? "Reset shared backend" : "Reset backend")
+                text: confirmationState.pending === "backend" ? "Confirm shared backend reset" : (root.isAudioControl({kind: root.editingKind}) ? "Reset shared backend" : "Reset backend")
                 tooltipText: root.isAudioControl({kind: root.editingKind}) ? "Affects microphone and audio output" : "Restore this device's default backend"
                 onClicked: {
-                  if (root.isAudioControl({kind: root.editingKind}) && resetSurface.pendingReset !== "backend") {
-                    resetSurface.pendingReset = "backend"
-                    return
-                  }
+                  if (root.isAudioControl({kind: root.editingKind}) && !confirmationState.request("backend")) return
                   root.resetDeviceBackend(root.editingKind)
-                  resetSurface.pendingReset = ""
+                  confirmationState.clear()
                 }
               }
             }
             Button {
-              text: resetSurface.pendingReset === "all" ? "Confirm reset all" : "Reset all device settings"
+              text: confirmationState.pending === "all" ? "Confirm reset all" : "Reset all device settings"
               onClicked: {
-                if (root.isAudioControl({kind: root.editingKind}) && resetSurface.pendingReset !== "all") {
-                  resetSurface.pendingReset = "all"
-                  return
-                }
+                if (root.isAudioControl({kind: root.editingKind}) && !confirmationState.request("all")) return
                 root.resetAllDeviceSettings(root.editingKind)
                 iconEditor.text = root.iconFor(root.editingKind)
                 labelEditor.text = root.labelFor(root.editingKind)
-                resetSurface.pendingReset = ""
+                confirmationState.clear()
               }
             }
           }
@@ -1453,195 +1453,15 @@ Panel {
     }
   }
 
-  Process {
-    id: settingsTransferProc
-    property string mode: ""
-    stdout: StdioCollector { id: settingsTransferOutput; waitForEnd: true }
-    stderr: StdioCollector { id: settingsTransferError; waitForEnd: true }
-    onExited: function(exitCode) {
-      if (exitCode !== 0) {
-        root.settingsTransferStatus = "Transfer failed" + (settingsTransferError.text ? ": " + settingsTransferError.text.trim() : "")
-        return
-      }
-      if (mode === "import") {
-        try {
-          root.persistSettings(JSON.parse(settingsTransferOutput.text))
-          root.settingsTransferStatus = "Settings imported"
-        } catch (error) { root.settingsTransferStatus = "Import returned invalid settings" }
-      } else root.settingsTransferStatus = "Settings exported privately"
-    }
+  PrivacySettingsTransferController {
+    id: settingsTransferController
+    helper: root.settingsHelperPath()
+    onSucceeded: function(mode, payload) { root.handleSettingsTransfer(mode, payload) }
+    onFailed: function(mode, detail) { root.settingsTransferStatus = "Transfer failed" + (detail ? ": " + detail : "") }
   }
 
-  Component {
-    id: generalSettingsPage
-    ColumnLayout {
-      spacing: Style.spacing.md
-      SettingsSurface {
-        accent: root.activeThemeColor
-        PanelSectionHeader { Layout.fillWidth: true; text: "Behavior" }
-        MultiSelect { Layout.fillWidth: true; label: "Monitored activity"; options: root.kindOptions; values: Model.arraySetting(root.setting("enabledKinds", Model.KINDS), Model.KINDS); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { root.persistSettings({enabledKinds: values}) } }
-        Toggle { Layout.fillWidth: true; label: "Show idle devices"; description: "Keep enabled privacy-device icons visible while idle."; checked: root.setting("showIdle", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showIdle: !checked}) }
-        Toggle { Layout.fillWidth: true; label: "Show privacy controls"; description: "Show inline control switches and enable row actions."; checked: root.setting("showControls", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showControls: !checked}) }
-        Toggle { Layout.fillWidth: true; label: "Deduplicate application names"; description: "List an application once when it owns several matching sessions."; checked: root.setting("deduplicateApps", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({deduplicateApps: !checked}) }
-      }
-    }
-  }
-
-  Component {
-    id: appearanceSettingsPage
-    ColumnLayout {
-      spacing: Style.spacing.md
-      SettingsSurface {
-        accent: root.activeThemeColor
-        PanelSectionHeader { Layout.fillWidth: true; text: "Bar layout" }
-        Dropdown { Layout.fillWidth: true; label: "Bar presentation"; options: ["icons", "active-count", "active-only"]; value: String(root.setting("displayMode", "icons")); onChanged: function(value) { root.persistSettings({displayMode: value}) } }
-        NumberField { label: "Icon scale (%)"; from: 75; to: 150; stepSize: 5; value: Math.round(root.barIconScale * 100); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { root.persistSettings({barIconScale: Number(value) / 100}) } }
-        IntegerSetting { controller: root; settingKey: "barItemSpacing"; label: "Space between bar items"; minimum: 0; maximum: 12; fallback: 0 }
-        IntegerSetting { controller: root; settingKey: "barItemPadding"; label: "Bar item padding"; minimum: 2; maximum: 12; fallback: 5 }
-        NumberField { label: "Default idle opacity (%)"; from: 10; to: 100; stepSize: 5; value: Math.round(Number(root.setting("idleOpacity", 0.45)) * 100); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { root.persistSettings({idleOpacity: Number(value) / 100}) } }
-      }
-      SettingsSurface {
-        accent: root.activeThemeColor
-        PanelSectionHeader { Layout.fillWidth: true; text: "Theme colors" }
-        Dropdown { Layout.fillWidth: true; label: "Active"; options: ["bar-active", "urgent", "accent", "foreground"]; value: String(root.setting("activeColorRole", "bar-active")); onChanged: function(value) { root.persistSettings({activeColorRole: value}) } }
-        Dropdown { Layout.fillWidth: true; label: "Inactive"; options: ["muted", "foreground", "accent"]; value: String(root.setting("inactiveColorRole", "muted")); onChanged: function(value) { root.persistSettings({inactiveColorRole: value}) } }
-        Dropdown { Layout.fillWidth: true; label: "Disabled"; options: ["urgent", "muted", "accent", "foreground", "bar-active"]; value: String(root.setting("disabledColorRole", "urgent")); onChanged: function(value) { root.persistSettings({disabledColorRole: value}) } }
-        NumberField { label: "Disabled opacity (%)"; from: 25; to: 100; stepSize: 5; value: Math.round(root.disabledOpacity * 100); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { root.persistSettings({disabledOpacity: Number(value) / 100}) } }
-      }
-      SettingsSurface {
-        accent: root.activeThemeColor
-        PanelSectionHeader { Layout.fillWidth: true; text: "Status presentation" }
-        Dropdown { Layout.fillWidth: true; label: "Bar status markers"; options: ["symbols", "letters", "custom", "off"]; value: root.statusMarkerMode; onChanged: function(value) { root.persistSettings({statusMarkerMode: value}) } }
-        Dropdown { Layout.fillWidth: true; label: "Marker position"; options: ["after", "before"]; value: root.barMarkerPosition; onChanged: function(value) { root.persistSettings({barMarkerPosition: value}) } }
-        MarkerGlyphEditor { visible: root.statusMarkerMode === "custom"; settingKey: "barActiveMarkerIcon"; label: "Active marker icon"; fallback: "●" }
-        MarkerGlyphEditor { visible: root.statusMarkerMode === "custom"; settingKey: "barDisabledMarkerIcon"; label: "Disabled marker icon"; fallback: "⊘" }
-        MarkerGlyphEditor { visible: root.statusMarkerMode === "custom"; settingKey: "barPendingMarkerIcon"; label: "Verifying marker icon"; fallback: "…" }
-        MarkerGlyphEditor { visible: root.statusMarkerMode === "custom"; settingKey: "barDegradedMarkerIcon"; label: "Degraded marker icon"; fallback: "!" }
-        Toggle { Layout.fillWidth: true; label: "Show active status marker"; description: "Show the active marker beside active device icons in the bar."; checked: root.showBarActiveMarker; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showBarActiveMarker: !checked}) }
-        Toggle { Layout.fillWidth: true; label: "Show disabled status marker"; description: "Show the disabled marker beside blocked or muted device icons in the bar."; checked: root.showBarDisabledMarker; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showBarDisabledMarker: !checked}) }
-        Toggle { Layout.fillWidth: true; label: "Show verifying status marker"; description: "Show the verifying marker while a control action is pending."; checked: root.showBarPendingMarker; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showBarPendingMarker: !checked}) }
-        Toggle { Layout.fillWidth: true; label: "Show degraded status marker"; description: "Show the degraded marker when a monitoring source is unhealthy."; checked: root.showBarDegradedMarker; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showBarDegradedMarker: !checked}) }
-        Dropdown { Layout.fillWidth: true; label: "Popup state pills"; options: ["filled", "outline", "minimal"]; value: root.statePillStyle; onChanged: function(value) { root.persistSettings({statePillStyle: value}) } }
-        Dropdown { Layout.fillWidth: true; label: "Popup density"; options: ["comfortable", "compact"]; value: root.popupDensity; onChanged: function(value) { root.persistSettings({popupDensity: value}) } }
-        Toggle { Layout.fillWidth: true; label: "Show state pills"; description: "Keep textual state visible beside each popup row."; checked: root.showStatePills; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showStatePills: !checked}) }
-        Toggle { Layout.fillWidth: true; label: "Show popup session counts"; description: "Display a badge when several sessions share a popup item."; checked: root.showSessionCounts; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showSessionCounts: !checked}) }
-        Toggle { Layout.fillWidth: true; label: "Show bar session counts"; description: "Append a count when several sessions share a bar item."; checked: root.showBarSessionCounts; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showBarSessionCounts: !checked}) }
-        Toggle { Layout.fillWidth: true; label: "Animate verification"; description: "Pulse pending bar items until observed state confirms the action."; checked: root.animatePending; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({animatePending: !checked}) }
-        IntegerSetting { controller: root; settingKey: "popupMaxHeight"; label: "Popup maximum height"; minimum: 360; maximum: 900; fallback: 620; stepSize: 20 }
-      }
-    }
-  }
-
-  Component {
-    id: alertsSettingsPage
-    ColumnLayout {
-      spacing: Style.spacing.md
-      SettingsSurface {
-        accent: root.activeThemeColor
-        PanelSectionHeader { Layout.fillWidth: true; text: "Notifications" }
-        MultiSelect { Layout.fillWidth: true; label: "Activity notifications"; options: root.kindOptions; values: Model.arraySetting(root.setting("notificationKinds", ["microphone", "camera", "screen-share", "screen-recording", "location"]), []); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { root.persistSettings({notificationKinds: values}) } }
-        Toggle { Layout.fillWidth: true; label: "Activity started"; description: "Notify when selected privacy activity begins."; checked: root.setting("notifyOnActivity", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({notifyOnActivity: !checked}) }
-        Toggle { Layout.fillWidth: true; label: "Activity stopped"; description: "Notify when activity ends and include its duration."; checked: root.setting("notifyOnStop", false) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({notifyOnStop: !checked}) }
-        Toggle { Layout.fillWidth: true; label: "Control results"; description: "Notify when privacy control changes succeed or fail."; checked: root.setting("notifyOnControlChanges", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({notifyOnControlChanges: !checked}) }
-        Text { Layout.fillWidth: true; text: "Applications without alerts (comma-separated exact names)"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-        RowLayout {
-          Layout.fillWidth: true
-          TextField { id: suppressedAppsEditor; Layout.fillWidth: true; text: Model.arraySetting(root.setting("notificationSuppressedApps", []), []).join(", "); placeholderText: "Firefox, OBS"; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistSettings({notificationSuppressedApps: root.commaList(text)}) }
-          Button { text: "Save"; onClicked: root.persistSettings({notificationSuppressedApps: root.commaList(suppressedAppsEditor.text)}) }
-        }
-      }
-    }
-  }
-
-  Component {
-    id: monitoringSettingsPage
-    ColumnLayout {
-      spacing: Style.spacing.md
-      SettingsSurface {
-        accent: root.activeThemeColor
-        PanelSectionHeader { Layout.fillWidth: true; text: "Enhanced coverage" }
-        MultiSelect { Layout.fillWidth: true; label: "Preventative controls"; options: root.kindOptions.filter(function(option) { return ["camera", "screen-share", "location"].indexOf(option.value) !== -1 }); values: Model.arraySetting(root.setting("blockableKinds", ["camera", "screen-share", "location"]), []); foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { root.persistSettings({blockableKinds: values}) } }
-        Toggle { Layout.fillWidth: true; label: "Direct-device monitoring"; description: "Inspect same-user V4L2 and ALSA capture handles for applications that bypass PipeWire."; checked: root.setting("directDeviceMonitoring", false) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({directDeviceMonitoring: !checked}) }
-        Toggle { Layout.fillWidth: true; label: "Show inferred attribution"; description: "Show heuristic application and device names; activity remains visible when disabled."; checked: root.setting("showInferredAttribution", true) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({showInferredAttribution: !checked}) }
-        IntegerSetting { controller: root; settingKey: "directDevicePollSeconds"; label: "Direct-device heartbeat, seconds"; minimum: 2; maximum: 60; fallback: 5 }
-      }
-      SettingsSurface {
-        accent: root.activeThemeColor
-        PanelSectionHeader { Layout.fillWidth: true; text: "Fallback polling" }
-        IntegerSetting { controller: root; settingKey: "locationPollSeconds"; label: "Location refresh, seconds"; minimum: 5; maximum: 300; fallback: 15; stepSize: 5 }
-        IntegerSetting { controller: root; settingKey: "recordingPollSeconds"; label: "Recorder refresh, seconds"; minimum: 1; maximum: 60; fallback: 2 }
-        Text { Layout.fillWidth: true; text: "PipeWire activity remains event-backed. These intervals affect only enhanced and fallback observers."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-      }
-      SettingsSurface {
-        accent: root.activeThemeColor
-        PanelSectionHeader { Layout.fillWidth: true; text: "Private data" }
-        Toggle { Layout.fillWidth: true; label: "Keep recent activity"; description: "Store private metadata for seven days or 100 completed sessions."; checked: root.setting("historyEnabled", false) === true; foreground: Color.popups.text; accent: root.activeThemeColor; fontFamily: Style.font.family; onClicked: root.persistSettings({historyEnabled: !checked}) }
-        Button { text: "Clear stored history"; enabled: privacyService !== null; onClicked: privacyService.clearHistory() }
-        Text { Layout.fillWidth: true; text: "Export or restore a versioned settings file stored privately in your user data directory."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-        RowLayout {
-          Layout.fillWidth: true
-          Button { text: "Export settings"; enabled: !settingsTransferProc.running; onClicked: root.exportSettings() }
-          Button { text: "Import settings"; enabled: !settingsTransferProc.running; onClicked: root.importSettings() }
-          Item { Layout.fillWidth: true }
-        }
-        Text { visible: root.settingsTransferStatus !== ""; Layout.fillWidth: true; text: root.settingsTransferStatus; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-      }
-      SettingsSurface {
-        accent: root.activeThemeColor
-        PanelSectionHeader { Layout.fillWidth: true; text: "Status legend" }
-        Text { Layout.fillWidth: true; text: "● Active    ⊘ Disabled    … Verifying    ! Degraded    Idle uses no marker"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-        Text { Layout.fillWidth: true; text: "Color, opacity, text, and markers reinforce each other so status never depends on color alone."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-      }
-      SettingsSurface {
-        accent: root.monitoringDegraded ? Color.urgent : root.activeThemeColor
-        PanelSectionHeader { Layout.fillWidth: true; text: "Observer health" }
-        Text { Layout.fillWidth: true; text: root.monitoringTelemetryText(); textFormat: Text.PlainText; color: root.monitoringDegraded ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-        Button { text: "Copy private diagnostics"; enabled: privacyService !== null; tooltipText: "Copy health and timing data with application and device names redacted"; onClicked: privacyService.copyDiagnostics(true) }
-      }
-    }
-  }
-
-  component GlobalSettingsTab: Button {
-    required property string label
-    required property string value
-    Layout.fillWidth: true
-    text: label
-    active: root.globalSettingsPage === value
-    selected: active
-    bordered: true
-    fontSize: Style.font.bodySmall
-    horizontalPadding: Style.spacing.controlPaddingX
-    verticalPadding: Style.spacing.controlPaddingY
-    onClicked: { root.globalSettingsPage = value; contentFlick.contentY = 0 }
-  }
-
-  component MarkerGlyphEditor: RowLayout {
-    required property string settingKey
-    required property string label
-    required property string fallback
-    Layout.fillWidth: true
-    Text { text: parent.label; color: Color.popups.text; font.family: Style.font.family; Layout.preferredWidth: 170 }
-    TextField {
-      id: markerEditor
-      Layout.fillWidth: true
-      text: String(root.setting(parent.settingKey, parent.fallback))
-      maximumLength: 8
-      foreground: Color.popups.text
-      accent: root.activeThemeColor
-      font.family: Style.font.family
-      onAccepted: {
-        var update = {}
-        update[parent.settingKey] = text
-        root.persistSettings(update)
-      }
-    }
-    Button {
-      text: "Save"
-      onClicked: {
-        var update = {}
-        update[parent.settingKey] = markerEditor.text
-        root.persistSettings(update)
-      }
-    }
-  }
+  Component { id: generalSettingsPage; PrivacyGeneralSettings { controller: root } }
+  Component { id: appearanceSettingsPage; PrivacyAppearanceSettings { controller: root } }
+  Component { id: alertsSettingsPage; PrivacyAlertsSettings { controller: root } }
+  Component { id: monitoringSettingsPage; PrivacyMonitoringSettings { controller: root } }
 }

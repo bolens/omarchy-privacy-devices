@@ -34,5 +34,40 @@ class SettingsTransferTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 MODULE.import_settings(target)
 
+    def test_import_preserves_one_private_undo_snapshot(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            exported = root / "settings-export.json"
+            undo = root / "settings-undo.json"
+            MODULE.export_settings('{"_privacySettingsVersion":1,"showIdle":false}', exported)
+
+            imported = MODULE.import_with_undo(
+                '{"_privacySettingsVersion":1,"showIdle":true}', exported, undo
+            )
+
+            self.assertFalse(imported["showIdle"])
+            self.assertEqual(MODULE.undo_settings(undo)["showIdle"], True)
+            self.assertFalse(undo.exists(), "undo must be one-step after successful consumption")
+            self.assertEqual(undo.parent.stat().st_mode & 0o777, 0o700)
+
+    def test_failed_import_does_not_replace_existing_undo(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            exported = root / "settings-export.json"
+            undo = root / "settings-undo.json"
+            MODULE.export_settings('{"_privacySettingsVersion":1,"showIdle":true}', undo)
+            exported.write_text("invalid")
+
+            with self.assertRaises(ValueError):
+                MODULE.import_with_undo('{"_privacySettingsVersion":1,"showIdle":false}', exported, undo)
+
+            self.assertTrue(MODULE.import_settings(undo)["showIdle"])
+
+    def test_checkpoint_supports_undo_after_reset(self):
+        with tempfile.TemporaryDirectory() as directory:
+            undo = Path(directory) / "settings-undo.json"
+            MODULE.checkpoint_settings('{"_privacySettingsVersion":1,"popupMaxHeight":740}', undo)
+            self.assertEqual(MODULE.undo_settings(undo)["popupMaxHeight"], 740)
+
 
 if __name__ == "__main__": unittest.main()

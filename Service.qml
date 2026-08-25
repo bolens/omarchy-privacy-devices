@@ -10,6 +10,7 @@ Item {
   property var shell: null
   property var manifest: null
   property var settings: ({})
+  property string observerHelperOverride: ""
   property var locationApps: []
   property bool locationActive: false
   property bool recordingActive: false
@@ -31,6 +32,7 @@ Item {
   property double fallbackObserverStartedAt: 0
   property int fallbackObserverRetryMilliseconds: 1000
   property string requestedSettingsPage: "general"
+  property string requestedSettingsSection: ""
   property string requestedView: "settings"
   property int settingsRequestSerial: 0
   property var notificationQueue: []
@@ -44,6 +46,10 @@ Item {
   property double lastSessionRefreshAt: 0
   property double lastFallbackRefreshAt: 0
   property string operationalConfiguration: ""
+  readonly property bool fallbackObserverRunning: fallbackObserverProc.running
+  readonly property bool fallbackObserverRetryRunning: fallbackObserverRetry.running
+  readonly property bool directObserverRunning: directDeviceProc.running
+  readonly property bool directObserverRetryRunning: directObserverRetry.running
 
   readonly property var nodes: Pipewire.nodes ? Pipewire.nodes.values : []
   readonly property bool pipewireAvailable: Pipewire.nodes !== null && Pipewire.nodes !== undefined
@@ -167,8 +173,12 @@ Item {
     var screenshot = screenshotBackend() === "custom"
       ? "^(" + regexEscape(String(settings.screenshotProcessName || "")) + ")(\\s|$)"
       : "^(grim|slurp|satty|hyprpicker|hyprshot|flameshot)(\\s|$)"
-    return [String(Qt.resolvedUrl("privacy-observe")).replace(/^file:\/\//, ""), "watch-fallbacks",
+    return [observerHelperPath(), "watch-fallbacks",
       "--heartbeat", String(boundedSeconds(settings.recordingPollSeconds, 2, 1, 60)), "--recording", recording, "--screenshot-pattern", screenshot]
+  }
+
+  function observerHelperPath() {
+    return observerHelperOverride || String(Qt.resolvedUrl("privacy-observe")).replace(/^file:\/\//, "")
   }
 
   function refreshFallbackObserver() {
@@ -413,7 +423,7 @@ Item {
     }
     directObserverRetiring = false
     var desiredCommand = [
-      String(Qt.resolvedUrl("privacy-observe")).replace(/^file:\/\//, ""),
+      observerHelperPath(),
       "watch", "--heartbeat", String(boundedSeconds(settings.directDevicePollSeconds, 5, 2, 60))
     ]
     if (directDeviceProc.running) {
@@ -1053,11 +1063,22 @@ Item {
     function open(page: string): string {
       root.requestedView = "settings"
       root.requestedSettingsPage = Model.settingsPage(page)
+      root.requestedSettingsSection = ""
       root.settingsRequestSerial++
       return root.shell && typeof root.shell.summon === "function" && root.shell.summon("io.github.bolens.privacy-devices", "") ? root.requestedSettingsPage : "unavailable"
     }
+    function openSection(page: string, section: string): string {
+      var target = Model.settingsDeepLink(page, section)
+      root.requestedView = "settings"
+      root.requestedSettingsPage = target.page
+      root.requestedSettingsSection = target.section
+      root.settingsRequestSerial++
+      return root.shell && typeof root.shell.summon === "function" && root.shell.summon("io.github.bolens.privacy-devices", "")
+        ? target.page + (target.section ? "#" + target.section : "") : "unavailable"
+    }
     function openHistory(): string {
       root.requestedView = "history"
+      root.requestedSettingsSection = ""
       root.settingsRequestSerial++
       return root.shell && typeof root.shell.summon === "function" && root.shell.summon("io.github.bolens.privacy-devices", "") ? "history" : "unavailable"
     }

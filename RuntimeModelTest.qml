@@ -31,6 +31,10 @@ ShellRoot {
       throw new Error("popup navigation policy failed")
     if (Model.activationKind(["camera"], "stale") !== "camera")
       throw new Error("popup activation policy failed")
+    var deepLink = Model.settingsDeepLink("monitoring", "private-data")
+    if (deepLink.page !== "monitoring" || deepLink.section !== "private-data"
+        || Model.settingsScrollPosition(900, 1200, 600) !== 600)
+      throw new Error("settings deep-link policy failed")
     var stableActivity = {kind:"camera",active:false,controlEnabled:true,pending:false,health:{status:"healthy"}}
     var changedActivity = {kind:"camera",active:true,controlEnabled:true,pending:false,health:{status:"healthy"}}
     if (!Model.activityCriticalStateEquivalent([stableActivity], [stableActivity])
