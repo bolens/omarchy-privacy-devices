@@ -85,9 +85,13 @@ Panel {
   property var deferredActivityItems: null
   property int handledSettingsRequestSerial: 0
   property double durationNow: Date.now()
-  property string settingsTransferStatus: ""
+  readonly property string settingsTransferStatus: settingsTransferResult.status
   readonly property bool settingsTransferRunning: settingsTransferController.running
   readonly property bool settingsUndoAvailable: settingsTransferController.undoAvailable
+  readonly property string settingsMutationMessage: settingsMutationController.status === "saving" ? "Saving changes…"
+    : (settingsMutationController.status === "saved" ? "Changes applied"
+    : (settingsMutationController.status === "failed" ? "Settings update failed" + (settingsMutationController.detail ? ": " + settingsMutationController.detail : "") : ""))
+  readonly property bool settingsPageLoaded: globalSettingsPageLoader.item !== null
   readonly property var filteredHistory: Model.filterHistory(privacyService ? privacyService.recentHistory : [], historyQuery)
   readonly property real openPanelIndicatorWidth: button.labelWidth
 
@@ -299,9 +303,11 @@ Panel {
   }
 
   function persistSettings(values) {
-    var candidate = {}
-    for (var existing in settings) if (existing !== "id") candidate[existing] = settings[existing]
-    for (var key in values) candidate[key] = values[key]
+    settingsMutationController.submit(settings, values)
+  }
+
+  function commitSettings(candidate) {
+    var previous = settings
     var clean = Model.sanitizeSettings(candidate)
     var entry = {id: moduleName}
     for (var sanitizedKey in clean) entry[sanitizedKey] = clean[sanitizedKey]
@@ -309,9 +315,15 @@ Panel {
     syncService()
     settingsMutationPending = true
     settingsMutationGuard.restart()
-    if (bar && bar.shell && typeof bar.shell.updateEntryInline === "function") {
+    try {
+      if (!bar || !bar.shell || typeof bar.shell.updateEntryInline !== "function") throw new Error("shell settings API unavailable")
       bar.shell.updateEntryInline(moduleName, entry)
+      settingsMutationController.complete(true)
       Qt.callLater(function() { if (!root.opened) root.open() })
+    } catch (error) {
+      settings = previous
+      syncService()
+      settingsMutationController.complete(false, String(error && error.message ? error.message : error))
     }
   }
 
@@ -320,32 +332,27 @@ Panel {
   }
 
   function exportSettings() {
-    settingsTransferStatus = "Exporting…"
-    if (!settingsTransferController.request("export", Model.sanitizeSettings(settings))) settingsTransferStatus = "Transfer busy"
+    settingsTransferResult.begin("Exporting…")
+    if (!settingsTransferController.request("export", Model.sanitizeSettings(settings))) settingsTransferResult.begin("Transfer busy")
   }
 
   function importSettings() {
-    settingsTransferStatus = "Importing…"
-    if (!settingsTransferController.request("import", Model.sanitizeSettings(settings))) settingsTransferStatus = "Transfer busy"
+    settingsTransferResult.begin("Importing…")
+    if (!settingsTransferController.request("import", Model.sanitizeSettings(settings))) settingsTransferResult.begin("Transfer busy")
   }
 
   function undoSettingsChange() {
-    settingsTransferStatus = "Restoring…"
-    if (!settingsTransferController.request("undo", {})) settingsTransferStatus = "Transfer busy"
+    settingsTransferResult.begin("Restoring…")
+    if (!settingsTransferController.request("undo", {})) settingsTransferResult.begin("Transfer busy")
   }
 
   function requestGlobalSettingsReset() {
-    settingsTransferStatus = "Saving undo point…"
-    if (!settingsTransferController.request("checkpoint", Model.sanitizeSettings(settings))) settingsTransferStatus = "Transfer busy"
+    settingsTransferResult.begin("Saving undo point…")
+    if (!settingsTransferController.request("checkpoint", Model.sanitizeSettings(settings))) settingsTransferResult.begin("Transfer busy")
   }
 
   function handleSettingsTransfer(mode, payload) {
-    if (mode === "export") { settingsTransferStatus = "Settings exported privately"; return }
-    if (mode === "checkpoint") { resetGlobalSettings(); settingsTransferStatus = "Global settings reset · undo available"; return }
-    try {
-      persistSettings(JSON.parse(payload))
-      settingsTransferStatus = mode === "undo" ? "Previous settings restored" : "Settings imported"
-    } catch (error) { settingsTransferStatus = mode === "undo" ? "Undo returned invalid settings" : "Import returned invalid settings" }
+    settingsTransferResult.apply(mode, payload)
   }
 
   function addPolicyValue(key, value) {
@@ -708,6 +715,10 @@ Panel {
   }
 
   PrivacyConfirmationController { id: confirmationState }
+  PrivacySettingsMutationController {
+    id: settingsMutationController
+    onCommitRequested: function(settings) { root.commitSettings(settings) }
+  }
 
   Timer {
     interval: 1000
@@ -904,37 +915,19 @@ Panel {
             Button { text: "Open monitoring settings"; onClicked: root.showGlobalSettings("monitoring", "private-data") }
           }
 
-          Text {
+          PrivacyMessageSurface {
             visible: root.setting("historyEnabled", false) === true && privacyService && !privacyService.historyLoaded
-            Layout.fillWidth: true
-            text: "Loading history…"
-            textFormat: Text.PlainText
-            color: Color.muted
-            font.family: Style.font.family
-            font.pixelSize: Style.font.body
-            horizontalAlignment: Text.AlignHCenter
+            message: "Loading history…"
           }
 
-          Text {
+          PrivacyMessageSurface {
             visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.historyLoaded && privacyService.recentHistory.length === 0
-            Layout.fillWidth: true
-            text: "No completed activity yet."
-            textFormat: Text.PlainText
-            color: Color.muted
-            font.family: Style.font.family
-            font.pixelSize: Style.font.body
-            horizontalAlignment: Text.AlignHCenter
+            message: "No completed activity yet."
           }
 
-          Text {
+          PrivacyMessageSurface {
             visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.recentHistory.length > 0 && root.filteredHistory.length === 0
-            Layout.fillWidth: true
-            text: "No history matches your search."
-            textFormat: Text.PlainText
-            color: Color.muted
-            font.family: Style.font.family
-            font.pixelSize: Style.font.body
-            horizontalAlignment: Text.AlignHCenter
+            message: "No history matches your search."
           }
 
           Repeater {
@@ -981,6 +974,12 @@ Panel {
 
           PrivacySettingsNavigation { controller: root }
 
+          PrivacyMessageSurface {
+            visible: root.settingsMutationMessage !== ""
+            message: root.settingsMutationMessage
+            kind: settingsMutationController.status === "failed" ? "error" : (settingsMutationController.status === "saved" ? "success" : "info")
+          }
+
           Loader {
             id: globalSettingsPageLoader
             Layout.fillWidth: true
@@ -997,6 +996,12 @@ Panel {
           visible: root.editingKind !== "" && !root.showingGlobalSettings && !root.showingHistory
           controller: root
           onBackRequested: root.editingKind = ""
+
+          PrivacyMessageSurface {
+            visible: root.settingsMutationMessage !== ""
+            message: root.settingsMutationMessage
+            kind: settingsMutationController.status === "failed" ? "error" : (settingsMutationController.status === "saved" ? "success" : "info")
+          }
 
           SettingsSurface {
             Layout.fillWidth: true
@@ -1457,8 +1462,9 @@ Panel {
     id: settingsTransferController
     helper: root.settingsHelperPath()
     onSucceeded: function(mode, payload) { root.handleSettingsTransfer(mode, payload) }
-    onFailed: function(mode, detail) { root.settingsTransferStatus = "Transfer failed" + (detail ? ": " + detail : "") }
+    onFailed: function(_mode, detail) { settingsTransferResult.fail(detail) }
   }
+  PrivacySettingsTransferResult { id: settingsTransferResult; controller: root }
 
   Component { id: generalSettingsPage; PrivacyGeneralSettings { controller: root } }
   Component { id: appearanceSettingsPage; PrivacyAppearanceSettings { controller: root } }

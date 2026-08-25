@@ -14,8 +14,8 @@ ColumnLayout {
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Enhanced coverage" }
     MultiSelect { Layout.fillWidth: true; label: "Preventative controls"; options: page.controller.kindOptions.filter(function(option) { return ["camera", "screen-share", "location"].indexOf(option.value) !== -1 }); values: Model.arraySetting(page.controller.setting("blockableKinds", ["camera", "screen-share", "location"]), []); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { page.controller.persistSettings({blockableKinds: values}) } }
-    Toggle { Layout.fillWidth: true; label: "Direct-device monitoring"; description: "Inspect same-user V4L2 and ALSA capture handles for applications that bypass PipeWire."; checked: page.controller.setting("directDeviceMonitoring", false) === true; foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onClicked: page.controller.persistSettings({directDeviceMonitoring: !checked}) }
-    Toggle { Layout.fillWidth: true; label: "Show inferred attribution"; description: "Show heuristic application and device names; activity remains visible when disabled."; checked: page.controller.setting("showInferredAttribution", true) === true; foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onClicked: page.controller.persistSettings({showInferredAttribution: !checked}) }
+    PrivacySettingToggle { controller: page.controller; settingKey: "directDeviceMonitoring"; fallback: false; label: "Direct-device monitoring"; description: "Inspect same-user V4L2 and ALSA capture handles for applications that bypass PipeWire." }
+    PrivacySettingToggle { controller: page.controller; settingKey: "showInferredAttribution"; label: "Show inferred attribution"; description: "Show heuristic application and device names; activity remains visible when disabled." }
     IntegerSetting { controller: page.controller; settingKey: "directDevicePollSeconds"; label: "Direct-device heartbeat, seconds"; minimum: 2; maximum: 60; fallback: 5 }
   }
   SettingsSurface {
@@ -30,7 +30,7 @@ ColumnLayout {
     id: privateDataSettings
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Private data" }
-    Toggle { objectName: "historyEnabledToggle"; Layout.fillWidth: true; label: "Keep recent activity"; description: "Store private metadata for seven days or 100 completed sessions."; checked: page.controller.setting("historyEnabled", false) === true; foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onClicked: page.controller.persistSettings({historyEnabled: !checked}) }
+    PrivacySettingToggle { objectName: "historyEnabledToggle"; controller: page.controller; settingKey: "historyEnabled"; fallback: false; label: "Keep recent activity"; description: "Store private metadata for seven days or 100 completed sessions." }
     Button { text: "Clear stored history"; enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.clearHistory() }
     Text { Layout.fillWidth: true; text: "Export or restore a versioned settings file stored privately in your user data directory."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
     RowLayout {
@@ -40,7 +40,7 @@ ColumnLayout {
       Button { text: "Undo last change"; enabled: !page.controller.settingsTransferRunning && page.controller.settingsUndoAvailable; onClicked: page.controller.undoSettingsChange() }
       Item { Layout.fillWidth: true }
     }
-    Text { visible: page.controller.settingsTransferStatus !== ""; Layout.fillWidth: true; text: page.controller.settingsTransferStatus; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+    PrivacyMessageSurface { visible: page.controller.settingsTransferStatus !== ""; message: page.controller.settingsTransferStatus; kind: page.controller.settingsTransferStatus.indexOf("failed") !== -1 || page.controller.settingsTransferStatus.indexOf("invalid") !== -1 ? "error" : "info" }
   }
   SettingsSurface {
     id: statusLegendSettings
