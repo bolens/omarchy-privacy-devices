@@ -18,6 +18,12 @@ maintainer guides that define release and validation procedures.
 - Align individual device settings with the global settings structure, clarify
   shared and inherited behavior, and disable unavailable placement actions.
 
+### Fixed
+
+- Prevent unsaved device fields and armed shared-reset confirmations from
+  carrying across devices, and make global reset cover every bar appearance
+  default.
+
 ## [0.3.0] - 2026-08-25
 
 ### Added
