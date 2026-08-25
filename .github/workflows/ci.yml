@@ -82,6 +82,9 @@ jobs:
       - name: Validate issue forms
         run: ruby scripts/validate-issue-forms.rb
 
+      - name: Validate release metadata
+        run: node tests/release.test.js
+
       - name: Validate HTML and XML
         run: |
           tidy -errors -quiet docs/index.html docs/404.html 2>&1 | tee /tmp/tidy-output
