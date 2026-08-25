@@ -11,6 +11,8 @@ maintainer guides that define release and validation procedures.
 
 - Add one canonical, auto-discovering behavior-suite runner shared by local npm
   workflows, CI, and contributor documentation.
+- Add deep-linked screenshots for private-data and observer-health settings,
+  with complete Pages guidance for keyboard use, transfer undo, and diagnostics.
 - Add coalesced settings writes, visible save/failure feedback, shared status
   surfaces, and an assembled-plugin QML smoke test.
 - Unify global boolean controls and settings-transfer result handling behind
@@ -28,6 +30,8 @@ maintainer guides that define release and validation procedures.
 
 ### Fixed
 
+- Reject generated archives and credential-like tracked content in CI before
+  release packaging.
 - Cancel pending observer retries on manual recovery and ignore buffered
   snapshots after monitoring is disabled.
 - Add real QML interaction coverage for settings navigation, destructive-action
