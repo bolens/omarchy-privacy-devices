@@ -35,6 +35,8 @@ command explicitly supplied by the user are not vulnerabilities in the plugin.
 - Activity metadata and process names are untrusted text. The UI renders them
   as plain text, notifications pass them as separate process arguments, and
   private diagnostics redact application and device identities by default.
+  Control characters and Unicode direction overrides are removed before
+  metadata is displayed or persisted.
 - Only the fixed camera and GeoClue controls cross a privilege boundary. They
   use Polkit with allowlisted system paths and never interpolate settings into
   privileged commands.
@@ -45,6 +47,8 @@ command explicitly supplied by the user are not vulnerabilities in the plugin.
 - Custom screenshot and recording commands are an explicit user-controlled
   escape hatch. Imported settings must be reviewed before those backends are
   selected or run.
+- Built-in capture helpers and Omarchy commands use argument arrays and never
+  inherit the custom-command shell-string boundary.
 
 ## Release security checklist
 
