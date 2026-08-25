@@ -84,9 +84,16 @@ for page in general appearance alerts monitoring; do
   grim -o "$monitor" "$capture_dir/$page-full.png"
 done
 
-wtype -k escape
+qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null
+qs ipc --pid "$shell_pid" call shell summon "$plugin_id" "" >/dev/null
 sleep "$settle_seconds"
 grim -o "$monitor" "$capture_dir/activity-full.png"
+wtype -k down
+wtype -k Return
+sleep "$settle_seconds"
+grim -o "$monitor" "$capture_dir/device-full.png"
+wtype -k escape
+sleep "$settle_seconds"
 qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null
 sleep "$settle_seconds"
 grim -o "$monitor" "$capture_dir/bar-full.png"
@@ -114,7 +121,21 @@ magick "$capture_dir/activity-full.png" -crop "500x500+${panel_x}+20" +repage "$
 for page in general appearance alerts monitoring; do
   magick "$capture_dir/$page-full.png" -crop "500x660+${panel_x}+20" +repage "$capture_dir/$page.png"
 done
+magick "$capture_dir/device-full.png" -crop "500x660+${panel_x}+20" +repage "$capture_dir/device.png"
 magick "$capture_dir/bar-full.png" -crop "${widget_width}x50+${widget_x}+0" +repage "$capture_dir/bar.png"
+
+validate_capture() {
+  local image=$1 colors
+  colors=$(magick "$image" -format '%k' info:)
+  if [[ ! $colors =~ ^[0-9]+$ ]] || ((colors < 8)); then
+    printf 'Capture has too little visual content: %s\n' "$image" >&2
+    exit 1
+  fi
+}
+validate_capture "$capture_dir/activity.png"
+validate_capture "$capture_dir/device.png"
+validate_capture "$capture_dir/bar.png"
+for page in general appearance alerts monitoring; do validate_capture "$capture_dir/$page.png"; done
 
 optimize_png() {
   local source=$1 destination=$2
@@ -127,6 +148,7 @@ install -m 0644 preview.png docs/preview.png
 for page in general appearance alerts monitoring; do
   optimize_png "$capture_dir/$page.png" "docs/$page.png"
 done
+optimize_png "$capture_dir/device.png" docs/device.png
 optimize_png "$capture_dir/bar.png" docs/bar.png
 
 magick docs/social-card.png -fill '#0d110d' -draw 'rectangle 895,35 1729,875' "$capture_dir/social-base.png"

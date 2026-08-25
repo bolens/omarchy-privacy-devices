@@ -822,27 +822,31 @@
           <div class="screenshot-grid">
             <figure class="screenshot-card">
               <img src="preview.png" alt="Activity panel with active, idle, capture, and disabled states" width="500" height="500" loading="lazy" decoding="async">
-              <figcaption>Distinct state pills, session context, and direct controls keep activity understandable without opening settings.</figcaption>
+              <figcaption>Activity, session context, and controls.</figcaption>
             </figure>
             <figure class="screenshot-card bar-shot">
               <img src="bar.png" alt="Privacy Devices indicators occupying their exact center-bar footprint" width="141" height="50" loading="lazy" decoding="async">
-              <figcaption>The bar view uses only the widget's measured footprint for the pictured configuration; neighboring widgets are not included. Its width varies with enabled items and appearance settings.</figcaption>
+              <figcaption>The measured widget footprint; width varies by configuration and activity.</figcaption>
             </figure>
             <figure class="screenshot-card">
               <img src="general.png" alt="General settings page" width="500" height="660" loading="lazy" decoding="async">
-              <figcaption>General keeps monitored activity, idle visibility, controls, and application-name behavior together.</figcaption>
+              <figcaption>Monitoring scope and general behavior.</figcaption>
             </figure>
             <figure class="screenshot-card">
               <img src="appearance.png" alt="Appearance settings page with bar layout and theme controls" width="500" height="660" loading="lazy" decoding="async">
-              <figcaption>The dedicated Appearance page separates bar layout, theme colors, and status presentation from behavior and monitoring.</figcaption>
+              <figcaption>Bar layout, colors, and status presentation.</figcaption>
             </figure>
             <figure class="screenshot-card">
               <img src="alerts.png" alt="Alerts settings page" width="500" height="660" loading="lazy" decoding="async">
-              <figcaption>Alerts owns activity-start, activity-stop, control-result, and application-suppression notification policy.</figcaption>
+              <figcaption>Activity, control, and application alert policy.</figcaption>
             </figure>
             <figure class="screenshot-card">
               <img src="monitoring.png" alt="Monitoring settings page" width="500" height="660" loading="lazy" decoding="async">
-              <figcaption>Monitoring groups enhanced coverage, fallback intervals, private data, transfer, and live observer diagnostics.</figcaption>
+              <figcaption>Enhanced coverage, private data, and observer health.</figcaption>
+            </figure>
+            <figure class="screenshot-card">
+              <img src="device.png" alt="Individual privacy-device settings page" width="500" height="660" loading="lazy" decoding="async">
+              <figcaption>Per-device appearance, backend, diagnostics, and resets.</figcaption>
             </figure>
           </div>
         </div>
@@ -958,11 +962,11 @@
         <div class="shell">
           <div class="eyebrow">Configuration</div>
           <h2>Make it yours.</h2>
-          <p class="section-intro">Open <strong>Setup → Plugins → Privacy Devices</strong>. Global settings are split into General, Appearance, Alerts, and Monitoring pages; press <strong>1–4</strong> to switch pages. Advanced users can edit the widget entry in <code>~/.config/omarchy/shell.json</code>.</p>
+          <p class="section-intro">Open <strong>Setup → Plugins → Privacy Devices</strong>. Use General, Appearance, Alerts, and Monitoring; press <strong>1–4</strong> to switch pages.</p>
           <div class="guide-grid">
             <article class="guide-card"><h3>General</h3><p>Choose monitored activities, reorder icons, hide selected idle items, configure controls, and tune alert deduplication.</p></article>
-            <article class="guide-card"><h3>Appearance</h3><p>Tune bar icon scale, spacing, padding, marker position, per-status marker visibility, custom marker glyphs, session counts, popup density, labels, colors, and disabled presentation.</p></article>
-            <article class="guide-card"><h3>Notifications</h3><p>Choose which activity starts and stops produce notifications, suppress alerts for selected applications, and keep control-result announcements independent.</p></article>
+            <article class="guide-card"><h3>Appearance</h3><p>Tune bar layout, markers, counts, popup density, labels, colors, and disabled presentation.</p></article>
+            <article class="guide-card"><h3>Notifications</h3><p>Choose activity and control alerts, with per-application suppression.</p></article>
             <article class="guide-card"><h3>Enhanced monitoring</h3><p>Optionally inspect same-user open device handles to detect direct V4L2 camera and ALSA microphone access that bypasses ordinary PipeWire streams.</p></article>
             <article class="guide-card"><h3>Recent activity</h3><p>Opt in to private metadata-only history bounded to seven days or 100 completed sessions. Disabling or clearing it deletes the stored file.</p></article>
             <article class="guide-card"><h3>Audio</h3><p>Prefer <code>pactl</code>, <code>wpctl</code>, or automatic backend selection.</p></article>

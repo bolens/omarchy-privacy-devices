@@ -22,27 +22,27 @@ assert.equal((html.match(/data-copy=/g) || []).length, 4);
 assert.deepEqual(pngDimensions("preview.png"), [500, 500]);
 assert.deepEqual(pngDimensions("docs/preview.png"), [500, 500]);
 assert.deepEqual(pngDimensions("docs/appearance.png"), [500, 660]);
-for (const page of ["general", "alerts", "monitoring"])
+for (const page of ["general", "alerts", "monitoring", "device"])
   assert.deepEqual(pngDimensions(`docs/${page}.png`), [500, 660]);
 const barDimensions = pngDimensions("docs/bar.png");
 assert.equal(barDimensions[1], 50, "bar capture must retain the live horizontal-bar height");
 assert.ok(barDimensions[0] > 0 && barDimensions[0] <= 500, "bar capture must be a tightly bounded live widget footprint");
 assert.equal(new Set(
-  ["general", "appearance", "alerts", "monitoring"]
+  ["general", "appearance", "alerts", "monitoring", "device"]
     .map((page) => fs.readFileSync(path.join(root, `docs/${page}.png`)).toString("base64"))
-).size, 4, "each settings page must have a distinct capture");
+).size, 5, "each settings page must have a distinct capture");
 assert.equal(
   Buffer.compare(fs.readFileSync(path.join(root, "preview.png")), fs.readFileSync(path.join(root, "docs/preview.png"))),
   0
 );
 assert.match(html, /src="appearance\.png"[^>]+width="500" height="660"/);
-for (const image of ["bar", "general", "appearance", "alerts", "monitoring"]) {
+for (const image of ["bar", "general", "appearance", "alerts", "monitoring", "device"]) {
   assert.match(html, new RegExp(`src="${image}\\.png"`));
   assert.match(fs.readFileSync(path.join(root, "README.md"), "utf8"), new RegExp(`docs/${image}\\.png`));
 }
 
 const source = new JSDOM(html).window.document;
-for (const image of ["preview", "bar", "general", "appearance", "alerts", "monitoring"]) {
+for (const image of ["preview", "bar", "general", "appearance", "alerts", "monitoring", "device"]) {
   const element = source.querySelector(`#screenshots img[src="${image}.png"]`);
   assert.ok(element, `Pages gallery must showcase ${image}.png`);
   assert.deepEqual(

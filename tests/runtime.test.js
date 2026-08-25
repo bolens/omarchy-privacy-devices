@@ -5,6 +5,7 @@ const path = require("node:path")
 const service = fs.readFileSync(path.join(__dirname, "..", "Service.qml"), "utf8")
 const screenshotWorkflow = fs.readFileSync(path.join(__dirname, "..", "scripts/capture-screenshots"), "utf8")
 const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
+const ci = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "ci.yml"), "utf8")
 
 assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?lastSessionRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastSessionRefreshAt, now\)[\s\S]*?lastFallbackRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastFallbackRefreshAt, now\)[\s\S]*?fallbackObserverHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(fallbackObserverLastSeen, now\)[\s\S]*?directHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(directObserverLastSeen, now\)/,
   "every exported telemetry timestamp must use the behavior-tested freshness policy")
@@ -14,6 +15,14 @@ assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must r
 assert.match(screenshotWorkflow, /debugBarGeometry/, "bar screenshots must use measured live widget geometry")
 assert.ok(fs.statSync(path.join(__dirname, "..", "scripts/capture-screenshots")).mode & 0o111,
   "screenshot workflow must remain executable")
+for (const qml of ["DeviceSettingsEditor.qml", "DeviceDiagnostics.qml", "RuntimeModelTest.qml"])
+  assert.match(ci, new RegExp(`qmllint[^']*${qml}`), `CI must lint ${qml}`)
+assert.match(screenshotWorkflow, /device-full\.png/, "screenshot workflow must capture an individual device settings page")
+assert.match(screenshotWorkflow, /docs\/device\.png/, "screenshot workflow must publish the device settings capture")
+assert.match(screenshotWorkflow, /wtype -k Return/, "device capture must use wtype's portable Enter key name")
+assert.match(screenshotWorkflow, /call shell summon "\$plugin_id" ""/, "activity capture must explicitly summon the main widget view")
+assert.match(screenshotWorkflow, /function validate_capture|validate_capture\(\)/, "screenshot workflow must reject blank captures")
+assert.match(screenshotWorkflow, /colors < 8/, "capture validation must reject low-content images")
 assert.match(service, /id:\s*fallbackObserverProc/, "process fallbacks must share one persistent structured observer")
 assert.match(service, /"watch-fallbacks"/, "fallback observer must use the structured watch protocol")
 assert.match(service, /settings\.recordingPollSeconds/, "the persistent fallback observer must honor the configured scan interval")
