@@ -27,23 +27,23 @@ restore.
 
 ## Validation
 
-Run the full validation set before submitting a pull request:
+Run the full validation set in [TESTING.md](TESTING.md) before submitting a
+pull request. The fast behavior checks are:
 
 ```sh
-omarchy plugin validate .
-qmllint -I "$OMARCHY_PATH/shell" BarWidget.qml Service.qml
 shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
 node tests/model.test.js
+node tests/controls.test.js
+node tests/sessions.test.js
+node tests/settings.test.js
+node tests/runtime.test.js
 node tests/security.test.js
-tidy -errors -quiet docs/index.html docs/404.html
-xmllint --noout docs/favicon.svg docs/sitemap.xml
-npm ci
-npm run build:site
-npm run test:site
-npx lighthouse http://127.0.0.1:4173/ --only-categories=accessibility
+node tests/release.test.js
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-See [RELEASING.md](RELEASING.md) for the maintainer release checklist.
+See [ARCHITECTURE.md](ARCHITECTURE.md) before changing ownership or runtime
+boundaries, and [RELEASING.md](RELEASING.md) for the release playbook.
 
 ## Change expectations
 

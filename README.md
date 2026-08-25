@@ -9,6 +9,9 @@ screenshots, and screen recording.
 [Get support](SUPPORT.md) ·
 [Report an issue](https://github.com/bolens/omarchy-privacy-devices/issues/new/choose)
 
+Maintainers: [architecture](ARCHITECTURE.md) · [testing](TESTING.md) ·
+[release playbook](RELEASING.md)
+
 ![Privacy Devices popup](preview.png)
 
 ## Highlights
@@ -52,12 +55,17 @@ omarchy plugin validate .
 qmllint -I "$OMARCHY_PATH/shell" BarWidget.qml Service.qml SettingsSurface.qml IntegerSetting.qml PrivacyActivityCard.qml
 shellcheck privacy-control privacy-deps privacy-recording privacy-screenshot
 node tests/model.test.js
+node tests/controls.test.js
 node tests/sessions.test.js
 node tests/security.test.js
 node tests/settings.test.js
 node tests/runtime.test.js
+node tests/release.test.js
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
+
+See [TESTING.md](TESTING.md) for clean-archive validation, QML runtime checks,
+site validation, and live verification.
 
 Enhanced monitoring reads same-user `/proc/<pid>/fd` links for open V4L2 and
 ALSA capture devices. It never opens devices or reads media. Recent history is

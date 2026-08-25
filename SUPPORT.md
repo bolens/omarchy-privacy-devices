@@ -16,5 +16,10 @@ Use [private vulnerability reporting](https://github.com/bolens/omarchy-privacy-
 for security concerns. Do not include usernames, device serial numbers, private
 paths, secrets, or unrelated logs in a public issue.
 
+Before filing a monitoring issue, open **Global settings → Monitoring** and use
+**Copy private diagnostics**. The exported payload is redacted by default;
+review it before attaching it. Never publish diagnostics produced through the
+unsafe IPC mode.
+
 This project is maintained on a best-effort basis. Response and resolution
 times are not guaranteed.

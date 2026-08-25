@@ -30,3 +30,33 @@ commands. A report is in scope when the plugin crosses its documented privilege,
 process-identity, path, or data-handling boundaries. Risks inherent to a custom
 command explicitly supplied by the user are not vulnerabilities in the plugin.
 
+## Trust boundaries
+
+- Activity metadata and process names are untrusted text. The UI renders them
+  as plain text, notifications pass them as separate process arguments, and
+  private diagnostics redact application and device identities by default.
+- Only the fixed camera and GeoClue controls cross a privilege boundary. They
+  use Polkit with allowlisted system paths and never interpolate settings into
+  privileged commands.
+- Recorder shutdown is limited to an owner-matched PID whose `/proc` executable
+  is `wf-recorder`; broad name-based termination is forbidden.
+- History and settings exports are size-bounded, atomically replaced, and
+  stored in owner-only user directories. They contain no media.
+- Custom screenshot and recording commands are an explicit user-controlled
+  escape hatch. Imported settings must be reviewed before those backends are
+  selected or run.
+
+## Release security checklist
+
+Before tagging a release:
+
+1. Run the full matrix in `TESTING.md`, including `tests/security.test.js`.
+2. Review new process launches for argument separation and allowlisted values.
+3. Review new file writes for bounded input, private permissions, and atomic
+   replacement.
+4. Confirm privileged commands use fixed absolute executables and fixed
+   resources; settings must never enter a privileged command.
+5. Confirm GitHub Actions remain SHA-pinned with least-privilege permissions.
+6. Inspect the clean `git archive` used for release and scan tracked files for
+   credentials, private diagnostics, generated output, and dependency trees.
+7. Audit site-tooling dependencies and resolve production-impacting findings.
