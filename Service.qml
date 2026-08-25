@@ -22,17 +22,21 @@ Item {
   property var directObservations: []
   property bool directObserverRetiring: false
   property double directObserverLastSeen: 0
+  property double directObserverStartedAt: 0
   property int directObserverRetryMilliseconds: 1000
   property bool fallbackObserverRetiring: false
   property double fallbackObserverLastSeen: 0
+  property double fallbackObserverStartedAt: 0
   property int fallbackObserverRetryMilliseconds: 1000
   property string requestedSettingsPage: "general"
   property int settingsRequestSerial: 0
   property var notificationQueue: []
+  property var suppressedObserverStarts: ({})
   property var controlTransactions: ({})
   property var observerHealth: ({
     pipewire: {status: "healthy", source: "pipewire", code: "ok", reason: ""},
-    "direct-device": {status: "healthy", source: "direct-device", code: "ok", reason: ""}
+    "direct-device": {status: "healthy", source: "direct-device", code: "ok", reason: ""},
+    "fallback-observer": {status: "healthy", source: "fallback-observer", code: "ok", reason: ""}
   })
   property double lastSessionRefreshAt: 0
   property double lastFallbackRefreshAt: 0
@@ -118,6 +122,37 @@ Item {
     return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
   }
 
+  function setObserverHealth(source, status, code, reason) {
+    var current = observerHealth[source] || {}
+    if (current.status === status && current.code === code && current.reason === reason) return
+    var next = Object.assign({}, observerHealth)
+    next[source] = {status: status, source: source, code: code, reason: reason}
+    observerHealth = next
+  }
+
+  function clearDirectObserverState() {
+    discardObserverSessions("direct-device")
+    if (directObservations.length) directObservations = []
+    if (directObserverLastSeen !== 0) directObserverLastSeen = 0
+  }
+
+  function clearFallbackObserverState() {
+    discardObserverSessions("process-probe")
+    if (recordingApps.length) recordingApps = []
+    if (recordingActive) recordingActive = false
+    if (screenshotActive) screenshotActive = false
+    if (fallbackObserverLastSeen !== 0) fallbackObserverLastSeen = 0
+  }
+
+  function discardObserverSessions(source) {
+    var retained = activeSessions.filter(function(session) { return session.source !== source })
+    if (retained.length === activeSessions.length) return
+    activeSessions = retained
+    var suppressed = Object.assign({}, suppressedObserverStarts)
+    suppressed[source] = true
+    suppressedObserverStarts = suppressed
+  }
+
   function fallbackObserverCommand() {
     var recording = recordingBackend() === "wf-recorder" ? "wf-recorder"
       : recordingBackend() === "custom" ? String(settings.recordingProcessName || "") : "gpu-screen-recorder"
@@ -132,10 +167,12 @@ Item {
     var needed = kindEnabled("screen-recording") || kindEnabled("screenshot")
     if (!needed) {
       fallbackObserverRetiring = true
+      fallbackObserverRetry.stop()
       fallbackObserverProc.running = false
-      recordingActive = false
-      recordingApps = []
-      screenshotActive = false
+      clearFallbackObserverState()
+      fallbackObserverStartedAt = 0
+      fallbackObserverRetryMilliseconds = 1000
+      setObserverHealth("fallback-observer", "healthy", "ok", "")
       return
     }
     var desired = fallbackObserverCommand()
@@ -148,13 +185,15 @@ Item {
     }
     fallbackObserverRetiring = false
     fallbackObserverProc.command = desired
+    fallbackObserverStartedAt = Date.now()
     fallbackObserverProc.running = true
   }
 
   function handleFallbackSnapshot(line) {
     try {
       var payload = JSON.parse(String(line || "{}"))
-      if (payload.type !== "fallback-snapshot" || payload.version !== 1 || !payload.activities) return
+      if (payload.type !== "fallback-snapshot" || payload.version !== 1 || !payload.activities)
+        throw new Error("invalid fallback payload")
       var recordings = Array.isArray(payload.activities["screen-recording"]) ? payload.activities["screen-recording"] : []
       var screenshots = Array.isArray(payload.activities.screenshot) ? payload.activities.screenshot : []
       recordingApps = recordings
@@ -164,7 +203,11 @@ Item {
       fallbackObserverLastSeen = Date.now()
       fallbackObserverRetryMilliseconds = 1000
       lastFallbackRefreshAt = fallbackObserverLastSeen
-    } catch (error) {}
+      setObserverHealth("fallback-observer", "healthy", "ok", "")
+    } catch (error) {
+      clearFallbackObserverState()
+      setObserverHealth("fallback-observer", "degraded", "invalid_payload", "invalid observer response")
+    }
   }
 
   function enabledKinds() {
@@ -251,13 +294,23 @@ Item {
 
   function handleSessionTransitions(transition) {
     var stoppedForHistory = []
+    var recoveredSources = ({})
     var index
-    if (activityInitialized && settings.notifyOnActivity !== false) {
-      for (index = 0; index < transition.started.length; index++) {
-        var started = transition.started[index]
-        if (notificationKindList.indexOf(started.kind) !== -1 && Model.shouldNotifyForSession(started, policies()))
-          enqueueActivityNotification("started", started)
+    for (index = 0; index < transition.started.length; index++) {
+      var started = transition.started[index]
+      if (suppressedObserverStarts[started.source]) {
+        recoveredSources[started.source] = true
+        continue
       }
+      if (activityInitialized && settings.notifyOnActivity !== false
+          && notificationKindList.indexOf(started.kind) !== -1 && Model.shouldNotifyForSession(started, policies()))
+        enqueueActivityNotification("started", started)
+    }
+    var recovered = Object.keys(recoveredSources)
+    if (recovered.length) {
+      var suppressed = Object.assign({}, suppressedObserverStarts)
+      for (index = 0; index < recovered.length; index++) delete suppressed[recovered[index]]
+      suppressedObserverStarts = suppressed
     }
     for (index = 0; index < transition.stopped.length; index++) {
       var stopped = transition.stopped[index]
@@ -277,6 +330,7 @@ Item {
       ? {status: "healthy", source: "pipewire", code: "ok", reason: ""}
       : {status: "unavailable", source: "pipewire", code: "backend_unavailable", reason: "PipeWire service is unavailable"})
     if (settings.directDeviceMonitoring === true && (kind === "microphone" || kind === "camera")) states.push(observerHealth["direct-device"])
+    if (kind === "screen-recording" || kind === "screenshot") states.push(observerHealth["fallback-observer"])
     if (kind === "location" && !dependenciesReady(kind)) states.push({status: "unavailable", source: "geoclue", code: "dependency_unavailable", reason: dependencyDescription(kind)})
     return Model.aggregateHealth(states.length ? states : [{status: "healthy", source: backendFor(kind), code: "ok", reason: ""}])
   }
@@ -344,9 +398,12 @@ Item {
   function refreshDirectDevices() {
     if (settings.directDeviceMonitoring !== true) {
       directObserverRetiring = true
+      directObserverRetry.stop()
       directDeviceProc.running = false
-      directObservations = []
-      directObserverLastSeen = 0
+      clearDirectObserverState()
+      directObserverStartedAt = 0
+      directObserverRetryMilliseconds = 1000
+      setObserverHealth("direct-device", "healthy", "ok", "")
       return
     }
     directObserverRetiring = false
@@ -362,25 +419,23 @@ Item {
       return
     }
     directDeviceProc.command = desiredCommand
+    directObserverStartedAt = Date.now()
     directDeviceProc.running = true
   }
 
   function handleDirectDeviceSnapshot(text) {
     try {
       var result = JSON.parse(String(text || "{}"))
-      if (result.type !== "snapshot") return
+      if (result.type !== "snapshot") throw new Error("invalid direct payload")
       directObservations = Array.isArray(result.observations) ? result.observations : []
       directObserverLastSeen = Date.now()
       directObserverRetryMilliseconds = 1000
-      var next = Object.assign({}, observerHealth)
-      next["direct-device"] = result.healthy === false
-        ? {status: "degraded", source: "direct-device", code: String(result.code || "observer_unhealthy"), reason: String(result.error || "observer reported unhealthy")}
-        : {status: "healthy", source: "direct-device", code: "ok", reason: ""}
-      observerHealth = next
+      if (result.healthy === false)
+        setObserverHealth("direct-device", "degraded", String(result.code || "observer_unhealthy"), String(result.error || "observer reported unhealthy"))
+      else setObserverHealth("direct-device", "healthy", "ok", "")
     } catch (error) {
-      var invalid = Object.assign({}, observerHealth)
-      invalid["direct-device"] = {status: "degraded", source: "direct-device", code: "invalid_payload", reason: "invalid observer response"}
-      observerHealth = invalid
+      clearDirectObserverState()
+      setObserverHealth("direct-device", "degraded", "invalid_payload", "invalid observer response")
     }
   }
 
@@ -736,15 +791,30 @@ Item {
   }
 
   Timer {
+    id: directObserverHeartbeat
     interval: 5000
     repeat: true
     running: root.settings.directDeviceMonitoring === true
     onTriggered: {
       var heartbeat = root.boundedSeconds(root.settings.directDevicePollSeconds, 5, 2, 60) * 1000
-      if (root.directObserverLastSeen > 0 && Date.now() - root.directObserverLastSeen <= Math.max(15000, heartbeat * 3)) return
-      var stale = Object.assign({}, root.observerHealth)
-      stale["direct-device"] = {status: "degraded", source: "direct-device", code: "heartbeat_stale", reason: "observer heartbeat is stale"}
-      root.observerHealth = stale
+      var freshnessAnchor = Math.max(root.directObserverLastSeen, root.directObserverStartedAt)
+      if (freshnessAnchor > 0 && Date.now() - freshnessAnchor <= Math.max(15000, heartbeat * 3)) return
+      root.clearDirectObserverState()
+      root.setObserverHealth("direct-device", "degraded", "heartbeat_stale", "observer heartbeat is stale")
+    }
+  }
+
+  Timer {
+    id: fallbackObserverHeartbeat
+    interval: 5000
+    repeat: true
+    running: root.kindEnabled("screen-recording") || root.kindEnabled("screenshot")
+    onTriggered: {
+      var heartbeat = root.boundedSeconds(root.settings.recordingPollSeconds, 2, 1, 60) * 1000
+      var freshnessAnchor = Math.max(root.fallbackObserverLastSeen, root.fallbackObserverStartedAt)
+      if (freshnessAnchor > 0 && Date.now() - freshnessAnchor <= Math.max(15000, heartbeat * 3)) return
+      root.clearFallbackObserverState()
+      root.setObserverHealth("fallback-observer", "degraded", "heartbeat_stale", "fallback observer heartbeat is stale")
     }
   }
 
@@ -850,9 +920,8 @@ Item {
     id: directDeviceProc
     onExited: function(exitCode) {
       if (root.directObserverRetiring || root.settings.directDeviceMonitoring !== true) return
-      var next = Object.assign({}, root.observerHealth)
-      next["direct-device"] = {status: "degraded", source: "direct-device", code: "observer_exited", reason: "observer exited with code " + exitCode}
-      root.observerHealth = next
+      root.clearDirectObserverState()
+      root.setObserverHealth("direct-device", "degraded", "observer_exited", "observer exited with code " + exitCode)
       directObserverRetry.interval = root.directObserverRetryMilliseconds
       root.directObserverRetryMilliseconds = Math.min(root.directObserverRetryMilliseconds * 2, 60000)
       directObserverRetry.restart()
@@ -864,6 +933,8 @@ Item {
     id: fallbackObserverProc
     onExited: function(exitCode) {
       if (root.fallbackObserverRetiring || (!root.kindEnabled("screen-recording") && !root.kindEnabled("screenshot"))) return
+      root.clearFallbackObserverState()
+      root.setObserverHealth("fallback-observer", "degraded", "observer_exited", "observer exited with code " + exitCode)
       root.fallbackObserverRetryMilliseconds = Math.min(root.fallbackObserverRetryMilliseconds * 2, 60000)
       fallbackObserverRetry.restart()
     }

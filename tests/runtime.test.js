@@ -80,5 +80,35 @@ assert.match(service, /directObserverRetryMilliseconds[\s\S]*?Math\.min\([^\n]*6
   "observer restart backoff must be bounded at 60 seconds")
 assert.match(service, /observer heartbeat is stale/, "missing observer heartbeats must degrade health")
 assert.doesNotMatch(service, /directDeviceTimer/, "removed polling timer must not remain referenced")
+assert.match(service, /property double directObserverStartedAt:\s*0/, "direct observer staleness must account for startup grace")
+assert.match(service, /property double fallbackObserverStartedAt:\s*0/, "fallback observer staleness must account for startup grace")
+assert.match(service, /function clearDirectObserverState\(\)[\s\S]*?directObservations = \[\]/,
+  "direct observer failure must discard stale active-device observations")
+assert.match(service, /function clearDirectObserverState\(\)[\s\S]*?discardObserverSessions\("direct-device"\)/,
+  "direct observer loss must invalidate sessions outside normal stop transitions")
+assert.match(service, /function clearDirectObserverState\(\)[\s\S]*?if \(directObservations\.length\) directObservations = \[\]/,
+  "repeated direct-observer degradation must not emit empty-array churn")
+assert.match(service, /function clearFallbackObserverState\(\)[\s\S]*?recordingActive = false[\s\S]*?screenshotActive = false/,
+  "fallback observer failure must discard stale capture observations")
+assert.match(service, /function clearFallbackObserverState\(\)[\s\S]*?discardObserverSessions\("process-probe"\)/,
+  "fallback observer loss must invalidate sessions outside normal stop transitions")
+assert.match(service, /function clearFallbackObserverState\(\)[\s\S]*?if \(recordingApps\.length\) recordingApps = \[\]/,
+  "repeated fallback degradation must not emit empty-array churn")
+assert.match(service, /id:\s*fallbackObserverHeartbeat[\s\S]*?fallback observer heartbeat is stale/,
+  "fallback process observation must have heartbeat health coverage")
+assert.match(service, /payload\.type !== "fallback-snapshot"[\s\S]*?throw new Error/,
+  "structurally invalid fallback payloads must degrade observer health")
+assert.match(service, /result\.type !== "snapshot"[\s\S]*?throw new Error/,
+  "structurally invalid direct payloads must degrade observer health")
+assert.match(service, /id:\s*directDeviceProc[\s\S]*?clearDirectObserverState\(\)[\s\S]*?observer_exited/,
+  "unexpected direct observer exit must clear observations before reporting failure")
+assert.match(service, /id:\s*fallbackObserverProc[\s\S]*?clearFallbackObserverState\(\)[\s\S]*?observer_exited/,
+  "unexpected fallback observer exit must clear observations before reporting failure")
+assert.match(service, /kind === "screen-recording" \|\| kind === "screenshot"[\s\S]*?observerHealth\["fallback-observer"\]/,
+  "capture health must include its observer state")
+assert.match(service, /function discardObserverSessions\(source\)[\s\S]*?suppressedObserverStarts/,
+  "observer invalidation must remember uncertain sessions across recovery")
+assert.match(service, /if \(suppressedObserverStarts\[started\.source\]\)[\s\S]*?continue/,
+  "observer recovery must not announce uncertain sessions as new activity")
 
 console.log("runtime behavior contract tests passed")
