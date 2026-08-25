@@ -84,8 +84,12 @@ captures media, or sends telemetry over the network.
 
 - Keep one service instance and avoid per-monitor observers.
 - Prefer reactive signals and persistent observers over repeated subprocesses.
+- Derive rendered subsets and normalized settings from shared reactive
+  snapshots instead of rebuilding them independently for each consumer.
 - Debounce reconciliation and avoid replacing arrays when rendered data is
   equivalent.
+- Suspend periodic probes when no enabled device consumes their results, and
+  retain one coalesced refresh when configuration changes during a probe.
 - Run animation timers only while their corresponding pending state exists.
 - Bound scans, retries, stored entries, payload sizes, and rendered history.
 

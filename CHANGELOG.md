@@ -17,6 +17,9 @@ maintainer guides that define release and validation procedures.
 
 - Align individual device settings with the global settings structure, clarify
   shared and inherited behavior, and disable unavailable placement actions.
+- Reuse normalized runtime policy and device snapshots, suspend background
+  probes when their device classes are disabled, and coalesce dependency
+  refreshes across in-flight checks.
 
 ### Fixed
 
