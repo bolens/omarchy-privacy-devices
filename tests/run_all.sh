@@ -8,7 +8,7 @@ for test_file in tests/*.test.js; do
   node "$test_file"
 done
 
-python3 -m py_compile privacy-history privacy-observe privacy-diagnostics privacy-settings
+python3 -m py_compile privacy-history privacy-location privacy-observe privacy-diagnostics privacy-settings
 python3 -m unittest discover -s tests -p 'test_*.py'
 
 shellcheck \

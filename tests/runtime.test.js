@@ -7,6 +7,16 @@ const screenshotWorkflow = fs.readFileSync(path.join(__dirname, "..", "scripts/c
 const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
 const ci = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "ci.yml"), "utf8")
 const qmlRuntime = fs.readFileSync(path.join(__dirname, "run_qml_runtime.sh"), "utf8")
+const serviceEntryPoint = service.trimStart()
+const barEntryPoint = bar.trimStart()
+
+assert.match(serviceEntryPoint, /^import[\s\S]*?\nItem\s*\{/, "the service entry point must remain an embeddable Item")
+assert.doesNotMatch(serviceEntryPoint, /\nShellRoot\s*\{/, "the service entry point must not create a second shell root")
+assert.doesNotMatch(barEntryPoint, /\nShellRoot\s*\{/, "the bar entry point must not create a second shell root")
+assert.doesNotMatch(service, /Quickshell\.execDetached\(\s*["']/, "detached runtime commands must use argument arrays")
+assert.doesNotMatch(service, /locationProc\.command\s*=\s*\["sh",\s*"-c"/, "GeoClue probing must not cross an inline shell boundary")
+assert.match(service, /locationProc\.command = \[String\(Qt\.resolvedUrl\("privacy-location"\)\)/,
+  "GeoClue probing must resolve its helper relative to the installed plugin")
 
 assert.doesNotMatch(qmlRuntime, /\/home\/[^/]+\//,
   "the QML runtime test must not contain a developer-specific executable path")

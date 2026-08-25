@@ -11,7 +11,8 @@ const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), 
 
 assert.match(runner, /for test_file in tests\/\*\.test\.js/, "the canonical runner must discover every JavaScript suite")
 assert.match(runner, /python3 -m unittest discover -s tests -p 'test_\*\.py'/, "the canonical runner must discover every Python suite")
-assert.match(runner, /python3 -m py_compile privacy-history privacy-observe privacy-diagnostics privacy-settings/, "the canonical runner must compile runtime Python helpers")
+for (const helper of ["privacy-history", "privacy-location", "privacy-observe", "privacy-diagnostics", "privacy-settings"])
+  assert.match(runner, new RegExp(`python3 -m py_compile[^\\n]*${helper}`), `the canonical runner must compile ${helper}`)
 assert.match(runner, /shellcheck[\s\S]*?privacy-control[\s\S]*?tests\/run_qml_runtime\.sh[\s\S]*?tests\/fixtures\/\*/, "the canonical runner must lint runtime, maintainer, and fixture shell scripts")
 assert.match(ci, /name: Run behavior suite[\s\S]*?run: tests\/run_all\.sh/, "CI must delegate the behavior suite to the canonical runner")
 assert.equal(packageJson.scripts.test, "bash tests/run_all.sh", "npm test must delegate to the canonical runner")

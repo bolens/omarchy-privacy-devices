@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -90,6 +91,36 @@ class ShellHelperTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0)
             self.assertEqual(list(pictures.glob("*.png")), [])
 
+    def test_screenshot_uses_localized_xdg_user_directory(self):
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            localized = directory / "Bilder"
+            environment = self.environment(directory, {
+                "xdg-user-dir": f"printf '%s\\n' '{localized}'",
+                "slurp": "printf '0,0 10x10\\n'",
+                "grim": "for last do :; done; touch \"$last\"",
+                "wl-copy": "cat >/dev/null",
+            })
+            environment.pop("XDG_PICTURES_DIR", None)
+            result = self.run_helper("privacy-screenshot", "capture", "grim", environment=environment)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(len(list(localized.glob("screenshot-*.png"))), 1)
+
+    def test_screenshot_rejects_relative_xdg_user_directory(self):
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            fallback = directory / "home" / "Pictures"
+            environment = self.environment(directory, {
+                "xdg-user-dir": "printf 'relative/path\\n'",
+                "slurp": "printf '0,0 10x10\\n'",
+                "grim": "for last do :; done; touch \"$last\"",
+                "wl-copy": "cat >/dev/null",
+            })
+            environment.pop("XDG_PICTURES_DIR", None)
+            result = self.run_helper("privacy-screenshot", "capture", "grim", environment=environment)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(len(list(fallback.glob("screenshot-*.png"))), 1)
+
     def test_recorder_rejects_unsafe_runtime_directories(self):
         with tempfile.TemporaryDirectory() as raw:
             directory = Path(raw)
@@ -100,6 +131,27 @@ class ShellHelperTests(unittest.TestCase):
             self.assertEqual(self.run_helper("privacy-recording", "start", "wf-recorder", environment=environment).returncode, 2)
             environment["XDG_RUNTIME_DIR"] = "relative/runtime"
             self.assertEqual(self.run_helper("privacy-recording", "stop", "wf-recorder", environment=environment).returncode, 2)
+
+    def test_recorder_uses_localized_xdg_user_directory(self):
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            runtime = directory / "runtime"
+            runtime.mkdir(mode=0o700)
+            localized = directory / "Videos-localized"
+            environment = self.environment(directory, {
+                "xdg-user-dir": f"printf '%s\\n' '{localized}'",
+                "slurp": "printf '0,0 10x10\\n'",
+                "wf-recorder": "printf '%s\\n' \"$*\" >\"$TEST_LOG\"",
+            })
+            environment["XDG_RUNTIME_DIR"] = str(runtime)
+            environment.pop("XDG_VIDEOS_DIR", None)
+            result = self.run_helper("privacy-recording", "start", "wf-recorder", environment=environment)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            for _ in range(100):
+                if (directory / "calls.log").exists():
+                    break
+                time.sleep(0.001)
+            self.assertIn(str(localized / "screenrecording-"), (directory / "calls.log").read_text())
 
 
 if __name__ == "__main__":
