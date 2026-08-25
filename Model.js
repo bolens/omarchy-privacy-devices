@@ -483,6 +483,24 @@ function updateObserverHealth(health, source, status, code, reason) {
   return next
 }
 
+// Serial subprocess queues share the same supersession rule: finish the active
+// probe, discard work derived from stale settings, then rebuild exactly once.
+function scheduleProbeRefresh(processBusy, requestedKinds) {
+  return {
+    queue: processBusy === true ? [] : (Array.isArray(requestedKinds) ? requestedKinds.slice() : []),
+    refreshPending: processBusy === true
+  }
+}
+
+function nextProbeAction(queue, refreshPending, processRunning) {
+  var remaining = Array.isArray(queue) ? queue.slice() : []
+  var pending = refreshPending === true
+  if (processRunning === true) return {action: "wait", kind: "", queue: remaining, refreshPending: pending}
+  if (remaining.length > 0) return {action: "probe", kind: remaining.shift(), queue: remaining, refreshPending: pending}
+  if (pending) return {action: "refresh", kind: "", queue: remaining, refreshPending: true}
+  return {action: "idle", kind: "", queue: remaining, refreshPending: false}
+}
+
 // Ignore timestamps that naturally advance on every observation. Consumers only
 // need a new array when something they render or act upon actually changed.
 function sessionsEquivalent(left, right) {

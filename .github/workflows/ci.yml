@@ -59,6 +59,7 @@ jobs:
           node tests/controls.test.js
           node tests/sessions.test.js
           node tests/monitoring.test.js
+          node tests/queues.test.js
           node tests/settings.test.js
           node tests/runtime.test.js
 

@@ -539,23 +539,22 @@ Item {
   }
 
   function refreshDependencies() {
-    if (dependencyCheckProc.running) {
-      dependencyRefreshPending = true
-      dependencyQueue = []
-      return
-    }
-    dependencyRefreshPending = false
-    dependencyQueue = enabledKinds().slice()
+    var scheduled = Model.scheduleProbeRefresh(dependencyCheckProc.running, enabledKinds())
+    dependencyQueue = scheduled.queue
+    dependencyRefreshPending = scheduled.refreshPending
+    if (dependencyCheckProc.running) return
     runNextDependencyCheck()
   }
 
   function runNextDependencyCheck() {
-    if (dependencyCheckProc.running) return
-    if (dependencyQueue.length === 0) {
-      if (dependencyRefreshPending) refreshDependencies()
+    var next = Model.nextProbeAction(dependencyQueue, dependencyRefreshPending, dependencyCheckProc.running)
+    if (next.action === "wait" || next.action === "idle") return
+    if (next.action === "refresh") {
+      refreshDependencies()
       return
     }
-    dependencyCheckKind = dependencyQueue.shift()
+    dependencyQueue = next.queue
+    dependencyCheckKind = next.kind
     dependencyCheckProc.command = [dependencyHelperPath(), "check", dependencyCheckKind, recordingBackend(), audioControlBackend(), screenshotBackend()]
     dependencyCheckProc.running = true
   }
@@ -705,13 +704,11 @@ Item {
   }
 
   function refreshPreventativeControls() {
-    if (privacyControlProc.running || privacyControlKind !== "" || privacyStateProc.running) {
-      privacyStateRefreshPending = true
-      privacyStateQueue = []
-      return
-    }
-    privacyStateRefreshPending = false
-    privacyStateQueue = preventativeProbeKinds.slice()
+    var busy = privacyControlProc.running || privacyControlKind !== "" || privacyStateProc.running
+    var scheduled = Model.scheduleProbeRefresh(busy, preventativeProbeKinds)
+    privacyStateQueue = scheduled.queue
+    privacyStateRefreshPending = scheduled.refreshPending
+    if (busy) return
     runNextPrivacyState()
   }
 
@@ -720,12 +717,14 @@ Item {
   property bool privacyStateRefreshPending: false
 
   function runNextPrivacyState() {
-    if (privacyStateProc.running) return
-    if (privacyStateQueue.length === 0) {
-      if (privacyStateRefreshPending) refreshPreventativeControls()
+    var next = Model.nextProbeAction(privacyStateQueue, privacyStateRefreshPending, privacyStateProc.running)
+    if (next.action === "wait" || next.action === "idle") return
+    if (next.action === "refresh") {
+      refreshPreventativeControls()
       return
     }
-    privacyStateKind = privacyStateQueue.shift()
+    privacyStateQueue = next.queue
+    privacyStateKind = next.kind
     privacyStateProc.command = [helperPath(), "status", privacyStateKind]
     privacyStateProc.running = true
   }

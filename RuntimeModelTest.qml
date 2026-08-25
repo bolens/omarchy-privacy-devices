@@ -23,6 +23,10 @@ ShellRoot {
     var health = {watcher:{status:"healthy",code:"ok",reason:""}}
     if (Model.updateObserverHealth(health, "watcher", "healthy", "ok", "") !== health)
       throw new Error("observer health identity failed")
+    var scheduled = Model.scheduleProbeRefresh(true, ["camera", "location"])
+    var nextProbe = Model.nextProbeAction(scheduled.queue, scheduled.refreshPending, false)
+    if (nextProbe.action !== "refresh" || nextProbe.queue.length !== 0)
+      throw new Error("probe queue policy failed")
     console.log("PRIVACY_QML_RUNTIME_OK")
     Qt.quit()
   }

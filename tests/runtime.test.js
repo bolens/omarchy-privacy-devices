@@ -22,14 +22,21 @@ assert.doesNotMatch(service, /id:\s*(?:recordingTimer|screenshotTimer)/, "persis
 assert.match(service, /target:\s*"privacy-devices-settings"[\s\S]*?shell\.summon/, "singleton service must route settings to the focused monitor")
 assert.doesNotMatch(bar, /target:\s*"privacy-devices-settings"/, "per-monitor widgets must not compete for settings IPC ownership")
 assert.match(service, /id:\s*notificationFlush[\s\S]*?interval:\s*400/, "activity notifications must use a bounded coalescing window")
-assert.match(service, /function beginControlTransaction\(kind, expectedEnabled\)[\s\S]*?function beginControlVerification\(kind, exitCode\)[\s\S]*?function verifyControlTransaction\(kind, observedEnabled, probeValid\)/, "controls must apply, probe, and verify explicit requested states")
+assert.match(service, /function beginControlTransaction\(kind, expectedEnabled\)[\s\S]*?Model\.controlTransactionTransition\(null, \{type: "begin", expectedEnabled: expectedEnabled\}/,
+  "control requests must enter the behavior-tested reducer with their requested state")
+assert.match(service, /function beginControlVerification\(kind, exitCode\)[\s\S]*?Model\.controlTransactionTransition\(current, \{type: "command", exitCode: exitCode\}/,
+  "command results must enter the behavior-tested reducer")
+assert.match(service, /function verifyControlTransaction\(kind, observedEnabled, probeValid\)[\s\S]*?transitionControlTransaction\(kind, \{type: "observation", enabled: observedEnabled, valid: probeValid\}\)/,
+  "observations must verify controls through the behavior-tested reducer")
 assert.match(service, /transitionControlTransaction\(kind, \{type: "timeout"\}, now\)/, "verification must delegate bounded timeout handling to the tested reducer")
 assert.doesNotMatch(service, /fallbackMicrophoneMuted\s*=\s*!fallbackMicrophoneMuted/, "controls must preserve the last observed microphone state while verification is pending")
 assert.doesNotMatch(service, /fallbackOutputMuted\s*=\s*!fallbackOutputMuted/, "controls must preserve the last observed output state while verification is pending")
 assert.match(service, /lastFallbackRefreshAt/, "fallback refresh freshness must be observable")
 assert.match(bar, /pixelAligned:\s*true/, "popup scrolling should remain pixel aligned")
 assert.match(bar, /onMovementEnded:\s*root\.flushDeferredItems\(\)/, "deferred row updates must flush when scrolling ends")
-assert.match(bar, /function closeCurrentLayer\(\)/, "Escape must close the current UI layer")
+assert.match(bar, /onCloseRequested:\s*root\.closeCurrentLayer\(\)/, "Escape must invoke layered popup dismissal")
+assert.match(bar, /function closeCurrentLayer\(\)[\s\S]*?editingKind !== ""[\s\S]*?showingGlobalSettings[\s\S]*?close\(\)/,
+  "layered dismissal must close a device editor, then global settings, then the popup")
 assert.match(bar, /onMoveRequested:[\s\S]*?moveActivitySelection/, "activity rows must support keyboard navigation")
 assert.match(bar, /onTextKey:[\s\S]*?globalSettingsPage/, "settings tabs must support keyboard shortcuts")
 assert.match(bar, /readonly property var activitySourceItems:\s*orderedKinds\(\)\.map/, "bar device state must be built once per reactive update")
@@ -54,12 +61,10 @@ assert.match(service, /id:\s*sessionSafetyTimer[\s\S]*?running:\s*root\.enabledK
   "safety reconciliation must sleep when monitoring is disabled")
 assert.match(service, /id:\s*dependencyRefreshTimer[\s\S]*?running:\s*root\.enabledKindList\.length > 0/,
   "dependency polling must sleep when no devices are enabled")
-assert.match(service, /property bool dependencyRefreshPending:\s*false/,
-  "dependency refreshes must retain changes received during an active probe")
-assert.match(service, /function refreshDependencies\(\)[\s\S]*?dependencyRefreshPending = true[\s\S]*?dependencyQueue = \[\]/,
-  "a newer dependency configuration must supersede the queued stale configuration")
-assert.match(service, /function runNextDependencyCheck\(\)[\s\S]*?if \(dependencyRefreshPending\) refreshDependencies\(\)/,
-  "dependency probes must run a coalesced refresh after the active probe exits")
+assert.match(service, /function refreshDependencies\(\)[\s\S]*?Model\.scheduleProbeRefresh\(dependencyCheckProc\.running, enabledKinds\(\)\)/,
+  "dependency refreshes must use the behavior-tested supersession policy")
+assert.match(service, /function runNextDependencyCheck\(\)[\s\S]*?Model\.nextProbeAction\(dependencyQueue, dependencyRefreshPending, dependencyCheckProc\.running\)/,
+  "dependency workers must use the behavior-tested FIFO policy")
 
 for (const signal of [
   "onObservedPipewireSessionsChanged", "onLocationAppsChanged", "onLocationActiveChanged",
@@ -126,12 +131,10 @@ assert.match(bar, /function toggleEntry\(entry\)[\s\S]*?if \(!privacyService \|\
   "bar controls must ignore repeated input while verification is pending")
 assert.match(bar, /if \(!privacyService\.beginExternalControl\("screen-recording", !entry\.controlEnabled\)\) return/,
   "recording commands must not run unless their transaction is accepted")
-assert.match(service, /property bool privacyStateRefreshPending:\s*false/,
-  "preventative state refreshes must survive an in-flight probe")
-assert.match(service, /function refreshPreventativeControls\(\)[\s\S]*?privacyStateRefreshPending = true[\s\S]*?privacyStateQueue = \[\]/,
-  "new preventative settings must supersede queued stale probes")
-assert.match(service, /function runNextPrivacyState\(\)[\s\S]*?if \(privacyStateRefreshPending\) refreshPreventativeControls\(\)/,
-  "preventative probes must coalesce a refresh after the active probe exits")
+assert.match(service, /function refreshPreventativeControls\(\)[\s\S]*?Model\.scheduleProbeRefresh\(busy, preventativeProbeKinds\)/,
+  "preventative refreshes must use the behavior-tested supersession policy")
+assert.match(service, /function runNextPrivacyState\(\)[\s\S]*?Model\.nextProbeAction\(privacyStateQueue, privacyStateRefreshPending, privacyStateProc\.running\)/,
+  "preventative workers must use the behavior-tested FIFO policy")
 assert.match(service, /readonly property bool audioMonitoringEnabled:[\s\S]*?controlPending\("microphone"\)[\s\S]*?controlPending\("audio-output"\)/,
   "audio verification probes must survive device monitoring changes")
 assert.match(service, /readonly property var preventativeProbeKinds:[\s\S]*?controlPending\(kind\)/,

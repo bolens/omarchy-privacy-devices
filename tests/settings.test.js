@@ -48,8 +48,6 @@ for (const key of globalKeys) {
   }
 }
 
-assert.match(bar, /showingGlobalSettings/)
-assert.match(bar, /GlobalSettingsTab/)
 assert.match(bar, /GlobalSettingsTab \{ label: "Appearance"; value: "appearance" \}/, "appearance settings need a dedicated page")
 assert.match(bar, /Reset global settings/)
 for (const selector of ["Monitored activity", "Activity notifications", "Preventative controls"])
@@ -93,7 +91,6 @@ assert.ok(bar.indexOf("id: appearanceSettingsPage") < bar.indexOf("Status presen
 assert.match(bar, /"1234"[\s\S]*?\["general", "appearance", "alerts", "monitoring"\]/, "settings keyboard shortcuts must cover all pages")
 assert.match(bar, /var count = Model\.privacySessionCount\(entry, showBarSessionCounts\)/, "bar counts must not depend on popup-count visibility")
 assert.match(bar, /persistItemStatusMarker/, "per-item settings must control marker visibility")
-assert.match(bar, /function canMoveItem\(kind, delta\)/, "device placement must expose boundary-aware movement")
 assert.match(bar, /text: "Move left"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, -1\)/,
   "device placement must disable unavailable left movement")
 assert.match(bar, /text: "Move right"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, 1\)/,
@@ -107,11 +104,9 @@ assert.match(bar, /label: "Show status markers for this device"[\s\S]*?Global st
 for (const label of ["Bar preview", "Display label", "Device icon"])
   assert.match(bar, new RegExp(`text: "${label}"`), `${label} must remain visible without relying on input placeholders`)
 assert.match(bar, /Shared by microphone and audio output/, "shared audio backend scope must be explicit")
-assert.match(bar, /function moveDeviceEditor\(delta\)/, "device editor must support adjacent navigation")
 assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceEditor\(dx\)/,
   "left and right keys must navigate device editors")
 assert.match(deviceEditor, /tooltipText: "Previous device"[\s\S]*?tooltipText: "Next device"/, "device pages must expose accessible adjacent navigation")
-assert.match(bar, /function resetDeviceBackend\(kind\)/, "backend reset must be scoped by device")
 assert.match(bar, /"Reset all device settings"/, "device pages must offer a complete reset")
 assert.match(bar, /property string pendingReset:[\s\S]*?Confirm shared backend reset[\s\S]*?Confirm reset all/,
   "shared audio resets must require an explicit second action")
