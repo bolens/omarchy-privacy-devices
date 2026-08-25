@@ -63,10 +63,14 @@ assert.match(html, /@media \(max-width: 760px\)[\s\S]*?\.site-header\s*\{\s*posi
   "mobile navigation must not consume the viewport while scrolling");
 assert.equal(source.querySelectorAll("#screenshots .interface-showcase .screenshot-card").length, 3,
   "activity, bar, and notification captures must form the interface showcase");
-assert.equal(source.querySelectorAll("#screenshots .settings-gallery .screenshot-card").length, 9,
-  "settings and detail captures must use a dedicated, consistent gallery");
-assert.match(html, /\.settings-gallery\s*\{[^}]*grid-template-columns:\s*repeat\(3,/s,
-  "wide screens must show settings captures in three balanced columns");
+assert.equal(source.querySelectorAll("#screenshots [data-gallery]").length, 2,
+  "settings and workflow captures must be split into focused explorers");
+assert.equal(source.querySelectorAll("#screenshots [data-gallery] .gallery-panel").length, 9,
+  "every settings and detail capture must remain available in a tab panel");
+assert.match(html, /\.gallery-explorer\s*\{[^}]*grid-template-columns:\s*14rem minmax\(0, 1fr\)/s,
+  "wide screens must pair gallery navigation with one focused image stage");
+assert.match(html, /\.js \.gallery-stage \.gallery-panel\[hidden\]\s*\{\s*display:\s*none;/,
+  "enhanced galleries must render only the selected image panel");
 assert.doesNotMatch(html, /measured widget footprint|width varies/i,
   "gallery captions must explain visible status instead of capture mechanics");
 assert.doesNotMatch(html, /official Omarchy (?:Shell )?plugin|official Omarchy Plugins directory/i,
@@ -107,6 +111,16 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 25));
   assert.equal(document.documentElement.dataset.theme, "gruvbox");
   assert.match(document.querySelector('link[rel="icon"]').href, /^data:image\/svg\+xml/);
   assert.equal(document.querySelector("#plugin-version").textContent, "v9.8.7");
+
+  const settingsGallery = document.querySelector('[data-gallery]');
+  const settingsTabs = settingsGallery.querySelectorAll('[role="tab"]');
+  const settingsPanels = settingsGallery.querySelectorAll('[role="tabpanel"]');
+  assert.equal([...settingsPanels].filter((panel) => !panel.hidden).length, 1);
+  settingsTabs[1].click();
+  assert.equal(settingsTabs[1].getAttribute("aria-selected"), "true");
+  assert.equal([...settingsPanels].find((panel) => !panel.hidden).id, settingsTabs[1].dataset.target);
+  settingsTabs[1].dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+  assert.equal(settingsTabs[2].getAttribute("aria-selected"), "true");
 
   document.querySelector("[data-copy]").click();
   await settle();
