@@ -42,6 +42,15 @@ for (const image of ["bar", "general", "appearance", "alerts", "monitoring", "de
 }
 
 const source = new JSDOM(html).window.document;
+assert.ok(source.querySelector('nav a[href="#screenshots"]'),
+  "primary navigation must expose the interface gallery");
+assert.ok(html.indexOf('id="screenshots"') < html.indexOf('id="install"') &&
+  html.indexOf('id="install"') < html.indexOf('id="requirements"'),
+  "installation must follow visual proof before detailed compatibility guidance");
+assert.match(html, /\.site-header\s*\{[^}]*position:\s*sticky/s,
+  "primary navigation must remain visible through the long guide");
+assert.match(html, /@media \(max-width: 760px\)[\s\S]*?\.site-header\s*\{\s*position:\s*static;/,
+  "mobile navigation must not consume the viewport while scrolling");
 assert.equal(source.querySelectorAll("#screenshots .interface-showcase .screenshot-card").length, 2,
   "activity and bar captures must form the compact interface showcase");
 assert.equal(source.querySelectorAll("#screenshots .settings-gallery .screenshot-card").length, 5,

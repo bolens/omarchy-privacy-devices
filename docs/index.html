@@ -237,12 +237,20 @@
         margin: 0 auto;
       }
 
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in srgb, var(--background) 88%, transparent);
+        backdrop-filter: blur(14px);
+      }
+
       nav {
         display: flex;
         align-items: center;
         justify-content: space-between;
         min-height: 72px;
-        border-bottom: 1px solid var(--border);
       }
 
       .brand {
@@ -263,7 +271,8 @@
 
       nav a { color: var(--muted); text-decoration: none; }
       nav a { transition: color 160ms ease; }
-      nav a:hover { color: var(--text); }
+      nav a:hover,
+      nav a:focus-visible { color: var(--text); }
 
       .theme-picker {
         display: inline-flex;
@@ -449,7 +458,7 @@
       section {
         padding: 5rem 0;
         border-top: 1px solid var(--border);
-        scroll-margin-top: 1rem;
+        scroll-margin-top: 5rem;
       }
 
       h2 {
@@ -742,6 +751,7 @@
       }
 
       @media (max-width: 760px) {
+        .site-header { position: static; }
         nav { flex-wrap: wrap; gap: 0.5rem 1rem; padding: 0.8rem 0; }
         nav ul { gap: 0.7rem; font-size: 0.8rem; }
         .theme-picker { width: 100%; }
@@ -755,16 +765,18 @@
         .command { grid-template-columns: 1fr; }
         .copy-button { justify-self: start; }
         footer { flex-direction: column; }
+        section { padding: 3.75rem 0; scroll-margin-top: 1rem; }
       }
     </style>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <header class="shell">
-      <nav aria-label="Main navigation">
+    <header class="site-header">
+      <nav class="shell" aria-label="Main navigation">
         <a class="brand" href="./">Privacy Devices</a>
         <ul>
           <li><a href="#features">Features</a></li>
+          <li><a href="#screenshots">Screenshots</a></li>
           <li><a href="#usage">Guide</a></li>
           <li><a href="#install">Install</a></li>
           <li><a href="https://github.com/bolens/omarchy-privacy-devices">GitHub</a></li>
@@ -874,31 +886,6 @@
         </div>
       </section>
 
-      <section id="requirements" class="reveal">
-        <div class="shell">
-          <div class="eyebrow">Compatibility</div>
-          <h2>Built for Omarchy.</h2>
-          <p class="section-intro">Privacy Devices requires Omarchy Quattro with Omarchy Shell, Quickshell, Hyprland, and PipeWire. Optional controls detect their own dependencies and show <strong>Install</strong> only when needed.</p>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Control or backend</th><th>Required package or command</th></tr></thead>
-              <tbody>
-                <tr><td>Microphone and audio output</td><td><code>libpulse</code> (<code>pactl</code>) or <code>wireplumber</code> (<code>wpctl</code>)</td></tr>
-                <tr><td>Camera blocking</td><td><code>polkit</code> and a UVC-compatible USB camera</td></tr>
-                <tr><td>Location blocking</td><td><code>geoclue</code> and <code>polkit</code></td></tr>
-                <tr><td>Screen-share blocking</td><td><code>xdg-desktop-portal-hyprland</code></td></tr>
-                <tr><td>Omarchy screenshots</td><td>Omarchy capture command</td></tr>
-                <tr><td>Grim / Grim + Satty</td><td><code>grim</code>, <code>slurp</code>; plus <code>satty</code> and <code>wl-clipboard</code> for Satty</td></tr>
-                <tr><td>Hyprshot / Flameshot</td><td><code>hyprshot</code>; or <code>flameshot</code>, <code>grim</code>, and the Hyprland portal</td></tr>
-                <tr><td>Omarchy / GPU recording</td><td><code>gpu-screen-recorder</code></td></tr>
-                <tr><td>wf-recorder</td><td><code>wf-recorder</code> and <code>slurp</code></td></tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="notice"><strong>Custom commands are user-managed.</strong> The plugin never installs their dependencies. Activity notifications use <code>notify-send</code> when available.</p>
-        </div>
-      </section>
-
       <section id="install" class="reveal">
         <div class="shell">
           <div class="install-box">
@@ -942,6 +929,31 @@
               <a class="button" href="#configuration">Configuration guide</a>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="requirements" class="reveal">
+        <div class="shell">
+          <div class="eyebrow">Compatibility</div>
+          <h2>Built for Omarchy.</h2>
+          <p class="section-intro">Privacy Devices requires Omarchy Quattro with Omarchy Shell, Quickshell, Hyprland, and PipeWire. Optional controls detect their own dependencies and show <strong>Install</strong> only when needed.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Control or backend</th><th>Required package or command</th></tr></thead>
+              <tbody>
+                <tr><td>Microphone and audio output</td><td><code>libpulse</code> (<code>pactl</code>) or <code>wireplumber</code> (<code>wpctl</code>)</td></tr>
+                <tr><td>Camera blocking</td><td><code>polkit</code> and a UVC-compatible USB camera</td></tr>
+                <tr><td>Location blocking</td><td><code>geoclue</code> and <code>polkit</code></td></tr>
+                <tr><td>Screen-share blocking</td><td><code>xdg-desktop-portal-hyprland</code></td></tr>
+                <tr><td>Omarchy screenshots</td><td>Omarchy capture command</td></tr>
+                <tr><td>Grim / Grim + Satty</td><td><code>grim</code>, <code>slurp</code>; plus <code>satty</code> and <code>wl-clipboard</code> for Satty</td></tr>
+                <tr><td>Hyprshot / Flameshot</td><td><code>hyprshot</code>; or <code>flameshot</code>, <code>grim</code>, and the Hyprland portal</td></tr>
+                <tr><td>Omarchy / GPU recording</td><td><code>gpu-screen-recorder</code></td></tr>
+                <tr><td>wf-recorder</td><td><code>wf-recorder</code> and <code>slurp</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="notice"><strong>Custom commands are user-managed.</strong> The plugin never installs their dependencies. Activity notifications use <code>notify-send</code> when available.</p>
         </div>
       </section>
 
