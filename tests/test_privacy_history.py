@@ -49,6 +49,11 @@ class HistoryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             MODULE.sanitize(invalid_number)
 
+    def test_strips_control_and_direction_override_characters(self):
+        entry = self.entry(1, 1_000_000_000)
+        entry["application"] = "  Browser\n\u202eevil\u2066  "
+        self.assertEqual(MODULE.sanitize(entry)["application"], "Browserevil")
+
     def test_bounds_persisted_text_and_incoming_batch(self):
         now = 1_000_000_000
         oversized = self.entry(1, now)

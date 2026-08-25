@@ -569,14 +569,16 @@ Panel {
     if (entry.kind === "screen-recording") {
       if (!privacyService.beginExternalControl("screen-recording", !entry.controlEnabled)) return
       var backend = String(setting("recordingBackend", "omarchy"))
-      if (backend === "wf-recorder")
-        bar.run(privacyService.dependencyHelperPath().replace("privacy-deps", "privacy-recording") + (entry.controlEnabled ? " stop wf-recorder" : " start wf-recorder"))
+      if (backend === "wf-recorder") {
+        var recordingHelper = privacyService.dependencyHelperPath().replace("privacy-deps", "privacy-recording")
+        Quickshell.execDetached([recordingHelper, entry.controlEnabled ? "stop" : "start", "wf-recorder"])
+      }
       else if (backend === "custom") {
         var command = String(setting(entry.controlEnabled ? "recordingCustomStopCommand" : "recordingCustomStartCommand", ""))
         if (command) bar.run(command)
       }
-      else if (entry.controlEnabled) bar.run("omarchy-capture-screenrecording --stop-recording")
-      else bar.run("omarchy-menu toggle trigger.capture.screenrecord")
+      else if (entry.controlEnabled) Quickshell.execDetached(["omarchy-capture-screenrecording", "--stop-recording"])
+      else Quickshell.execDetached(["omarchy-menu", "toggle", "trigger.capture.screenrecord"])
       return
     }
     if (entry.kind === "screenshot") {
@@ -585,8 +587,11 @@ Panel {
         var screenshotCommand = String(setting("screenshotCustomCommand", ""))
         if (screenshotCommand) bar.run(screenshotCommand)
       }
-      else if (screenshotBackend === "omarchy") bar.run("omarchy-capture-screenshot")
-      else bar.run(privacyService.dependencyHelperPath().replace("privacy-deps", "privacy-screenshot") + " capture " + screenshotBackend)
+      else if (screenshotBackend === "omarchy") Quickshell.execDetached(["omarchy-capture-screenshot"])
+      else {
+        var screenshotHelper = privacyService.dependencyHelperPath().replace("privacy-deps", "privacy-screenshot")
+        Quickshell.execDetached([screenshotHelper, "capture", screenshotBackend])
+      }
       return
     }
     privacyService.toggleControl(entry.kind)

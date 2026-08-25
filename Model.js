@@ -35,7 +35,7 @@ function settingsScrollPosition(targetY, contentHeight, viewportHeight) {
 
 function boundedPlainText(value, maximumLength) {
   if (typeof value !== "string") return ""
-  return Array.from(value.replace(/[\x00-\x1f\x7f]/g, "").trim()).slice(0, maximumLength).join("")
+  return Array.from(value.replace(/[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]/g, "").trim()).slice(0, maximumLength).join("")
 }
 
 function sanitizeSettings(data) {
@@ -71,7 +71,7 @@ function sanitizeSettings(data) {
     clean[kindLists[index]] = unique(source[kindLists[index]].filter(function(value) { return KINDS.indexOf(value) >= 0 })).slice(0, KINDS.length)
   var stringLists = ["excludedApps", "hiddenApps", "notificationSuppressedApps", "cameraKeywords", "screenShareKeywords"]
   for (index = 0; index < stringLists.length; index++) if (Array.isArray(source[stringLists[index]]))
-    clean[stringLists[index]] = unique(source[stringLists[index]].filter(function(value) { return typeof value === "string" && value.trim() !== "" }).map(function(value) { return value.trim().slice(0, 256) })).slice(0, 256)
+    clean[stringLists[index]] = unique(source[stringLists[index]].map(function(value) { return boundedPlainText(value, 256) }).filter(Boolean)).slice(0, 256)
   var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["symbols","letters","custom","off"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
     audioControlBackend:["auto","pactl","wpctl"], screenshotBackend:["omarchy","grim","grim-satty","hyprshot","flameshot","custom"],
     activeColorRole:["bar-active","urgent","accent","foreground"], inactiveColorRole:["muted","foreground","accent"], disabledColorRole:["urgent","muted","accent","foreground","bar-active"],

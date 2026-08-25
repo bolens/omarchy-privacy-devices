@@ -10,12 +10,25 @@ const control = read("privacy-control")
 const recording = read("privacy-recording")
 const observer = read("privacy-observe")
 const history = read("privacy-history")
+const diagnostics = read("privacy-diagnostics")
 const manifest = read("manifest.json")
 const workflowsDirectory = path.join(root, ".github", "workflows")
 
 if (!bar.includes("textFormat: Text.PlainText")) throw new Error("plain-text QML enforcement missing")
 if (!bar.includes("Model.autoTextSafe(value)")) throw new Error("shared AutoText boundary missing")
 if (!service.includes("Model.autoTextSafe(body)")) throw new Error("notification markup boundary missing")
+
+const shellRunCalls = [...bar.matchAll(/bar\.run\(([^\n]+)\)/g)].map(match => match[1].trim())
+if (shellRunCalls.length !== 2 || !shellRunCalls.every(call => call === "command" || call === "screenshotCommand"))
+  throw new Error("only explicit user custom commands may cross the bar shell-string boundary")
+for (const required of [
+  '[recordingHelper, entry.controlEnabled ? "stop" : "start", "wf-recorder"]',
+  '["omarchy-capture-screenrecording", "--stop-recording"]',
+  '["omarchy-menu", "toggle", "trigger.capture.screenrecord"]',
+  '["omarchy-capture-screenshot"]',
+  '[screenshotHelper, "capture", screenshotBackend]',
+])
+  if (!bar.includes(`Quickshell.execDetached(${required})`)) throw new Error(`argument-safe capture launch missing: ${required}`)
 
 if (/cameraModule|cameraKernelModule|modprobe/.test(control + manifest + service))
   throw new Error("configurable privileged kernel-module surface restored")
@@ -31,7 +44,9 @@ for (const required of ["os.getuid()", "process.stat().st_uid", "os.readlink", "
 
 for (const required of ["FIELDS =", "MAX_ENTRIES = 100", "MAX_AGE_MS", "0o700", "0o600", "temporary.replace(path)"])
   if (!history.includes(required)) throw new Error(`private bounded history invariant missing: ${required}`)
+if (!history.includes("TEXT_CONTROLS.sub")) throw new Error("persisted history text sanitation missing")
 if (/window.title|commandLine|cmdline/.test(history)) throw new Error("history stores unnecessarily sensitive metadata")
+if (!/subprocess\.run\([\s\S]*?timeout=5/.test(diagnostics)) throw new Error("clipboard subprocess timeout missing")
 
 for (const workflowName of fs.readdirSync(workflowsDirectory)) {
   const workflow = read(path.join(".github", "workflows", workflowName))
