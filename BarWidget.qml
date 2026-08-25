@@ -1201,8 +1201,10 @@ Panel {
           DeviceDiagnostics { controller: root; kind: root.editingKind }
 
           SettingsSurface {
+            id: resetSurface
             Layout.fillWidth: true
             accent: root.activeThemeColor
+            property string pendingReset: ""
             PanelSectionHeader { Layout.fillWidth: true; text: "Reset device appearance" }
             RowLayout {
               Layout.fillWidth: true
@@ -1217,17 +1219,29 @@ Panel {
               }
               Button {
                 visible: root.editingKind === "screen-recording" || root.editingKind === "screenshot" || root.isAudioControl({kind: root.editingKind})
-                text: root.isAudioControl({kind: root.editingKind}) ? "Reset shared backend" : "Reset backend"
+                text: resetSurface.pendingReset === "backend" ? "Confirm shared backend reset" : (root.isAudioControl({kind: root.editingKind}) ? "Reset shared backend" : "Reset backend")
                 tooltipText: root.isAudioControl({kind: root.editingKind}) ? "Affects microphone and audio output" : "Restore this device's default backend"
-                onClicked: root.resetDeviceBackend(root.editingKind)
+                onClicked: {
+                  if (root.isAudioControl({kind: root.editingKind}) && resetSurface.pendingReset !== "backend") {
+                    resetSurface.pendingReset = "backend"
+                    return
+                  }
+                  root.resetDeviceBackend(root.editingKind)
+                  resetSurface.pendingReset = ""
+                }
               }
             }
             Button {
-              text: "Reset all device settings"
+              text: resetSurface.pendingReset === "all" ? "Confirm reset all" : "Reset all device settings"
               onClicked: {
+                if (root.isAudioControl({kind: root.editingKind}) && resetSurface.pendingReset !== "all") {
+                  resetSurface.pendingReset = "all"
+                  return
+                }
                 root.resetAllDeviceSettings(root.editingKind)
                 iconEditor.text = root.iconFor(root.editingKind)
                 labelEditor.text = root.labelFor(root.editingKind)
+                resetSurface.pendingReset = ""
               }
             }
           }

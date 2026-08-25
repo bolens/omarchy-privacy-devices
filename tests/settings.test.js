@@ -112,7 +112,9 @@ assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceE
   "left and right keys must navigate device editors")
 assert.match(deviceEditor, /tooltipText: "Previous device"[\s\S]*?tooltipText: "Next device"/, "device pages must expose accessible adjacent navigation")
 assert.match(bar, /function resetDeviceBackend\(kind\)/, "backend reset must be scoped by device")
-assert.match(bar, /text: "Reset all device settings"/, "device pages must offer a complete reset")
+assert.match(bar, /"Reset all device settings"/, "device pages must offer a complete reset")
+assert.match(bar, /property string pendingReset:[\s\S]*?Confirm shared backend reset[\s\S]*?Confirm reset all/,
+  "shared audio resets must require an explicit second action")
 assert.match(bar, /property bool dirty:[\s\S]*?Unsaved changes[\s\S]*?enabled: parent\.dirty/,
   "device text editors must expose dirty state and disable redundant saves")
 assert.match(bar, /Model\.deviceBackendValidation\("screenshot"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,
