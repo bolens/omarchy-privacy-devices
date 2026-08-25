@@ -5,7 +5,7 @@ and controls for microphones, audio output, cameras, location, screen sharing,
 screenshots, and screen recording.
 
 [Website and user guide](https://bolens.github.io/omarchy-privacy-devices/) ·
-[Official plugin listing](https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices) ·
+[Community marketplace listing](https://omarchyplugins.com/plugin.html?id=io.github.bolens.privacy-devices) ·
 [Documentation](DOCUMENTATION.md) ·
 [Get support](SUPPORT.md) ·
 [Report an issue](https://github.com/bolens/omarchy-privacy-devices/issues/new/choose)
@@ -31,6 +31,8 @@ Activity notifications use the detected application icon when available:
 | <img src="docs/general.png" alt="General settings page" width="360"> | <img src="docs/appearance.png" alt="Appearance settings page" width="360"> |
 | Alerts | Monitoring |
 | <img src="docs/alerts.png" alt="Alerts settings page" width="360"> | <img src="docs/monitoring.png" alt="Monitoring settings page" width="360"> |
+| Private data | Observer health |
+| <img src="docs/monitoring-private.png" alt="Private history and settings transfer controls" width="360"> | <img src="docs/monitoring-health.png" alt="Monitoring status and observer health" width="360"> |
 | Individual device settings | Activity history |
 | <img src="docs/device.png" alt="Individual privacy-device settings page" width="360"> | <img src="docs/history.png" alt="Completed privacy activity history view" width="360"> |
 | History disabled | |

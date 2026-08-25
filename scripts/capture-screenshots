@@ -127,7 +127,7 @@ capture_has_content() {
 }
 
 capture_panel() {
-  local name=$1 mode=$2 page=${3:-} height=${4:-660} attempt
+  local name=$1 mode=$2 page=${3:-} height=${4:-660} section=${5:-} crop_top=${6:-20} attempt
   for attempt in {1..4}; do
     : "$attempt"
     wait_for_shell || return 1
@@ -136,6 +136,7 @@ capture_panel() {
     case "$mode" in
       history) qs ipc --pid "$shell_pid" call privacy-devices-settings openHistory >/dev/null ;;
       settings) qs ipc --pid "$shell_pid" call privacy-devices-settings open "$page" >/dev/null ;;
+      settings-section) qs ipc --pid "$shell_pid" call privacy-devices-settings openSection "$page" "$section" >/dev/null ;;
       activity) qs ipc --pid "$shell_pid" call shell summon "$plugin_id" "" >/dev/null ;;
       device)
         qs ipc --pid "$shell_pid" call shell summon "$plugin_id" "" >/dev/null
@@ -146,7 +147,7 @@ capture_panel() {
     esac
     sleep "$settle_seconds"
     grim -o "$monitor" "$capture_dir/$name-full.png"
-    magick "$capture_dir/$name-full.png" -crop "500x${height}+${panel_x}+20" +repage "$capture_dir/$name.png"
+    magick "$capture_dir/$name-full.png" -crop "500x${height}+${panel_x}+${crop_top}" +repage "$capture_dir/$name.png"
     if capture_has_content "$capture_dir/$name.png"; then return 0; fi
   done
   printf 'Could not capture populated %s view after four attempts.\n' "$name" >&2
@@ -285,6 +286,8 @@ cmp -s "$settings_snapshot" "$settings_file" || {
   exit 1
 }
 for page in general appearance alerts monitoring; do capture_panel "$page" settings "$page" 660; done
+capture_panel monitoring-private settings-section monitoring 330 private-data 115
+capture_panel monitoring-health settings-section monitoring 290 observer-health 390
 capture_panel activity activity "" 500
 capture_panel device device "" 660
 
@@ -331,6 +334,8 @@ validate_capture "$capture_dir/device.png"
 validate_capture "$capture_dir/bar.png"
 validate_capture "$capture_dir/notification.png"
 for page in general appearance alerts monitoring; do validate_capture "$capture_dir/$page.png"; done
+validate_capture "$capture_dir/monitoring-private.png"
+validate_capture "$capture_dir/monitoring-health.png"
 
 optimize_png() {
   local source=$1 destination=$2
@@ -345,6 +350,8 @@ optimize_png "$capture_dir/history-disabled.png" docs/history-disabled.png
 for page in general appearance alerts monitoring; do
   optimize_png "$capture_dir/$page.png" "docs/$page.png"
 done
+optimize_png "$capture_dir/monitoring-private.png" docs/monitoring-private.png
+optimize_png "$capture_dir/monitoring-health.png" docs/monitoring-health.png
 optimize_png "$capture_dir/device.png" docs/device.png
 optimize_png "$capture_dir/bar.png" docs/bar.png
 optimize_png "$capture_dir/notification.png" docs/notification.png

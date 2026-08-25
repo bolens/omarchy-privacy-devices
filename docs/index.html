@@ -887,7 +887,15 @@
             </figure>
             <figure class="screenshot-card">
               <img src="monitoring.png" alt="Monitoring settings page" width="500" height="660" loading="lazy" decoding="async">
-              <figcaption>Enhanced coverage, private data, and observer health.</figcaption>
+              <figcaption>Enhanced coverage and fallback polling.</figcaption>
+            </figure>
+            <figure class="screenshot-card">
+              <img src="monitoring-private.png" alt="Monitoring settings focused on private history and settings transfer" width="500" height="330" loading="lazy" decoding="async">
+              <figcaption>Optional local history plus private export, import, reset, and one-step undo.</figcaption>
+            </figure>
+            <figure class="screenshot-card">
+              <img src="monitoring-health.png" alt="Monitoring settings focused on status guidance and observer health" width="500" height="290" loading="lazy" decoding="async">
+              <figcaption>Status semantics, live observer health, and redacted diagnostics.</figcaption>
             </figure>
             <figure class="screenshot-card">
               <img src="device.png" alt="Individual privacy-device settings page" width="500" height="660" loading="lazy" decoding="async">
@@ -986,6 +994,7 @@
             <li><strong>Middle-click</strong>Open settings for a bar icon or popup row.</li>
             <li><strong>Right-click</strong>Open the activity panel from an individual icon.</li>
           </ol>
+          <p class="section-intro"><strong>Keyboard:</strong> use ↑/↓ and Enter to select and open devices, H for history, S for settings, R to refresh observers, Esc to go back, and 1–4 to switch settings pages.</p>
           <p class="notice">Toggle controllable rows directly in the popup. Blocking the Hyprland screen-sharing portal also suspends other features supplied by that portal until it is re-enabled.</p>
         </div>
       </section>
@@ -1022,6 +1031,8 @@
             <article class="guide-card"><h3>Notifications</h3><p>Choose activity and control alerts, with per-application suppression and the detected application icon when available.</p></article>
             <article class="guide-card"><h3>Enhanced monitoring</h3><p>Optionally inspect same-user open device handles to detect direct V4L2 camera and ALSA microphone access that bypasses ordinary PipeWire streams.</p></article>
             <article class="guide-card"><h3>Recent activity</h3><p>Opt in to private metadata-only history bounded to seven days or 100 completed sessions, then open it from the clock icon or with H. Search locally by application, device, activity, source, or confidence. Disabling or confirming clear deletes the stored file.</p></article>
+            <article class="guide-card"><h3>Settings transfer</h3><p>Export and import a versioned settings file in your private user data directory. Imports and global resets retain one undo point.</p></article>
+            <article class="guide-card"><h3>Monitoring health</h3><p>Review observer state and heartbeat freshness in Monitoring. Copy redacted diagnostics when reporting a detection problem.</p></article>
             <article class="guide-card"><h3>Audio</h3><p>Prefer <code>pactl</code>, <code>wpctl</code>, or automatic backend selection.</p></article>
             <article class="guide-card"><h3>Capture backends</h3><p>Use Omarchy, Grim, Grim + Satty, Hyprshot, Flameshot, GPU Screen Recorder, wf-recorder, or custom commands.</p></article>
             <article class="guide-card"><h3>Classification</h3><p>Exclude noisy apps and extend camera or screen-share keywords for unusual drivers and capture clients.</p></article>
@@ -1055,6 +1066,7 @@
             <details><summary>Why did screen sharing elsewhere stop working?</summary><p>The preventative screen-share control masks <code>xdg-desktop-portal-hyprland</code>. Re-enable it from the popup to restore all features supplied by that portal.</p></details>
             <details><summary>How do I restore blocked services?</summary><p>Re-enable the camera, location, or screen-share control in the popup. Runtime masks clear after reboot, and UVC cameras normally rebind after reboot.</p></details>
             <details><summary>How do I change screenshot or recording tools?</summary><p>Open plugin settings and choose a supported backend. Custom start, stop, or capture commands are available for user-managed tools.</p></details>
+            <details><summary>Will restarting the shell repeat alerts?</summary><p>No. Existing activity settles into a silent startup baseline, while completed activity remains available when optional history is enabled.</p></details>
             <details><summary>Where should I report a bug?</summary><p>Choose the matching form on the <a href="https://github.com/bolens/omarchy-privacy-devices/issues/new/choose">GitHub issue page</a>, or review the <a href="https://github.com/bolens/omarchy-privacy-devices/blob/main/SUPPORT.md">support guide</a>.</p></details>
           </div>
         </div>

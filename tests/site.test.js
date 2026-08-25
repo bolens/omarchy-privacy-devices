@@ -24,6 +24,8 @@ assert.deepEqual(pngDimensions("docs/preview.png"), [500, 500]);
 assert.deepEqual(pngDimensions("docs/appearance.png"), [500, 660]);
 for (const page of ["general", "alerts", "monitoring", "device", "history"])
   assert.deepEqual(pngDimensions(`docs/${page}.png`), [500, 660]);
+assert.deepEqual(pngDimensions("docs/monitoring-private.png"), [500, 330]);
+assert.deepEqual(pngDimensions("docs/monitoring-health.png"), [500, 290]);
 assert.deepEqual(pngDimensions("docs/history-disabled.png"), [500, 240],
   "the disabled history state should be cropped to its compact content");
 const notificationDimensions = pngDimensions("docs/notification.png");
@@ -35,15 +37,15 @@ const barDimensions = pngDimensions("docs/bar.png");
 assert.equal(barDimensions[1], 50, "bar capture must retain the live horizontal-bar height");
 assert.ok(barDimensions[0] > 0 && barDimensions[0] <= 500, "bar capture must be a tightly bounded live widget footprint");
 assert.equal(new Set(
-  ["general", "appearance", "alerts", "monitoring", "device", "history", "history-disabled"]
+  ["general", "appearance", "alerts", "monitoring", "monitoring-private", "monitoring-health", "device", "history", "history-disabled"]
     .map((page) => fs.readFileSync(path.join(root, `docs/${page}.png`)).toString("base64"))
-).size, 7, "each settings and detail state must have a distinct capture");
+).size, 9, "each settings and detail state must have a distinct capture");
 assert.equal(
   Buffer.compare(fs.readFileSync(path.join(root, "preview.png")), fs.readFileSync(path.join(root, "docs/preview.png"))),
   0
 );
 assert.match(html, /src="appearance\.png"[^>]+width="500" height="660"/);
-for (const image of ["bar", "notification", "general", "appearance", "alerts", "monitoring", "device", "history", "history-disabled"]) {
+for (const image of ["bar", "notification", "general", "appearance", "alerts", "monitoring", "monitoring-private", "monitoring-health", "device", "history", "history-disabled"]) {
   assert.match(html, new RegExp(`src="${image}\\.png"`));
   assert.match(fs.readFileSync(path.join(root, "README.md"), "utf8"), new RegExp(`docs/${image}\\.png`));
 }
@@ -60,7 +62,7 @@ assert.match(html, /@media \(max-width: 760px\)[\s\S]*?\.site-header\s*\{\s*posi
   "mobile navigation must not consume the viewport while scrolling");
 assert.equal(source.querySelectorAll("#screenshots .interface-showcase .screenshot-card").length, 3,
   "activity, bar, and notification captures must form the interface showcase");
-assert.equal(source.querySelectorAll("#screenshots .settings-gallery .screenshot-card").length, 7,
+assert.equal(source.querySelectorAll("#screenshots .settings-gallery .screenshot-card").length, 9,
   "settings and detail captures must use a dedicated, consistent gallery");
 assert.match(html, /\.settings-gallery\s*\{[^}]*grid-template-columns:\s*repeat\(3,/s,
   "wide screens must show settings captures in three balanced columns");
@@ -70,7 +72,7 @@ assert.doesNotMatch(html, /official Omarchy (?:Shell )?plugin|official Omarchy P
   "the independent community marketplace must not be described as official");
 assert.match(html, /detected application icon/i,
   "notification guidance must explain app-aware icons");
-for (const image of ["preview", "bar", "notification", "general", "appearance", "alerts", "monitoring", "device", "history", "history-disabled"]) {
+for (const image of ["preview", "bar", "notification", "general", "appearance", "alerts", "monitoring", "monitoring-private", "monitoring-health", "device", "history", "history-disabled"]) {
   const element = source.querySelector(`#screenshots img[src="${image}.png"]`);
   assert.ok(element, `Pages gallery must showcase ${image}.png`);
   assert.deepEqual(

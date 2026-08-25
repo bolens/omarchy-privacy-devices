@@ -12,6 +12,8 @@ assert.doesNotMatch(qmlRuntime, /\/home\/[^/]+\//,
   "the QML runtime test must not contain a developer-specific executable path")
 assert.match(qmlRuntime, /QUICKSHELL_BIN:-quickshell/,
   "the QML runtime test should use PATH discovery while retaining an explicit override")
+assert.match(qmlRuntime, /runtime_dir="\$runtime_parent\/runtime tree"/,
+  "the QML runtime suite must exercise relocatable plugin paths containing spaces")
 
 assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?lastSessionRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastSessionRefreshAt, now\)[\s\S]*?lastFallbackRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastFallbackRefreshAt, now\)[\s\S]*?fallbackObserverHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(fallbackObserverLastSeen, now\)[\s\S]*?directHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(directObserverLastSeen, now\)/,
   "every exported telemetry timestamp must use the behavior-tested freshness policy")
@@ -71,6 +73,10 @@ assert.match(screenshotWorkflow, /set_showcase_settings[\s\S]*omarchy restart sh
   "showcase settings must be active before the interface captures")
 assert.match(screenshotWorkflow, /capture_panel history-disabled history "" 240/,
   "the compact disabled-history view should not publish a mostly empty tall crop")
+assert.match(screenshotWorkflow, /capture_panel monitoring-private settings-section monitoring 330 private-data 115/,
+  "capture must showcase private history and settings transfer at its deep link")
+assert.match(screenshotWorkflow, /capture_panel monitoring-health settings-section monitoring 290 observer-health 390/,
+  "capture must showcase observer health at its deep link")
 assert.match(screenshotWorkflow, /docs\/history\.png/,
   "screenshot workflow must publish the history capture")
 assert.match(screenshotWorkflow, /docs\/history-disabled\.png/,

@@ -50,5 +50,7 @@ const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
 assert.match(readme, /!\[Privacy Devices activity panel[^\]]*\]\(preview\.png\)/, "README must show the current primary preview");
 assert.match(readme, /docs\/device\.png/, "README must show the individual device settings page");
 assert.match(readme, /docs\/notification\.png/, "README must show the app-aware notification example");
+assert.match(readme, /docs\/monitoring-private\.png/, "README must show private history and transfer settings");
+assert.match(readme, /docs\/monitoring-health\.png/, "README must show observer health settings");
 
 console.log("documentation structure checks passed");
