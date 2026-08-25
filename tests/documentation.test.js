@@ -38,7 +38,7 @@ collect(root);
 for (const file of markdownFiles) {
   const content = fs.readFileSync(file, "utf8");
   for (const match of content.matchAll(/!?\[[^\]]*\]\(([^)]+)\)/g)) {
-    const target = match[1].trim().replace(/^<|>$/g, "").split("#", 1)[0];
+    const target = match[1].trim().replace(/^<|>$/g, "").split(/[?#]/, 1)[0];
     if (!target || /^(?:[a-z]+:|\/)/i.test(target)) continue;
     const resolved = path.resolve(path.dirname(file), decodeURIComponent(target));
     assert.ok(resolved.startsWith(root + path.sep), `${path.relative(root, file)} link escapes the repository: ${target}`);
@@ -47,7 +47,8 @@ for (const file of markdownFiles) {
 }
 
 const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
-assert.match(readme, /!\[Privacy Devices activity panel[^\]]*\]\(preview\.png\)/, "README must show the current primary preview");
+assert.match(readme, /!\[Privacy Devices activity panel[^\]]*\]\(preview\.png\?v=[0-9a-f]{12}\)/,
+  "README must show a content-addressed current primary preview");
 assert.match(readme, /docs\/device\.png/, "README must show the individual device settings page");
 assert.match(readme, /docs\/notification\.png/, "README must show the app-aware notification example");
 assert.match(readme, /docs\/monitoring-private\.png/, "README must show private history and transfer settings");

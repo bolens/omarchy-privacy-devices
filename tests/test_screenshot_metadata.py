@@ -1,5 +1,6 @@
 import importlib.util
 from importlib.machinery import SourceFileLoader
+import hashlib
 import struct
 import tempfile
 import unittest
@@ -38,6 +39,31 @@ class ScreenshotMetadataTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "missing screenshot asset"):
                 MODULE.update(html, root)
+
+    def test_content_addresses_readme_images_and_replaces_stale_tokens(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            docs = root / "docs"
+            docs.mkdir()
+            preview = root / "preview.png"
+            settings = docs / "general.png"
+            preview.write_bytes(b"fresh preview")
+            settings.write_bytes(b"fresh settings")
+            readme = root / "README.md"
+            readme.write_text(
+                "![Preview](preview.png)\n"
+                '<img src="docs/general.png?v=000000000000" alt="General">\n'
+            )
+
+            MODULE.update_readme(readme)
+
+            preview_hash = hashlib.sha256(preview.read_bytes()).hexdigest()[:12]
+            settings_hash = hashlib.sha256(settings.read_bytes()).hexdigest()[:12]
+            self.assertEqual(
+                readme.read_text(),
+                f"![Preview](preview.png?v={preview_hash})\n"
+                f'<img src="docs/general.png?v={settings_hash}" alt="General">\n',
+            )
 
 
 if __name__ == "__main__":

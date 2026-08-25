@@ -359,7 +359,7 @@ optimize_png "$capture_dir/monitoring-health.png" docs/monitoring-health.png
 optimize_png "$capture_dir/device.png" docs/device.png
 optimize_png "$capture_dir/bar.png" docs/bar.png
 optimize_png "$capture_dir/notification.png" docs/notification.png
-scripts/update-screenshot-metadata docs/index.html docs
+scripts/update-screenshot-metadata docs/index.html docs README.md
 
 magick docs/social-card.png -fill '#0d110d' -draw 'rectangle 895,35 1729,875' "$capture_dir/social-base.png"
 magick "$capture_dir/activity.png" -resize 720x720 "$capture_dir/social-panel.png"

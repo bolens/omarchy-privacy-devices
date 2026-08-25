@@ -95,8 +95,8 @@ assert.match(screenshotWorkflow, /docs\/history\.png/,
   "screenshot workflow must publish the history capture")
 assert.match(screenshotWorkflow, /docs\/history-disabled\.png/,
   "screenshot workflow must publish the disabled history capture")
-assert.match(screenshotWorkflow, /update-screenshot-metadata docs\/index\.html docs/,
-  "capture must keep variable screenshot dimensions synchronized with Pages metadata")
+assert.match(screenshotWorkflow, /update-screenshot-metadata docs\/index\.html docs README\.md/,
+  "capture must synchronize Pages dimensions and content-addressed README images")
 assert.match(screenshotWorkflow, /cmp -s "\$settings_snapshot" "\$settings_file"/,
   "successful capture must verify the original shell settings were restored byte-for-byte")
 assert.match(screenshotWorkflow, /omarchy notification send[\s\S]*--app-name[\s\S]*Privacy Devices[\s\S]*--icon[\s\S]*firefox/,
