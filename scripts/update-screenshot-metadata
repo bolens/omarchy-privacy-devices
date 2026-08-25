@@ -27,8 +27,8 @@ def update(html_path: Path, asset_dir: Path) -> None:
         width, height = png_dimensions(image)
         pattern = rf'(<img\s+src="{re.escape(name)}"[^>]*?\swidth=")\d+("\sheight=")\d+("[^>]*>)'
         source, count = re.subn(pattern, rf"\g<1>{width}\g<2>{height}\g<3>", source)
-        if count != 1:
-            raise ValueError(f"expected one dimensioned image element for {name}")
+        if count < 1:
+            raise ValueError(f"expected a dimensioned image element for {name}")
     html_path.write_text(source)
 
 

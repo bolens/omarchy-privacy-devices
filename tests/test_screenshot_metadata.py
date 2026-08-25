@@ -17,11 +17,18 @@ class ScreenshotMetadataTests(unittest.TestCase):
             root = Path(directory)
             (root / "bar.png").write_bytes(MODULE.PNG_SIGNATURE + b"\0\0\0\rIHDR" + struct.pack(">II", 173, 50))
             html = root / "index.html"
-            html.write_text('<img src="bar.png" alt="Bar" width="99" height="99">\n')
+            html.write_text(
+                '<img src="bar.png" alt="Bar" width="99" height="99">\n'
+                '<img src="bar.png" alt="Bar detail" width="1" height="2">\n'
+            )
 
             MODULE.update(html, root)
 
-            self.assertEqual(html.read_text(), '<img src="bar.png" alt="Bar" width="173" height="50">\n')
+            self.assertEqual(
+                html.read_text(),
+                '<img src="bar.png" alt="Bar" width="173" height="50">\n'
+                '<img src="bar.png" alt="Bar detail" width="173" height="50">\n',
+            )
 
     def test_rejects_missing_referenced_asset(self):
         with tempfile.TemporaryDirectory() as directory:
