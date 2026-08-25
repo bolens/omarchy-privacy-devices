@@ -19,6 +19,8 @@ Item {
   property var recentHistory: []
   property bool historyLoaded: false
   property bool historyConfigurationInitialized: false
+  property int historyGeneration: 0
+  property int historyLoadGeneration: 0
   property var directObservations: []
   property bool directObserverRetiring: false
   property double directObserverLastSeen: 0
@@ -390,6 +392,7 @@ Item {
   }
 
   function clearHistory() {
+    historyGeneration++
     recentHistory = []
     historyLoaded = settings.historyEnabled !== true
     Quickshell.execDetached([historyHelperPath(), "clear"])
@@ -401,6 +404,7 @@ Item {
 
   function loadHistory() {
     if (historyLoaded || historyLoadProc.running || settings.historyEnabled !== true) return
+    historyLoadGeneration = historyGeneration
     historyLoadProc.command = [historyHelperPath(), "load"]
     historyLoadProc.running = true
   }
@@ -938,12 +942,14 @@ Item {
   Process {
     id: dependencyCheckProc
     onExited: function(exitCode) {
-      var ready = Object.assign({}, root.dependencyReadyMap)
-      var checked = Object.assign({}, root.dependencyCheckedMap)
-      ready[root.dependencyCheckKind] = exitCode === 0
-      checked[root.dependencyCheckKind] = true
-      root.dependencyReadyMap = ready
-      root.dependencyCheckedMap = checked
+      if (!root.dependencyRefreshPending) {
+        var ready = Object.assign({}, root.dependencyReadyMap)
+        var checked = Object.assign({}, root.dependencyCheckedMap)
+        ready[root.dependencyCheckKind] = exitCode === 0
+        checked[root.dependencyCheckKind] = true
+        root.dependencyReadyMap = ready
+        root.dependencyCheckedMap = checked
+      }
       root.runNextDependencyCheck()
     }
   }
@@ -975,10 +981,17 @@ Item {
 
   Process {
     id: historyLoadProc
-    onExited: function(exitCode) { root.historyLoaded = exitCode === 0 }
+    onExited: function(exitCode) {
+      if (root.historyLoadGeneration === root.historyGeneration)
+        root.historyLoaded = root.settings.historyEnabled !== true || exitCode === 0
+    }
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: function(text) {
+        if (root.historyLoadGeneration !== root.historyGeneration || root.settings.historyEnabled !== true) {
+          root.recentHistory = []
+          return
+        }
         try {
           var value = JSON.parse(String(text || "[]"))
           root.recentHistory = Array.isArray(value) ? value : []

@@ -132,5 +132,13 @@ assert.match(service, /readonly property var preventativeProbeKinds:[\s\S]*?cont
   "preventative verification probes must survive device monitoring changes")
 assert.match(service, /id:\s*preventativeControlTimer[\s\S]*?running:\s*root\.preventativeProbeKinds\.length > 0/,
   "preventative polling must remain active only for enabled or verifying kinds")
+assert.match(service, /property int historyGeneration:\s*0[\s\S]*?property int historyLoadGeneration:\s*0/,
+  "history loads must be tied to the privacy configuration that requested them")
+assert.match(service, /function clearHistory\(\)[\s\S]*?historyGeneration\+\+/,
+  "clearing history must invalidate an in-flight load")
+assert.match(service, /id:\s*historyLoadProc[\s\S]*?historyLoadGeneration !== root\.historyGeneration[\s\S]*?historyEnabled !== true[\s\S]*?recentHistory = \[\]/,
+  "stale history output must not repopulate private data after history is disabled or cleared")
+assert.match(service, /id:\s*dependencyCheckProc[\s\S]*?if \(!root\.dependencyRefreshPending\)[\s\S]*?dependencyReadyMap = ready/,
+  "superseded dependency results must not be published")
 
 console.log("runtime behavior contract tests passed")
