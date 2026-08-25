@@ -81,6 +81,17 @@ Verify all of the following:
 - A clean Omarchy installation can install or update the plugin.
 - The official plugin directory reflects the release.
 
+### Marketplace update readiness
+
+The community directory follows the repository's default-branch head during
+scheduled catalog refreshes. Before requesting verification of a newer
+upstream snapshot, confirm that the public repository has the release commit,
+root `manifest.json`, `README.md`, `LICENSE`, and `preview.png`; that the plugin
+ID is unchanged; and that install, update, and removal instructions remain
+accurate. Use the marketplace's existing-listing verification flow rather than
+opening a duplicate submission. Treat marketplace validation as compatibility
+and baseline review, not as a security certification.
+
 ## 6. Recovery
 
 Never move or overwrite a published tag.
