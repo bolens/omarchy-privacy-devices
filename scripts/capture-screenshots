@@ -167,6 +167,16 @@ capture_has_content() {
   [[ $colors =~ ^[0-9]+$ ]] && ((colors >= 8))
 }
 
+expect_ipc_reply() {
+  local expected=$1 reply
+  shift
+  reply=$(qs ipc --pid "$shell_pid" call "$@" 2>/dev/null || true)
+  [[ $reply == "$expected" ]] || {
+    printf 'Expected IPC view %s, received %s.\n' "$expected" "${reply:-no reply}" >&2
+    return 1
+  }
+}
+
 capture_panel() {
   local name=$1 mode=$2 page=${3:-} height=${4:-660} section=${5:-} crop_top=${6:-20} attempt
   for attempt in {1..4}; do
@@ -175,12 +185,12 @@ capture_panel() {
     focus_capture_workspace || return 1
     qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
     case "$mode" in
-      history) qs ipc --pid "$shell_pid" call privacy-devices-settings openHistory >/dev/null ;;
-      settings) qs ipc --pid "$shell_pid" call privacy-devices-settings open "$page" >/dev/null ;;
-      settings-section) qs ipc --pid "$shell_pid" call privacy-devices-settings openSection "$page" "$section" >/dev/null ;;
+      history) expect_ipc_reply history privacy-devices-settings openHistory ;;
+      settings) expect_ipc_reply "$page" privacy-devices-settings open "$page" ;;
+      settings-section) expect_ipc_reply "$page#$section" privacy-devices-settings openSection "$page" "$section" ;;
       activity) qs ipc --pid "$shell_pid" call shell summon "$plugin_id" "" >/dev/null ;;
       device)
-        qs ipc --pid "$shell_pid" call privacy-devices openActivity "${page:-microphone}" >/dev/null
+        expect_ipc_reply activity privacy-devices openActivity "${page:-microphone}"
         ;;
     esac
     sleep "$settle_seconds"

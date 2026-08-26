@@ -34,6 +34,7 @@ omarchy plugin validate "$validation_dir"
 qmllint -I "$OMARCHY_PATH/shell" \
   BarWidget.qml Service.qml SettingsSurface.qml IntegerSetting.qml \
   PrivacyActivityCard.qml DeviceSettingsEditor.qml DeviceDiagnostics.qml \
+  AudioEndpointSettings.qml \
   Privacy*Settings.qml PrivacySettingsNavigation.qml \
   PrivacyConfirmationController.qml PrivacySettingsTransferController.qml \
   Runtime*.qml

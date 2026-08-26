@@ -24,6 +24,7 @@ case "$1" in
 esac
 `)
   fs.writeFileSync(hyprctl, `#!/usr/bin/env bash
+[[ "\${MOCK_AUTO:-}" != 1 ]] || { printf 'fallback launcher used despite automatic restart\\n' >&2; exit 9; }
 [[ $(<"$MOCK_STATE") == stopped ]] || { printf 'replacement launched before old shell exited\\n' >&2; exit 1; }
 printf 'new' >"$MOCK_STATE"
 `)

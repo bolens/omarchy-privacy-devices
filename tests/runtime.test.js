@@ -100,7 +100,7 @@ for (const qml of [
   "PrivacySettingsNavigation.qml", "PrivacyConfirmationController.qml",
   "PrivacySettingsTransferController.qml", "PrivacySettingsMutationController.qml",
   "PrivacySettingsTransferResult.qml", "PrivacySettingToggle.qml",
-  "PrivacyMessageSurface.qml", "RuntimeSettingsNavigationTest.qml",
+  "PrivacyMessageSurface.qml", "AudioEndpointSettings.qml", "RuntimeSettingsNavigationTest.qml",
   "RuntimeConfirmationTest.qml", "RuntimeObserverLifecycleTest.qml",
   "RuntimeSettingsTransferTest.qml", "RuntimeSettingsMutationTest.qml",
   "RuntimeSettingsTransferFailureTest.qml", "RuntimeObserverRecoveryTest.qml",
@@ -127,6 +127,8 @@ assert.match(screenshotWorkflow, /privacy-devices openActivity "\$\{page:-microp
 assert.match(screenshotWorkflow, /docs\/device\.png/, "screenshot workflow must publish the device settings capture")
 assert.match(screenshotWorkflow, /privacy-devices-settings openHistory[\s\S]*capture_panel history history/,
   "screenshot workflow must open and capture the dedicated history view through focused-monitor IPC")
+assert.match(screenshotWorkflow, /expect_ipc_reply\(\)[\s\S]*?\[\[ \$reply == "\$expected" \]\][\s\S]*?history\) expect_ipc_reply history[\s\S]*?device\)[\s\S]*?expect_ipc_reply activity/,
+  "capture must verify that IPC opened the intended view before taking a screenshot")
 assert.match(screenshotWorkflow, /capture_panel history history[\s\S]*set_capture_preview false[\s\S]*capture_panel history-disabled history[\s\S]*set_capture_preview true/,
   "screenshot workflow must switch history presentation entirely in memory")
 assert.match(screenshotWorkflow, /set_capture_preview\(\)[\s\S]*showBarActiveMarker:true[\s\S]*showBarDisabledMarker:true[\s\S]*statusMarkerMode:"symbols"/,
@@ -175,7 +177,7 @@ assert.match(screenshotWorkflow, /docs\/notification\.png/,
 assert.doesNotMatch(screenshotWorkflow, /device\)[\s\S]{0,240}?wtype/,
   "device capture must use deterministic IPC instead of keyboard selection")
 assert.match(screenshotWorkflow, /call shell summon "\$plugin_id" ""/, "activity capture must explicitly summon the main widget view")
-assert.match(screenshotWorkflow, /capture_panel\(\)[\s\S]*?call shell hide "\$plugin_id"[\s\S]*?settings\) qs ipc --pid "\$shell_pid" call privacy-devices-settings open "\$page"/,
+assert.match(screenshotWorkflow, /capture_panel\(\)[\s\S]*?call shell hide "\$plugin_id"[\s\S]*?settings\) expect_ipc_reply "\$page" privacy-devices-settings open "\$page"/,
   "settings capture must normalize popup state before opening each page")
 assert.match(screenshotWorkflow, /function validate_capture|validate_capture\(\)/, "screenshot workflow must reject blank captures")
 assert.match(screenshotWorkflow, /colors >= 8/, "capture validation must reject low-content images")
@@ -405,8 +407,10 @@ assert.match(service, /function serviceControllable\(kind\)[\s\S]*?\["microphone
   "headless control must be limited to actions owned by the singleton service")
 assert.match(service, /function setAudioEndpointMuted\(kind, identifier, muted\)[\s\S]*?audioEndpointHelperPath\(\), "set", kind, String\(identifier\)/,
   "per-endpoint audio control must cross one bounded helper boundary")
-assert.match(service, /function acceptAudioEndpoints\(kind, text\)[\s\S]*?rows\.slice\(0, 64\)/,
+assert.match(service, /function acceptAudioEndpoints\(kind, text\)[\s\S]*?sanitizeAudioEndpoints\(rows, 64\)/,
   "audio endpoint state must remain bounded before reaching the UI")
+assert.match(service, /function acceptAudioEndpoints\(kind, text\)[\s\S]*?Model\.sanitizeAudioEndpoints\(rows, 64\)/,
+  "audio endpoint process output must be sanitized again at the QML trust boundary")
 assert.match(service, /id: audioEndpointListOutput[\s\S]*?audioEndpointListOutput\.text[\s\S]*?id: audioEndpointSetOutput[\s\S]*?audioEndpointSetOutput\.text/,
   "audio endpoint collectors must read Quickshell's collected text property")
 assert.match(service, /function toggleControl\(kind\)[\s\S]*?if \(controlRequestStatus\(kind\) !== "ok"\) return false/,
