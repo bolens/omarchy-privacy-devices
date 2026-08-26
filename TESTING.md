@@ -47,6 +47,15 @@ engine:
 tests/run_qml_runtime.sh
 ```
 
+During iteration, run one registered harness by exact filename:
+
+```sh
+QML_RUNTIME_HARNESS=RuntimeKeyboardNavigationTest.qml tests/run_qml_runtime.sh
+```
+
+An unknown filename fails instead of silently running zero tests. Leave the
+variable unset for the exhaustive suite used before commits and releases.
+
 The fast suite verifies that every `Runtime*Test.qml` harness is registered
 exactly once and owns one unique success marker, so adding a harness cannot
 silently leave it out of the real-engine suite.
@@ -63,7 +72,9 @@ recovery, reactive session summaries, responsive settings navigation, mutation
 feedback lifecycle, transfer request exclusion, multi-monitor deep-link routing,
 capture-preview cleanup and automatic expiry, debounced observer-session
 reconciliation, validated notification callback routing, reactive policy
-eligibility, per-device reset isolation, endpoint feedback transitions,
+eligibility, keyboard selection and device navigation, control-request gating,
+observer-health state isolation, per-device reset isolation, endpoint feedback
+transitions,
 verification timeouts, privacy-preset orchestration, self-test health aggregation,
 lockdown result states, destructive-history
 cancellation, rollback retry, external toggle updates, cross-device metadata

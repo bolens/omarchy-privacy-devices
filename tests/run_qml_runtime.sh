@@ -4,6 +4,8 @@ set -euo pipefail
 plugin_dir="$(cd -- "$(dirname -- "$0")/.." && pwd)"
 quickshell_bin="${QUICKSHELL_BIN:-quickshell}"
 shell_root="${OMARCHY_SHELL_ROOT:-}"
+requested_harness="${QML_RUNTIME_HARNESS:-}"
+ran_harness=0
 command -v "$quickshell_bin" >/dev/null 2>&1 || {
   printf 'Quickshell executable not found: %s\n' "$quickshell_bin" >&2
   exit 127
@@ -36,6 +38,8 @@ ln -s -- "$shell_root/Ui" "$runtime_dir/Ui"
 
 run_harness() {
   local file=$1 marker=$2 output status
+  if [[ -n $requested_harness && $file != "$requested_harness" ]]; then return 0; fi
+  ran_harness=1
   active_harness="$runtime_dir/$file"
   set +e
   output="$(timeout 4 "$quickshell_bin" --no-color --path "$active_harness" 2>&1)"
@@ -100,3 +104,11 @@ run_harness RuntimeNotificationActionRoutingTest.qml PRIVACY_QML_NOTIFICATION_AC
 run_harness RuntimeControlVerificationTimeoutTest.qml PRIVACY_QML_CONTROL_VERIFICATION_TIMEOUT_OK
 run_harness RuntimePrivacyPresetOrchestrationTest.qml PRIVACY_QML_PRIVACY_PRESET_ORCHESTRATION_OK
 run_harness RuntimeSelfTestAggregationTest.qml PRIVACY_QML_SELF_TEST_AGGREGATION_OK
+run_harness RuntimeKeyboardNavigationTest.qml PRIVACY_QML_KEYBOARD_NAVIGATION_OK
+run_harness RuntimeControlRequestGatingTest.qml PRIVACY_QML_CONTROL_REQUEST_GATING_OK
+run_harness RuntimeObserverHealthStateTest.qml PRIVACY_QML_OBSERVER_HEALTH_STATE_OK
+
+if [[ -n $requested_harness && $ran_harness -eq 0 ]]; then
+  printf 'Requested QML runtime harness not found: %s\n' "$requested_harness" >&2
+  exit 2
+fi

@@ -29,6 +29,10 @@ assert.match(qmlRuntime, /active_harness=.*[\s\S]*?cleanup_runtime\(\)[\s\S]*?ki
   "QML runtime harnesses must terminate their exact Quickshell instance on exit or interruption")
 assert.match(qmlRuntime, /runtime_dir="\$runtime_parent\/runtime tree"/,
   "the QML runtime suite must exercise relocatable plugin paths containing spaces")
+assert.match(qmlRuntime, /QML_RUNTIME_HARNESS/,
+  "the QML runtime suite must support focused harness runs")
+assert.match(qmlRuntime, /Requested QML runtime harness not found/,
+  "focused QML runs must reject unknown harnesses")
 
 assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?lastSessionRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastSessionRefreshAt, now\)[\s\S]*?lastFallbackRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastFallbackRefreshAt, now\)[\s\S]*?fallbackObserverHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(fallbackObserverLastSeen, now\)[\s\S]*?directHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(directObserverLastSeen, now\)/,
   "every exported telemetry timestamp must use the behavior-tested freshness policy")
