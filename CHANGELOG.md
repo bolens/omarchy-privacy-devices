@@ -21,6 +21,13 @@ maintainer guides that define release and validation procedures.
   limiting and redacted source/code details.
 - Add a guided, non-mutating privacy self-test with private storage permission
   checks, remediation guidance, notification delivery test, and redacted copy.
+- Add an optional idempotent Omarchy menu adapter for searchable privacy
+  actions, with lockdown routed through the existing confirmation step.
+
+### Changed
+
+- Reflow observer-health actions into a balanced responsive grid and present
+  self-test output through the shared status surface.
 
 ## [0.6.0] - 2026-08-26
 

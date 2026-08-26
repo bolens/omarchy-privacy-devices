@@ -900,7 +900,7 @@ Item {
     if (action.name === "open-activity") return requestPopupView("activity", action.argument)
     if (action.name === "open-history") return requestPopupView("history", action.argument)
     if (action.name === "open-diagnostics") return requestPopupView("diagnostics", "")
-    if (action.name === "lockdown") return requestPrivacyLockdown() ? "ok" : "busy"
+    if (action.name === "lockdown") return requestPopupView("lockdown", "")
     if (action.name === "undo-lockdown") return restorePrivacyLockdown() ? "ok" : "unavailable"
     if (action.name === "rescan") { refreshFallbacks(); refreshDirectDevices(); refreshSessions(); return "ok" }
     return "invalid"

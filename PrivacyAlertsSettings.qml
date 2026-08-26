@@ -30,6 +30,10 @@ ColumnLayout {
       TextField { id: suppressedAppsEditor; Layout.fillWidth: true; text: Model.arraySetting(page.controller.setting("notificationSuppressedApps", []), []).join(", "); placeholderText: "Firefox, OBS"; foreground: Color.popups.text; accent: page.controller.activeThemeColor; font.family: Style.font.family; onAccepted: page.controller.persistSettings({notificationSuppressedApps: page.controller.commaList(text)}) }
       Button { text: "Save"; onClicked: page.controller.persistSettings({notificationSuppressedApps: page.controller.commaList(suppressedAppsEditor.text)}) }
     }
-    Button { text: "Send test notification"; enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.sendTestNotification() }
+    RowLayout {
+      Layout.fillWidth: true
+      Text { Layout.fillWidth: true; text: "Check notification delivery without changing activity or controls."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+      Button { text: "Send test"; enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.sendTestNotification() }
+    }
   }
 }

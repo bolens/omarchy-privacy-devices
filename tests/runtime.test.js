@@ -346,6 +346,10 @@ assert.match(service, /function openDiagnostics\(\): string[\s\S]*?root\.request
   "IPC must expose focused diagnostics navigation")
 assert.match(service, /function action\(name: string, argument: string\): string[\s\S]*?Model\.privacyAction\(name, argument\)/,
   "search adapters must use the same allowlisted dispatcher")
+assert.match(service, /action\.name === "lockdown"\) return requestPopupView\("lockdown", ""\)/,
+  "launcher lockdown must route to confirmation instead of changing controls")
+assert.match(bar, /requestedView === "lockdown"[\s\S]*?confirmationState\.request\("lockdown"\)/,
+  "the focused launcher route must arm the existing two-step confirmation")
 assert.match(service, /notifyOnObserverHealth[\s\S]*?Model\.observerHealthNotice\(/,
   "observer health alerts must use transition and rate-limit policy")
 assert.match(service, /function runSelfTest\(\)[\s\S]*?Model\.privacySelfTest\(/,

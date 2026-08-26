@@ -183,6 +183,9 @@ Panel {
     } else if (privacyService.requestedView === "activity") {
       showActivity()
       editingKind = Model.KINDS.indexOf(privacyService.requestedViewArgument) >= 0 ? privacyService.requestedViewArgument : ""
+    } else if (privacyService.requestedView === "lockdown") {
+      showActivity()
+      confirmationState.request("lockdown")
     } else if (privacyService.requestedView === "diagnostics") showGlobalSettings("monitoring", "observer-health")
     else showGlobalSettings(privacyService.requestedSettingsPage, privacyService.requestedSettingsSection)
   }

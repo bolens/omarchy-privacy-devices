@@ -101,6 +101,9 @@ normal operation poll-driven.
 - Diagnostics are redacted by default and bounded before clipboard transfer.
 - Notification callbacks and launcher adapters share `privacy-action`, whose
   action names and optional device kind are allowlisted before shell IPC.
+- `privacy-menu-entry` is an opt-in, idempotent adapter for Omarchy's extension
+  file. It atomically owns one marked block and routes lockdown to UI
+  confirmation rather than directly invoking controls.
 - Observer health alerts publish only healthy/degraded transitions, redact
   details to source and code, and rate-limit each source. The self-test reads
   state without changing controls; notification delivery remains an explicit

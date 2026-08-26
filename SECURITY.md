@@ -56,6 +56,8 @@ command explicitly supplied by the user are not vulnerabilities in the plugin.
   inherit the custom-command shell-string boundary.
 - Notification and launcher actions enter through an allowlisted helper. Their
   commands never contain observed application, process, or device text.
+- The optional menu installer atomically edits only its marked block, preserves
+  existing entries, and routes lockdown through the UI's two-step confirmation.
 - Observer alerts expose only bounded source/code identifiers. Guided self-test
   and copied results omit session identities and inspect history permissions
   without exposing its filesystem path.

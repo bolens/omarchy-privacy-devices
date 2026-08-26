@@ -76,12 +76,21 @@ GridLayout {
     accent: page.controller.monitoringDegraded ? Color.urgent : page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Observer health" }
     Text { Layout.fillWidth: true; text: page.controller.monitoringTelemetryText(); textFormat: Text.PlainText; color: page.controller.monitoringDegraded ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-    RowLayout {
+    GridLayout {
       Layout.fillWidth: true
-      Button { text: "Run self-test"; enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.runSelfTest() }
-      Button { text: "Copy self-test"; enabled: page.controller.privacyService !== null && page.controller.privacyService.selfTestResult.status !== "idle"; onClicked: page.controller.privacyService.copySelfTest() }
-      Button { text: "Copy private diagnostics"; enabled: page.controller.privacyService !== null; tooltipText: "Copy health and timing data with application and device names redacted"; onClicked: page.controller.privacyService.copyDiagnostics(true) }
+      columns: observerHealthSettings.width >= Style.space(480) ? 2 : 1
+      columnSpacing: Style.spacing.sm
+      rowSpacing: Style.spacing.sm
+      Button { Layout.fillWidth: true; text: "Run self-test"; enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.runSelfTest() }
+      Button { Layout.fillWidth: true; text: "Send test alert"; enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.sendTestNotification() }
+      Button { Layout.fillWidth: true; text: "Copy self-test"; enabled: page.controller.privacyService !== null && page.controller.privacyService.selfTestResult.status !== "idle"; onClicked: page.controller.privacyService.copySelfTest() }
+      Button { Layout.fillWidth: true; text: "Copy diagnostics"; enabled: page.controller.privacyService !== null; tooltipText: "Copy health and timing data with application and device names redacted"; onClicked: page.controller.privacyService.copyDiagnostics(true) }
     }
-    Text { Layout.fillWidth: true; visible: page.controller.privacyService !== null; text: page.controller.privacyService ? page.controller.privacyService.selfTestResult.text : ""; textFormat: Text.PlainText; color: page.controller.privacyService && page.controller.privacyService.selfTestResult.status === "attention" ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+    PrivacyMessageSurface {
+      Layout.fillWidth: true
+      visible: page.controller.privacyService !== null
+      message: page.controller.privacyService ? page.controller.privacyService.selfTestResult.text : ""
+      kind: page.controller.privacyService && page.controller.privacyService.selfTestResult.status === "attention" ? "error" : (page.controller.privacyService && page.controller.privacyService.selfTestResult.status === "passed" ? "success" : "info")
+    }
   }
 }

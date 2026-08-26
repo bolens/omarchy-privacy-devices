@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""Install or remove owned Privacy Devices entries in Omarchy's menu."""
+
+import json
+import os
+import re
+import shlex
+import sys
+import tempfile
+from pathlib import Path
+
+START = "// privacy-devices-menu-start"
+END = "// privacy-devices-menu-end"
+PATTERN = re.compile(r"^[ \t]*" + re.escape(START) + r"\n.*?^[ \t]*" + re.escape(END) + r",?\n(?:[ \t]*\n)*", re.MULTILINE | re.DOTALL)
+ACTIONS = (
+    ("privacy-activity", "󰍬", "Privacy activity", "Open live privacy-device activity", "open-activity"),
+    ("privacy-history", "󰋚", "Privacy history", "Search recent private activity", "open-history"),
+    ("privacy-diagnostics", "󰒓", "Privacy diagnostics", "Run health checks and diagnostics", "open-diagnostics"),
+    ("privacy-lockdown", "󰒃", "Privacy lockdown", "Open the confirmed privacy lockdown", "lockdown"),
+    ("privacy-rescan", "󰑐", "Rescan privacy devices", "Refresh privacy observers", "rescan"),
+)
+
+
+def block(helper: Path) -> str:
+    rows = []
+    for key, icon, label, description, action in ACTIONS:
+        entry = {"icon": icon, "label": label, "description": description,
+                 "keywords": "privacy device security " + action.replace("-", " "),
+                 "action": f"{shlex.quote(str(helper))} {action}"}
+        rows.append(f"  {json.dumps(key)}: {json.dumps(entry, ensure_ascii=False, separators=(',', ':'))}")
+    return f"\n{START}\n" + ",\n".join(rows) + f"\n{END}\n"
+
+
+def write_atomic(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(text)
+        if path.exists():
+            os.chmod(temporary_name, path.stat().st_mode & 0o777)
+        os.replace(temporary_name, path)
+    finally:
+        try:
+            os.unlink(temporary_name)
+        except FileNotFoundError:
+            pass
+
+
+def update(action: str, path: Path, helper: Path) -> str:
+    text = path.read_text(encoding="utf-8") if path.exists() else "{\n}\n"
+    installed = START in text and END in text
+    if action == "status":
+        return "installed" if installed else "not-installed"
+    cleaned = PATTERN.sub("", text)
+    if action == "remove":
+        if cleaned != text:
+            write_atomic(path, cleaned)
+        return "removed"
+    opening, closing = cleaned.find("{"), cleaned.rfind("}")
+    if opening < 0 or closing <= opening:
+        raise ValueError("menu extension is not an object")
+    body = re.sub(r"/\*.*?\*/|//[^\n]*", "", cleaned[opening + 1:closing], flags=re.DOTALL).strip()
+    insertion = block(helper)
+    if body:
+        insertion = insertion[:-1] + ",\n"
+    write_atomic(path, cleaned[:opening + 1] + insertion + cleaned[opening + 1:])
+    return "installed"
+
+
+def main() -> int:
+    action = sys.argv[1] if len(sys.argv) > 1 else "install"
+    if action not in ("install", "remove", "status") or len(sys.argv) > 2:
+        print(f"Usage: {Path(sys.argv[0]).name} [install|remove|status]", file=sys.stderr)
+        return 2
+    menu = Path(os.environ.get("PRIVACY_MENU_FILE", Path.home() / ".config/omarchy/extensions/omarchy-menu.jsonc"))
+    helper = Path(__file__).resolve().with_name("privacy-action")
+    result = update(action, menu, helper)
+    print(result)
+    return 0 if action != "status" or result == "installed" else 1
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except (OSError, ValueError) as error:
+        print(str(error), file=sys.stderr)
+        raise SystemExit(1)

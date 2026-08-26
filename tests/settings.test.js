@@ -29,7 +29,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "Model.js"), "utf8").replace(/^\
 const schema = new Map(manifest.barWidget.schema.map(entry => [entry.key, entry]))
 const globalKeys = [
   "enabledKinds", "showIdle", "displayMode", "showControls", "idleOpacity", "deduplicateApps",
-  "notificationKinds", "notifyOnActivity", "notifyOnStop", "notifyOnControlChanges",
+  "notificationKinds", "notifyOnActivity", "notifyOnStop", "notifyOnControlChanges", "notifyOnObserverHealth",
   "notificationSuppressedApps", "historyEnabled", "blockableKinds", "directDeviceMonitoring",
   "directDevicePollSeconds", "showInferredAttribution", "locationPollSeconds", "recordingPollSeconds", "popupMaxHeight",
   "activeColorRole", "inactiveColorRole", "disabledColorRole", "disabledOpacity",
@@ -226,5 +226,9 @@ assert.match(bar, /Layout\.columnSpan: root\.popupGridColumns === 2[\s\S]*?root\
 assert.match(bar, /running:\s*modelData\.pending && root\.animatePending/, "pending animation must honor its visual setting")
 assert.match(bar, /Timer \{[\s\S]*?running: root\.opened[\s\S]*?onTriggered: if \(!contentFlick\.moving\) root\.durationNow = Date\.now\(\)/,
   "the duration timer must pause rendered time updates while the user scrolls")
+assert.match(monitoringSettings, /columns: observerHealthSettings\.width >= Style\.space\(480\) \? 2 : 1/,
+  "self-test actions must reflow instead of crowding narrow popups")
+assert.match(monitoringSettings, /PrivacyMessageSurface[\s\S]*?selfTestResult\.text/,
+  "self-test results must use the shared status surface")
 
 console.log("global settings contract tests passed")

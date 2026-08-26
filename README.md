@@ -68,6 +68,17 @@ It accepts only `open-activity [kind]`, `open-history [kind]`,
 `open-diagnostics`, `lockdown`, `undo-lockdown`, and `rescan`; no observed
 metadata is interpreted as a command.
 
+To add searchable Privacy Devices rows to the Omarchy menu, run the optional,
+idempotent adapter from the installed plugin:
+
+```sh
+~/.config/omarchy/plugins/io.github.bolens.privacy-devices/privacy-menu-entry install
+```
+
+Use `status` to inspect it or `remove` to delete only the entries owned by this
+plugin. The lockdown row opens the existing confirmation step; it never changes
+device state directly.
+
 ## Quick install
 
 ```sh
