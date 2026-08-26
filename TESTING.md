@@ -47,9 +47,10 @@ engine:
 tests/run_qml_runtime.sh
 ```
 
-This runs shared policy, the assembled plugin, user interaction, coalesced
-settings writes, subprocess failure/recovery, confirmation, and private
-settings-transfer behavior in the real QML engine.
+This runs shared policy, the assembled plugin, semantic appearance bindings,
+validated device/settings deep links, user interaction, coalesced settings
+writes, subprocess failure/recovery, confirmation, and private settings-transfer
+behavior in the real QML engine.
 
 ## Repository and site checks
 
