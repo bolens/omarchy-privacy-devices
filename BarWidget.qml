@@ -908,14 +908,15 @@ Panel {
             onClicked: root.showHistory()
           }
           Button {
-            iconText: privacyService && privacyService.privacyPresetUndoAvailable ? "󰌿" : "󰌾"
+            readonly property var presentation: Model.lockdownActionPresentation(
+              privacyService && privacyService.privacyPresetUndoAvailable,
+              confirmationState.pending === "lockdown")
+            iconText: presentation.icon
             enabled: privacyService && privacyService.privacyPresetState !== "applying" && privacyService.privacyPresetState !== "restoring"
-            tooltipText: privacyService && privacyService.privacyPresetUndoAvailable
-              ? "Restore the privacy state from before lockdown"
-              : (confirmationState.pending === "lockdown" ? "Confirm privacy lockdown" : "Lock down privacy controls")
+            tooltipText: presentation.tooltip
             horizontalPadding: Style.spacing.controlGap
             onClicked: {
-              if (privacyService.privacyPresetUndoAvailable) {
+              if (presentation.action === "restore") {
                 privacyService.restorePrivacyLockdown()
                 confirmationState.clear()
                 return

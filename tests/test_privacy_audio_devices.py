@@ -21,6 +21,28 @@ class AudioDeviceTests(unittest.TestCase):
             {"id": "alsa_input.usb_mic", "label": "Desk Mic", "muted": True}
         ])
 
+    def test_normalize_rejects_unsafe_names_and_sanitizes_bounded_labels(self):
+        rows = [
+            {"name": "bad name", "description": "Unsafe", "mute": False},
+            {"name": "safe", "description": " Desk\n\u202eMic " + "x" * 300, "mute": 1},
+            {"name": "fallback", "properties": {"device.description": " Built-in\tAudio "}},
+        ] + [{"name": f"extra-{index}"} for index in range(260)]
+        devices = MODULE.normalize(rows, "audio-output")
+        self.assertEqual(devices[0], {"id": "safe", "label": "DeskMic " + "x" * 248, "muted": False})
+        self.assertEqual(devices[1], {"id": "fallback", "label": "Built-inAudio", "muted": False})
+        self.assertLessEqual(len(devices), 255, "only the first 256 untrusted rows may be inspected")
+
+    def test_list_uses_the_matching_pactl_inventory(self):
+        calls = []
+        def runner(arguments, **kwargs):
+            calls.append((arguments, kwargs))
+            return type("Result", (), {"stdout": "[]"})()
+        self.assertEqual(MODULE.list_devices("microphone", runner), [])
+        self.assertEqual(calls[0][0], ["pactl", "-f", "json", "list", "sources"])
+        self.assertEqual(calls[0][1], {"check": True, "text": True, "capture_output": True, "timeout": 5})
+        with self.assertRaises(ValueError):
+            MODULE.list_devices("camera", runner)
+
     def test_set_rejects_unknown_target_before_mutation(self):
         calls = []
         def runner(arguments, **_kwargs):
@@ -39,6 +61,16 @@ class AudioDeviceTests(unittest.TestCase):
         MODULE.set_muted("audio-output", "known", True, runner)
         self.assertEqual(calls[1], ["pactl", "set-sink-mute", "known", "1"])
         self.assertEqual(len(calls), 3, "the helper must verify the observed endpoint state")
+
+    def test_set_can_unmute_a_source_and_requires_observed_confirmation(self):
+        calls = []
+        def runner(arguments, **_kwargs):
+            calls.append(arguments)
+            return type("Result", (), {"stdout": json.dumps([{"name": "known", "mute": True}])})()
+        with self.assertRaisesRegex(ValueError, "not verified"):
+            MODULE.set_muted("microphone", "known", False, runner)
+        self.assertEqual(calls[1], ["pactl", "set-source-mute", "known", "0"])
+        self.assertEqual(len(calls), 3)
 
 
 if __name__ == "__main__":

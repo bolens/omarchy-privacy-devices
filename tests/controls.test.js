@@ -8,17 +8,45 @@ const model = {}
 vm.createContext(model)
 vm.runInContext(source, model)
 
-assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification("microphone", false, true))), {
-  title: "Microphone muted", body: "Microphone access is now muted"
+for (const [kind, name, enabled, disabled] of [
+  ["microphone", "Microphone", "unmuted", "muted"],
+  ["audio-output", "Audio output", "unmuted", "muted"],
+  ["camera", "Camera", "allowed", "blocked"],
+  ["screen-share", "Screen sharing", "allowed", "blocked"],
+  ["location", "Location", "allowed", "blocked"],
+  ["screen-recording", "Screen recording", "started", "stopped"],
+  ["screenshot", "Screenshot", "enabled", "disabled"],
+]) {
+  for (const [expectedEnabled, state] of [[true, enabled], [false, disabled]]) {
+    assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification(kind, expectedEnabled, true))), {
+      title: `${name} ${state}`, body: `${name} access is now ${state}`
+    })
+    assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification(kind, expectedEnabled, false))), {
+      title: `${name} could not be ${state}`, body: "The requested privacy-control state was not applied"
+    })
+  }
+}
+assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification("custom-device", true, true))), {
+  title: "custom-device enabled", body: "custom-device access is now enabled"
 })
-assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification("microphone", true, true))), {
-  title: "Microphone unmuted", body: "Microphone access is now unmuted"
+
+assert.deepEqual(JSON.parse(JSON.stringify(model.sanitizeAudioEndpoints([
+  {id: "alsa_input.safe", label: " Desk\n\u202eMic ", muted: true},
+  {id: "bad name", label: "Unsafe", muted: false},
+  {id: "alsa_input.loose", label: "Loose", muted: 1},
+  "not-an-endpoint"
+], 2))), [
+  {id: "alsa_input.safe", label: "DeskMic", muted: true}
+])
+
+assert.deepEqual(JSON.parse(JSON.stringify(model.lockdownActionPresentation(false, false))), {
+  icon: "󰌾", tooltip: "Lock down privacy controls", action: "lockdown"
 })
-assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification("camera", false, true))), {
-  title: "Camera blocked", body: "Camera access is now blocked"
+assert.deepEqual(JSON.parse(JSON.stringify(model.lockdownActionPresentation(false, true))), {
+  icon: "󰌾", tooltip: "Confirm privacy lockdown", action: "lockdown"
 })
-assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification("location", true, false))), {
-  title: "Location could not be allowed", body: "The requested privacy-control state was not applied"
+assert.deepEqual(JSON.parse(JSON.stringify(model.lockdownActionPresentation(true, true))), {
+  icon: "󰌿", tooltip: "Restore the privacy state from before lockdown", action: "restore"
 })
 
 const applying = model.controlTransactionTransition(null, {type: "begin", expectedEnabled: false}, 1_000)

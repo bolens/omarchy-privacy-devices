@@ -472,8 +472,9 @@ Item {
     try {
       var rows = JSON.parse(String(text || "[]"))
       if (!Array.isArray(rows)) throw new Error("invalid endpoint list")
+      rows = Model.sanitizeAudioEndpoints(rows, 64)
       var next = Object.assign({}, audioEndpointMap)
-      next[kind] = rows.slice(0, 64)
+      next[kind] = rows
       audioEndpointMap = next
       audioEndpointMessage = rows.length ? "" : "No audio endpoints detected."
     } catch (error) { audioEndpointMessage = "Audio endpoints could not be read." }

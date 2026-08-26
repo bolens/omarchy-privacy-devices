@@ -127,7 +127,7 @@ assert.match(bar, /Model\.historySummary\([\s\S]*?historySummaryWindow/,
   "history insights must project existing retained rows without separate storage")
 assert.match(bar, /text: "Today"[\s\S]*?text: "7 days"[\s\S]*?historySummaryRows/,
   "history must offer bounded today and seven-day summaries")
-assert.match(bar, /iconText: privacyService && privacyService\.privacyPresetUndoAvailable \? "󰌿" : "󰌾"[\s\S]*?tooltipText: privacyService && privacyService\.privacyPresetUndoAvailable[\s\S]*?restorePrivacyLockdown\(\)[\s\S]*?requestPrivacyLockdown\(\)/,
+assert.match(bar, /Model\.lockdownActionPresentation\([\s\S]*?iconText: presentation\.icon[\s\S]*?tooltipText: presentation\.tooltip[\s\S]*?restorePrivacyLockdown\(\)[\s\S]*?requestPrivacyLockdown\(\)/,
   "one compact lock/unlock action must expose lockdown and observed-state undo")
 assert.doesNotMatch(bar, /text: "Undo lockdown"/, "lockdown undo must not consume a second text-button row")
 assert.match(activityCard, /text: !entry\.dependenciesReady \? "INSTALL" : \(entry\.kind === "screenshot" \? "CAPTURE" : controller\.itemStateLabel\(entry\)\)/,

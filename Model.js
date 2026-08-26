@@ -250,6 +250,33 @@ function controlResultNotification(kind, expectedEnabled, succeeded) {
     : {title: name + " could not be " + state, body: "The requested privacy-control state was not applied"}
 }
 
+function sanitizeAudioEndpoints(rows, maximumCount) {
+  if (!Array.isArray(rows)) return []
+  var limit = Math.max(0, Math.min(64, Math.floor(Number(maximumCount) || 64)))
+  var result = []
+  for (var index = 0; index < rows.length && result.length < limit; index++) {
+    var row = rows[index]
+    if (!row || typeof row !== "object" || Array.isArray(row)) continue
+    var identifier = typeof row.id === "string" ? row.id : ""
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(identifier)) continue
+    var endpointLabel = boundedPlainText(row.label, 256) || identifier
+    if (typeof row.muted !== "boolean") continue
+    result.push({id: identifier, label: endpointLabel, muted: row.muted})
+  }
+  return result
+}
+
+function lockdownActionPresentation(undoAvailable, confirmationPending) {
+  if (undoAvailable === true) return {
+    icon: "󰌿", tooltip: "Restore the privacy state from before lockdown", action: "restore"
+  }
+  return {
+    icon: "󰌾",
+    tooltip: confirmationPending === true ? "Confirm privacy lockdown" : "Lock down privacy controls",
+    action: "lockdown"
+  }
+}
+
 function privacyStateMarker(entry, mode, visible, customMarkers) {
   if (visible === false || mode === "off") return ""
   var state = privacyVisualState(entry)
