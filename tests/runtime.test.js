@@ -51,8 +51,16 @@ assert.match(bar, /filteredHistory: Model\.filterHistory\(privacyService \? priv
 assert.match(screenshotWorkflow, /trap cleanup_capture EXIT INT TERM/, "screenshot capture must restore user and repository state on failure")
 assert.match(screenshotWorkflow, /--verify\) verify_only=true/,
   "capture must expose a repository-safe live verification mode")
+assert.match(screenshotWorkflow, /if \[\[ \$verify_only == false \]\]; then[\s\S]*?optimize_png[\s\S]*?social-card\.png[\s\S]*?fi[\s\S]*?restore_desktop/,
+  "verification must skip publication-only image processing")
+assert.match(screenshotWorkflow, /if \[\[ \$verify_only == false \]\]; then[\s\S]*?command -v pngquant/,
+  "verification must not require publication-only image tooling")
+assert.match(screenshotWorkflow, /root=.*BASH_SOURCE[\s\S]*?cd "\$root"/,
+  "capture must resolve repository helpers independently of the caller's working directory")
 assert.match(screenshotWorkflow, /plugin_fingerprint=.*capture-plugin-fingerprint[\s\S]*?check_capture_environment\(\)[\s\S]*?capture-environment-guard/,
   "capture must abort when another agent changes the live plugin tree")
+assert.match(screenshotWorkflow, /plugin_root="\$\{XDG_CONFIG_HOME[^\n]+\/\$plugin_id"/,
+  "capture mutation detection must ignore unrelated installed plugins")
 assert.match(screenshotWorkflow, /printf '\{\"pid\":%s,\"monitor\":\"%s\",\"workspace\":%s/,
   "the capture lock must identify its workspace owner")
 assert.match(screenshotWorkflow, /write_report\(\)[\s\S]*?result:\"passed\"[\s\S]*?settings:\"untouched\"[\s\S]*?history:\"untouched\"/,
@@ -61,6 +69,8 @@ assert.match(screenshotWorkflow, /on_capture_error\(\)[\s\S]*?failure_line[\s\S]
   "screenshot failures should identify their source line and checkpoint without tracing private state")
 assert.match(screenshotWorkflow, /write_failure_report\(\)[\s\S]*?result:"failed"[\s\S]*?checkpoint[\s\S]*?recoveryPath/,
   "failed captures must leave a machine-readable recovery report")
+assert.ok(screenshotWorkflow.indexOf("write_failure_report()") < screenshotWorkflow.indexOf("trap cleanup_capture EXIT"),
+  "failure reporting must be defined before capture cleanup can run")
 assert.match(screenshotWorkflow, /prune-capture-recovery "\$recovery_root" 7/,
   "capture startup must prune only expired recovery transactions")
 assert.match(screenshotWorkflow, /flock -n 9/,
@@ -182,6 +192,8 @@ assert.match(screenshotWorkflow, /python3 -c 'import time; print\(time\.time_ns\
   "capture must derive portable millisecond timestamps from Python")
 assert.match(screenshotWorkflow, /capture_panel\(\)[\s\S]*?for attempt in \{1\.\.4\}[\s\S]*?capture_has_content/,
   "each popup capture must retry until its target crop contains real content")
+assert.doesNotMatch(screenshotWorkflow.match(/capture_panel\(\) \{[\s\S]*?^\}/m)[0], /wait_for_shell/,
+  "capture retries must remain pinned to the shell that owns the preview lease")
 assert.ok(screenshotWorkflow.lastIndexOf("resolve_geometry", screenshotWorkflow.indexOf("capture_panel history history")) >= 0,
   "bar geometry must be resolved before long-running capture operations")
 assert.match(service, /id:\s*fallbackObserverProc/, "process fallbacks must share one persistent structured observer")
