@@ -180,10 +180,7 @@ capture_panel() {
       settings-section) qs ipc --pid "$shell_pid" call privacy-devices-settings openSection "$page" "$section" >/dev/null ;;
       activity) qs ipc --pid "$shell_pid" call shell summon "$plugin_id" "" >/dev/null ;;
       device)
-        qs ipc --pid "$shell_pid" call shell summon "$plugin_id" "" >/dev/null
-        sleep "$settle_seconds"
-        wtype -k down
-        wtype -k Return
+        qs ipc --pid "$shell_pid" call privacy-devices openActivity "${page:-microphone}" >/dev/null
         ;;
     esac
     sleep "$settle_seconds"
@@ -346,7 +343,7 @@ for page in general appearance alerts monitoring; do capture_panel "$page" setti
 capture_panel monitoring-private settings-section monitoring 330 private-data 115
 capture_panel monitoring-health settings-section monitoring 290 observer-health 390
 capture_panel activity activity "" 500
-capture_panel device device "" 660
+capture_panel device device microphone 660
 
 qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null
 sleep "$settle_seconds"

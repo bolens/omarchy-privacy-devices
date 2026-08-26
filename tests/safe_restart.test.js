@@ -18,7 +18,7 @@ try {
   const historyCommand = path.join(temporary, "privacy-history")
   fs.writeFileSync(qs, `#!/usr/bin/env bash
 case "$1" in
-  list) case "$(<"$MOCK_STATE")" in old) printf 'Process ID: 101\\n';; new) printf 'Process ID: 202\\n';; esac ;;
+  list) case "$(<"$MOCK_STATE")" in old) printf 'Process ID: 101\\n';; new) printf 'Process ID: 202\\n';; stopped) [[ "\${MOCK_AUTO:-}" == 1 ]] && { printf 'new' >"$MOCK_STATE"; printf 'Process ID: 202\\n'; };; esac ;;
   ipc) [[ $3 == 101 || $3 == 202 ]] || exit 1; [[ $6 == ping ]] && printf 'ok\\n' || printf 'true\\n' ;;
   kill) [[ $3 == 101 ]] || exit 1; printf 'stopped' >"$MOCK_STATE" ;;
 esac
@@ -40,6 +40,15 @@ printf 'new' >"$MOCK_STATE"
   assert.match(result.stdout, /101 -> 202/)
   assert.equal(fs.readFileSync(settings, "utf8"), '{"untouched":true}\n')
   assert.equal(fs.readFileSync(history, "utf8"), '[]\n')
+  fs.writeFileSync(state, "old")
+  const automatic = spawnSync(path.join(root, "scripts", "restart-shell-safely"), [], {
+    encoding: "utf8",
+    env: { ...process.env, MOCK_AUTO: "1", MOCK_STATE: state, MOCK_HISTORY: history,
+      PRIVACY_QS_COMMAND: qs, PRIVACY_HYPRCTL_COMMAND: hyprctl,
+      PRIVACY_HISTORY_COMMAND: historyCommand, PRIVACY_SETTINGS_FILE: settings },
+  })
+  assert.equal(automatic.status, 0, automatic.stderr)
+  assert.match(automatic.stdout, /101 -> 202/)
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true })
 }

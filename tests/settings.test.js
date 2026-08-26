@@ -18,6 +18,7 @@ const messageSurface = fs.readFileSync(path.join(root, "PrivacyMessageSurface.qm
 const settingToggle = fs.readFileSync(path.join(root, "PrivacySettingToggle.qml"), "utf8")
 const transferResult = fs.readFileSync(path.join(root, "PrivacySettingsTransferResult.qml"), "utf8")
 const monitoringSettings = fs.readFileSync(path.join(root, "PrivacyMonitoringSettings.qml"), "utf8")
+const audioEndpointSettings = fs.readFileSync(path.join(root, "AudioEndpointSettings.qml"), "utf8")
 const globalSettings = ["PrivacyGeneralSettings.qml", "PrivacyAppearanceSettings.qml", "PrivacyAlertsSettings.qml", "PrivacyMonitoringSettings.qml", "PrivacyMarkerGlyphEditor.qml"]
   .map(file => fs.readFileSync(path.join(root, file), "utf8")).join("\n")
 const settingsUi = bar + "\n" + globalSettings
@@ -165,9 +166,9 @@ assert.match(bar, /label: "Show status markers for this device"[\s\S]*?Global st
 for (const label of ["Bar preview", "Display label", "Device icon"])
   assert.match(bar, new RegExp(`text: "${label}"`), `${label} must remain visible without relying on input placeholders`)
 assert.match(bar, /Shared by microphone and audio output/, "shared audio backend scope must be explicit")
-assert.match(bar, /text: root\.editingKind === "microphone" \? "Microphone devices" : "Audio output devices"[\s\S]*?privacyService\.audioEndpoints\(root\.editingKind\)/,
+assert.match(audioEndpointSettings, /surface\.kind === "microphone" \? "Microphone devices" : "Audio output devices"[\s\S]*?audioEndpoints\(surface\.kind\)/,
   "audio settings pages must enumerate their exact hardware endpoints")
-assert.match(bar, /text: modelData\.muted \? "Allow" : "Block"[\s\S]*?setAudioEndpointMuted\(root\.editingKind, modelData\.id, !modelData\.muted\)/,
+assert.match(audioEndpointSettings, /text: modelData\.muted \? "Allow" : "Block"[\s\S]*?setAudioEndpointMuted\(surface\.kind, modelData\.id, !modelData\.muted\)/,
   "each audio endpoint must expose its own observed block control")
 assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceEditor\(dx\)/,
   "left and right keys must navigate device editors")

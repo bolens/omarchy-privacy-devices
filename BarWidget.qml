@@ -1141,6 +1141,11 @@ Panel {
             }
           }
 
+          AudioEndpointSettings {
+            visible: root.isAudioControl({kind: root.editingKind})
+            controller: root
+          }
+
           SettingsSurface {
             id: appearanceSurface
             accent: root.activeThemeColor
@@ -1292,30 +1297,6 @@ Panel {
                 }
               }
             }
-          }
-
-          SettingsSurface {
-            visible: root.isAudioControl({kind: root.editingKind})
-            Layout.fillWidth: true
-            accent: root.activeThemeColor
-            PanelSectionHeader { Layout.fillWidth: true; text: root.editingKind === "microphone" ? "Microphone devices" : "Audio output devices" }
-            Text { Layout.fillWidth: true; text: "Mute or unmute one hardware endpoint without changing the other devices."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-            Repeater {
-              model: privacyService ? privacyService.audioEndpoints(root.editingKind) : []
-              delegate: RowLayout {
-                required property var modelData
-                Layout.fillWidth: true
-                ColumnLayout {
-                  Layout.fillWidth: true
-                  spacing: Style.spacing.xs
-                  Text { Layout.fillWidth: true; text: modelData.label; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; elide: Text.ElideRight }
-                  Text { Layout.fillWidth: true; text: modelData.muted ? "Blocked · muted" : "Allowed · unmuted"; textFormat: Text.PlainText; color: modelData.muted ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
-                }
-                Button { text: modelData.muted ? "Allow" : "Block"; onClicked: privacyService.setAudioEndpointMuted(root.editingKind, modelData.id, !modelData.muted) }
-              }
-            }
-            PrivacyMessageSurface { visible: privacyService && privacyService.audioEndpointMessage !== ""; message: privacyService ? privacyService.audioEndpointMessage : ""; kind: privacyService && privacyService.audioEndpointMessage.indexOf("not") !== -1 ? "error" : "info" }
-            Button { text: "Refresh devices"; enabled: privacyService !== null; onClicked: privacyService.refreshAudioEndpoints(root.editingKind) }
           }
 
           SettingsSurface {

@@ -122,6 +122,8 @@ for (const [harness, marker] of [
 ])
   assert.match(qmlRuntime, new RegExp(`run_harness ${harness} ${marker}`), `${harness} must run in the real QML suite`)
 assert.match(screenshotWorkflow, /capture_panel device device/, "screenshot workflow must capture an individual device settings page")
+assert.match(screenshotWorkflow, /privacy-devices openActivity "\$\{page:-microphone\}"[\s\S]*?capture_panel device device microphone/,
+  "device documentation must show the endpoint-aware microphone settings page")
 assert.match(screenshotWorkflow, /docs\/device\.png/, "screenshot workflow must publish the device settings capture")
 assert.match(screenshotWorkflow, /privacy-devices-settings openHistory[\s\S]*capture_panel history history/,
   "screenshot workflow must open and capture the dedicated history view through focused-monitor IPC")
@@ -170,7 +172,8 @@ assert.doesNotMatch(screenshotWorkflow, /dismiss_result[\s\S]{0,160}exit 1/,
   "notification cleanup limitations must not discard otherwise valid screenshots")
 assert.match(screenshotWorkflow, /docs\/notification\.png/,
   "screenshot workflow must publish the notification capture")
-assert.match(screenshotWorkflow, /wtype -k Return/, "device capture must use wtype's portable Enter key name")
+assert.doesNotMatch(screenshotWorkflow, /device\)[\s\S]{0,240}?wtype/,
+  "device capture must use deterministic IPC instead of keyboard selection")
 assert.match(screenshotWorkflow, /call shell summon "\$plugin_id" ""/, "activity capture must explicitly summon the main widget view")
 assert.match(screenshotWorkflow, /capture_panel\(\)[\s\S]*?call shell hide "\$plugin_id"[\s\S]*?settings\) qs ipc --pid "\$shell_pid" call privacy-devices-settings open "\$page"/,
   "settings capture must normalize popup state before opening each page")
