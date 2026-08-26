@@ -55,7 +55,8 @@ rollback, rapid per-device appearance edits, general and alert settings wiring,
 bounded integer and marker editors, reactive feedback surfaces, degraded device
 diagnostics, monitoring configuration and appearance presentation wiring,
 reactive audio-endpoint replacement, guarded card activation, diagnostic
-recovery, responsive settings navigation, redacted monitoring actions, subprocess
+recovery, reactive session summaries, responsive settings navigation, mutation
+feedback lifecycle, multi-monitor deep-link routing, redacted monitoring actions, subprocess
 failure/recovery, guarded activity-policy actions, private-data transfer
 controls, in-memory history search, confirmation, and private settings-transfer
 behavior in the real QML engine.

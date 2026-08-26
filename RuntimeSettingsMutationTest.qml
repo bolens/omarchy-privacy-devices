@@ -4,6 +4,7 @@ import QtQuick
 ShellRoot {
   id: root
   property var commits: []
+  property int phase: 0
   PrivacySettingsMutationController {
     id: mutation
     interval: 40
@@ -29,11 +30,30 @@ ShellRoot {
     }
   }
   Timer {
+    id: lifecycle
     interval: 110; running: true
     onTriggered: {
-      if (root.commits.length !== 2 || root.commits[1].showIdle !== true) throw new Error("explicit flush lost the latest mutation")
-      mutation.complete(false, "write rejected")
-      if (mutation.status !== "failed" || mutation.detail !== "write rejected") throw new Error("failed mutation feedback was lost")
+      if (root.phase === 0) {
+        if (root.commits.length !== 2 || root.commits[1].showIdle !== true) throw new Error("explicit flush lost the latest mutation")
+        if (mutation.flush()) throw new Error("empty mutation flush was accepted")
+        mutation.complete(false, "write rejected")
+        if (mutation.status !== "failed" || mutation.detail !== "write rejected") throw new Error("failed mutation feedback was lost")
+        root.phase = 1
+        interval = 35
+        restart()
+        return
+      }
+      if (root.phase === 1) {
+        mutation.submit(root.commits[1], {showControls:true})
+        if (mutation.status !== "saving" || mutation.detail !== "") throw new Error("new mutation did not clear stale failure feedback")
+        root.phase = 2
+        interval = 130
+        restart()
+        return
+      }
+      if (root.commits.length !== 3 || root.commits[2].showControls !== true)
+        throw new Error("mutation after failure did not commit")
+      if (mutation.status !== "") throw new Error("successful mutation feedback did not expire")
       console.log("PRIVACY_QML_SETTINGS_MUTATION_OK")
       Qt.quit()
     }

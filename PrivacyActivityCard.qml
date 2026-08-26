@@ -99,12 +99,13 @@ Rectangle {
           spacing: Style.spacing.sm
           Text { Layout.fillWidth: true; text: entry.label; textFormat: Text.PlainText; color: Color.popups.text; opacity: card.visualState === "idle" ? controller.popupIdleOpacity : 1; font.family: Style.font.family; font.pixelSize: Style.font.body * card.itemScale; font.weight: card.visualState === "active" ? Font.DemiBold : Font.Normal; elide: Text.ElideRight }
           Rectangle {
+            objectName: "activitySessionCountBadge"
             visible: controller.itemSessionCount(entry) > 1
             implicitWidth: sessionCountText.implicitWidth + Style.spacing.sm
             implicitHeight: sessionCountText.implicitHeight + 2
             radius: implicitHeight / 2
             color: Util.alpha(controller.itemColor(entry), 0.18)
-            Text { id: sessionCountText; anchors.centerIn: parent; text: String(controller.itemSessionCount(entry)); textFormat: Text.PlainText; color: controller.itemColor(entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
+            Text { id: sessionCountText; objectName: "activitySessionCount"; anchors.centerIn: parent; text: String(controller.itemSessionCount(entry)); textFormat: Text.PlainText; color: controller.itemColor(entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
           }
         }
         Text {
@@ -120,6 +121,7 @@ Rectangle {
           textFormat: Text.PlainText; color: card.visualState === "active" ? Color.popups.text : controller.inactiveThemeColor; opacity: card.visualState === "idle" ? controller.popupIdleOpacity : 1; font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; elide: Text.ElideRight
         }
         Text {
+          objectName: "activitySessionSummary"
           visible: entry.sessions.length > 0
           Layout.fillWidth: true
           property var firstSession: entry.sessions.length ? entry.sessions[0] : ({})
