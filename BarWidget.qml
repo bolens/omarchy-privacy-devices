@@ -128,6 +128,11 @@ Panel {
     return effectiveSettings && effectiveSettings[key] !== undefined ? effectiveSettings[key] : fallback
   }
 
+  function mutationSetting(key, fallback) {
+    var candidate = settingsMutationController.pending || effectiveSettings
+    return candidate && candidate[key] !== undefined ? candidate[key] : fallback
+  }
+
   function publishCaptureBarPresentation() {
     if (!privacyService) return
     privacyService.updateBarPresentation(bar && bar.screen ? bar.screen.name : "unknown", {opened: opened})
@@ -280,7 +285,7 @@ Panel {
   }
 
   function persistDeviceLabel(device, value) {
-    var labels = Object.assign({}, setting("deviceLabels", {}) || {})
+    var labels = Object.assign({}, mutationSetting("deviceLabels", {}) || {})
     var key = String(device || "")
     var text = String(value || "").trim()
     if (!key) return
@@ -512,7 +517,7 @@ Panel {
   }
 
   function persistIcon(kind, value) {
-    var icons = JSON.parse(JSON.stringify(setting("icons", {}) || {}))
+    var icons = JSON.parse(JSON.stringify(mutationSetting("icons", {}) || {}))
     icons[kind] = String(value || "")
     persistSettings({icons: icons})
     Qt.callLater(function() { if (root.editingKind === kind) iconEditor.text = root.iconFor(kind) })
@@ -524,7 +529,7 @@ Panel {
   }
 
   function persistLabel(kind, value) {
-    var labels = JSON.parse(JSON.stringify(setting("itemLabels", {}) || {}))
+    var labels = JSON.parse(JSON.stringify(mutationSetting("itemLabels", {}) || {}))
     var text = String(value || "").trim()
     if (text) labels[kind] = text
     else delete labels[kind]
@@ -533,7 +538,7 @@ Panel {
   }
 
   function persistItemColor(kind, state, role) {
-    var roles = JSON.parse(JSON.stringify(setting("itemColorRoles", {}) || {}))
+    var roles = JSON.parse(JSON.stringify(mutationSetting("itemColorRoles", {}) || {}))
     if (role === "inherit") {
       if (roles[kind]) {
         delete roles[kind][state]
@@ -547,7 +552,7 @@ Panel {
   }
 
   function persistItemStatusMarker(kind, mode) {
-    var visibility = JSON.parse(JSON.stringify(setting("itemStatusMarkerVisibility", {}) || {}))
+    var visibility = JSON.parse(JSON.stringify(mutationSetting("itemStatusMarkerVisibility", {}) || {}))
     if (mode === "inherit") delete visibility[kind]
     else visibility[kind] = mode === "show"
     persistSettings({itemStatusMarkerVisibility: visibility})
@@ -590,7 +595,7 @@ Panel {
   }
 
   function persistItemIdleVisibility(kind, mode) {
-    var overrides = JSON.parse(JSON.stringify(setting("itemIdleVisibility", {}) || {}))
+    var overrides = JSON.parse(JSON.stringify(mutationSetting("itemIdleVisibility", {}) || {}))
     if (mode === "inherit") delete overrides[kind]
     else overrides[kind] = mode === "show"
     persistSettings({itemIdleVisibility: overrides})
@@ -603,19 +608,19 @@ Panel {
   }
 
   function persistItemIdleOpacity(kind, percent) {
-    var overrides = JSON.parse(JSON.stringify(setting("itemIdleOpacity", {}) || {}))
+    var overrides = JSON.parse(JSON.stringify(mutationSetting("itemIdleOpacity", {}) || {}))
     if (percent === null || percent === undefined) delete overrides[kind]
     else overrides[kind] = Math.max(10, Math.min(100, Number(percent))) / 100
     persistSettings({itemIdleOpacity: overrides})
   }
 
   function itemResetValues(kind) {
-    var icons = JSON.parse(JSON.stringify(setting("icons", {}) || {}))
-    var roles = JSON.parse(JSON.stringify(setting("itemColorRoles", {}) || {}))
-    var visibility = JSON.parse(JSON.stringify(setting("itemIdleVisibility", {}) || {}))
-    var opacity = JSON.parse(JSON.stringify(setting("itemIdleOpacity", {}) || {}))
-    var markerVisibility = JSON.parse(JSON.stringify(setting("itemStatusMarkerVisibility", {}) || {}))
-    var labels = JSON.parse(JSON.stringify(setting("itemLabels", {}) || {}))
+    var icons = JSON.parse(JSON.stringify(mutationSetting("icons", {}) || {}))
+    var roles = JSON.parse(JSON.stringify(mutationSetting("itemColorRoles", {}) || {}))
+    var visibility = JSON.parse(JSON.stringify(mutationSetting("itemIdleVisibility", {}) || {}))
+    var opacity = JSON.parse(JSON.stringify(mutationSetting("itemIdleOpacity", {}) || {}))
+    var markerVisibility = JSON.parse(JSON.stringify(mutationSetting("itemStatusMarkerVisibility", {}) || {}))
+    var labels = JSON.parse(JSON.stringify(mutationSetting("itemLabels", {}) || {}))
     delete icons[kind]
     delete roles[kind]
     delete visibility[kind]

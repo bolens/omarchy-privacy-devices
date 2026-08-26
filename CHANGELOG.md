@@ -49,6 +49,8 @@ maintainer guides that define release and validation procedures.
 
 ### Fixed
 
+- Preserve rapid per-device appearance edits to different fields while settings
+  writes are coalesced.
 - Describe an observable blocked request consistently in activity cards instead
   of pairing its urgent state with an idle availability message.
 - Allow the compact privacy-lockdown control to enter its required confirmation

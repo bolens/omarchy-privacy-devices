@@ -13,15 +13,15 @@ ColumnLayout {
     id: behaviorSettings
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Behavior" }
-    MultiSelect { Layout.fillWidth: true; label: "Monitored activity"; options: page.controller.kindOptions; values: Model.arraySetting(page.controller.setting("enabledKinds", Model.KINDS), Model.KINDS); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { page.controller.persistSettings({enabledKinds: values}) } }
+    MultiSelect { objectName: "generalEnabledKindsSetting"; Layout.fillWidth: true; label: "Monitored activity"; options: page.controller.kindOptions; values: Model.arraySetting(page.controller.setting("enabledKinds", Model.KINDS), Model.KINDS); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { page.controller.persistSettings({enabledKinds: values}) } }
     GridLayout {
       Layout.fillWidth: true
       columns: page.controller.popupWidth === "wide" ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
-      PrivacySettingToggle { controller: page.controller; settingKey: "showIdle"; fallback: true; label: "Show idle activity icons"; description: "Keep activity icons visible while idle." }
-      PrivacySettingToggle { controller: page.controller; settingKey: "showControls"; label: "Show privacy controls"; description: "Show inline switches and row actions." }
-      PrivacySettingToggle { Layout.columnSpan: page.controller.popupWidth === "wide" ? 2 : 1; controller: page.controller; settingKey: "deduplicateApps"; label: "Deduplicate applications"; description: "List an app once when it owns several sessions." }
+      PrivacySettingToggle { objectName: "generalShowIdleToggle"; controller: page.controller; settingKey: "showIdle"; fallback: true; label: "Show idle activity icons"; description: "Keep activity icons visible while idle." }
+      PrivacySettingToggle { objectName: "generalShowControlsToggle"; controller: page.controller; settingKey: "showControls"; label: "Show privacy controls"; description: "Show inline switches and row actions." }
+      PrivacySettingToggle { objectName: "generalDeduplicateAppsToggle"; Layout.columnSpan: page.controller.popupWidth === "wide" ? 2 : 1; controller: page.controller; settingKey: "deduplicateApps"; label: "Deduplicate applications"; description: "List an app once when it owns several sessions." }
     }
   }
 }
