@@ -44,6 +44,9 @@ ShellRoot {
 
   Component.onCompleted: {
     sharedService.configure({enabledKinds:[],historyEnabled:false,directDeviceMonitoring:false})
+    sharedService.configure({enabledKinds:[],historyEnabled:true,directDeviceMonitoring:false})
+    if (sharedService.historyLoaded) throw new Error("re-enabled history did not start a fresh load")
+    sharedService.configure({enabledKinds:[],historyEnabled:false,directDeviceMonitoring:false})
     widget.open()
     widget.showGlobalSettings("monitoring", "private-data")
   }

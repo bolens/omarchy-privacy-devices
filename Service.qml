@@ -120,7 +120,10 @@ Item {
     settings = nextSettings
     locationTimer.interval = boundedSeconds(settings.locationPollSeconds, 15, 5, 300) * 1000
     if (settings.historyEnabled !== true && (!historyConfigurationInitialized || historyWasEnabled)) clearHistory()
-    else loadHistory()
+    else {
+      if (!historyWasEnabled && settings.historyEnabled === true) historyLoaded = false
+      loadHistory()
+    }
     historyConfigurationInitialized = true
     if (monitoringChanged) {
       operationalConfiguration = nextOperationalConfiguration
