@@ -19,7 +19,7 @@ ShellRoot {
     property string popupWidth: "wide"
     property real popupItemScale: 1.2
     property real popupIdleOpacity: 0.65
-    property var values: ({displayMode:"active-count",barItemSpacing:3,barItemPadding:6,popupMaxHeight:700})
+    property var values: ({displayMode:"active-count",barItemSpacing:3,barItemPadding:6,popupMaxHeight:700,showBarActiveMarker:false,animatePending:true})
     function setting(key, fallback) { return values[key] === undefined ? fallback : values[key] }
     function persistSettings(patch) { root.patches = root.patches.concat([patch]) }
   }
@@ -47,12 +47,17 @@ ShellRoot {
     var widthSetting = descendant(page, "appearancePopupWidthSetting")
     var itemScale = descendant(page, "appearancePopupItemScaleSetting")
     var maxHeight = descendant(page, "appearancePopupMaxHeightSetting")
+    var pillStyle = descendant(page, "appearanceStatePillStyleSetting")
+    var density = descendant(page, "appearancePopupDensitySetting")
+    var activeMarker = descendant(page, "appearanceShowActiveMarkerToggle")
+    var animate = descendant(page, "appearanceAnimatePendingToggle")
     if (!display || !scale || !markerMode || !markerPosition || !customMarkers
-        || !layout || !widthSetting || !itemScale || !maxHeight)
+        || !layout || !widthSetting || !itemScale || !maxHeight || !pillStyle || !density || !activeMarker || !animate)
       throw new Error("appearance presentation controls are not addressable")
     if (display.value !== "active-count" || scale.value !== 110 || markerMode.value !== "custom"
         || markerPosition.value !== "before" || !customMarkers.visible || layout.value !== "grid"
-        || widthSetting.value !== "wide" || itemScale.value !== 120 || maxHeight.value !== 700)
+        || widthSetting.value !== "wide" || itemScale.value !== 120 || maxHeight.value !== 700
+        || pillStyle.value !== "outline" || density.value !== "compact" || activeMarker.checked || !animate.checked)
       throw new Error("appearance presentation did not reflect settings")
     display.changed("active-only")
     scale.modified(95)
@@ -61,10 +66,18 @@ ShellRoot {
     widthSetting.changed("narrow")
     itemScale.modified(105)
     maxHeight.modified(760)
-    if (root.patches.length !== 7 || root.patches[0].displayMode !== "active-only"
+    markerPosition.changed("after")
+    pillStyle.changed("minimal")
+    density.changed("comfortable")
+    activeMarker.clicked()
+    animate.clicked()
+    if (root.patches.length !== 12 || root.patches[0].displayMode !== "active-only"
         || root.patches[1].barIconScale !== 0.95 || root.patches[2].statusMarkerMode !== "off"
         || root.patches[3].popupLayout !== "list" || root.patches[4].popupWidth !== "narrow"
-        || root.patches[5].popupItemScale !== 1.05 || root.patches[6].popupMaxHeight !== 760)
+        || root.patches[5].popupItemScale !== 1.05 || root.patches[6].popupMaxHeight !== 760
+        || root.patches[7].barMarkerPosition !== "after" || root.patches[8].statePillStyle !== "minimal"
+        || root.patches[9].popupDensity !== "comfortable" || root.patches[10].showBarActiveMarker !== true
+        || root.patches[11].animatePending !== false)
       throw new Error("appearance presentation persisted incorrect values")
     controllerMock.statusMarkerMode = "off"
     Qt.callLater(function() {

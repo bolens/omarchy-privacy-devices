@@ -78,7 +78,7 @@ GridLayout {
       columns: statusPresentationSettings.width >= Style.space(600) ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
-      PrivacySettingToggle { controller: page.controller; settingKey: "showBarActiveMarker"; label: "Active marker"; description: "Mark active device icons." }
+      PrivacySettingToggle { objectName: "appearanceShowActiveMarkerToggle"; controller: page.controller; settingKey: "showBarActiveMarker"; label: "Active marker"; description: "Mark active device icons." }
       PrivacySettingToggle { controller: page.controller; settingKey: "showBarDisabledMarker"; label: "Disabled marker"; description: "Mark blocked or muted devices." }
       PrivacySettingToggle { controller: page.controller; settingKey: "showBarPendingMarker"; label: "Verifying marker"; description: "Mark controls awaiting confirmation." }
       PrivacySettingToggle { controller: page.controller; settingKey: "showBarDegradedMarker"; label: "Degraded marker"; description: "Mark unhealthy monitoring sources." }
@@ -88,8 +88,8 @@ GridLayout {
       columns: statusPresentationSettings.width >= Style.space(420) ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
-      Dropdown { Layout.fillWidth: true; label: "Popup state pills"; options: ["filled", "outline", "minimal"]; value: page.controller.statePillStyle; onChanged: function(value) { page.controller.persistSettings({statePillStyle: value}) } }
-      Dropdown { Layout.fillWidth: true; label: "Popup density"; options: ["comfortable", "compact"]; value: page.controller.popupDensity; onChanged: function(value) { page.controller.persistSettings({popupDensity: value}) } }
+      Dropdown { objectName: "appearanceStatePillStyleSetting"; Layout.fillWidth: true; label: "Popup state pills"; options: ["filled", "outline", "minimal"]; value: page.controller.statePillStyle; onChanged: function(value) { page.controller.persistSettings({statePillStyle: value}) } }
+      Dropdown { objectName: "appearancePopupDensitySetting"; Layout.fillWidth: true; label: "Popup density"; options: ["comfortable", "compact"]; value: page.controller.popupDensity; onChanged: function(value) { page.controller.persistSettings({popupDensity: value}) } }
     }
     GridLayout {
       Layout.fillWidth: true
@@ -109,7 +109,7 @@ GridLayout {
       PrivacySettingToggle { controller: page.controller; settingKey: "showStatePills"; label: "State pills"; description: "Show textual state beside popup items." }
       PrivacySettingToggle { controller: page.controller; settingKey: "showSessionCounts"; label: "Popup session counts"; description: "Badge items shared by several sessions." }
       PrivacySettingToggle { controller: page.controller; settingKey: "showBarSessionCounts"; label: "Bar session counts"; description: "Append counts to shared bar items." }
-      PrivacySettingToggle { controller: page.controller; settingKey: "animatePending"; label: "Animate verification"; description: "Pulse items awaiting observed confirmation." }
+      PrivacySettingToggle { objectName: "appearanceAnimatePendingToggle"; controller: page.controller; settingKey: "animatePending"; label: "Animate verification"; description: "Pulse items awaiting observed confirmation." }
     }
     IntegerSetting { controller: page.controller; controlObjectName: "appearancePopupMaxHeightSetting"; settingKey: "popupMaxHeight"; label: "Popup maximum height"; minimum: 360; maximum: 900; fallback: 620; stepSize: 20 }
   }
