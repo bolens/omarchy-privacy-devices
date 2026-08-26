@@ -99,6 +99,12 @@ normal operation poll-driven.
 - History summaries are projections of the existing bounded retained rows;
   they neither extend retention nor create a second data store.
 - Diagnostics are redacted by default and bounded before clipboard transfer.
+- Notification callbacks and launcher adapters share `privacy-action`, whose
+  action names and optional device kind are allowlisted before shell IPC.
+- Observer health alerts publish only healthy/degraded transitions, redact
+  details to source and code, and rate-limit each source. The self-test reads
+  state without changing controls; notification delivery remains an explicit
+  user-triggered test.
 - Shared presentation policies own visual state, navigation boundaries, scroll
   deferral, diagnostics, telemetry text, and device-action guidance; QML owns
   composition and input routing.
@@ -113,6 +119,8 @@ GeoClue discovery uses fixed `busctl` argument arrays, bounded output, and
 per-call timeouts rather than an inline shell pipeline.
 Trusted capture helpers and Omarchy commands launch as argument arrays; only
 the documented custom-command escape hatch crosses the shell-string boundary.
+Notification `--exec` callbacks contain a fixed helper path plus allowlisted
+tokens; application and device metadata never enters the callback command.
 
 Monitoring reads metadata only. It never opens camera or microphone devices,
 captures media, or sends telemetry over the network.

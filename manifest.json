@@ -62,6 +62,7 @@
       "notifyOnActivity": true,
       "notifyOnStop": false,
       "notifyOnControlChanges": true,
+      "notifyOnObserverHealth": false,
       "notificationKinds": ["microphone", "camera", "screen-share", "screen-recording", "location"],
       "idleOpacity": 0.45,
       "deduplicateApps": true,
@@ -389,6 +390,13 @@
         "type": "boolean",
         "label": "Notify after privacy control changes",
         "defaultValue": true
+      },
+      {
+        "key": "notifyOnObserverHealth",
+        "type": "boolean",
+        "label": "Notify on observer health changes",
+        "description": "Notify on degraded and recovered transitions with rate limiting.",
+        "defaultValue": false
       },
       {
         "key": "notificationKinds",

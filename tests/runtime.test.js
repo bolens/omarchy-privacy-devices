@@ -212,7 +212,7 @@ assert.match(service, /function openSection\(page: string, section: string\): st
   "settings IPC must expose validated section deep links through focused-monitor routing")
 assert.match(service, /function open\(page: string\): string[\s\S]*?requestedSettingsSection = ""/,
   "page-only IPC navigation must clear stale section targets")
-assert.match(service, /function openHistory\(\): string[\s\S]*?requestedView = "history"[\s\S]*?shell\.summon/,
+assert.match(service, /function openHistory\(\): string[\s\S]*?requestPopupView\("history", ""\)/,
   "history IPC must use the singleton service's focused-monitor routing")
 assert.doesNotMatch(bar, /target:\s*"privacy-devices-settings"/, "per-monitor widgets must not compete for settings IPC ownership")
 assert.match(service, /id:\s*notificationFlush[\s\S]*?interval:\s*400/, "activity notifications must use a bounded coalescing window")
@@ -336,6 +336,20 @@ assert.match(service, /resolvedNotificationIcon\([^,]+,\s*[^)]+\)[\s\S]*?candida
   "an unavailable application icon must retry a device or service fallback")
 assert.match(service, /--icon/,
   "resolved application or service icons must be sent with notifications")
+assert.match(service, /command\.push\("--exec", actionHelperPath\(\), callback\.name, callback\.argument\)/,
+  "notification callbacks must enter through the fixed action helper")
+assert.match(service, /function notificationAction\(action, argument\)[\s\S]*?Model\.privacyAction\(action, argument\)/,
+  "notification actions must use the shared allowlist")
+assert.match(service, /function openActivity\(kind: string\): string[\s\S]*?root\.requestPopupView\("activity", kind\)/,
+  "IPC must expose focused activity navigation")
+assert.match(service, /function openDiagnostics\(\): string[\s\S]*?root\.requestPopupView\("diagnostics", ""\)/,
+  "IPC must expose focused diagnostics navigation")
+assert.match(service, /function action\(name: string, argument: string\): string[\s\S]*?Model\.privacyAction\(name, argument\)/,
+  "search adapters must use the same allowlisted dispatcher")
+assert.match(service, /notifyOnObserverHealth[\s\S]*?Model\.observerHealthNotice\(/,
+  "observer health alerts must use transition and rate-limit policy")
+assert.match(service, /function runSelfTest\(\)[\s\S]*?Model\.privacySelfTest\(/,
+  "guided self-test must use the behavior-tested report model")
 assert.match(service, /props\["application\.icon-name"\]/,
   "PipeWire application icon metadata must reach the notification pipeline")
 assert.match(service, /"watch",\s*"--heartbeat"/, "direct-device monitoring must use one persistent observer")

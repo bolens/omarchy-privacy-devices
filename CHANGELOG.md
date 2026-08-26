@@ -15,6 +15,12 @@ maintainer guides that define release and validation procedures.
   hardware labels.
 - Add today and seven-day activity summaries derived from existing opt-in,
   bounded local history without extending retention.
+- Add actionable activity/failure notifications and an allowlisted quick-action
+  adapter for activity, history, diagnostics, lockdown, undo, and rescanning.
+- Add optional transition-only observer-health alerts with per-source rate
+  limiting and redacted source/code details.
+- Add a guided, non-mutating privacy self-test with private storage permission
+  checks, remediation guidance, notification delivery test, and redacted copy.
 
 ## [0.6.0] - 2026-08-26
 

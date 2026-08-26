@@ -38,10 +38,62 @@ function boundedPlainText(value, maximumLength) {
   return Array.from(value.replace(/[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]/g, "").trim()).slice(0, maximumLength).join("")
 }
 
+function privacyAction(name, argument) {
+  var allowed = ["open-activity", "open-history", "open-diagnostics", "lockdown", "undo-lockdown", "rescan"]
+  var action = String(name || "")
+  if (allowed.indexOf(action) === -1) return null
+  var value = String(argument || "")
+  if (action === "open-activity" || action === "open-history") {
+    if (value && KINDS.indexOf(value) === -1) return null
+  } else if (value) return null
+  return {name: action, argument: value}
+}
+
+function observerHealthNotice(previous, next, now, lastNotifiedAt, minimumInterval) {
+  if (!previous || !next || previous.status === next.status) return null
+  var phase = next.status === "healthy" && previous.status !== "healthy" ? "recovered"
+    : next.status !== "healthy" && previous.status === "healthy" ? "degraded" : ""
+  if (!phase || (Number(lastNotifiedAt) > 0 && Number(now) - Number(lastNotifiedAt) < Number(minimumInterval))) return null
+  var source = boundedPlainText(String(next.source || "observer"), 64) || "observer"
+  var code = boundedPlainText(String(next.code || "unknown"), 64) || "unknown"
+  return {
+    phase: phase,
+    title: phase === "recovered" ? "Privacy observer recovered" : "Privacy observer degraded",
+    body: source + " · " + code
+  }
+}
+
+function privacySelfTest(input) {
+  var source = input || {}, health = source.observerHealth || {}, dependencies = source.dependencies || {}, controls = source.controls || {}
+  function check(label, passed, detail, remediation) {
+    return {label: label, status: passed ? "passed" : "attention", detail: String(detail), remediation: passed ? "" : String(remediation)}
+  }
+  function observer(name, enabled) {
+    var state = health[name] || {status: "healthy", code: "disabled"}
+    return check(name + " observer", !enabled || state.status === "healthy",
+      enabled ? "observer " + String(state.code || "unknown") : "disabled",
+      "Rescan observers; if it persists, copy private diagnostics.")
+  }
+  var dependencyFailures = Object.keys(dependencies).filter(function(kind) { return dependencies[kind] !== true })
+  var controlFailures = Object.keys(controls).filter(function(kind) { return controls[kind] !== true })
+  var history = source.history || {enabled: false, status: "disabled"}
+  var checks = [
+    check("PipeWire", source.pipewireAvailable === true, source.pipewireAvailable === true ? "reactive" : "unavailable", "Start the PipeWire user services."),
+    observer("direct-device", source.directDeviceEnabled === true),
+    observer("fallback", true),
+    check("Dependencies", dependencyFailures.length === 0, dependencyFailures.length ? "missing: " + dependencyFailures.join(", ") : "ready", "Install the dependencies shown in device diagnostics."),
+    check("Controls", controlFailures.length === 0, controlFailures.length ? "unavailable: " + controlFailures.join(", ") : "available without state changes", "Review device control diagnostics."),
+    check("Private history", history.enabled !== true || history.status === "private", history.enabled === true ? String(history.status || "unknown") : "disabled", "Repair history directory/file permissions to 0700/0600.")
+  ]
+  var lines = checks.map(function(row) { return (row.status === "passed" ? "PASS" : "CHECK") + " · " + row.label + " · " + row.detail + (row.remediation ? " · " + row.remediation : "") })
+  return {status: checks.some(function(row) { return row.status !== "passed" }) ? "attention" : "passed", checks: checks, text: lines.join("\n")}
+}
+
 function sanitizeSettings(data) {
   var source = data && typeof data === "object" && !Array.isArray(data) ? data : {}
   var clean = {}, index, key
   var booleans = {showIdle:true, showControls:true, deduplicateApps:true, notifyOnActivity:true, notifyOnStop:false,
+    notifyOnObserverHealth:false,
     notifyOnControlChanges:true, historyEnabled:false, directDeviceMonitoring:false, showInferredAttribution:true,
     showStatePills:true, showSessionCounts:true, showBarSessionCounts:true, animatePending:true,
     showBarActiveMarker:true, showBarDisabledMarker:true, showBarPendingMarker:true, showBarDegradedMarker:true}
@@ -862,7 +914,7 @@ function coalesceNotificationEvents(events) {
     ? iconNames[0]
     : fallbackIcon
   return {title: "Privacy activity " + phase, body: lines.join("\n"), count: count,
-    icon: notificationIcon, fallbackIcon: fallbackIcon}
+    icon: notificationIcon, fallbackIcon: fallbackIcon, kind: kindNames.length === 1 ? kindNames[0] : ""}
 }
 
 function notificationIconName(value) {

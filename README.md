@@ -52,12 +52,21 @@ Activity notifications use the detected application icon when available:
 - App- and device-aware visibility and notification policies, friendly hardware
   labels, private diagnostics, and searchable optional bounded history with
   local today/seven-day summaries.
+- Click-through activity notifications, optional rate-limited observer-health
+  alerts, and a guided redacted self-test with remediation guidance.
+- Allowlisted IPC quick actions for activity, history, diagnostics, lockdown,
+  undo, and rescanning, suitable for thin launcher adapters.
 - Keyboard navigation throughout the popup and settings.
 - Persistent observers and bounded background work, with no network telemetry.
 
 See the [user guide](https://bolens.github.io/omarchy-privacy-devices/#usage)
 for supported controls, requirements, configuration, privacy behavior,
 troubleshooting, and lifecycle commands.
+
+Notification actions and launchers use the installed `privacy-action` helper.
+It accepts only `open-activity [kind]`, `open-history [kind]`,
+`open-diagnostics`, `lockdown`, `undo-lockdown`, and `rescan`; no observed
+metadata is interpreted as a command.
 
 ## Quick install
 

@@ -55,6 +55,7 @@ Item {
   property string requestedSettingsPage: "general"
   property string requestedSettingsSection: ""
   property string requestedView: "settings"
+  property string requestedViewArgument: ""
   property int settingsRequestSerial: 0
   property var notificationQueue: []
   property var suppressedObserverStarts: ({})
@@ -71,6 +72,8 @@ Item {
     "direct-device": {status: "healthy", source: "direct-device", code: "ok", reason: ""},
     "fallback-observer": {status: "healthy", source: "fallback-observer", code: "ok", reason: ""}
   })
+  property var observerHealthLastNotifiedAt: ({})
+  property var selfTestResult: ({status: "idle", checks: [], text: "Run the self-test to check local privacy monitoring."})
   property double lastSessionRefreshAt: 0
   property double lastFallbackRefreshAt: 0
   property string operationalConfiguration: ""
@@ -177,8 +180,21 @@ Item {
   }
 
   function setObserverHealth(source, status, code, reason) {
+    var previous = observerHealth[source]
     var next = Model.updateObserverHealth(observerHealth, source, status, code, reason)
-    if (next !== observerHealth) observerHealth = next
+    if (next !== observerHealth) {
+      observerHealth = next
+      if (settings.notifyOnObserverHealth === true) {
+        var now = Date.now()
+        var notice = Model.observerHealthNotice(previous, next[source], now, observerHealthLastNotifiedAt[source] || 0, 60000)
+        if (notice) {
+          var notified = Object.assign({}, observerHealthLastNotifiedAt)
+          notified[source] = now
+          observerHealthLastNotifiedAt = notified
+          notify(notice.title, notice.body, "dialog-warning-symbolic", "security-high-symbolic", "open-diagnostics", "")
+        }
+      }
+    }
   }
 
   function clearDirectObserverState() {
@@ -829,13 +845,23 @@ Item {
     return ""
   }
 
-  function notify(title, body, icon, fallbackIcon) {
+  function actionHelperPath() {
+    return String(Qt.resolvedUrl("privacy-action")).replace(/^file:\/\//, "")
+  }
+
+  function notificationAction(action, argument) {
+    return Model.privacyAction(action, argument)
+  }
+
+  function notify(title, body, icon, fallbackIcon, action, argument) {
     var command = [
       "omarchy", "notification", "send",
       "--app-name", "Privacy Devices"
     ]
     var resolvedIcon = resolvedNotificationIcon(icon, fallbackIcon)
     if (resolvedIcon) command.push("--icon", resolvedIcon)
+    var callback = notificationAction(action, argument)
+    if (callback) command.push("--exec", actionHelperPath(), callback.name, callback.argument)
     command.push("--urgency", "normal", Model.autoTextSafe(title), Model.autoTextSafe(body))
     Quickshell.execDetached(command)
   }
@@ -849,13 +875,61 @@ Item {
   function flushActivityNotifications() {
     var grouped = Model.coalesceNotificationEvents(notificationQueue)
     notificationQueue = []
-    if (grouped.count > 0) notify(grouped.title, grouped.body, grouped.icon, grouped.fallbackIcon)
+    if (grouped.count > 0) notify(grouped.title, grouped.body, grouped.icon, grouped.fallbackIcon,
+      grouped.count === 1 ? "open-activity" : "open-history", grouped.kind)
   }
 
   function notifyControlResult(kind, exitCode) {
     if (settings.notifyOnControlChanges === false) return
     if (Number(exitCode) === 0) notify("Privacy control updated", Model.label(kind) + " change applied", Model.notificationKindIcon(kind), "security-high-symbolic")
-    else notify("Privacy control failed", Model.label(kind) + " was not changed", Model.notificationKindIcon(kind), "security-high-symbolic")
+    else notify("Privacy control failed", Model.label(kind) + " was not changed", Model.notificationKindIcon(kind), "security-high-symbolic", "open-diagnostics", "")
+  }
+
+  function requestPopupView(view, argument) {
+    requestedView = view
+    requestedViewArgument = String(argument || "")
+    requestedSettingsSection = ""
+    settingsRequestSerial++
+    return shell && typeof shell.summon === "function" && shell.summon("io.github.bolens.privacy-devices", "")
+      ? view : "unavailable"
+  }
+
+  function dispatchPrivacyAction(name, argument) {
+    var action = Model.privacyAction(name, argument)
+    if (!action) return "invalid"
+    if (action.name === "open-activity") return requestPopupView("activity", action.argument)
+    if (action.name === "open-history") return requestPopupView("history", action.argument)
+    if (action.name === "open-diagnostics") return requestPopupView("diagnostics", "")
+    if (action.name === "lockdown") return requestPrivacyLockdown() ? "ok" : "busy"
+    if (action.name === "undo-lockdown") return restorePrivacyLockdown() ? "ok" : "unavailable"
+    if (action.name === "rescan") { refreshFallbacks(); refreshDirectDevices(); refreshSessions(); return "ok" }
+    return "invalid"
+  }
+
+  function selfTestInput(historyStatus) {
+    var dependencies = {}, controls = {}
+    for (var index = 0; index < enabledKindList.length; index++) {
+      var kind = enabledKindList[index]
+      dependencies[kind] = dependenciesReady(kind)
+      if (serviceControllable(kind)) controls[kind] = controlRequestStatus(kind) !== "unsupported" && controlRequestStatus(kind) !== "dependency-unavailable"
+    }
+    return {pipewireAvailable: pipewireAvailable, observerHealth: observerHealth,
+      directDeviceEnabled: settings.directDeviceMonitoring === true, dependencies: dependencies, controls: controls,
+      history: {enabled: settings.historyEnabled === true, status: historyStatus}}
+  }
+
+  function runSelfTest() {
+    selfTestResult = Model.privacySelfTest(selfTestInput(settings.historyEnabled === true ? "checking" : "disabled"))
+    if (settings.historyEnabled !== true) return
+    if (!historyInspectProc.running) { historyInspectProc.command = [historyHelperPath(), "inspect"]; historyInspectProc.running = true }
+  }
+
+  function sendTestNotification() {
+    notify("Privacy notification test", "Click to open diagnostics", "security-high-symbolic", "dialog-information-symbolic", "open-diagnostics", "")
+  }
+
+  function copySelfTest() {
+    Quickshell.execDetached([String(Qt.resolvedUrl("privacy-diagnostics")).replace(/^file:\/\//, ""), JSON.stringify({version: 1, redacted: true, selfTest: selfTestResult})])
   }
 
   function refreshPreventativeControls() {
@@ -1148,6 +1222,17 @@ Item {
   }
 
   Process {
+    id: historyInspectProc
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var status = "attention"
+        try { status = String(JSON.parse(String(text || "{}")).status || "attention") } catch (error) {}
+        root.selfTestResult = Model.privacySelfTest(root.selfTestInput(status))
+      }
+    }
+  }
+
+  Process {
     id: historyLoadProc
     onExited: function(exitCode) {
       if (root.historyLoadGeneration === root.historyGeneration)
@@ -1199,6 +1284,12 @@ Item {
     }
     function lockdown(): string { return root.requestPrivacyLockdown() ? "ok" : "busy" }
     function undoLockdown(): string { return root.restorePrivacyLockdown() ? "ok" : "unavailable" }
+    function openActivity(kind: string): string { return root.requestPopupView("activity", kind) }
+    function openDiagnostics(): string { return root.requestPopupView("diagnostics", "") }
+    function action(name: string, argument: string): string {
+      var accepted = Model.privacyAction(name, argument)
+      return accepted ? root.dispatchPrivacyAction(accepted.name, accepted.argument) : "invalid"
+    }
   }
 
   IpcHandler {
@@ -1252,10 +1343,7 @@ Item {
         ? target.page + (target.section ? "#" + target.section : "") : "unavailable"
     }
     function openHistory(): string {
-      root.requestedView = "history"
-      root.requestedSettingsSection = ""
-      root.settingsRequestSerial++
-      return root.shell && typeof root.shell.summon === "function" && root.shell.summon("io.github.bolens.privacy-devices", "") ? "history" : "unavailable"
+      return root.requestPopupView("history", "")
     }
   }
 

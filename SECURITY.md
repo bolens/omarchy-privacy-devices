@@ -54,6 +54,11 @@ command explicitly supplied by the user are not vulnerabilities in the plugin.
   selected or run.
 - Built-in capture helpers and Omarchy commands use argument arrays and never
   inherit the custom-command shell-string boundary.
+- Notification and launcher actions enter through an allowlisted helper. Their
+  commands never contain observed application, process, or device text.
+- Observer alerts expose only bounded source/code identifiers. Guided self-test
+  and copied results omit session identities and inspect history permissions
+  without exposing its filesystem path.
 
 ## Release security checklist
 

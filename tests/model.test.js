@@ -76,6 +76,10 @@ if (hardenedSettings.statusMarkerMode !== "symbols" || hardenedSettings.statePil
 if (hardenedSettings.showStatePills !== true) throw new Error("visual boolean normalization")
 if (context.settingsPage("monitoring") !== "monitoring" || context.settingsPage("unexpected") !== "general") throw new Error("settings page allowlist")
 if (context.settingsPage("appearance") !== "appearance") throw new Error("appearance settings page allowlist")
+assert.deepEqual(JSON.parse(JSON.stringify(context.privacyAction("open-activity", "camera"))), {name: "open-activity", argument: "camera"})
+assert.deepEqual(JSON.parse(JSON.stringify(context.privacyAction("open-history", ""))), {name: "open-history", argument: ""})
+assert.equal(context.privacyAction("open-activity", "../../camera"), null, "action arguments must be allowlisted device kinds")
+assert.equal(context.privacyAction("run", "rm -rf"), null, "unknown quick actions must be rejected")
 if (context.sanitizeSettings({recordingProcessName: "x".repeat(300)}).recordingProcessName.length !== 256) throw new Error("process-name bound")
 if (context.sanitizeSettings({recordingProcessName: "  recorder\nname  "}).recordingProcessName !== "recordername") throw new Error("process-name plain-text sanitation")
 const deviceSettings = context.sanitizeSettings({

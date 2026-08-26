@@ -40,6 +40,14 @@ class ShellHelperTests(unittest.TestCase):
             self.assertNotEqual(self.run_helper("privacy-deps", "check", "microphone", "omarchy", "unknown", "omarchy", environment=environment).returncode, 0)
             self.assertNotEqual(self.run_helper("privacy-deps", "check", "screenshot", "omarchy", "auto", "grim", environment=environment).returncode, 0, "grim also requires slurp")
 
+    def test_action_helper_rejects_untrusted_actions_before_ipc(self):
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            environment = self.environment(directory, {"qs": "printf 'called\\n' >\"$TEST_LOG\""})
+            result = self.run_helper("privacy-action", "open-activity", "../../camera", environment=environment)
+            self.assertEqual(result.returncode, 2)
+            self.assertFalse((directory / "calls.log").exists())
+
     def test_dependency_install_uses_fixed_package_allowlist(self):
         with tempfile.TemporaryDirectory() as raw:
             directory = Path(raw)

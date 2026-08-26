@@ -76,6 +76,12 @@ GridLayout {
     accent: page.controller.monitoringDegraded ? Color.urgent : page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Observer health" }
     Text { Layout.fillWidth: true; text: page.controller.monitoringTelemetryText(); textFormat: Text.PlainText; color: page.controller.monitoringDegraded ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-    Button { text: "Copy private diagnostics"; enabled: page.controller.privacyService !== null; tooltipText: "Copy health and timing data with application and device names redacted"; onClicked: page.controller.privacyService.copyDiagnostics(true) }
+    RowLayout {
+      Layout.fillWidth: true
+      Button { text: "Run self-test"; enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.runSelfTest() }
+      Button { text: "Copy self-test"; enabled: page.controller.privacyService !== null && page.controller.privacyService.selfTestResult.status !== "idle"; onClicked: page.controller.privacyService.copySelfTest() }
+      Button { text: "Copy private diagnostics"; enabled: page.controller.privacyService !== null; tooltipText: "Copy health and timing data with application and device names redacted"; onClicked: page.controller.privacyService.copyDiagnostics(true) }
+    }
+    Text { Layout.fillWidth: true; visible: page.controller.privacyService !== null; text: page.controller.privacyService ? page.controller.privacyService.selfTestResult.text : ""; textFormat: Text.PlainText; color: page.controller.privacyService && page.controller.privacyService.selfTestResult.status === "attention" ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
   }
 }

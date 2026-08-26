@@ -22,6 +22,7 @@ ColumnLayout {
       PrivacySettingToggle { controller: page.controller; settingKey: "notifyOnActivity"; label: "Activity started"; description: "Notify when selected activity begins." }
       PrivacySettingToggle { controller: page.controller; settingKey: "notifyOnStop"; fallback: false; label: "Activity stopped"; description: "Notify when activity ends, including duration." }
       PrivacySettingToggle { Layout.columnSpan: page.controller.popupWidth === "wide" ? 2 : 1; controller: page.controller; settingKey: "notifyOnControlChanges"; label: "Control results"; description: "Notify when privacy-control changes succeed or fail." }
+      PrivacySettingToggle { Layout.columnSpan: page.controller.popupWidth === "wide" ? 2 : 1; controller: page.controller; settingKey: "notifyOnObserverHealth"; fallback: false; label: "Observer health"; description: "Notify once when an observer degrades or recovers; repeated changes are rate limited." }
     }
     Text { Layout.fillWidth: true; text: "Mute alerts for exact application names"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
     RowLayout {
@@ -29,5 +30,6 @@ ColumnLayout {
       TextField { id: suppressedAppsEditor; Layout.fillWidth: true; text: Model.arraySetting(page.controller.setting("notificationSuppressedApps", []), []).join(", "); placeholderText: "Firefox, OBS"; foreground: Color.popups.text; accent: page.controller.activeThemeColor; font.family: Style.font.family; onAccepted: page.controller.persistSettings({notificationSuppressedApps: page.controller.commaList(text)}) }
       Button { text: "Save"; onClicked: page.controller.persistSettings({notificationSuppressedApps: page.controller.commaList(suppressedAppsEditor.text)}) }
     }
+    Button { text: "Send test notification"; enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.sendTestNotification() }
   }
 }

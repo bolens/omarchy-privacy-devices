@@ -177,7 +177,13 @@ Panel {
   function handleSettingsRequest() {
     if (!opened || !privacyService || privacyService.settingsRequestSerial <= handledSettingsRequestSerial) return
     handledSettingsRequestSerial = privacyService.settingsRequestSerial
-    if (privacyService.requestedView === "history") showHistory()
+    if (privacyService.requestedView === "history") {
+      historyQuery = privacyService.requestedViewArgument ? Model.label(privacyService.requestedViewArgument) : ""
+      showHistory()
+    } else if (privacyService.requestedView === "activity") {
+      showActivity()
+      editingKind = Model.KINDS.indexOf(privacyService.requestedViewArgument) >= 0 ? privacyService.requestedViewArgument : ""
+    } else if (privacyService.requestedView === "diagnostics") showGlobalSettings("monitoring", "observer-health")
     else showGlobalSettings(privacyService.requestedSettingsPage, privacyService.requestedSettingsSection)
   }
 
@@ -436,6 +442,7 @@ Panel {
       notifyOnActivity: true,
       notifyOnStop: false,
       notifyOnControlChanges: true,
+      notifyOnObserverHealth: false,
       historyEnabled: false,
       hiddenApps: [],
       notificationSuppressedApps: [],
