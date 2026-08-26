@@ -61,8 +61,9 @@ exactly once and owns one unique success marker, so adding a harness cannot
 silently leave it out of the real-engine suite.
 
 The runtime runner also rejects QML scene warnings and fatal/critical engine
-output even when a success marker was emitted, preventing late binding errors
-from being hidden by an otherwise successful assertion path.
+output even when a success marker was emitted, and requires the marker exactly
+once at runtime. This prevents late binding errors or repeating completion
+timers from being hidden by an otherwise successful assertion path.
 
 This runs shared policy, the assembled plugin, semantic appearance bindings,
 rendered bar and activity-card states, per-endpoint audio controls, validated
@@ -71,8 +72,10 @@ interaction, device-detail navigation, coalesced settings writes and assembled
 rollback, rapid per-device appearance edits, general and alert settings wiring,
 bounded integer and marker editors, reactive feedback surfaces, degraded device
 diagnostics, monitoring configuration and appearance presentation wiring,
-reactive audio-endpoint replacement, guarded card activation, diagnostic
-recovery, reactive session summaries, responsive settings navigation, mutation
+monitoring telemetry freshness, fallback observation composition, reactive
+audio-endpoint replacement, guarded card activation, diagnostic recovery,
+reactive session summaries, responsive navigation and lazy loading of every
+settings page, mutation
 feedback lifecycle, transfer request exclusion, multi-monitor deep-link routing,
 capture-preview cleanup and automatic expiry, debounced observer-session
 reconciliation, validated notification callback routing, reactive policy

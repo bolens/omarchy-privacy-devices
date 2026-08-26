@@ -37,7 +37,7 @@ ln -s -- "$shell_root/Commons" "$runtime_dir/Commons"
 ln -s -- "$shell_root/Ui" "$runtime_dir/Ui"
 
 run_harness() {
-  local file=$1 marker=$2 output status
+  local file=$1 marker=$2 output status marker_count
   if [[ -n $requested_harness && $file != "$requested_harness" ]]; then return 0; fi
   ran_harness=1
   active_harness="$runtime_dir/$file"
@@ -55,8 +55,9 @@ run_harness() {
     printf 'QML runtime harness %s emitted runtime errors\n%s\n' "$file" "$output" >&2
     return 1
   fi
-  grep -q "$marker" <<<"$output" || {
-    printf 'QML runtime harness %s did not emit %s\n%s\n' "$file" "$marker" "$output" >&2
+  marker_count=$(grep -Fc "$marker" <<<"$output" || true)
+  [[ $marker_count -eq 1 ]] || {
+    printf 'QML runtime harness %s emitted %s %s times; expected exactly once\n%s\n' "$file" "$marker" "$marker_count" "$output" >&2
     return 1
   }
 }
@@ -112,6 +113,8 @@ run_harness RuntimeKeyboardNavigationTest.qml PRIVACY_QML_KEYBOARD_NAVIGATION_OK
 run_harness RuntimeControlRequestGatingTest.qml PRIVACY_QML_CONTROL_REQUEST_GATING_OK
 run_harness RuntimeObserverHealthStateTest.qml PRIVACY_QML_OBSERVER_HEALTH_STATE_OK
 run_harness RuntimeDeviceHealthAggregationTest.qml PRIVACY_QML_DEVICE_HEALTH_AGGREGATION_OK
+run_harness RuntimeMonitoringTelemetryTest.qml PRIVACY_QML_MONITORING_TELEMETRY_OK
+run_harness RuntimeFallbackObservationCompositionTest.qml PRIVACY_QML_FALLBACK_OBSERVATION_COMPOSITION_OK
 
 if [[ -n $requested_harness && $ran_harness -eq 0 ]]; then
   printf 'Requested QML runtime harness not found: %s\n' "$requested_harness" >&2

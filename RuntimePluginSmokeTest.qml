@@ -64,6 +64,7 @@ ShellRoot {
     widget.showGlobalSettings("monitoring", "private-data")
   }
   Timer {
+    id: smokeTimer
     interval: 200; running: true; repeat: true
     onTriggered: {
       if (root.stage === 0) {
@@ -74,18 +75,35 @@ ShellRoot {
         root.stage = 1
       } else if (root.stage === 1) {
         if (root.updates !== 1 || widget.showIdle !== false || widget.showControls !== false) throw new Error("plugin settings mutation integration failed")
+        widget.showGlobalSettings("general", "")
+        root.stage = 2
+      } else if (root.stage === 2) {
+        if (widget.globalSettingsPage !== "general" || !widget.settingsPageLoaded) throw new Error("general settings page did not load")
+        widget.showGlobalSettings("appearance", "")
+        root.stage = 3
+      } else if (root.stage === 3) {
+        if (widget.globalSettingsPage !== "appearance" || !widget.settingsPageLoaded) throw new Error("appearance settings page did not load")
+        widget.showGlobalSettings("alerts", "")
+        root.stage = 4
+      } else if (root.stage === 4) {
+        if (widget.globalSettingsPage !== "alerts" || !widget.settingsPageLoaded) throw new Error("alerts settings page did not load")
+        widget.showGlobalSettings("monitoring", "")
+        root.stage = 5
+      } else if (root.stage === 5) {
+        if (widget.globalSettingsPage !== "monitoring" || !widget.settingsPageLoaded) throw new Error("monitoring settings page did not reload")
         widget.showHistory()
         if (!widget.showingHistory || widget.showingGlobalSettings) throw new Error("history navigation failed")
         widget.showActivity()
         widget.editingKind = "camera"
-        root.stage = 2
+        root.stage = 6
       } else {
         if (widget.editingKind !== "camera" || widget.showingHistory || widget.showingGlobalSettings) throw new Error("device editor integration failed")
         barMock.vertical = true
-        root.stage = 3
+        root.stage = 7
       }
-      if (root.stage === 3) Qt.callLater(function() {
+      if (root.stage === 7) Qt.callLater(function() {
         if (!widget.verticalBar || widget.barFlowColumns !== 1) throw new Error("vertical bar layout did not stack items")
+        smokeTimer.stop()
         console.log("PRIVACY_QML_PLUGIN_SMOKE_OK")
         Qt.quit()
       })
