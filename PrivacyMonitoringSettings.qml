@@ -81,10 +81,10 @@ GridLayout {
       columns: observerHealthSettings.width >= Style.space(360) ? 2 : 1
       columnSpacing: Style.spacing.sm
       rowSpacing: Style.spacing.sm
-      Button { Layout.fillWidth: true; text: "Run self-test"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.runSelfTest() }
-      Button { Layout.fillWidth: true; text: "Send test alert"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.sendTestNotification() }
-      Button { Layout.fillWidth: true; text: "Copy self-test"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null && page.controller.privacyService.selfTestResult.status !== "idle"; onClicked: page.controller.privacyService.copySelfTest() }
-      Button { Layout.fillWidth: true; text: "Copy diagnostics"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; tooltipText: "Copy health and timing data with application and device names redacted"; onClicked: page.controller.privacyService.copyDiagnostics(true) }
+      Button { objectName: "monitoringRunSelfTestButton"; Layout.fillWidth: true; text: "Run self-test"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.runSelfTest() }
+      Button { objectName: "monitoringSendTestAlertButton"; Layout.fillWidth: true; text: "Send test alert"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.sendTestNotification() }
+      Button { objectName: "monitoringCopySelfTestButton"; Layout.fillWidth: true; text: "Copy self-test"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null && page.controller.privacyService.selfTestResult.status !== "idle"; onClicked: page.controller.privacyService.copySelfTest() }
+      Button { objectName: "monitoringCopyDiagnosticsButton"; Layout.fillWidth: true; text: "Copy diagnostics"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; tooltipText: "Copy health and timing data with application and device names redacted"; onClicked: page.controller.privacyService.copyDiagnostics(true) }
     }
     PrivacyMessageSurface {
       Layout.fillWidth: true

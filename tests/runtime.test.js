@@ -117,7 +117,8 @@ for (const qml of [
   "RuntimeDeepLinkTest.qml", "RuntimeAudioEndpointSettingsTest.qml",
   "RuntimeBarSemanticColorTest.qml", "RuntimeActivityCardStateTest.qml",
   "RuntimeLockdownButtonTest.qml", "RuntimeDeviceSettingsNavigationTest.qml",
-  "RuntimeSettingsRollbackTest.qml"
+  "RuntimeSettingsRollbackTest.qml", "RuntimeDeviceDiagnosticsTest.qml",
+  "RuntimeMonitoringActionsTest.qml"
 ])
   assert.match(ci, new RegExp(`qmllint[^']*${qml}`), `CI must lint ${qml}`)
 for (const [harness, marker] of [
@@ -138,7 +139,9 @@ for (const [harness, marker] of [
   ["RuntimeActivityCardStateTest.qml", "PRIVACY_QML_ACTIVITY_CARD_STATE_OK"],
   ["RuntimeLockdownButtonTest.qml", "PRIVACY_QML_LOCKDOWN_BUTTON_OK"],
   ["RuntimeDeviceSettingsNavigationTest.qml", "PRIVACY_QML_DEVICE_SETTINGS_NAVIGATION_OK"],
-  ["RuntimeSettingsRollbackTest.qml", "PRIVACY_QML_SETTINGS_ROLLBACK_OK"]
+  ["RuntimeSettingsRollbackTest.qml", "PRIVACY_QML_SETTINGS_ROLLBACK_OK"],
+  ["RuntimeDeviceDiagnosticsTest.qml", "PRIVACY_QML_DEVICE_DIAGNOSTICS_OK"],
+  ["RuntimeMonitoringActionsTest.qml", "PRIVACY_QML_MONITORING_ACTIONS_OK"]
 ])
   assert.match(qmlRuntime, new RegExp(`run_harness ${harness} ${marker}`), `${harness} must run in the real QML suite`)
 assert.match(screenshotWorkflow, /capture_panel device device/, "screenshot workflow must capture an individual device settings page")

@@ -20,6 +20,7 @@ SettingsSurface {
       required property var modelData
       Layout.fillWidth: true
       Text {
+        objectName: "deviceDiagnosticLabel-" + modelData.label
         Layout.preferredWidth: 110
         text: modelData.label
         textFormat: Text.PlainText
@@ -28,6 +29,7 @@ SettingsSurface {
         font.pixelSize: Style.font.caption
       }
       Text {
+        objectName: "deviceDiagnosticValue-" + modelData.label
         Layout.fillWidth: true
         text: modelData.value
         textFormat: Text.PlainText
@@ -40,6 +42,7 @@ SettingsSurface {
   }
 
   Button {
+    objectName: "deviceDiagnosticsInstallButton"
     visible: !diagnostics.data.dependenciesReady
     text: "Install requirements"
     tooltipText: diagnostics.data.dependencyDescription
