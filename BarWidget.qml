@@ -113,6 +113,7 @@ Panel {
     : (settingsMutationController.status === "failed" ? "Settings update failed" + (settingsMutationController.detail ? ": " + settingsMutationController.detail : "") : ""))
   readonly property bool settingsPageLoaded: globalSettingsPageLoader.item !== null
   readonly property var lockdownActionControl: lockdownButton
+  readonly property var privacyPresetFeedbackSurface: presetFeedback
   readonly property string confirmationPending: confirmationState.pending
   readonly property var historySearchControl: historySearch
   readonly property var historyCountLabel: historyCountText
@@ -990,6 +991,8 @@ Panel {
           visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory && privacyService && privacyService.privacyPresetMessage() !== ""
           Layout.fillWidth: true
           PrivacyMessageSurface {
+            id: presetFeedback
+            objectName: "privacyPresetFeedback"
             Layout.fillWidth: true
             message: privacyService ? privacyService.privacyPresetMessage() : ""
             kind: privacyService && privacyService.privacyPresetState === "partial" ? "error" : "info"

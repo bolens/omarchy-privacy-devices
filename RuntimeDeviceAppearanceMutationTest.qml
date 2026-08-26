@@ -70,6 +70,27 @@ ShellRoot {
       var roles = settings.itemColorRoles.microphone || {}
       if (roles.active !== undefined || roles.blocked !== "urgent" || settings.itemIdleOpacity.microphone !== undefined)
         throw new Error("inherit did not remove only the selected device override")
+      widget.persistItemColor("microphone", "active", "accent")
+      widget.persistItemIdleVisibility("microphone", "hide")
+      widget.persistLabel("microphone", "Primary microphone")
+      widget.persistItemColor("camera", "active", "bar-active")
+      widget.persistLabel("camera", "Webcam")
+      widget.resetItemSettings("microphone")
+      thirdCheck.start()
+    }
+  }
+
+  Timer {
+    id: thirdCheck
+    interval: 180
+    onTriggered: {
+      if (root.commits.length !== 3) throw new Error("device reset was not coalesced with pending appearance edits")
+      var settings = root.commits[2]
+      if (settings.itemColorRoles.microphone !== undefined || settings.itemIdleVisibility.microphone !== undefined
+          || settings.itemLabels.microphone !== undefined)
+        throw new Error("device reset retained pending overrides for its target")
+      if (settings.itemColorRoles.camera.active !== "bar-active" || settings.itemLabels.camera !== "Webcam")
+        throw new Error("device reset removed another device's pending overrides")
       console.log("PRIVACY_QML_DEVICE_APPEARANCE_MUTATION_OK")
       Qt.quit()
     }

@@ -45,5 +45,5 @@ SettingsSurface {
       }
     }
   }
-  PrivacyMessageSurface { visible: surface.service && surface.service.audioEndpointMessage !== ""; message: surface.service ? surface.service.audioEndpointMessage : ""; kind: surface.service && surface.service.audioEndpointMessage.indexOf("not") !== -1 ? "error" : "info" }
+  PrivacyMessageSurface { objectName: "audioEndpointFeedback"; visible: surface.service && surface.service.audioEndpointMessage !== ""; message: surface.service ? surface.service.audioEndpointMessage : ""; kind: surface.service && surface.service.audioEndpointMessage.indexOf("not") !== -1 ? "error" : "info" }
 }

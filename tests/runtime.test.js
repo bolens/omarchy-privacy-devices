@@ -125,7 +125,7 @@ for (const qml of [
   "RuntimeMarkerGlyphEditorTest.qml", "RuntimeMessageSurfaceTest.qml",
   "RuntimeMonitoringConfigurationTest.qml", "RuntimeAppearancePresentationTest.qml",
   "RuntimeActivityCardInteractionTest.qml", "RuntimeActivitySessionSummaryTest.qml",
-  "RuntimeCapturePreviewLifecycleTest.qml"
+  "RuntimeCapturePreviewLifecycleTest.qml", "RuntimeAudioEndpointFeedbackTest.qml"
 ])
   assert.match(ci, new RegExp(`qmllint[^']*${qml}`), `CI must lint ${qml}`)
 for (const [harness, marker] of [
@@ -162,7 +162,8 @@ for (const [harness, marker] of [
   ["RuntimeAppearancePresentationTest.qml", "PRIVACY_QML_APPEARANCE_PRESENTATION_OK"],
   ["RuntimeActivityCardInteractionTest.qml", "PRIVACY_QML_ACTIVITY_CARD_INTERACTION_OK"],
   ["RuntimeActivitySessionSummaryTest.qml", "PRIVACY_QML_ACTIVITY_SESSION_SUMMARY_OK"],
-  ["RuntimeCapturePreviewLifecycleTest.qml", "PRIVACY_QML_CAPTURE_PREVIEW_LIFECYCLE_OK"]
+  ["RuntimeCapturePreviewLifecycleTest.qml", "PRIVACY_QML_CAPTURE_PREVIEW_LIFECYCLE_OK"],
+  ["RuntimeAudioEndpointFeedbackTest.qml", "PRIVACY_QML_AUDIO_ENDPOINT_FEEDBACK_OK"]
 ])
   assert.match(qmlRuntime, new RegExp(`run_harness ${harness} ${marker}`), `${harness} must run in the real QML suite`)
 assert.match(screenshotWorkflow, /capture_panel device device/, "screenshot workflow must capture an individual device settings page")

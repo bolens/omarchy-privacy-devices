@@ -60,8 +60,23 @@ ShellRoot {
             service.privacyPresetState = "applying"
             Qt.callLater(function() {
               if (button.enabled) throw new Error("lockdown control remained enabled while applying")
-              console.log("PRIVACY_QML_LOCKDOWN_BUTTON_OK")
-              Qt.quit()
+              service.privacyPresetState = "partial"
+              service.privacyPresetUndoAvailable = false
+              Qt.callLater(function() {
+                var feedback = widget.privacyPresetFeedbackSurface
+                if (!button.enabled || !feedback || !feedback.visible || feedback.kind !== "error"
+                    || feedback.message !== "Privacy preset finished with unavailable or failed controls.")
+                  throw new Error("partial lockdown result did not expose actionable error feedback: enabled=" + button.enabled
+                    + " feedback=" + Boolean(feedback) + " visible=" + (feedback ? feedback.visible : "missing")
+                    + " kind=" + (feedback ? feedback.kind : "missing") + " message=" + (feedback ? feedback.message : "missing"))
+                service.privacyPresetState = "restoring"
+                Qt.callLater(function() {
+                  if (button.enabled || feedback.kind !== "info" || feedback.message !== "Restoring previous privacy state…")
+                    throw new Error("lockdown restore state did not disable actions and update feedback")
+                  console.log("PRIVACY_QML_LOCKDOWN_BUTTON_OK")
+                  Qt.quit()
+                })
+              })
             })
           })
         })
