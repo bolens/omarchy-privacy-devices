@@ -3,12 +3,18 @@ import QtQuick
 
 ShellRoot {
   id: root
+  property int phase: 0
+  property int successfulWrites: 0
 
   Service { id: service }
   QtObject {
     id: shellMock
+    property bool rejectWrites: true
     function serviceFor(id) { return id === "io.github.bolens.privacy-devices" ? service : null }
-    function updateEntryInline(_id, _settings) { throw new Error("fixture persistence rejected") }
+    function updateEntryInline(_id, _settings) {
+      if (rejectWrites) throw new Error("fixture persistence rejected")
+      root.successfulWrites++
+    }
   }
   QtObject {
     id: barMock
@@ -43,15 +49,26 @@ ShellRoot {
   }
 
   Timer {
+    id: check
     interval: 180
     running: true
     onTriggered: {
-      if (!widget.showIdle || !widget.showControls) throw new Error("failed persistence did not restore prior widget settings")
-      if (service.settings.showIdle !== true || service.settings.showControls !== true)
-        throw new Error("failed persistence did not restore prior service configuration")
-      if (widget.settingsMutationMessage.indexOf("Settings update failed") !== 0
-          || widget.settingsMutationMessage.indexOf("fixture persistence rejected") < 0)
-        throw new Error("failed persistence did not expose actionable feedback")
+      if (root.phase === 0) {
+        if (!widget.showIdle || !widget.showControls) throw new Error("failed persistence did not restore prior widget settings")
+        if (service.settings.showIdle !== true || service.settings.showControls !== true)
+          throw new Error("failed persistence did not restore prior service configuration")
+        if (widget.settingsMutationMessage.indexOf("Settings update failed") !== 0
+            || widget.settingsMutationMessage.indexOf("fixture persistence rejected") < 0)
+          throw new Error("failed persistence did not expose actionable feedback")
+        shellMock.rejectWrites = false
+        widget.persistSettings({showIdle:false})
+        root.phase = 1
+        restart()
+        return
+      }
+      if (root.successfulWrites !== 1 || widget.showIdle || service.settings.showIdle !== false
+          || widget.settingsMutationMessage !== "Changes applied")
+        throw new Error("settings persistence did not recover after rollback")
       console.log("PRIVACY_QML_SETTINGS_ROLLBACK_OK")
       Qt.quit()
     }

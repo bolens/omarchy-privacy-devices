@@ -64,8 +64,23 @@ ShellRoot {
         Qt.callLater(function() {
           if (widget.filteredHistory.length !== 0 || count.text !== "0 of 2")
             throw new Error("empty history search result was not represented")
-          console.log("PRIVACY_QML_HISTORY_VIEW_OK")
-          Qt.quit()
+          widget.requestHistoryClear()
+          if (widget.confirmationPending !== "history") throw new Error("history clear did not require confirmation")
+          widget.showActivity()
+          if (widget.confirmationPending !== "") throw new Error("leaving history did not cancel destructive confirmation")
+          service.captureHistoryPresentationEnabled = false
+          widget.showHistory()
+          Qt.callLater(function() {
+            var settingsAction = widget.historyDisabledSettingsControl
+            if (!settingsAction || !settingsAction.visible) throw new Error("disabled-history settings action is not addressable")
+            settingsAction.clicked()
+            Qt.callLater(function() {
+              if (!widget.showingGlobalSettings || widget.globalSettingsPage !== "monitoring")
+                throw new Error("disabled-history action did not open monitoring settings")
+              console.log("PRIVACY_QML_HISTORY_VIEW_OK")
+              Qt.quit()
+            })
+          })
         })
       })
     })

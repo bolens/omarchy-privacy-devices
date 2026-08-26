@@ -117,6 +117,7 @@ Panel {
   readonly property string confirmationPending: confirmationState.pending
   readonly property var historySearchControl: historySearch
   readonly property var historyCountLabel: historyCountText
+  readonly property var historyDisabledSettingsControl: historyDisabledSettingsButton
   readonly property var filteredHistory: Model.filterHistory(privacyService ? privacyService.displayHistory : [], historyQuery)
   readonly property var historySummaryRows: Model.historySummary(privacyService ? privacyService.displayHistory : [], durationNow, historySummaryWindow)
   readonly property bool historyPresentationEnabled: privacyService && privacyService.capturePreviewActive && privacyService.requestedView === "history"
@@ -1092,7 +1093,7 @@ Panel {
             Layout.fillWidth: true
             PanelSectionHeader { Layout.fillWidth: true; text: "History is off" }
             Text { Layout.fillWidth: true; text: "Enable history to keep completed activity on this device for up to seven days."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-            Button { text: "Open monitoring settings"; bordered: true; background: Util.alpha(root.activeThemeColor, 0.06); onClicked: root.showGlobalSettings("monitoring", "private-data") }
+            Button { id: historyDisabledSettingsButton; text: "Open monitoring settings"; bordered: true; background: Util.alpha(root.activeThemeColor, 0.06); onClicked: root.showGlobalSettings("monitoring", "private-data") }
           }
 
           PrivacyMessageSurface {
