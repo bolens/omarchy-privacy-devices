@@ -45,11 +45,13 @@ Activity notifications use the detected application icon when available:
 - Per-application activity, session context, controls, and health for seven
   privacy-device classes.
 - Reactive PipeWire monitoring plus optional same-user direct-device coverage.
-- Verified mute, recording, camera, location, and screen-sharing controls.
+- Verified mute, recording, camera, location, and screen-sharing controls, plus
+  a confirmed privacy lockdown with observed-state undo.
 - Global and per-device appearance, ordering, visibility, backend, and status
   settings.
-- App-aware notifications, private diagnostics, searchable optional bounded
-  history, and versioned settings transfer with one-step undo.
+- App- and device-aware visibility and notification policies, friendly hardware
+  labels, private diagnostics, and searchable optional bounded history with
+  local today/seven-day summaries.
 - Keyboard navigation throughout the popup and settings.
 - Persistent observers and bounded background work, with no network telemetry.
 

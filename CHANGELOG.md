@@ -7,6 +7,15 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Added
+
+- Add a confirmed, serial privacy lockdown for service-owned controls with
+  verified partial results and a 30-second observed-state undo.
+- Add bounded per-device visibility and notification policies plus friendly
+  hardware labels.
+- Add today and seven-day activity summaries derived from existing opt-in,
+  bounded local history without extending retention.
+
 ## [0.6.0] - 2026-08-26
 
 ### Added

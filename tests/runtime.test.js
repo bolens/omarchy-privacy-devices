@@ -228,6 +228,14 @@ assert.match(service, /function beginControlVerification\(kind, exitCode\)[\s\S]
   "command results must enter the behavior-tested reducer")
 assert.match(service, /function verifyControlTransaction\(kind, observedEnabled, probeValid\)[\s\S]*?transitionControlTransaction\(kind, \{type: "observation", enabled: observedEnabled, valid: probeValid\}\)/,
   "observations must verify controls through the behavior-tested reducer")
+assert.match(service, /function requestPrivacyLockdown\(\)[\s\S]*?Model\.privacyPresetPlan\([\s\S]*?runNextPrivacyPreset\(\)/,
+  "privacy lockdown must use the behavior-tested serial preset plan")
+assert.match(service, /function restorePrivacyLockdown\(\)[\s\S]*?Model\.privacyPresetPlan\(privacyPresetEntries\(\), privacyPresetPrevious\)/,
+  "privacy lockdown undo must derive restoration from observed prior state")
+assert.match(service, /onControlTransactionsChanged:[\s\S]*?advancePrivacyPreset\(\)/,
+  "preset orchestration must advance only after control transactions settle")
+assert.match(service, /function policies\(\)[\s\S]*?sessionPolicies/,
+  "runtime session consumers must share normalized app and device policy")
 assert.match(service, /transitionControlTransaction\(kind, \{type: "timeout"\}, now\)/, "verification must delegate bounded timeout handling to the tested reducer")
 assert.doesNotMatch(service, /fallbackMicrophoneMuted\s*=\s*!fallbackMicrophoneMuted/, "controls must preserve the last observed microphone state while verification is pending")
 assert.doesNotMatch(service, /fallbackOutputMuted\s*=\s*!fallbackOutputMuted/, "controls must preserve the last observed output state while verification is pending")

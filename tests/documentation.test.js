@@ -59,5 +59,7 @@ assert.match(readme, /docs\/device\.png/, "README must show the individual devic
 assert.match(readme, /docs\/notification\.png/, "README must show the app-aware notification example");
 assert.match(readme, /docs\/monitoring-private\.png/, "README must show private history and transfer settings");
 assert.match(readme, /docs\/monitoring-health\.png/, "README must show observer health settings");
+for (const capability of ["privacy lockdown", "device-aware visibility", "today\/seven-day summaries"])
+  assert.match(readme, new RegExp(capability, "i"), `README must summarize ${capability}`);
 
 console.log("documentation structure checks passed");

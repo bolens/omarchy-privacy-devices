@@ -43,7 +43,12 @@ command explicitly supplied by the user are not vulnerabilities in the plugin.
 - Recorder shutdown is limited to an owner-matched PID whose `/proc` executable
   is `wf-recorder`; broad name-based termination is forbidden.
 - History and settings exports are size-bounded, atomically replaced, and
-  stored in owner-only user directories. They contain no media.
+  stored in owner-only user directories. They contain no media. Device policy
+  names and aliases are bounded settings metadata and may identify local
+  hardware, so exported settings should be treated as private.
+- Privacy lockdown uses the same verified, allowlisted per-device controls as
+  individual actions. It applies them serially, reports partial failures, and
+  keeps its observed-state undo only in memory for 30 seconds.
 - Custom screenshot and recording commands are an explicit user-controlled
   escape hatch. Imported settings must be reviewed before those backends are
   selected or run.

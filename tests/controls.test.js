@@ -56,4 +56,41 @@ assert.equal(model.controlRequestStatus(request({dependenciesReady: false})), "u
 assert.equal(model.controlRequestStatus(request({pending: true})), "busy")
 assert.equal(model.controlRequestStatus(request({processBusy: true})), "busy")
 
+const lockdown = model.privacyPresetPlan([
+  {kind: "microphone", enabled: true, controllable: true, dependenciesReady: true, pending: false},
+  {kind: "camera", enabled: false, controllable: true, dependenciesReady: true, pending: false},
+  {kind: "location", enabled: true, controllable: true, dependenciesReady: false, pending: false},
+  {kind: "screenshot", enabled: false, controllable: false, dependenciesReady: true, pending: false}
+], false)
+assert.deepEqual(JSON.parse(JSON.stringify(lockdown)), {
+  actions: [{kind: "microphone", expectedEnabled: false}],
+  skipped: [
+    {kind: "camera", reason: "already-set"},
+    {kind: "location", reason: "unavailable"},
+    {kind: "screenshot", reason: "unsupported"}
+  ]
+})
+assert.deepEqual(JSON.parse(JSON.stringify(model.privacyPresetPlan([
+  {kind: "microphone", enabled: false, controllable: true, dependenciesReady: true, pending: false},
+  {kind: "camera", enabled: false, controllable: true, dependenciesReady: true, pending: true}
+], {microphone: true, camera: true}))), {
+  actions: [{kind: "microphone", expectedEnabled: true}],
+  skipped: [{kind: "camera", reason: "busy"}]
+})
+assert.deepEqual(JSON.parse(JSON.stringify(model.nextPrivacyPresetAction([
+  {kind: "microphone", expectedEnabled: false}, {kind: "camera", expectedEnabled: false}
+], ""))), {
+  action: "apply", current: {kind: "microphone", expectedEnabled: false},
+  queue: [{kind: "camera", expectedEnabled: false}]
+})
+assert.equal(model.nextPrivacyPresetAction([{kind: "camera"}], "microphone").action, "wait")
+assert.equal(model.nextPrivacyPresetAction([], "").action, "complete")
+assert.deepEqual(JSON.parse(JSON.stringify(model.privacyPresetOutcome([
+  {kind: "microphone", status: "succeeded", reason: ""},
+  {kind: "location", reason: "unavailable"}
+]))), {state: "partial", changed: true})
+assert.deepEqual(JSON.parse(JSON.stringify(model.privacyPresetOutcome([
+  {kind: "camera", reason: "already-set"}, {kind: "screenshot", reason: "unsupported"}
+]))), {state: "succeeded", changed: false})
+
 console.log("control transaction tests passed")

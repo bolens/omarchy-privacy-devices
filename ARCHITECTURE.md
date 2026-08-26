@@ -82,6 +82,8 @@ normal operation poll-driven.
   policy, so configuration churn cannot diverge their scheduling behavior.
 - Pending controls retain the last observed state rather than presenting an
   optimistic result.
+- Privacy lockdown serializes existing per-device control transactions, records
+  partial failures, and restores only from the observed pre-lockdown snapshot.
 - Settings are allowlisted, bounded, and versioned before reaching runtime;
   IPC pages and direct helper arguments are validated again at their ingress.
 - Rapid settings edits merge before one shell update; submission failures
@@ -92,6 +94,10 @@ normal operation poll-driven.
   checks prevent asynchronous loads from crossing clear/disable boundaries.
 - Session metadata is stripped of control characters and bounded before it is
   used for identity, rendering, IPC, notifications, or persistence.
+- Device visibility, alert suppression, and friendly labels use the same
+  normalized session identity policy as application rules.
+- History summaries are projections of the existing bounded retained rows;
+  they neither extend retention nor create a second data store.
 - Diagnostics are redacted by default and bounded before clipboard transfer.
 - Shared presentation policies own visual state, navigation boundaries, scroll
   deferral, diagnostics, telemetry text, and device-action guidance; QML owns

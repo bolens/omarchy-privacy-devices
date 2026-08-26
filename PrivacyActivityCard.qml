@@ -17,11 +17,12 @@ Rectangle {
   readonly property real verticalPadding: (compact ? Style.spacing.sm : Style.spacing.md) * itemScale
   readonly property bool hasInlineActions: controller.showStatePills
     || (entry.active && entry.apps.length > 0)
+    || entry.sessions.length > 0
     || (controller.showControls && entry.controllable && entry.kind !== "screenshot" && entry.dependenciesReady)
 
   function sessionSummary(session) {
     var parts = []
-    if (session.device) parts.push(String(session.device))
+    if (session.device) parts.push(controller.deviceLabel(session.device))
     parts.push(Model.formatDuration(controller.durationNow - Number(session.startedAt || controller.durationNow)))
     if (session.confidence && String(session.confidence).toLowerCase() !== "confirmed") parts.push("Inferred")
     if (entry.sessions.length > 1) parts.push("+" + (entry.sessions.length - 1) + " more")
@@ -107,6 +108,8 @@ Rectangle {
       Layout.alignment: Qt.AlignRight
       spacing: Style.spacing.sm * card.itemScale
       Button { visible: entry.active && entry.apps.length > 0; text: "Hide"; tooltipText: "Hide this application from the bar; alerts remain enabled"; onClicked: controller.addPolicyValue("hiddenApps", entry.apps[0]) }
+      Button { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Hide device"; tooltipText: "Hide this hardware device from activity presentation"; onClicked: controller.addPolicyValue("hiddenDevices", entry.sessions[0].device) }
+      Button { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Mute device alerts"; tooltipText: "Keep activity visible but suppress alerts for this hardware device"; onClicked: controller.addPolicyValue("notificationSuppressedDevices", entry.sessions[0].device) }
       Item { visible: card.tiled; Layout.fillWidth: card.tiled }
       Rectangle {
         visible: controller.showStatePills

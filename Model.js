@@ -69,7 +69,7 @@ function sanitizeSettings(data) {
   var kindLists = ["enabledKinds", "order", "notificationKinds", "blockableKinds"]
   for (index = 0; index < kindLists.length; index++) if (Array.isArray(source[kindLists[index]]))
     clean[kindLists[index]] = unique(source[kindLists[index]].filter(function(value) { return KINDS.indexOf(value) >= 0 })).slice(0, KINDS.length)
-  var stringLists = ["excludedApps", "hiddenApps", "notificationSuppressedApps", "cameraKeywords", "screenShareKeywords"]
+  var stringLists = ["excludedApps", "hiddenApps", "notificationSuppressedApps", "hiddenDevices", "notificationSuppressedDevices", "cameraKeywords", "screenShareKeywords"]
   for (index = 0; index < stringLists.length; index++) if (Array.isArray(source[stringLists[index]]))
     clean[stringLists[index]] = unique(source[stringLists[index]].map(function(value) { return boundedPlainText(value, 256) }).filter(Boolean)).slice(0, 256)
   var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["symbols","letters","custom","off"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], popupLayout:["adaptive","list","grid"], popupWidth:["narrow","standard","wide"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
@@ -86,9 +86,13 @@ function sanitizeSettings(data) {
   for (index = 0; index < commands.length; index++) if (source[commands[index]] !== undefined) clean[commands[index]] = String(source[commands[index]] || "").slice(0, 4096)
   var processNames = ["screenshotProcessName", "recordingProcessName"]
   for (index = 0; index < processNames.length; index++) if (source[processNames[index]] !== undefined) clean[processNames[index]] = boundedPlainText(source[processNames[index]], 256)
-  var maps = ["icons", "itemColorRoles", "itemIdleOpacity", "itemIdleVisibility", "itemStatusMarkerVisibility", "itemLabels"]
+  var maps = ["icons", "itemColorRoles", "itemIdleOpacity", "itemIdleVisibility", "itemStatusMarkerVisibility", "itemLabels", "deviceLabels"]
   for (index = 0; index < maps.length; index++) if (source[maps[index]] && typeof source[maps[index]] === "object" && !Array.isArray(source[maps[index]])) {
-    var mapName = maps[index], map = {}, keys = Object.keys(source[mapName]).filter(function(value) { return KINDS.indexOf(value) >= 0 }).slice(0, KINDS.length)
+    var mapName = maps[index], map = {}, keys = Object.keys(source[mapName]).filter(function(value) {
+      if (mapName !== "deviceLabels") return KINDS.indexOf(value) >= 0
+      var normalized = boundedPlainText(String(value), 512)
+      return normalized && ["__proto__", "constructor", "prototype"].indexOf(normalized.toLowerCase()) === -1
+    }).slice(0, mapName === "deviceLabels" ? 64 : KINDS.length)
     for (var mapIndex = 0; mapIndex < keys.length; mapIndex++) {
       var mapKey = keys[mapIndex], mapValue = source[mapName][mapKey]
       if (mapName === "itemIdleVisibility" || mapName === "itemStatusMarkerVisibility") map[mapKey] = mapValue === true
@@ -116,6 +120,10 @@ function sanitizeSettings(data) {
       } else if (mapName === "itemLabels") {
         var itemLabel = boundedPlainText(mapValue, 128)
         if (itemLabel) map[mapKey] = itemLabel
+      } else if (mapName === "deviceLabels") {
+        var deviceKey = boundedPlainText(String(mapKey), 512)
+        var deviceLabelValue = boundedPlainText(mapValue, 128)
+        if (deviceKey && deviceLabelValue) map[deviceKey] = deviceLabelValue
       }
     }
     clean[mapName] = map
@@ -400,6 +408,7 @@ function visibleSessions(sessions, policies) {
   policies = policies || {}
   return (Array.isArray(sessions) ? sessions : []).filter(function(session) {
     return !policyContains(policies.hiddenApps, session.application)
+      && !policyContains(policies.hiddenDevices, session.device)
   })
 }
 
@@ -411,6 +420,13 @@ function filterAttribution(sessions, showInferred) {
 function shouldNotifyForSession(session, policies) {
   policies = policies || {}
   return !policyContains(policies.notificationSuppressedApps, session.application)
+    && !policyContains(policies.notificationSuppressedDevices, session.device)
+}
+
+function deviceLabel(device, labels) {
+  var value = String(device || "Unknown device")
+  var map = labels && typeof labels === "object" && !Array.isArray(labels) ? labels : {}
+  return map[value] ? String(map[value]) : value
 }
 
 function aggregateHealth(states) {
@@ -479,6 +495,43 @@ function controlRequestStatus(request) {
   if (state.dependenciesReady !== true) return "unavailable"
   if (state.pending === true || state.processBusy === true) return "busy"
   return "ok"
+}
+
+function privacyPresetPlan(entries, desired) {
+  var rows = Array.isArray(entries) ? entries : []
+  var desiredMap = desired && typeof desired === "object" ? desired : null
+  var actions = [], skipped = []
+  for (var index = 0; index < rows.length; index++) {
+    var entry = rows[index] || {}
+    var kind = String(entry.kind || "")
+    var expected = desiredMap ? desiredMap[kind] === true : desired === true
+    var reason = ""
+    if (entry.controllable !== true) reason = "unsupported"
+    else if (entry.dependenciesReady !== true) reason = "unavailable"
+    else if (entry.pending === true) reason = "busy"
+    else if ((entry.enabled === true) === expected) reason = "already-set"
+    if (reason) skipped.push({kind: kind, reason: reason})
+    else actions.push({kind: kind, expectedEnabled: expected})
+  }
+  return {actions: actions, skipped: skipped}
+}
+
+function nextPrivacyPresetAction(queue, activeKind) {
+  var remaining = Array.isArray(queue) ? queue.slice() : []
+  if (String(activeKind || "")) return {action: "wait", current: null, queue: remaining}
+  if (!remaining.length) return {action: "complete", current: null, queue: remaining}
+  return {action: "apply", current: remaining.shift(), queue: remaining}
+}
+
+function privacyPresetOutcome(results) {
+  var rows = Array.isArray(results) ? results : []
+  var changed = false, failed = false
+  for (var index = 0; index < rows.length; index++) {
+    var result = rows[index] || {}
+    if (result.status === "succeeded") changed = true
+    if (result.reason && result.reason !== "already-set" && result.reason !== "unsupported") failed = true
+  }
+  return {state: failed ? "partial" : "succeeded", changed: changed}
 }
 
 function appendHistory(history, session, now, limits) {
@@ -741,6 +794,41 @@ function historyCountLabel(visibleCount, totalCount) {
   var total = Math.max(visible, Math.floor(Number(totalCount) || 0))
   if (visible !== total) return visible + " of " + total
   return visible + (visible === 1 ? " entry" : " entries")
+}
+
+function historySummary(history, now, windowMilliseconds) {
+  var rows = Array.isArray(history) ? history : []
+  var current = Number(now)
+  var windowMs = Math.max(0, Number(windowMilliseconds) || 0)
+  var byKind = {}, order = [], retainedCounts = {}
+  for (var countIndex = 0; countIndex < rows.length; countIndex++) {
+    var countEntry = rows[countIndex] || {}
+    var countKind = String(countEntry.kind || "")
+    var countApplication = boundedPlainText(String(countEntry.application || "Unknown application"), 256) || "Unknown application"
+    var countKey = countKind + "\u0000" + normalizedKey(countApplication)
+    retainedCounts[countKey] = (retainedCounts[countKey] || 0) + 1
+  }
+  for (var index = 0; index < rows.length; index++) {
+    var entry = rows[index] || {}
+    var endedAt = Number(entry.endedAt)
+    if (!isFinite(endedAt) || endedAt < current - windowMs || endedAt > current) continue
+    var kind = String(entry.kind || "")
+    if (!kind) continue
+    if (!byKind[kind]) {
+      byKind[kind] = {kind: kind, count: 0, durationMs: 0, applications: [], newApplications: [], lastEndedAt: 0}
+      order.push(kind)
+    }
+    var summary = byKind[kind]
+    summary.count++
+    summary.durationMs += Math.max(0, Number(entry.durationMs) || 0)
+    summary.lastEndedAt = Math.max(summary.lastEndedAt, endedAt)
+    var application = boundedPlainText(String(entry.application || "Unknown application"), 256) || "Unknown application"
+    if (summary.applications.indexOf(application) === -1 && summary.applications.length < 5) summary.applications.push(application)
+    if (retainedCounts[kind + "\u0000" + normalizedKey(application)] === 1
+        && summary.newApplications.indexOf(application) === -1 && summary.newApplications.length < 5)
+      summary.newApplications.push(application)
+  }
+  return order.map(function(kind) { return byKind[kind] }).sort(function(left, right) { return right.lastEndedAt - left.lastEndedAt })
 }
 
 function coalesceNotificationEvents(events) {

@@ -59,6 +59,13 @@ Item {
   property var notificationQueue: []
   property var suppressedObserverStarts: ({})
   property var controlTransactions: ({})
+  property string privacyPresetState: "idle"
+  property var privacyPresetQueue: []
+  property string privacyPresetActiveKind: ""
+  property var privacyPresetPrevious: ({})
+  property var privacyPresetResults: []
+  property bool privacyPresetUndoAvailable: false
+  property bool privacyPresetRestoring: false
   property var observerHealth: ({
     pipewire: {status: "healthy", source: "pipewire", code: "ok", reason: ""},
     "direct-device": {status: "healthy", source: "direct-device", code: "ok", reason: ""},
@@ -111,7 +118,9 @@ Item {
   readonly property var pipewireClassificationPolicy: Model.classificationPolicy(settings)
   readonly property var sessionPolicies: ({
     hiddenApps: Model.arraySetting(settings.hiddenApps, []),
-    notificationSuppressedApps: Model.arraySetting(settings.notificationSuppressedApps, [])
+    notificationSuppressedApps: Model.arraySetting(settings.notificationSuppressedApps, []),
+    hiddenDevices: Model.arraySetting(settings.hiddenDevices, []),
+    notificationSuppressedDevices: Model.arraySetting(settings.notificationSuppressedDevices, [])
   })
   readonly property bool audioMonitoringEnabled: enabledKindList.indexOf("microphone") !== -1
     || enabledKindList.indexOf("audio-output") !== -1
@@ -133,6 +142,7 @@ Item {
   onRecordingActiveChanged: scheduleSessionRefresh()
   onScreenshotActiveChanged: scheduleSessionRefresh()
   onDirectObservationsChanged: scheduleSessionRefresh()
+  onControlTransactionsChanged: Qt.callLater(function() { root.advancePrivacyPreset() })
 
   function configure(next) {
     var historyWasEnabled = settings.historyEnabled === true
@@ -668,6 +678,97 @@ Item {
     return false
   }
 
+  function privacyPresetEntries() {
+    return ["microphone", "audio-output", "camera", "screen-share", "location"].map(function(kind) {
+      return {
+        kind: kind,
+        enabled: controlEnabled(kind),
+        controllable: kindEnabled(kind) && serviceControllable(kind),
+        dependenciesReady: dependenciesReady(kind),
+        pending: controlPending(kind) || controlProcessBusy(kind)
+      }
+    })
+  }
+
+  function startPrivacyPreset(plan, restoring) {
+    if (privacyPresetState === "applying" || privacyPresetState === "restoring") return false
+    privacyPresetRestoring = restoring === true
+    privacyPresetState = privacyPresetRestoring ? "restoring" : "applying"
+    privacyPresetQueue = plan.actions.slice()
+    privacyPresetResults = plan.skipped.slice()
+    privacyPresetActiveKind = ""
+    runNextPrivacyPreset()
+    return true
+  }
+
+  function requestPrivacyLockdown() {
+    var entries = privacyPresetEntries()
+    var previous = {}
+    for (var index = 0; index < entries.length; index++) previous[entries[index].kind] = entries[index].enabled === true
+    var plan = Model.privacyPresetPlan(entries, false)
+    privacyPresetPrevious = previous
+    privacyPresetUndoAvailable = false
+    privacyPresetUndoTimer.stop()
+    return startPrivacyPreset(plan, false)
+  }
+
+  function restorePrivacyLockdown() {
+    if (!privacyPresetUndoAvailable) return false
+    var plan = Model.privacyPresetPlan(privacyPresetEntries(), privacyPresetPrevious)
+    privacyPresetUndoAvailable = false
+    privacyPresetUndoTimer.stop()
+    return startPrivacyPreset(plan, true)
+  }
+
+  function runNextPrivacyPreset() {
+    var next = Model.nextPrivacyPresetAction(privacyPresetQueue, privacyPresetActiveKind)
+    if (next.action === "wait") return
+    if (next.action === "complete") {
+      var outcome = Model.privacyPresetOutcome(privacyPresetResults)
+      privacyPresetState = outcome.state
+      if (!privacyPresetRestoring && outcome.changed) {
+        privacyPresetUndoAvailable = true
+        privacyPresetUndoTimer.restart()
+      } else privacyPresetFeedbackTimer.restart()
+      privacyPresetRestoring = false
+      return
+    }
+    var action = next.current
+    privacyPresetQueue = next.queue
+    if ((controlEnabled(action.kind) === true) === action.expectedEnabled) {
+      privacyPresetResults = privacyPresetResults.concat([{kind: action.kind, reason: "already-set"}])
+      Qt.callLater(function() { root.runNextPrivacyPreset() })
+      return
+    }
+    privacyPresetActiveKind = action.kind
+    if (!toggleControl(action.kind)) {
+      privacyPresetResults = privacyPresetResults.concat([{kind: action.kind, reason: "request-failed"}])
+      privacyPresetActiveKind = ""
+      Qt.callLater(function() { root.runNextPrivacyPreset() })
+    }
+  }
+
+  function advancePrivacyPreset() {
+    if (!privacyPresetActiveKind) return
+    var transaction = controlTransactions[privacyPresetActiveKind]
+    if (!transaction || (transaction.status !== "succeeded" && transaction.status !== "failed")) return
+    privacyPresetResults = privacyPresetResults.concat([{
+      kind: privacyPresetActiveKind,
+      status: transaction.status,
+      reason: transaction.status === "failed" ? String(transaction.code || "failed") : ""
+    }])
+    privacyPresetActiveKind = ""
+    runNextPrivacyPreset()
+  }
+
+  function privacyPresetMessage() {
+    if (privacyPresetState === "applying") return "Applying privacy lockdown…"
+    if (privacyPresetState === "restoring") return "Restoring previous privacy state…"
+    if (privacyPresetState === "partial") return "Privacy preset finished with unavailable or failed controls."
+    if (privacyPresetState === "succeeded") return privacyPresetUndoAvailable ? "Privacy lockdown verified. Undo is available for 30 seconds." : "Privacy preset verified."
+    return ""
+  }
+
   function helperPath() {
     return String(Qt.resolvedUrl("privacy-control")).replace(/^file:\/\//, "")
   }
@@ -847,6 +948,19 @@ Item {
     repeat: true
     running: root.kindEnabled("location")
     onTriggered: root.refreshLocation()
+  }
+  Timer {
+    id: privacyPresetUndoTimer
+    interval: 30000
+    onTriggered: {
+      root.privacyPresetUndoAvailable = false
+      if (root.privacyPresetState === "succeeded" || root.privacyPresetState === "partial") root.privacyPresetState = "idle"
+    }
+  }
+  Timer {
+    id: privacyPresetFeedbackTimer
+    interval: 8000
+    onTriggered: if (root.privacyPresetState !== "applying" && root.privacyPresetState !== "restoring") root.privacyPresetState = "idle"
   }
 
   Timer {
@@ -1083,6 +1197,8 @@ Item {
       var status = root.controlRequestStatus(kind)
       return status === "ok" ? (root.toggleControl(kind) ? "ok" : "busy") : status
     }
+    function lockdown(): string { return root.requestPrivacyLockdown() ? "ok" : "busy" }
+    function undoLockdown(): string { return root.restorePrivacyLockdown() ? "ok" : "unavailable" }
   }
 
   IpcHandler {

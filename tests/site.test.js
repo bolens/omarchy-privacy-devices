@@ -77,6 +77,8 @@ assert.doesNotMatch(html, /official Omarchy (?:Shell )?plugin|official Omarchy P
   "the independent community marketplace must not be described as official");
 assert.match(html, /detected application icon/i,
   "notification guidance must explain app-aware icons");
+for (const capability of ["Privacy lockdown", "Device policies", "today or seven-day counts, duration"])
+  assert.match(html, new RegExp(capability, "i"), `user guide must document ${capability}`);
 for (const image of ["preview", "bar", "notification", "general", "appearance", "alerts", "monitoring", "monitoring-private", "monitoring-health", "device", "history", "history-disabled"]) {
   const element = source.querySelector(`#screenshots img[src="${image}.png"]`);
   assert.ok(element, `Pages gallery must showcase ${image}.png`);

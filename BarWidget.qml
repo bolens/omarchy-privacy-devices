@@ -89,6 +89,7 @@ Panel {
   property bool showingGlobalSettings: false
   property bool showingHistory: false
   property string historyQuery: ""
+  property int historySummaryWindow: 24 * 60 * 60 * 1000
   property bool settingsMutationPending: false
   property string globalSettingsPage: "general"
   property string pendingSettingsSection: ""
@@ -105,6 +106,9 @@ Panel {
     : (settingsMutationController.status === "failed" ? "Settings update failed" + (settingsMutationController.detail ? ": " + settingsMutationController.detail : "") : ""))
   readonly property bool settingsPageLoaded: globalSettingsPageLoader.item !== null
   readonly property var filteredHistory: Model.filterHistory(privacyService ? privacyService.displayHistory : [], historyQuery)
+  readonly property var historySummaryRows: Model.historySummary(privacyService ? privacyService.displayHistory : [], durationNow, historySummaryWindow)
+  readonly property var editingSessions: editingKind && privacyService ? privacyService.attributedSessionsFor(editingKind) : []
+  readonly property var editingDevices: Model.unique(editingSessions.map(function(session) { return String(session.device || "") }).filter(Boolean))
   readonly property real openPanelIndicatorWidth: button.labelWidth
 
   function setting(key, fallback) {
@@ -228,6 +232,20 @@ Panel {
 
   function commaList(value) {
     return Model.unique(String(value || "").split(",").map(function(entry) { return entry.trim() }).filter(Boolean))
+  }
+
+  function deviceLabel(device) {
+    return Model.deviceLabel(device, setting("deviceLabels", {}))
+  }
+
+  function persistDeviceLabel(device, value) {
+    var labels = Object.assign({}, setting("deviceLabels", {}) || {})
+    var key = String(device || "")
+    var text = String(value || "").trim()
+    if (!key) return
+    if (text && text !== key) labels[key] = text
+    else delete labels[key]
+    persistSettings({deviceLabels: labels})
   }
 
   function item(kind) {
@@ -421,6 +439,9 @@ Panel {
       historyEnabled: false,
       hiddenApps: [],
       notificationSuppressedApps: [],
+      hiddenDevices: [],
+      notificationSuppressedDevices: [],
+      deviceLabels: {},
       directDeviceMonitoring: false,
       showInferredAttribution: true,
       directDevicePollSeconds: 5,
@@ -874,10 +895,35 @@ Panel {
             onClicked: root.showHistory()
           }
           Button {
+            text: confirmationState.pending === "lockdown" ? "Confirm lockdown" : "Lock down"
+            enabled: privacyService && privacyService.privacyPresetState !== "applying" && privacyService.privacyPresetState !== "restoring"
+            tooltipText: "Mute and block every available service-owned privacy control"
+            onClicked: {
+              if (!confirmationState.request("lockdown")) return
+              privacyService.requestPrivacyLockdown()
+              confirmationState.clear()
+            }
+          }
+          Button {
             iconText: "󰒓"
             tooltipText: "Global settings"
             horizontalPadding: Style.spacing.controlGap
             onClicked: root.showGlobalSettings("general")
+          }
+        }
+
+        RowLayout {
+          visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory && privacyService && privacyService.privacyPresetMessage() !== ""
+          Layout.fillWidth: true
+          PrivacyMessageSurface {
+            Layout.fillWidth: true
+            message: privacyService ? privacyService.privacyPresetMessage() : ""
+            kind: privacyService && privacyService.privacyPresetState === "partial" ? "error" : "info"
+          }
+          Button {
+            visible: privacyService && privacyService.privacyPresetUndoAvailable
+            text: "Undo lockdown"
+            onClicked: privacyService.restorePrivacyLockdown()
           }
         }
 
@@ -895,6 +941,32 @@ Panel {
               visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.displayHistory.length > 0
               text: confirmationState.pending === "history" ? "Confirm clear" : "Clear history"
               onClicked: root.requestHistoryClear()
+            }
+          }
+
+          SettingsSurface {
+            visible: root.setting("historyEnabled", false) === true && root.historySummaryRows.length > 0
+            Layout.fillWidth: true
+            PanelSectionHeader { Layout.fillWidth: true; text: "Privacy summary" }
+            RowLayout {
+              Layout.fillWidth: true
+              Button { text: "Today"; enabled: root.historySummaryWindow !== 24 * 60 * 60 * 1000; onClicked: root.historySummaryWindow = 24 * 60 * 60 * 1000 }
+              Button { text: "7 days"; enabled: root.historySummaryWindow !== 7 * 24 * 60 * 60 * 1000; onClicked: root.historySummaryWindow = 7 * 24 * 60 * 60 * 1000 }
+              Item { Layout.fillWidth: true }
+            }
+            Repeater {
+              model: root.historySummaryRows
+              delegate: RowLayout {
+                required property var modelData
+                Layout.fillWidth: true
+                Text { text: root.iconFor(modelData.kind); textFormat: Text.PlainText; color: root.itemColor(root.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.icon * root.popupItemScale }
+                ColumnLayout {
+                  Layout.fillWidth: true
+                  Text { Layout.fillWidth: true; text: Model.label(modelData.kind) + " · " + modelData.count + (modelData.count === 1 ? " session" : " sessions") + " · " + Model.formatDuration(modelData.durationMs); textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * root.popupItemScale; elide: Text.ElideRight }
+                  Text { Layout.fillWidth: true; text: modelData.applications.join(", "); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
+                  Text { visible: modelData.newApplications.length > 0; Layout.fillWidth: true; text: "New in retained history: " + modelData.newApplications.join(", "); textFormat: Text.PlainText; color: Color.accent; font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
+                }
+              }
             }
           }
 
@@ -982,7 +1054,7 @@ Panel {
                       Text { text: Model.historyPeriodLabel(modelData.endedAt, root.durationNow); textFormat: Text.PlainText; color: root.itemColor(root.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; font.weight: Font.DemiBold }
                     }
                     Text { Layout.fillWidth: true; text: Model.label(modelData.kind) + " · " + Model.formatDuration(modelData.durationMs) + " · " + Model.historyAgeLabel(modelData.endedAt, root.durationNow) + (modelData.confidence && String(modelData.confidence).toLowerCase() !== "confirmed" ? " · Inferred" : ""); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, root.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
-                    Text { visible: root.popupDensity !== "compact" && Boolean(modelData.device); Layout.fillWidth: true; text: String(modelData.device || ""); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, root.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
+                    Text { visible: root.popupDensity !== "compact" && Boolean(modelData.device); Layout.fillWidth: true; text: root.deviceLabel(modelData.device); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, root.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
                   }
                 }
               }
@@ -1182,6 +1254,27 @@ Panel {
               options: root.deviceVisibilityOptions
               value: root.itemOverrideMode("itemIdleVisibility", root.editingKind)
               onChanged: function(value) { root.persistItemIdleVisibility(root.editingKind, value) }
+            }
+          }
+
+          SettingsSurface {
+            visible: root.editingDevices.length > 0
+            Layout.fillWidth: true
+            accent: root.activeThemeColor
+            PanelSectionHeader { Layout.fillWidth: true; text: "Detected hardware" }
+            Repeater {
+              model: root.editingDevices
+              delegate: ColumnLayout {
+                required property string modelData
+                Layout.fillWidth: true
+                spacing: Style.spacing.xs
+                Text { Layout.fillWidth: true; text: modelData; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; elide: Text.ElideMiddle }
+                RowLayout {
+                  Layout.fillWidth: true
+                  TextField { id: deviceLabelEditor; Layout.fillWidth: true; text: root.deviceLabel(modelData); placeholderText: "Friendly device name"; maximumLength: 128; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistDeviceLabel(modelData, text) }
+                  Button { text: "Save name"; enabled: deviceLabelEditor.text.trim() !== root.deviceLabel(modelData); onClicked: root.persistDeviceLabel(modelData, deviceLabelEditor.text) }
+                }
+              }
             }
           }
 
@@ -1457,6 +1550,19 @@ Panel {
             wrapMode: Text.WordWrap
           }
           Button { text: "Restore all"; onClicked: root.clearPolicy("hiddenApps") }
+        }
+
+        ColumnLayout {
+          visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory && (Model.arraySetting(root.setting("hiddenDevices", []), []).length > 0 || Model.arraySetting(root.setting("notificationSuppressedDevices", []), []).length > 0)
+          Layout.fillWidth: true
+          spacing: Style.spacing.sm
+          PanelSectionHeader { Layout.fillWidth: true; text: "Device policies" }
+          Text { Layout.fillWidth: true; text: "Hidden: " + (Model.arraySetting(root.setting("hiddenDevices", []), []).join(", ") || "None"); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+          Text { Layout.fillWidth: true; text: "Alerts muted: " + (Model.arraySetting(root.setting("notificationSuppressedDevices", []), []).join(", ") || "None"); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+          RowLayout {
+            Button { text: "Restore hidden"; onClicked: root.clearPolicy("hiddenDevices") }
+            Button { text: "Restore alerts"; onClicked: root.clearPolicy("notificationSuppressedDevices") }
+          }
         }
 
         Text {

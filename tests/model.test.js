@@ -78,6 +78,14 @@ if (context.settingsPage("monitoring") !== "monitoring" || context.settingsPage(
 if (context.settingsPage("appearance") !== "appearance") throw new Error("appearance settings page allowlist")
 if (context.sanitizeSettings({recordingProcessName: "x".repeat(300)}).recordingProcessName.length !== 256) throw new Error("process-name bound")
 if (context.sanitizeSettings({recordingProcessName: "  recorder\nname  "}).recordingProcessName !== "recordername") throw new Error("process-name plain-text sanitation")
+const deviceSettings = context.sanitizeSettings({
+  hiddenDevices: [" Virtual Source ", "virtual source"],
+  notificationSuppressedDevices: ["Conference Mic"],
+  deviceLabels: {"alsa_input.usb": " Desk microphone ", "__proto__": "unsafe", "": "empty"}
+})
+assert.deepEqual(Array.from(deviceSettings.hiddenDevices), ["Virtual Source"])
+assert.deepEqual(Array.from(deviceSettings.notificationSuppressedDevices), ["Conference Mic"])
+assert.deepEqual(JSON.parse(JSON.stringify(deviceSettings.deviceLabels)), {"alsa_input.usb": "Desk microphone"})
 
 const classificationSettings = {
   excludedApps: ["Ignored"],

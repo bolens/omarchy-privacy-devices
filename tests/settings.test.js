@@ -118,6 +118,16 @@ assert.match(monitoringSettings, /text: "Private data"[\s\S]*?text: "Export sett
 assert.equal((globalSettings.match(/label: "Keep recent activity"/g) || []).length, 1, "history controls must not be duplicated across settings pages")
 assert.equal((globalSettings.match(/text: "Export settings"/g) || []).length, 1, "settings transfer must have one clear home")
 assert.match(activityCard, /HoverHandler[\s\S]*?selectedKind/, "hover should track keyboard selection without polling")
+assert.match(activityCard, /addPolicyValue\("hiddenDevices"[\s\S]*?addPolicyValue\("notificationSuppressedDevices"/,
+  "active device rows must expose visibility and alert policy actions")
+assert.match(bar, /function persistDeviceLabel\(device, value\)[\s\S]*?deviceLabels/,
+  "friendly device names must persist through the sanitized settings boundary")
+assert.match(bar, /Model\.historySummary\([\s\S]*?historySummaryWindow/,
+  "history insights must project existing retained rows without separate storage")
+assert.match(bar, /text: "Today"[\s\S]*?text: "7 days"[\s\S]*?historySummaryRows/,
+  "history must offer bounded today and seven-day summaries")
+assert.match(bar, /Confirm lockdown[\s\S]*?requestPrivacyLockdown\(\)[\s\S]*?Undo lockdown[\s\S]*?restorePrivacyLockdown\(\)/,
+  "the activity surface must expose confirmed lockdown and bounded undo")
 assert.match(activityCard, /text: !entry\.dependenciesReady \? "INSTALL" : \(entry\.kind === "screenshot" \? "CAPTURE" : controller\.itemStateLabel\(entry\)\)/,
   "every popup row must expose an explicit install, capture, or tested semantic state")
 assert.match(globalSettings, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")
