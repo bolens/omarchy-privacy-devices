@@ -49,6 +49,8 @@ maintainer guides that define release and validation procedures.
 
 ### Fixed
 
+- Prevent full-row clicks from activating hidden controls for screenshots or
+  devices with unavailable dependencies.
 - Preserve zero in bounded integer settings instead of replacing it with the
   field fallback.
 - Preserve rapid per-device appearance edits to different fields while settings

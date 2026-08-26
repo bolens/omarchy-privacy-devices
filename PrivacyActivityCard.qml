@@ -39,6 +39,13 @@ Rectangle {
     return true
   }
 
+  function activate(button) {
+    controller.selectedKind = entry.kind
+    if (button === Qt.MiddleButton) { controller.editingKind = entry.kind; return }
+    if (controller.showControls && entry.controllable && entry.kind !== "screenshot"
+        && entry.dependenciesReady && !entry.pending) controller.toggleEntry(entry)
+  }
+
   function sessionSummary(session) {
     var parts = []
     if (session.device) parts.push(controller.deviceLabel(session.device))
@@ -63,13 +70,12 @@ Rectangle {
   }
 
   MouseArea {
+    objectName: "activityCardClickArea"
     anchors.fill: parent
     acceptedButtons: Qt.LeftButton | Qt.MiddleButton
     cursorShape: Qt.PointingHandCursor
     onClicked: function(mouse) {
-      controller.selectedKind = entry.kind
-      if (mouse.button === Qt.MiddleButton) { controller.editingKind = entry.kind; return }
-      if (controller.showControls && entry.controllable && !entry.pending) controller.toggleEntry(entry)
+      card.activate(mouse.button)
     }
   }
 

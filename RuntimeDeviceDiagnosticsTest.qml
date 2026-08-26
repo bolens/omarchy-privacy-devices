@@ -14,16 +14,17 @@ ShellRoot {
     id: controllerMock
     property color activeThemeColor: Color.accent
     property var privacyService: serviceMock
+    property var diagnosticData: ({
+      healthStatus:"unavailable",dependenciesReady:false,
+      dependencyDescription:"Install GeoClue support",
+      rows:[
+        {label:"Status",value:"Monitoring unavailable",urgent:true},
+        {label:"Backend",value:"GeoClue",urgent:false}
+      ]
+    })
     function deviceDiagnostic(kind) {
       if (kind !== "location") throw new Error("diagnostics requested for wrong kind")
-      return {
-        healthStatus:"unavailable",dependenciesReady:false,
-        dependencyDescription:"Install GeoClue support",
-        rows:[
-          {label:"Status",value:"Monitoring unavailable",urgent:true},
-          {label:"Backend",value:"GeoClue",urgent:false}
-        ]
-      }
+      return diagnosticData
     }
   }
 
@@ -51,7 +52,17 @@ ShellRoot {
     install.clicked()
     if (root.installs.length !== 1 || root.installs[0] !== "location")
       throw new Error("dependency install dispatched the wrong device kind")
-    console.log("PRIVACY_QML_DEVICE_DIAGNOSTICS_OK")
-    Qt.quit()
+    controllerMock.diagnosticData = {
+      healthStatus:"healthy",dependenciesReady:true,dependencyDescription:"",
+      rows:[{label:"Status",value:"Monitoring active",urgent:false}]
+    }
+    Qt.callLater(function() {
+      var recovered = descendant(diagnostics, "deviceDiagnosticValue-Status")
+      if (!recovered || recovered.text !== "Monitoring active" || install.visible
+          || descendant(diagnostics, "deviceDiagnosticValue-Backend"))
+        throw new Error("device diagnostics did not react to dependency recovery")
+      console.log("PRIVACY_QML_DEVICE_DIAGNOSTICS_OK")
+      Qt.quit()
+    })
   })
 }
