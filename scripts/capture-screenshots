@@ -350,7 +350,7 @@ capture_checkpoint history-disabled
 capture_panel history-disabled history "" 240
 set_capture_preview true
 for page in general appearance alerts monitoring; do capture_panel "$page" settings "$page" 660; done
-capture_panel monitoring-private settings-section monitoring 330 private-data 115
+capture_panel monitoring-private settings-section monitoring 395 private-data 70
 capture_panel monitoring-health settings-section monitoring 290 observer-health 390
 capture_panel activity activity "" 500
 capture_panel device device microphone 660
@@ -407,7 +407,7 @@ validate_capture "$capture_dir/device.png" 532 660
 validate_capture "$capture_dir/bar.png" "$widget_width" 50
 validate_capture "$capture_dir/notification.png" 420 160
 for page in general appearance alerts monitoring; do validate_capture "$capture_dir/$page.png" 532 660; done
-validate_capture "$capture_dir/monitoring-private.png" 532 330
+validate_capture "$capture_dir/monitoring-private.png" 532 395
 validate_capture "$capture_dir/monitoring-health.png" 532 290
 
 declare -A capture_digests=()

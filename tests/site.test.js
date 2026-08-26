@@ -25,7 +25,7 @@ assert.deepEqual(pngDimensions("docs/preview.png"), [panelCaptureWidth, 500]);
 assert.deepEqual(pngDimensions("docs/appearance.png"), [panelCaptureWidth, 660]);
 for (const page of ["general", "alerts", "monitoring", "device", "history"])
   assert.deepEqual(pngDimensions(`docs/${page}.png`), [panelCaptureWidth, 660]);
-assert.deepEqual(pngDimensions("docs/monitoring-private.png"), [panelCaptureWidth, 330]);
+assert.deepEqual(pngDimensions("docs/monitoring-private.png"), [panelCaptureWidth, 395]);
 assert.deepEqual(pngDimensions("docs/monitoring-health.png"), [panelCaptureWidth, 290]);
 assert.deepEqual(pngDimensions("docs/history-disabled.png"), [panelCaptureWidth, 240],
   "the disabled history state should be cropped to its compact content");

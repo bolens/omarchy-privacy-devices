@@ -135,7 +135,7 @@ assert.match(screenshotWorkflow, /set_capture_preview\(\)[\s\S]*showBarActiveMar
   "published captures should consistently showcase the default bar status markers")
 assert.match(screenshotWorkflow, /capture_panel history-disabled history "" 240/,
   "the compact disabled-history view should not publish a mostly empty tall crop")
-assert.match(screenshotWorkflow, /capture_panel monitoring-private settings-section monitoring 330 private-data 115/,
+assert.match(screenshotWorkflow, /capture_panel monitoring-private settings-section monitoring 395 private-data 70/,
   "capture must showcase private history and settings transfer at its deep link")
 assert.match(screenshotWorkflow, /capture_panel monitoring-health settings-section monitoring 290 observer-health 390/,
   "capture must showcase observer health at its deep link")
