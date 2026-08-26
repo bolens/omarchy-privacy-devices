@@ -23,7 +23,7 @@ ShellRoot {
     property color urgent: "#ff5555"
     property string fontFamily: "sans-serif"
     property bool foregroundAnimationEnabled: false
-    property string activePopout: ""
+    property var activePopout: ""
     property bool vertical: false
     property int barSize: 40
     property string position: "top"

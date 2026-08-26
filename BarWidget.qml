@@ -114,6 +114,8 @@ Panel {
   readonly property bool settingsPageLoaded: globalSettingsPageLoader.item !== null
   readonly property var lockdownActionControl: lockdownButton
   readonly property string confirmationPending: confirmationState.pending
+  readonly property var historySearchControl: historySearch
+  readonly property var historyCountLabel: historyCountText
   readonly property var filteredHistory: Model.filterHistory(privacyService ? privacyService.displayHistory : [], historyQuery)
   readonly property var historySummaryRows: Model.historySummary(privacyService ? privacyService.displayHistory : [], durationNow, historySummaryWindow)
   readonly property bool historyPresentationEnabled: privacyService && privacyService.capturePreviewActive && privacyService.requestedView === "history"

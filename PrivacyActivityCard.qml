@@ -21,6 +21,24 @@ Rectangle {
     || hasPolicyActions
     || (controller.showControls && entry.controllable && entry.kind !== "screenshot" && entry.dependenciesReady)
 
+  function hideApplication() {
+    if (!entry.active || entry.apps.length === 0) return false
+    controller.addPolicyValue("hiddenApps", entry.apps[0])
+    return true
+  }
+
+  function hideDevice() {
+    if (entry.sessions.length === 0 || !entry.sessions[0].device) return false
+    controller.addPolicyValue("hiddenDevices", entry.sessions[0].device)
+    return true
+  }
+
+  function muteDeviceAlerts() {
+    if (entry.sessions.length === 0 || !entry.sessions[0].device) return false
+    controller.addPolicyValue("notificationSuppressedDevices", entry.sessions[0].device)
+    return true
+  }
+
   function sessionSummary(session) {
     var parts = []
     if (session.device) parts.push(controller.deviceLabel(session.device))
@@ -119,9 +137,9 @@ Rectangle {
       }
       Menu {
         id: policyMenu
-        MenuItem { visible: entry.active && entry.apps.length > 0; text: "Hide application"; onTriggered: controller.addPolicyValue("hiddenApps", entry.apps[0]) }
-        MenuItem { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Hide device"; onTriggered: controller.addPolicyValue("hiddenDevices", entry.sessions[0].device) }
-        MenuItem { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Mute device alerts"; onTriggered: controller.addPolicyValue("notificationSuppressedDevices", entry.sessions[0].device) }
+        MenuItem { visible: entry.active && entry.apps.length > 0; text: "Hide application"; onTriggered: card.hideApplication() }
+        MenuItem { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Hide device"; onTriggered: card.hideDevice() }
+        MenuItem { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Mute device alerts"; onTriggered: card.muteDeviceAlerts() }
       }
       Item { visible: card.tiled; Layout.fillWidth: card.tiled }
       Rectangle {

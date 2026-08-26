@@ -52,8 +52,9 @@ rendered bar and activity-card states, per-endpoint audio controls, validated
 device/settings deep links, two-step lockdown and undo presentation, user
 interaction, device-detail navigation, coalesced settings writes and assembled
 rollback, degraded device diagnostics, redacted monitoring actions, subprocess
-failure/recovery, confirmation, and private settings-transfer behavior in the
-real QML engine.
+failure/recovery, guarded activity-policy actions, private-data transfer
+controls, in-memory history search, confirmation, and private settings-transfer
+behavior in the real QML engine.
 
 ## Repository and site checks
 
