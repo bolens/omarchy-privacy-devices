@@ -22,10 +22,10 @@ GridLayout {
       rowSpacing: Style.spacing.md
       Dropdown { Layout.fillWidth: true; label: "Bar presentation"; options: ["icons", "active-count", "active-only"]; value: String(page.controller.setting("displayMode", "icons")); onChanged: function(value) { page.controller.persistSettings({displayMode: value}) } }
       NumberField { Layout.fillWidth: true; label: "Icon scale (%)"; from: 75; to: 150; stepSize: 5; value: Math.round(page.controller.barIconScale * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({barIconScale: Number(value) / 100}) } }
+      IntegerSetting { controller: page.controller; settingKey: "barItemSpacing"; label: "Space between bar items"; minimum: 0; maximum: 12; fallback: 0 }
+      IntegerSetting { controller: page.controller; settingKey: "barItemPadding"; label: "Bar item padding"; minimum: 2; maximum: 12; fallback: 5 }
+      NumberField { Layout.fillWidth: true; label: "Idle opacity (%)"; from: 10; to: 100; stepSize: 5; value: Math.round(Number(page.controller.setting("idleOpacity", 0.45)) * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({idleOpacity: Number(value) / 100}) } }
     }
-    IntegerSetting { controller: page.controller; settingKey: "barItemSpacing"; label: "Space between bar items"; minimum: 0; maximum: 12; fallback: 0 }
-    IntegerSetting { controller: page.controller; settingKey: "barItemPadding"; label: "Bar item padding"; minimum: 2; maximum: 12; fallback: 5 }
-    NumberField { Layout.fillWidth: true; label: "Default idle opacity (%)"; from: 10; to: 100; stepSize: 5; value: Math.round(Number(page.controller.setting("idleOpacity", 0.45)) * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({idleOpacity: Number(value) / 100}) } }
   }
   SettingsSurface {
     id: themeColorsSettings

@@ -12,14 +12,17 @@ Item {
   property var settings: ({})
   property bool capturePreviewActive: false
   property var capturePreviewHistory: []
+  property var capturePreviewSessions: []
   property var capturePreviewSettings: ({})
   property string capturePreviewOwner: ""
   property double capturePreviewExpiresAt: 0
   readonly property var displayHistory: capturePreviewActive ? capturePreviewHistory : recentHistory
+  readonly property var displaySessions: capturePreviewActive ? capturePreviewSessions : activeSessions
 
   function clearCapturePreview() {
     capturePreviewActive = false
     capturePreviewHistory = []
+    capturePreviewSessions = []
     capturePreviewSettings = ({})
     capturePreviewOwner = ""
     capturePreviewExpiresAt = 0
@@ -301,7 +304,7 @@ Item {
   }
 
   function sessionsFor(kind) {
-    return activeSessions.filter(function(session) { return !kind || session.kind === kind })
+    return displaySessions.filter(function(session) { return !kind || session.kind === kind })
   }
 
   function visibleSessionsFor(kind) {
@@ -1355,9 +1358,11 @@ Item {
         var owner = String(payload.owner || "")
         var previewSettings = payload.settings
         var previewHistory = payload.history
-        if (!/^[A-Za-z0-9_-]{24,128}$/.test(owner) || !previewSettings || typeof previewSettings !== "object" || Array.isArray(previewSettings) || !Array.isArray(previewHistory)) return "invalid"
+        var previewSessions = payload.sessions === undefined ? [] : payload.sessions
+        if (!/^[A-Za-z0-9_-]{24,128}$/.test(owner) || !previewSettings || typeof previewSettings !== "object" || Array.isArray(previewSettings) || !Array.isArray(previewHistory) || !Array.isArray(previewSessions)) return "invalid"
         if (root.capturePreviewActive && root.capturePreviewOwner !== owner) return "busy"
         root.capturePreviewHistory = previewHistory
+        root.capturePreviewSessions = Model.sanitizeCaptureSessions(previewSessions, Date.now())
         root.capturePreviewSettings = previewSettings
         root.capturePreviewOwner = owner
         root.capturePreviewExpiresAt = Date.now() + 180000

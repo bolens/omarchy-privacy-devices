@@ -39,6 +39,15 @@ assert.deepEqual(JSON.parse(JSON.stringify(model.sanitizeAudioEndpoints([
   {id: "alsa_input.safe", label: "DeskMic", muted: true}
 ])
 
+assert.deepEqual(JSON.parse(JSON.stringify(model.sanitizeCaptureSessions([
+  {kind: "microphone", application: " Browser\n", device: " USB Mic ", source: "pipewire", confidence: "confirmed", startedAt: 900},
+  {kind: "unknown", application: "Ignored", startedAt: 800},
+  {kind: "camera", application: "Camera", startedAt: 1200}
+], 1000))), [
+  {kind: "microphone", application: "Browser", device: "USB Mic", source: "pipewire", confidence: "confirmed", detail: "", icon: "", id: "[\"microphone\",\"browser\",\"usb mic\",\"pipewire\"]", startedAt: 900},
+  {kind: "camera", application: "Camera", device: "Unknown device", source: "unknown", confidence: "inferred", detail: "", icon: "", id: "[\"camera\",\"camera\",\"unknown device\",\"unknown\"]", startedAt: 1000}
+])
+
 assert.deepEqual(JSON.parse(JSON.stringify(model.lockdownActionPresentation(false, false))), {
   icon: "󰌾", tooltip: "Lock down privacy controls", action: "lockdown"
 })

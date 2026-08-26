@@ -34,11 +34,11 @@ GridLayout {
     PanelSectionHeader { Layout.fillWidth: true; text: "Fallback polling" }
     GridLayout {
       Layout.fillWidth: true
-      columns: fallbackPollingSettings.width >= Style.space(600) ? 2 : 1
+      columns: fallbackPollingSettings.width >= Style.space(360) ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
-      IntegerSetting { controller: page.controller; settingKey: "locationPollSeconds"; label: "Location refresh, seconds"; minimum: 5; maximum: 300; fallback: 15; stepSize: 5 }
-      IntegerSetting { controller: page.controller; settingKey: "recordingPollSeconds"; label: "Recorder refresh, seconds"; minimum: 1; maximum: 60; fallback: 2 }
+      IntegerSetting { controller: page.controller; settingKey: "locationPollSeconds"; label: "Location interval, s"; minimum: 5; maximum: 300; fallback: 15; stepSize: 5 }
+      IntegerSetting { controller: page.controller; settingKey: "recordingPollSeconds"; label: "Recorder interval, s"; minimum: 1; maximum: 60; fallback: 2 }
     }
     Text { Layout.fillWidth: true; text: "PipeWire activity remains event-backed. These intervals affect only enhanced and fallback observers."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
   }

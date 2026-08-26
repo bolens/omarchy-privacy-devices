@@ -46,6 +46,7 @@ assert.deepEqual(
   Object.assign({}, defaults, {_privacySettingsVersion: 1}),
   "every manifest default must survive the shared settings sanitizer"
 )
+assert.equal(defaults.showIdle, false, "idle activity icons must be hidden for new installations")
 
 for (const key of globalKeys) {
   assert.ok(Object.hasOwn(defaults, key), `global default missing: ${key}`)
@@ -62,7 +63,7 @@ for (const key of globalKeys) {
 
 assert.match(settingsNavigation, /value:"appearance"/, "appearance settings need a dedicated page")
 assert.match(settingsNavigation, /objectName: "settingsPageButton-" \+ modelData\.value/, "settings tabs must be addressable by runtime interaction tests")
-assert.match(bar, /text: "Reset global settings"[\s\S]*?onClicked: root\.requestGlobalSettingsReset\(\)/,
+assert.match(bar, /iconText: "󰑐"[\s\S]*?text: "Reset global settings"[\s\S]*?bordered: true[\s\S]*?onClicked: root\.requestGlobalSettingsReset\(\)/,
   "the global reset action must use the guarded request path")
 assert.match(bar, /function requestGlobalSettingsReset\(\)[\s\S]*?request\("checkpoint"/,
   "the global reset request must preserve an undo point before reset policy")
@@ -80,7 +81,8 @@ assert.match(bar, /settingsRequestSerial <= handledSettingsRequestSerial[\s\S]*?
 assert.match(bar, /onSettingsRequestSerialChanged\(\) \{ root\.handleSettingsRequest\(\) \}/,
   "settings IPC page changes must apply while the popup remains open")
 assert.match(surface, /default property alias content:/, "settings groups need a reusable visual surface")
-assert.match(integer, /IntValidator[\s\S]*?bottom:[\s\S]*?top:/, "integer settings must enforce their declared bounds")
+assert.match(integer, /NumberField[\s\S]*?from: field\.minimum[\s\S]*?to: field\.maximum[\s\S]*?stepSize: field\.stepSize[\s\S]*?onModified:/,
+  "integer settings must use the native bounded numeric control")
 assert.match(bar, /Loader\s*\{\s*id:\s*globalSettingsPageLoader[\s\S]*?sourceComponent:[\s\S]*?globalSettingsPage/, "only the active settings page should be instantiated")
 assert.match(bar, /function showGlobalSettings\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)[\s\S]*?pendingSettingsSection = target\.section[\s\S]*?Qt\.callLater\(root\.scrollToSettingsSection\)/,
   "settings navigation must preserve a validated section deep link until layout completes")
@@ -249,6 +251,8 @@ assert.match(bar, /Timer \{[\s\S]*?running: root\.opened[\s\S]*?onTriggered: if 
   "the duration timer must pause rendered time updates while the user scrolls")
 assert.match(monitoringSettings, /columns: observerHealthSettings\.width >= Style\.space\(360\) \? 2 : 1/,
   "self-test actions must reflow instead of crowding narrow popups")
+assert.match(monitoringSettings, /columns: fallbackPollingSettings\.width >= Style\.space\(360\) \? 2 : 1/,
+  "short fallback intervals must share a row at standard settings width")
 assert.match(monitoringSettings, /PrivacyMessageSurface[\s\S]*?selfTestResult\.text/,
   "self-test results must use the shared status surface")
 for (const action of ["Clear stored history", "Export settings", "Import settings", "Run self-test", "Send test alert", "Copy diagnostics"])

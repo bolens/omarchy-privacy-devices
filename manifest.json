@@ -21,7 +21,7 @@
     "defaults": {
       "enabledKinds": ["microphone", "audio-output", "camera", "screen-share", "screenshot", "screen-recording", "location"],
       "order": ["screen-recording", "screenshot", "screen-share", "camera", "microphone", "audio-output", "location"],
-      "showIdle": true,
+      "showIdle": false,
       "displayMode": "icons",
       "barIconScale": 1,
       "barItemSpacing": 0,
@@ -119,9 +119,9 @@
       {
         "key": "showIdle",
         "type": "boolean",
-        "label": "Show idle devices",
-        "description": "Keep enabled device icons visible when they are not in use.",
-        "defaultValue": true
+        "label": "Show idle activity icons",
+        "description": "Keep enabled activity icons visible when they are not in use.",
+        "defaultValue": false
       },
       {
         "key": "displayMode",

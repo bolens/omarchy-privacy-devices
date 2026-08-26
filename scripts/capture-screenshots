@@ -259,8 +259,8 @@ close_capture_notification() {
 }
 set_capture_preview() {
   local enabled=$1 payload reply settings
-  settings=$(jq -cn --argjson enabled "$enabled" '{displayMode:"icons",showIdle:true,showBarActiveMarker:true,showBarDisabledMarker:true,statusMarkerMode:"symbols",historyEnabled:$enabled}')
-  payload=$(jq -cn --arg owner "$capture_owner" --argjson settings "$settings" --argjson history "$history_samples" '{owner:$owner,settings:$settings,history:$history}' | base64 -w 0)
+  settings=$(jq -cn --argjson enabled "$enabled" '{displayMode:"icons",showIdle:false,showBarActiveMarker:true,showBarDisabledMarker:true,statusMarkerMode:"symbols",historyEnabled:$enabled}')
+  payload=$(jq -cn --arg owner "$capture_owner" --argjson settings "$settings" --argjson history "$history_samples" --argjson sessions "$activity_samples" '{owner:$owner,settings:$settings,history:$history,sessions:$sessions}' | base64 -w 0)
   reply=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 beginCapture "$payload" 2>/dev/null || true)
   [[ $reply == ok ]] || { printf 'Could not activate in-memory capture preview.\n' >&2; return 1; }
   preview_active=true
@@ -339,6 +339,11 @@ history_samples=$(jq -cn --argjson now "$capture_now" '[
   {id:"capture-obs-camera",kind:"camera",application:"OBS Studio",device:"Integrated camera",source:"pipewire",confidence:"confirmed",startedAt:($now-3900000),endedAt:($now-300000),durationMs:3600000},
   {id:"capture-chromium-screen",kind:"screen-share",application:"Chromium",device:"Desktop portal",source:"pipewire",confidence:"confirmed",startedAt:($now-8700000),endedAt:($now-7800000),durationMs:900000}
 ]')
+activity_samples=$(jq -cn --argjson now "$capture_now" '[
+  {kind:"microphone",application:"Firefox",device:"USB microphone",source:"pipewire",confidence:"confirmed",startedAt:($now-26000)},
+  {kind:"audio-output",application:"Music Player",device:"Desktop audio",source:"pipewire",confidence:"confirmed",startedAt:($now-26000)},
+  {kind:"screenshot",application:"Screenshot tool",device:"Desktop",source:"process-probe",confidence:"inferred",startedAt:($now-3000)}
+]')
 set_capture_preview true
 capture_checkpoint preview-enabled
 focus_capture_workspace
@@ -352,8 +357,8 @@ set_capture_preview true
 for page in general appearance alerts monitoring; do capture_panel "$page" settings "$page" 660; done
 capture_panel monitoring-private settings-section monitoring 395 private-data 70
 capture_panel monitoring-health settings-section monitoring 290 observer-health 390
-capture_panel activity activity "" 500
 capture_panel device device microphone 660
+capture_panel activity activity "" 500
 
 qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null
 sleep "$settle_seconds"

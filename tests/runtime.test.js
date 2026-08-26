@@ -122,6 +122,8 @@ for (const [harness, marker] of [
 ])
   assert.match(qmlRuntime, new RegExp(`run_harness ${harness} ${marker}`), `${harness} must run in the real QML suite`)
 assert.match(screenshotWorkflow, /capture_panel device device/, "screenshot workflow must capture an individual device settings page")
+assert.ok(screenshotWorkflow.indexOf("capture_panel device device microphone") < screenshotWorkflow.indexOf("capture_panel activity activity"),
+  "device capture must not redundantly reopen the activity view immediately after its standalone capture")
 assert.match(screenshotWorkflow, /privacy-devices openActivity "\$\{page:-microphone\}"[\s\S]*?capture_panel device device microphone/,
   "device documentation must show the endpoint-aware microphone settings page")
 assert.match(screenshotWorkflow, /docs\/device\.png/, "screenshot workflow must publish the device settings capture")
@@ -133,6 +135,14 @@ assert.match(screenshotWorkflow, /capture_panel history history[\s\S]*set_captur
   "screenshot workflow must switch history presentation entirely in memory")
 assert.match(screenshotWorkflow, /set_capture_preview\(\)[\s\S]*showBarActiveMarker:true[\s\S]*showBarDisabledMarker:true[\s\S]*statusMarkerMode:"symbols"/,
   "published captures should consistently showcase the default bar status markers")
+assert.match(screenshotWorkflow, /set_capture_preview\(\)[\s\S]*showIdle:false/,
+  "published captures must demonstrate the hidden-idle-icon default")
+assert.match(screenshotWorkflow, /activity_samples=[\s\S]*?microphone[\s\S]*?audio-output[\s\S]*?screenshot/,
+  "published bar and activity views must use deterministic preview sessions")
+assert.match(screenshotWorkflow, /--argjson sessions "\$activity_samples"[\s\S]*sessions:\$sessions/,
+  "capture preview payload must carry the deterministic sessions")
+assert.match(service, /readonly property var displaySessions: capturePreviewActive \? capturePreviewSessions : activeSessions[\s\S]*?function sessionsFor\(kind\)[\s\S]*?displaySessions\.filter/,
+  "capture sessions must override only presentation consumers")
 assert.match(screenshotWorkflow, /capture_panel history-disabled history "" 240/,
   "the compact disabled-history view should not publish a mostly empty tall crop")
 assert.match(screenshotWorkflow, /capture_panel monitoring-private settings-section monitoring 395 private-data 70/,

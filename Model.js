@@ -92,7 +92,7 @@ function privacySelfTest(input) {
 function sanitizeSettings(data) {
   var source = data && typeof data === "object" && !Array.isArray(data) ? data : {}
   var clean = {}, index, key
-  var booleans = {showIdle:true, showControls:true, deduplicateApps:true, notifyOnActivity:true, notifyOnStop:false,
+  var booleans = {showIdle:false, showControls:true, deduplicateApps:true, notifyOnActivity:true, notifyOnStop:false,
     notifyOnObserverHealth:false,
     notifyOnControlChanges:true, historyEnabled:false, directDeviceMonitoring:false, showInferredAttribution:true,
     showStatePills:true, showSessionCounts:true, showBarSessionCounts:true, animatePending:true,
@@ -413,6 +413,21 @@ function normalizeObservation(observation) {
   }
   normalized.id = sessionId(normalized)
   return normalized
+}
+
+function sanitizeCaptureSessions(rows, now) {
+  if (!Array.isArray(rows)) return []
+  var timestamp = Number(now)
+  if (!isFinite(timestamp) || timestamp < 0) timestamp = 0
+  var result = []
+  for (var index = 0; index < rows.length && result.length < 64; index++) {
+    var normalized = normalizeObservation(rows[index])
+    if (KINDS.indexOf(normalized.kind) === -1) continue
+    var startedAt = Number(rows[index] && rows[index].startedAt)
+    normalized.startedAt = isFinite(startedAt) ? Math.max(0, Math.min(timestamp, startedAt)) : timestamp
+    result.push(normalized)
+  }
+  return result
 }
 
 function reconcileSessions(previous, observations, now) {

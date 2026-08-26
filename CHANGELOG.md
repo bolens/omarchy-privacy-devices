@@ -28,6 +28,10 @@ maintainer guides that define release and validation procedures.
 
 ### Changed
 
+- Hide idle activity icons by default on new installations while preserving
+  existing users' saved visibility choice.
+- Align integer settings with the shell's native bounded number fields and
+  consolidate bar-layout controls into a balanced responsive grid.
 - Reflow observer-health actions into a balanced responsive grid and present
   self-test output through the shared status surface.
 - Describe the requested device state in privacy-control success and failure

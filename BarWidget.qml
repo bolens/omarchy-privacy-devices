@@ -1115,7 +1115,7 @@ Panel {
             onLoaded: Qt.callLater(root.scrollToSettingsSection)
           }
 
-          Button { Layout.alignment: Qt.AlignRight; text: "Reset global settings"; enabled: !root.settingsTransferRunning; onClicked: root.requestGlobalSettingsReset() }
+          Button { Layout.alignment: Qt.AlignRight; iconText: "󰑐"; text: "Reset global settings"; bordered: true; background: Util.alpha(root.activeThemeColor, 0.06); enabled: !root.settingsTransferRunning; onClicked: root.requestGlobalSettingsReset() }
         }
 
         DeviceSettingsEditor {
@@ -1186,7 +1186,7 @@ Panel {
                 RowLayout {
                   Layout.fillWidth: true
                   TextField { id: labelEditor; Layout.fillWidth: true; placeholderText: "Display label"; text: root.editingKind ? root.labelFor(root.editingKind) : ""; maximumLength: 128; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistLabel(root.editingKind, text) }
-                  Button { text: "Save"; tooltipText: "Save display label"; enabled: appearanceSurface.labelDirty; onClicked: root.persistLabel(root.editingKind, labelEditor.text) }
+                  Button { text: "Save"; bordered: true; tooltipText: "Save display label"; enabled: appearanceSurface.labelDirty; onClicked: root.persistLabel(root.editingKind, labelEditor.text) }
                 }
               }
               ColumnLayout {
@@ -1196,7 +1196,7 @@ Panel {
                 RowLayout {
                   Layout.fillWidth: true
                   TextField { id: iconEditor; Layout.fillWidth: true; placeholderText: "Icon"; text: root.editingKind ? root.iconFor(root.editingKind) : ""; maximumLength: 8; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistIcon(root.editingKind, text) }
-                  Button { text: "Save"; tooltipText: "Save device icon"; enabled: appearanceSurface.iconDirty; onClicked: root.persistIcon(root.editingKind, iconEditor.text) }
+                  Button { text: "Save"; bordered: true; tooltipText: "Save device icon"; enabled: appearanceSurface.iconDirty; onClicked: root.persistIcon(root.editingKind, iconEditor.text) }
                 }
               }
             }
