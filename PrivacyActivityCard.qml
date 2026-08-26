@@ -15,9 +15,10 @@ Rectangle {
   readonly property bool tiled: controller.popupGridColumns > 1
   readonly property real itemScale: controller.popupItemScale
   readonly property real verticalPadding: (compact ? Style.spacing.sm : Style.spacing.md) * itemScale
+  readonly property bool hasPolicyActions: (entry.active && entry.apps.length > 0)
+    || (entry.sessions.length > 0 && Boolean(entry.sessions[0].device))
   readonly property bool hasInlineActions: controller.showStatePills
-    || (entry.active && entry.apps.length > 0)
-    || entry.sessions.length > 0
+    || hasPolicyActions
     || (controller.showControls && entry.controllable && entry.kind !== "screenshot" && entry.dependenciesReady)
 
   function sessionSummary(session) {
@@ -107,9 +108,19 @@ Rectangle {
       Layout.fillWidth: card.tiled
       Layout.alignment: Qt.AlignRight
       spacing: Style.spacing.sm * card.itemScale
-      Button { visible: entry.active && entry.apps.length > 0; text: "Hide"; tooltipText: "Hide this application from the bar; alerts remain enabled"; onClicked: controller.addPolicyValue("hiddenApps", entry.apps[0]) }
-      Button { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Hide device"; tooltipText: "Hide this hardware device from activity presentation"; onClicked: controller.addPolicyValue("hiddenDevices", entry.sessions[0].device) }
-      Button { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Mute device alerts"; tooltipText: "Keep activity visible but suppress alerts for this hardware device"; onClicked: controller.addPolicyValue("notificationSuppressedDevices", entry.sessions[0].device) }
+      Button {
+        visible: card.hasPolicyActions
+        iconText: "󰇙"
+        tooltipText: "More privacy actions"
+        horizontalPadding: Style.spacing.controlGap
+        onClicked: policyMenu.open()
+      }
+      Menu {
+        id: policyMenu
+        MenuItem { visible: entry.active && entry.apps.length > 0; text: "Hide application"; onTriggered: controller.addPolicyValue("hiddenApps", entry.apps[0]) }
+        MenuItem { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Hide device"; onTriggered: controller.addPolicyValue("hiddenDevices", entry.sessions[0].device) }
+        MenuItem { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Mute device alerts"; onTriggered: controller.addPolicyValue("notificationSuppressedDevices", entry.sessions[0].device) }
+      }
       Item { visible: card.tiled; Layout.fillWidth: card.tiled }
       Rectangle {
         visible: controller.showStatePills

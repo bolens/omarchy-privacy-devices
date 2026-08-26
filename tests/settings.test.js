@@ -217,6 +217,12 @@ assert.match(bar, /text: "Reset device appearance"[\s\S]*?default label, icon, c
   "device reset copy must match every reset field")
 assert.match(activityCard, /controller\.statePillStyle === "filled"[\s\S]*?controller\.statePillStyle === "minimal"/, "state-pill styles must alter fill and border presentation")
 assert.match(activityCard, /controller\.popupDensity === "compact"[\s\S]*?verticalPadding/, "popup density must alter row spacing")
+assert.match(activityCard, /id: policyMenu[\s\S]*?Hide application[\s\S]*?Hide device[\s\S]*?Mute device alerts/,
+  "row policy actions must live in one compact overflow menu")
+assert.match(activityCard, /tooltipText: "More privacy actions"[\s\S]*?policyMenu\.open\(\)/,
+  "active rows must expose one discoverable policy affordance")
+assert.doesNotMatch(activityCard, /Button \{ visible: entry\.active[\s\S]{0,160}?text: "Hide"/,
+  "full policy buttons must not crowd the primary toggle row")
 assert.match(activityCard, /visible: card\.visualState !== "idle" \|\| !controller\.showStatePills/,
   "idle cards must not repeat state text already carried by the visible pill")
 assert.match(activityCard, /function sessionSummary\(session\)[\s\S]*?session\.device[\s\S]*?formatDuration[\s\S]*?Inferred/,
