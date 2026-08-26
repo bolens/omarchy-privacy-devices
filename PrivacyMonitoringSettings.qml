@@ -78,7 +78,7 @@ GridLayout {
     Text { Layout.fillWidth: true; text: page.controller.monitoringTelemetryText(); textFormat: Text.PlainText; color: page.controller.monitoringDegraded ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
     GridLayout {
       Layout.fillWidth: true
-      columns: observerHealthSettings.width >= Style.space(480) ? 2 : 1
+      columns: observerHealthSettings.width >= Style.space(360) ? 2 : 1
       columnSpacing: Style.spacing.sm
       rowSpacing: Style.spacing.sm
       Button { Layout.fillWidth: true; text: "Run self-test"; enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.runSelfTest() }

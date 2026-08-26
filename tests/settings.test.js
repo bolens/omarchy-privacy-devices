@@ -226,7 +226,7 @@ assert.match(bar, /Layout\.columnSpan: root\.popupGridColumns === 2[\s\S]*?root\
 assert.match(bar, /running:\s*modelData\.pending && root\.animatePending/, "pending animation must honor its visual setting")
 assert.match(bar, /Timer \{[\s\S]*?running: root\.opened[\s\S]*?onTriggered: if \(!contentFlick\.moving\) root\.durationNow = Date\.now\(\)/,
   "the duration timer must pause rendered time updates while the user scrolls")
-assert.match(monitoringSettings, /columns: observerHealthSettings\.width >= Style\.space\(480\) \? 2 : 1/,
+assert.match(monitoringSettings, /columns: observerHealthSettings\.width >= Style\.space\(360\) \? 2 : 1/,
   "self-test actions must reflow instead of crowding narrow popups")
 assert.match(monitoringSettings, /PrivacyMessageSurface[\s\S]*?selfTestResult\.text/,
   "self-test results must use the shared status surface")
