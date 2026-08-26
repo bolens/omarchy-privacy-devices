@@ -15,13 +15,14 @@ SettingsSurface {
   RowLayout {
     Layout.fillWidth: true
     PanelSectionHeader { Layout.fillWidth: true; text: surface.kind === "microphone" ? "Microphone devices" : "Audio output devices" }
-    Button { iconText: "󰑓"; tooltipText: "Refresh devices"; horizontalPadding: Style.spacing.controlGap; enabled: surface.service !== null; onClicked: surface.service.refreshAudioEndpoints(surface.kind) }
+    Button { objectName: "audioEndpointRefreshButton"; iconText: "󰑓"; tooltipText: "Refresh devices"; horizontalPadding: Style.spacing.controlGap; enabled: surface.service !== null; onClicked: surface.service.refreshAudioEndpoints(surface.kind) }
   }
   Text { Layout.fillWidth: true; text: "Mute or unmute one hardware endpoint without changing the other devices."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
   Repeater {
     model: surface.service ? surface.service.audioEndpoints(surface.kind) : []
     delegate: Rectangle {
       required property var modelData
+      objectName: "audioEndpointRow-" + modelData.id
       Layout.fillWidth: true
       implicitHeight: endpointRow.implicitHeight + Style.spacing.md * 2
       radius: Style.cornerRadius
@@ -38,9 +39,9 @@ SettingsSurface {
           Layout.fillWidth: true
           spacing: Style.spacing.xs
           Text { Layout.fillWidth: true; text: modelData.label; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; font.weight: Font.DemiBold; elide: Text.ElideRight }
-          Text { Layout.fillWidth: true; text: modelData.muted ? "Blocked · muted" : "Allowed · unmuted"; textFormat: Text.PlainText; color: modelData.muted ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+          Text { objectName: "audioEndpointStatus-" + modelData.id; Layout.fillWidth: true; text: modelData.muted ? "Blocked · muted" : "Allowed · unmuted"; textFormat: Text.PlainText; color: modelData.muted ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
         }
-        Button { text: modelData.muted ? "Allow" : "Block"; horizontalPadding: Style.spacing.md; onClicked: surface.service.setAudioEndpointMuted(surface.kind, modelData.id, !modelData.muted) }
+        Button { objectName: "audioEndpointAction-" + modelData.id; text: modelData.muted ? "Allow" : "Block"; horizontalPadding: Style.spacing.md; onClicked: surface.service.setAudioEndpointMuted(surface.kind, modelData.id, !modelData.muted) }
       }
     }
   }
