@@ -51,6 +51,8 @@ maintainer guides that define release and validation procedures.
 
 - Describe an observable blocked request consistently in activity cards instead
   of pairing its urgent state with an idle availability message.
+- Allow the compact privacy-lockdown control to enter its required confirmation
+  state and execute the verified serial lockdown plan.
 
 ## [0.6.0] - 2026-08-26
 

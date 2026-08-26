@@ -135,7 +135,7 @@ assert.match(bar, /model: root\.historySummaryRows[\s\S]*?delegate: Rectangle[\s
   "history summaries must have scannable grouped rows")
 assert.match(bar, /id: historyRows[\s\S]*?visible: root\.historyPresentationEnabled/,
   "disabled history must not display retained activity rows")
-assert.match(bar, /Model\.lockdownActionPresentation\([\s\S]*?iconText: presentation\.icon[\s\S]*?tooltipText: presentation\.tooltip[\s\S]*?restorePrivacyLockdown\(\)[\s\S]*?requestPrivacyLockdown\(\)/,
+assert.match(bar, /function activateLockdownAction\(\)[\s\S]*?Model\.lockdownActionPresentation\([\s\S]*?restorePrivacyLockdown\(\)[\s\S]*?confirmationState\.request\("lockdown"\)[\s\S]*?requestPrivacyLockdown\(\)[\s\S]*?objectName: "privacyLockdownButton"[\s\S]*?iconText: presentation\.icon[\s\S]*?tooltipText: presentation\.tooltip[\s\S]*?onClicked: root\.activateLockdownAction\(\)/,
   "one compact lock/unlock action must expose lockdown and observed-state undo")
 assert.doesNotMatch(bar, /text: "Undo lockdown"/, "lockdown undo must not consume a second text-button row")
 assert.match(activityCard, /text: !entry\.dependenciesReady \? "INSTALL" : \(entry\.kind === "screenshot" \? "CAPTURE" : controller\.itemStateLabel\(entry\)\)/,

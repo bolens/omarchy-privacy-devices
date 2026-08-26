@@ -112,6 +112,8 @@ Panel {
     : (settingsMutationController.status === "saved" ? "Changes applied"
     : (settingsMutationController.status === "failed" ? "Settings update failed" + (settingsMutationController.detail ? ": " + settingsMutationController.detail : "") : ""))
   readonly property bool settingsPageLoaded: globalSettingsPageLoader.item !== null
+  readonly property var lockdownActionControl: lockdownButton
+  readonly property string confirmationPending: confirmationState.pending
   readonly property var filteredHistory: Model.filterHistory(privacyService ? privacyService.displayHistory : [], historyQuery)
   readonly property var historySummaryRows: Model.historySummary(privacyService ? privacyService.displayHistory : [], durationNow, historySummaryWindow)
   readonly property bool historyPresentationEnabled: privacyService && privacyService.capturePreviewActive && privacyService.requestedView === "history"
@@ -210,6 +212,20 @@ Panel {
     if (action === "settings") { showActivity(); return }
     if (action === "history") { showActivity(); return }
     close()
+  }
+
+  function activateLockdownAction() {
+    if (!privacyService || privacyService.privacyPresetState === "applying" || privacyService.privacyPresetState === "restoring") return false
+    var presentation = Model.lockdownActionPresentation(privacyService.privacyPresetUndoAvailable, confirmationState.pending === "lockdown")
+    if (presentation.action === "restore") {
+      var restored = privacyService.restorePrivacyLockdown()
+      confirmationState.clear()
+      return restored
+    }
+    if (!confirmationState.request("lockdown")) return false
+    var requested = privacyService.requestPrivacyLockdown()
+    confirmationState.clear()
+    return requested
   }
 
   function moveActivitySelection(delta) {
@@ -944,6 +960,8 @@ Panel {
             onClicked: root.showHistory()
           }
           Button {
+            id: lockdownButton
+            objectName: "privacyLockdownButton"
             readonly property var presentation: Model.lockdownActionPresentation(
               privacyService && privacyService.privacyPresetUndoAvailable,
               confirmationState.pending === "lockdown")
@@ -951,16 +969,7 @@ Panel {
             enabled: privacyService && privacyService.privacyPresetState !== "applying" && privacyService.privacyPresetState !== "restoring"
             tooltipText: presentation.tooltip
             horizontalPadding: Style.spacing.controlGap
-            onClicked: {
-              if (presentation.action === "restore") {
-                privacyService.restorePrivacyLockdown()
-                confirmationState.clear()
-                return
-              }
-              if (!confirmationState.request("lockdown")) return
-              privacyService.requestPrivacyLockdown()
-              confirmationState.clear()
-            }
+            onClicked: root.activateLockdownAction()
           }
           Button {
             iconText: "󰒓"

@@ -8,6 +8,8 @@ ShellRoot {
     if (confirmation.request("history") || confirmation.pending !== "history") throw new Error("first request must arm")
     if (confirmation.request("backend") || confirmation.pending !== "backend") throw new Error("new action must replace stale confirmation")
     if (!confirmation.request("backend") || confirmation.pending !== "") throw new Error("second matching request must confirm and clear")
+    if (confirmation.request("lockdown") || confirmation.pending !== "lockdown") throw new Error("lockdown confirmation action was not allowlisted")
+    confirmation.clear()
     confirmation.request("all")
   }
   Timer {

@@ -4,7 +4,7 @@ QtObject {
   id: controller
   property string pending: ""
   property int guardMilliseconds: 5000
-  property var allowedActions: ["history", "backend", "all"]
+  property var allowedActions: ["history", "backend", "all", "lockdown"]
 
   function request(action) {
     var selected = String(action || "")
