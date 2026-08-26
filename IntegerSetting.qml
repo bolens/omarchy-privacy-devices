@@ -13,12 +13,13 @@ ColumnLayout {
   required property int fallback
   property int stepSize: 1
   property string description: ""
+  property string controlObjectName: "integerSettingField"
 
   Layout.fillWidth: true
   spacing: Style.spacing.xs
 
   NumberField {
-    objectName: "integerSettingField"
+    objectName: field.controlObjectName
     Layout.fillWidth: true
     label: field.label + " (" + field.minimum + "–" + field.maximum + ")"
     from: field.minimum

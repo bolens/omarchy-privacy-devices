@@ -57,7 +57,23 @@ ShellRoot {
         || root.events[1].id !== "alsa_input.usb-desk" || root.events[1].muted !== true
         || root.events[2].id !== "alsa_input.usb-chat" || root.events[2].muted !== false)
       throw new Error("audio endpoint controls dispatched the wrong operation")
-    console.log("PRIVACY_QML_AUDIO_ENDPOINT_SETTINGS_OK")
-    Qt.quit()
+    serviceMock.audioEndpointMessage = "Endpoint state updated"
+    serviceMock.endpoints = [{id:"alsa_input.usb-desk",label:"Desk microphone",muted:true}]
+    Qt.callLater(function() {
+      var updatedStatus = descendant(settings, "audioEndpointStatus-alsa_input.usb-desk")
+      var updatedAction = descendant(settings, "audioEndpointAction-alsa_input.usb-desk")
+      var removedRow = descendant(settings, "audioEndpointRow-alsa_input.usb-chat")
+      var message = descendant(settings, "messageSurfaceText")
+      if (!updatedStatus || updatedStatus.text !== "Blocked · muted" || !updatedAction || updatedAction.text !== "Allow"
+          || removedRow || !message || message.text !== "Endpoint state updated")
+        throw new Error("audio endpoint surface did not react to observed state changes")
+      controllerMock.privacyService = null
+      Qt.callLater(function() {
+        if (refresh.enabled || descendant(settings, "audioEndpointRow-alsa_input.usb-desk"))
+          throw new Error("audio endpoint controls remained active without a service")
+        console.log("PRIVACY_QML_AUDIO_ENDPOINT_SETTINGS_OK")
+        Qt.quit()
+      })
+    })
   })
 }

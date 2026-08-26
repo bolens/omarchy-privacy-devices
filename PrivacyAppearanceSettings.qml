@@ -20,8 +20,8 @@ GridLayout {
       columns: barLayoutSettings.width >= Style.space(420) ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
-      Dropdown { Layout.fillWidth: true; label: "Bar presentation"; options: ["icons", "active-count", "active-only"]; value: String(page.controller.setting("displayMode", "icons")); onChanged: function(value) { page.controller.persistSettings({displayMode: value}) } }
-      NumberField { Layout.fillWidth: true; label: "Icon scale (%)"; from: 75; to: 150; stepSize: 5; value: Math.round(page.controller.barIconScale * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({barIconScale: Number(value) / 100}) } }
+      Dropdown { objectName: "appearanceDisplayModeSetting"; Layout.fillWidth: true; label: "Bar presentation"; options: ["icons", "active-count", "active-only"]; value: String(page.controller.setting("displayMode", "icons")); onChanged: function(value) { page.controller.persistSettings({displayMode: value}) } }
+      NumberField { objectName: "appearanceBarIconScaleSetting"; Layout.fillWidth: true; label: "Icon scale (%)"; from: 75; to: 150; stepSize: 5; value: Math.round(page.controller.barIconScale * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({barIconScale: Number(value) / 100}) } }
       IntegerSetting { controller: page.controller; settingKey: "barItemSpacing"; label: "Space between bar items"; minimum: 0; maximum: 12; fallback: 0 }
       IntegerSetting { controller: page.controller; settingKey: "barItemPadding"; label: "Bar item padding"; minimum: 2; maximum: 12; fallback: 5 }
     }
@@ -58,10 +58,11 @@ GridLayout {
       columns: statusPresentationSettings.width >= Style.space(420) ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
-      Dropdown { Layout.fillWidth: true; label: "Bar status markers"; options: ["symbols", "letters", "custom", "off"]; value: page.controller.statusMarkerMode; onChanged: function(value) { page.controller.persistSettings({statusMarkerMode: value}) } }
-      Dropdown { Layout.fillWidth: true; label: "Marker position"; options: ["after", "before"]; value: page.controller.barMarkerPosition; onChanged: function(value) { page.controller.persistSettings({barMarkerPosition: value}) } }
+      Dropdown { objectName: "appearanceStatusMarkerModeSetting"; Layout.fillWidth: true; label: "Bar status markers"; options: ["symbols", "letters", "custom", "off"]; value: page.controller.statusMarkerMode; onChanged: function(value) { page.controller.persistSettings({statusMarkerMode: value}) } }
+      Dropdown { objectName: "appearanceMarkerPositionSetting"; Layout.fillWidth: true; label: "Marker position"; options: ["after", "before"]; value: page.controller.barMarkerPosition; onChanged: function(value) { page.controller.persistSettings({barMarkerPosition: value}) } }
     }
     GridLayout {
+      objectName: "appearanceCustomMarkers"
       visible: page.controller.statusMarkerMode === "custom"
       Layout.fillWidth: true
       columns: statusPresentationSettings.width >= Style.space(420) ? 2 : 1
@@ -95,9 +96,9 @@ GridLayout {
       columns: statusPresentationSettings.width >= Style.space(420) ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
-      Dropdown { Layout.fillWidth: true; label: "Popup layout"; options: ["adaptive", "list", "grid"]; value: page.controller.popupLayout; onChanged: function(value) { page.controller.persistSettings({popupLayout: value}) } }
-      Dropdown { Layout.fillWidth: true; label: "Popup width"; options: ["narrow", "standard", "wide"]; value: page.controller.popupWidth; onChanged: function(value) { page.controller.persistSettings({popupWidth: value}) } }
-      NumberField { Layout.fillWidth: true; label: "Popup item scale (%)"; from: 85; to: 130; stepSize: 5; value: Math.round(page.controller.popupItemScale * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({popupItemScale: Number(value) / 100}) } }
+      Dropdown { objectName: "appearancePopupLayoutSetting"; Layout.fillWidth: true; label: "Popup layout"; options: ["adaptive", "list", "grid"]; value: page.controller.popupLayout; onChanged: function(value) { page.controller.persistSettings({popupLayout: value}) } }
+      Dropdown { objectName: "appearancePopupWidthSetting"; Layout.fillWidth: true; label: "Popup width"; options: ["narrow", "standard", "wide"]; value: page.controller.popupWidth; onChanged: function(value) { page.controller.persistSettings({popupWidth: value}) } }
+      NumberField { objectName: "appearancePopupItemScaleSetting"; Layout.fillWidth: true; label: "Popup item scale (%)"; from: 85; to: 130; stepSize: 5; value: Math.round(page.controller.popupItemScale * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({popupItemScale: Number(value) / 100}) } }
       NumberField { Layout.fillWidth: true; label: "Popup idle visibility (%)"; from: 45; to: 100; stepSize: 5; value: Math.round(page.controller.popupIdleOpacity * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({popupIdleOpacity: Number(value) / 100}) } }
     }
     GridLayout {
@@ -110,6 +111,6 @@ GridLayout {
       PrivacySettingToggle { controller: page.controller; settingKey: "showBarSessionCounts"; label: "Bar session counts"; description: "Append counts to shared bar items." }
       PrivacySettingToggle { controller: page.controller; settingKey: "animatePending"; label: "Animate verification"; description: "Pulse items awaiting observed confirmation." }
     }
-    IntegerSetting { controller: page.controller; settingKey: "popupMaxHeight"; label: "Popup maximum height"; minimum: 360; maximum: 900; fallback: 620; stepSize: 20 }
+    IntegerSetting { controller: page.controller; controlObjectName: "appearancePopupMaxHeightSetting"; settingKey: "popupMaxHeight"; label: "Popup maximum height"; minimum: 360; maximum: 900; fallback: 620; stepSize: 20 }
   }
 }

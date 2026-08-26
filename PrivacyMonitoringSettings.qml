@@ -16,16 +16,16 @@ GridLayout {
     Layout.fillWidth: true
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Enhanced coverage" }
-    MultiSelect { Layout.fillWidth: true; label: "Preventative controls"; options: page.controller.kindOptions.filter(function(option) { return ["camera", "screen-share", "location"].indexOf(option.value) !== -1 }); values: Model.arraySetting(page.controller.setting("blockableKinds", ["camera", "screen-share", "location"]), []); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { page.controller.persistSettings({blockableKinds: values}) } }
+    MultiSelect { objectName: "monitoringBlockableKindsSetting"; Layout.fillWidth: true; label: "Preventative controls"; options: page.controller.kindOptions.filter(function(option) { return ["camera", "screen-share", "location"].indexOf(option.value) !== -1 }); values: Model.arraySetting(page.controller.setting("blockableKinds", ["camera", "screen-share", "location"]), []); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { page.controller.persistSettings({blockableKinds: values}) } }
     GridLayout {
       Layout.fillWidth: true
       columns: enhancedCoverageSettings.width >= Style.space(600) ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
-      PrivacySettingToggle { controller: page.controller; settingKey: "directDeviceMonitoring"; fallback: false; label: "Direct-device monitoring"; description: "Find apps that bypass PipeWire through same-user device handles." }
-      PrivacySettingToggle { controller: page.controller; settingKey: "showInferredAttribution"; label: "Show inferred attribution"; description: "Show heuristic app and device names alongside activity." }
+      PrivacySettingToggle { objectName: "monitoringDirectDeviceToggle"; controller: page.controller; settingKey: "directDeviceMonitoring"; fallback: false; label: "Direct-device monitoring"; description: "Find apps that bypass PipeWire through same-user device handles." }
+      PrivacySettingToggle { objectName: "monitoringInferredAttributionToggle"; controller: page.controller; settingKey: "showInferredAttribution"; label: "Show inferred attribution"; description: "Show heuristic app and device names alongside activity." }
     }
-    IntegerSetting { controller: page.controller; settingKey: "directDevicePollSeconds"; label: "Direct-device heartbeat, seconds"; minimum: 2; maximum: 60; fallback: 5 }
+    IntegerSetting { controller: page.controller; controlObjectName: "monitoringDirectPollSetting"; settingKey: "directDevicePollSeconds"; label: "Direct-device heartbeat, seconds"; minimum: 2; maximum: 60; fallback: 5 }
   }
   SettingsSurface {
     id: fallbackPollingSettings
@@ -37,8 +37,8 @@ GridLayout {
       columns: fallbackPollingSettings.width >= Style.space(360) ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
-      IntegerSetting { controller: page.controller; settingKey: "locationPollSeconds"; label: "Location interval, s"; minimum: 5; maximum: 300; fallback: 15; stepSize: 5 }
-      IntegerSetting { controller: page.controller; settingKey: "recordingPollSeconds"; label: "Recorder interval, s"; minimum: 1; maximum: 60; fallback: 2 }
+      IntegerSetting { controller: page.controller; controlObjectName: "monitoringLocationPollSetting"; settingKey: "locationPollSeconds"; label: "Location interval, s"; minimum: 5; maximum: 300; fallback: 15; stepSize: 5 }
+      IntegerSetting { controller: page.controller; controlObjectName: "monitoringRecordingPollSetting"; settingKey: "recordingPollSeconds"; label: "Recorder interval, s"; minimum: 1; maximum: 60; fallback: 2 }
     }
     Text { Layout.fillWidth: true; text: "PipeWire activity remains event-backed. These intervals affect only enhanced and fallback observers."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
   }
