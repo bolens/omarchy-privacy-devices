@@ -7,6 +7,30 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-26
+
+### Added
+
+- Add adaptive, list, and grid activity layouts with configurable popup width,
+  item scale, and idle opacity.
+- Add tabbed screenshot explorers to the Pages guide for clearer feature and
+  settings discovery.
+
+### Changed
+
+- Make the activity popup and settings surfaces responsive across narrow,
+  standard, and wide layouts.
+- Reuse normalized PipeWire classification policy across stream nodes to
+  reduce reactive refresh work.
+- Make screenshot refreshes transactional, hot-reload temporary settings, and
+  verify desktop state before publishing captured assets.
+
+### Fixed
+
+- Reload persisted activity history after history is re-enabled.
+- Preserve shell, workspace, DND, plugin-settings, and screenshot state across
+  successful or interrupted documentation captures.
+
 ## [0.5.3] - 2026-08-25
 
 ### Changed
@@ -214,7 +238,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.3...v0.6.0
 [0.5.3]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.0...v0.5.1
