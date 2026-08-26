@@ -55,6 +55,13 @@ ShellRoot {
         || root.policies[1].key !== "hiddenDevices" || root.policies[1].value !== "Integrated camera"
         || root.policies[2].key !== "notificationSuppressedDevices" || root.policies[2].value !== "Integrated camera")
       throw new Error("activity privacy actions persisted the wrong policy target")
+    card.entry = ({kind:"camera",label:"Camera",icon:"C",active:false,apps:[],sessions:[],controllable:true,controlEnabled:true,pending:false,dependenciesReady:true,health:{status:"healthy",summary:""}})
+    if (card.hasPolicyActions || card.hideApplication() || card.hideDevice() || card.muteDeviceAlerts() || root.policies.length !== 3)
+      throw new Error("unavailable privacy policy targets reused stale activity data")
+    card.entry = ({kind:"camera",label:"Camera",icon:"C",active:true,apps:["Conference"],sessions:[{device:"",startedAt:9500,confidence:"confirmed"}],controllable:true,controlEnabled:true,pending:false,dependenciesReady:true,health:{status:"healthy",summary:""}})
+    if (!card.hasPolicyActions || !card.hideApplication() || card.hideDevice() || card.muteDeviceAlerts()
+        || root.policies.length !== 4 || root.policies[3].value !== "Conference")
+      throw new Error("activity privacy actions did not react to changed policy targets")
     console.log("PRIVACY_QML_ACTIVITY_POLICY_ACTIONS_OK")
     Qt.quit()
   })
