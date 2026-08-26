@@ -13,30 +13,30 @@ screenshots, and screen recording.
 Contributors: [contributing guide](CONTRIBUTING.md) ·
 [architecture](ARCHITECTURE.md) · [security policy](SECURITY.md)
 
-![Privacy Devices activity panel showing live device state and controls](preview.png?v=a3da03b3846f)
+![Privacy Devices activity panel showing live device state and controls](preview.png?v=f9d50318bb07)
 
 The widget occupies only its privacy-device indicators in the center bar:
 
-![Privacy Devices indicators in their exact bar footprint](docs/bar.png?v=c9e43e041535)
+![Privacy Devices indicators in their exact bar footprint](docs/bar.png?v=17101b1467e6)
 
 Activity notifications use the detected application icon when available:
 
-![Privacy Devices notification with an application icon](docs/notification.png?v=9bc0a5674cec)
+![Privacy Devices notification with an application icon](docs/notification.png?v=319e2ced4104)
 
 <details>
 <summary>Settings pages</summary>
 
 | General | Appearance |
 | --- | --- |
-| <img src="docs/general.png?v=2a885ba19e7d" alt="General settings page" width="360"> | <img src="docs/appearance.png?v=553723bf2ec5" alt="Appearance settings page" width="360"> |
+| <img src="docs/general.png?v=8d972d485af7" alt="General settings page" width="360"> | <img src="docs/appearance.png?v=68401dafb7fa" alt="Appearance settings page" width="360"> |
 | Alerts | Monitoring |
-| <img src="docs/alerts.png?v=7ddf2cee6121" alt="Alerts settings page" width="360"> | <img src="docs/monitoring.png?v=097258d7abae" alt="Monitoring settings page" width="360"> |
+| <img src="docs/alerts.png?v=4281fc1b9600" alt="Alerts settings page" width="360"> | <img src="docs/monitoring.png?v=da4f54f31adb" alt="Monitoring settings page" width="360"> |
 | Private data | Observer health |
-| <img src="docs/monitoring-private.png?v=62865e371548" alt="Private history and settings transfer controls" width="360"> | <img src="docs/monitoring-health.png?v=dd29db34cc92" alt="Monitoring status and observer health" width="360"> |
+| <img src="docs/monitoring-private.png?v=126932075bc3" alt="Private history and settings transfer controls" width="360"> | <img src="docs/monitoring-health.png?v=463f15d6cb8f" alt="Monitoring status and observer health" width="360"> |
 | Individual device settings | Activity history |
-| <img src="docs/device.png?v=8a5e79242dd3" alt="Individual privacy-device settings page" width="360"> | <img src="docs/history.png?v=5b4416199e3f" alt="Completed privacy activity history view" width="360"> |
+| <img src="docs/device.png?v=9dd0f8c2f262" alt="Individual privacy-device settings page" width="360"> | <img src="docs/history.png?v=9f6198a88b22" alt="Completed privacy activity history view" width="360"> |
 | History disabled | |
-| <img src="docs/history-disabled.png?v=3c408ceda779" alt="Activity history disabled state" width="360"> | |
+| <img src="docs/history-disabled.png?v=779cd8c87c75" alt="Activity history disabled state" width="360"> | |
 
 </details>
 
