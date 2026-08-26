@@ -84,10 +84,12 @@ Rectangle {
           }
         }
         Text {
+          objectName: "activityStateDescription"
           visible: card.visualState !== "idle" || !controller.showStatePills
           Layout.fillWidth: true
           text: card.visualState === "unavailable" ? "Monitoring degraded · " + entry.health.summary
             : card.visualState === "pending" ? "Waiting for observed state confirmation"
+            : card.visualState === "blocked-active" ? "Blocked request observed"
             : card.visualState === "disabled" ? "Blocked by privacy control"
             : card.visualState === "active" ? (entry.apps.length ? entry.apps.join(", ") : "Activity hidden by policy")
             : "Available · not in use"
@@ -130,7 +132,7 @@ Rectangle {
         color: controller.statePillStyle === "filled" ? Util.alpha(controller.itemColor(entry), 0.14) : "transparent"
         border.width: controller.statePillStyle === "minimal" ? 0 : 1
         border.color: Util.alpha(controller.itemColor(entry), controller.statePillStyle === "outline" ? 0.7 : 0.45)
-        Text { id: stateText; anchors.centerIn: parent; text: !entry.dependenciesReady ? "INSTALL" : (entry.kind === "screenshot" ? "CAPTURE" : controller.itemStateLabel(entry)); textFormat: Text.PlainText; color: controller.itemColor(entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
+        Text { id: stateText; objectName: "activityStatePillText"; anchors.centerIn: parent; text: !entry.dependenciesReady ? "INSTALL" : (entry.kind === "screenshot" ? "CAPTURE" : controller.itemStateLabel(entry)); textFormat: Text.PlainText; color: controller.itemColor(entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
       }
       ToggleSwitch { visible: controller.showControls && entry.controllable && entry.kind !== "screenshot" && entry.dependenciesReady; checked: entry.controlEnabled; busy: entry.pending; interactive: false; foreground: Color.popups.text; accent: controller.isAudioControl(entry) ? (entry.controlEnabled ? controller.unmutedThemeColor : controller.mutedThemeColor) : controller.activeThemeColor }
     }

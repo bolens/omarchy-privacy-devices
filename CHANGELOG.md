@@ -47,6 +47,11 @@ maintainer guides that define release and validation procedures.
 - Replace the activity-header lockdown text and separate undo button with one
   compact, state-aware lock/unlock icon and tooltip.
 
+### Fixed
+
+- Describe an observable blocked request consistently in activity cards instead
+  of pairing its urgent state with an idle availability message.
+
 ## [0.6.0] - 2026-08-26
 
 ### Added
