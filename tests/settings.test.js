@@ -18,6 +18,7 @@ const messageSurface = fs.readFileSync(path.join(root, "PrivacyMessageSurface.qm
 const settingToggle = fs.readFileSync(path.join(root, "PrivacySettingToggle.qml"), "utf8")
 const transferResult = fs.readFileSync(path.join(root, "PrivacySettingsTransferResult.qml"), "utf8")
 const monitoringSettings = fs.readFileSync(path.join(root, "PrivacyMonitoringSettings.qml"), "utf8")
+const alertsSettings = fs.readFileSync(path.join(root, "PrivacyAlertsSettings.qml"), "utf8")
 const audioEndpointSettings = fs.readFileSync(path.join(root, "AudioEndpointSettings.qml"), "utf8")
 const globalSettings = ["PrivacyGeneralSettings.qml", "PrivacyAppearanceSettings.qml", "PrivacyAlertsSettings.qml", "PrivacyMonitoringSettings.qml", "PrivacyMarkerGlyphEditor.qml"]
   .map(file => fs.readFileSync(path.join(root, file), "utf8")).join("\n")
@@ -125,8 +126,12 @@ assert.match(bar, /function persistDeviceLabel\(device, value\)[\s\S]*?deviceLab
   "friendly device names must persist through the sanitized settings boundary")
 assert.match(bar, /Model\.historySummary\([\s\S]*?historySummaryWindow/,
   "history insights must project existing retained rows without separate storage")
-assert.match(bar, /text: "Today"[\s\S]*?text: "7 days"[\s\S]*?historySummaryRows/,
+assert.match(bar, /text: "Today"; bordered: true; selected: root\.historySummaryWindow === 24 \* 60 \* 60 \* 1000[\s\S]*?text: "7 days"; bordered: true; selected: root\.historySummaryWindow === 7 \* 24 \* 60 \* 60 \* 1000[\s\S]*?historySummaryRows/,
   "history must offer bounded today and seven-day summaries")
+assert.match(bar, /model: root\.historySummaryRows[\s\S]*?delegate: Rectangle[\s\S]*?id: summaryRow[\s\S]*?font\.weight: Font\.DemiBold/,
+  "history summaries must have scannable grouped rows")
+assert.match(bar, /id: historyRows[\s\S]*?visible: root\.setting\("historyEnabled", false\) === true/,
+  "disabled history must not display retained activity rows")
 assert.match(bar, /Model\.lockdownActionPresentation\([\s\S]*?iconText: presentation\.icon[\s\S]*?tooltipText: presentation\.tooltip[\s\S]*?restorePrivacyLockdown\(\)[\s\S]*?requestPrivacyLockdown\(\)/,
   "one compact lock/unlock action must expose lockdown and observed-state undo")
 assert.doesNotMatch(bar, /text: "Undo lockdown"/, "lockdown undo must not consume a second text-button row")
@@ -246,5 +251,9 @@ assert.match(monitoringSettings, /columns: observerHealthSettings\.width >= Styl
   "self-test actions must reflow instead of crowding narrow popups")
 assert.match(monitoringSettings, /PrivacyMessageSurface[\s\S]*?selfTestResult\.text/,
   "self-test results must use the shared status surface")
+for (const action of ["Clear stored history", "Export settings", "Import settings", "Run self-test", "Send test alert", "Copy diagnostics"])
+  assert.match(monitoringSettings, new RegExp(`text: "${action}"; bordered: true`), `${action} must look actionable at rest`)
+for (const action of ["Save", "Send test"])
+  assert.match(alertsSettings, new RegExp(`text: "${action}"; bordered: true`), `${action} must look actionable at rest`)
 
 console.log("global settings contract tests passed")

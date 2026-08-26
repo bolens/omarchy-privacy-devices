@@ -49,16 +49,16 @@ GridLayout {
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Private data" }
     PrivacySettingToggle { objectName: "historyEnabledToggle"; controller: page.controller; settingKey: "historyEnabled"; fallback: false; label: "Keep recent activity"; description: "Store private metadata for seven days or 100 completed sessions." }
-    Button { text: "Clear stored history"; enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.clearHistory() }
+    Button { text: "Clear stored history"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.clearHistory() }
     Text { Layout.fillWidth: true; text: "Export or restore a versioned settings file stored privately in your user data directory."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
     GridLayout {
       Layout.fillWidth: true
       columns: privateDataSettings.width >= Style.space(420) ? 3 : 1
       columnSpacing: Style.spacing.sm
       rowSpacing: Style.spacing.sm
-      Button { text: "Export settings"; enabled: !page.controller.settingsTransferRunning; onClicked: page.controller.exportSettings() }
-      Button { text: "Import settings"; enabled: !page.controller.settingsTransferRunning; onClicked: page.controller.importSettings() }
-      Button { text: "Undo last change"; enabled: !page.controller.settingsTransferRunning && page.controller.settingsUndoAvailable; onClicked: page.controller.undoSettingsChange() }
+      Button { Layout.fillWidth: true; text: "Export settings"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: !page.controller.settingsTransferRunning; onClicked: page.controller.exportSettings() }
+      Button { Layout.fillWidth: true; text: "Import settings"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: !page.controller.settingsTransferRunning; onClicked: page.controller.importSettings() }
+      Button { Layout.fillWidth: true; text: "Undo last change"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: !page.controller.settingsTransferRunning && page.controller.settingsUndoAvailable; onClicked: page.controller.undoSettingsChange() }
     }
     PrivacyMessageSurface { visible: page.controller.settingsTransferStatus !== ""; message: page.controller.settingsTransferStatus; kind: page.controller.settingsTransferStatus.indexOf("failed") !== -1 || page.controller.settingsTransferStatus.indexOf("invalid") !== -1 ? "error" : "info" }
   }
@@ -81,10 +81,10 @@ GridLayout {
       columns: observerHealthSettings.width >= Style.space(360) ? 2 : 1
       columnSpacing: Style.spacing.sm
       rowSpacing: Style.spacing.sm
-      Button { Layout.fillWidth: true; text: "Run self-test"; enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.runSelfTest() }
-      Button { Layout.fillWidth: true; text: "Send test alert"; enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.sendTestNotification() }
-      Button { Layout.fillWidth: true; text: "Copy self-test"; enabled: page.controller.privacyService !== null && page.controller.privacyService.selfTestResult.status !== "idle"; onClicked: page.controller.privacyService.copySelfTest() }
-      Button { Layout.fillWidth: true; text: "Copy diagnostics"; enabled: page.controller.privacyService !== null; tooltipText: "Copy health and timing data with application and device names redacted"; onClicked: page.controller.privacyService.copyDiagnostics(true) }
+      Button { Layout.fillWidth: true; text: "Run self-test"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.runSelfTest() }
+      Button { Layout.fillWidth: true; text: "Send test alert"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.sendTestNotification() }
+      Button { Layout.fillWidth: true; text: "Copy self-test"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null && page.controller.privacyService.selfTestResult.status !== "idle"; onClicked: page.controller.privacyService.copySelfTest() }
+      Button { Layout.fillWidth: true; text: "Copy diagnostics"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; tooltipText: "Copy health and timing data with application and device names redacted"; onClicked: page.controller.privacyService.copyDiagnostics(true) }
     }
     PrivacyMessageSurface {
       Layout.fillWidth: true

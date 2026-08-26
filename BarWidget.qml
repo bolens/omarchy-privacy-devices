@@ -967,21 +967,33 @@ Panel {
             PanelSectionHeader { Layout.fillWidth: true; text: "Privacy summary" }
             RowLayout {
               Layout.fillWidth: true
-              Button { text: "Today"; enabled: root.historySummaryWindow !== 24 * 60 * 60 * 1000; onClicked: root.historySummaryWindow = 24 * 60 * 60 * 1000 }
-              Button { text: "7 days"; enabled: root.historySummaryWindow !== 7 * 24 * 60 * 60 * 1000; onClicked: root.historySummaryWindow = 7 * 24 * 60 * 60 * 1000 }
+              Button { text: "Today"; bordered: true; selected: root.historySummaryWindow === 24 * 60 * 60 * 1000; onClicked: root.historySummaryWindow = 24 * 60 * 60 * 1000 }
+              Button { text: "7 days"; bordered: true; selected: root.historySummaryWindow === 7 * 24 * 60 * 60 * 1000; onClicked: root.historySummaryWindow = 7 * 24 * 60 * 60 * 1000 }
               Item { Layout.fillWidth: true }
             }
             Repeater {
               model: root.historySummaryRows
-              delegate: RowLayout {
+              delegate: Rectangle {
                 required property var modelData
                 Layout.fillWidth: true
-                Text { text: root.iconFor(modelData.kind); textFormat: Text.PlainText; color: root.itemColor(root.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.icon * root.popupItemScale }
-                ColumnLayout {
-                  Layout.fillWidth: true
-                  Text { Layout.fillWidth: true; text: Model.label(modelData.kind) + " · " + modelData.count + (modelData.count === 1 ? " session" : " sessions") + " · " + Model.formatDuration(modelData.durationMs); textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * root.popupItemScale; elide: Text.ElideRight }
-                  Text { Layout.fillWidth: true; text: modelData.applications.join(", "); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
-                  Text { visible: modelData.newApplications.length > 0; Layout.fillWidth: true; text: "New in retained history: " + modelData.newApplications.join(", "); textFormat: Text.PlainText; color: Color.accent; font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
+                implicitHeight: summaryRow.implicitHeight + Style.spacing.md * 2
+                radius: Style.cornerRadius
+                color: Util.alpha(root.itemColor(root.item(modelData.kind)), 0.045)
+                border.width: 1
+                border.color: Util.alpha(root.itemColor(root.item(modelData.kind)), 0.14)
+                RowLayout {
+                  id: summaryRow
+                  anchors.fill: parent
+                  anchors.margins: Style.spacing.md
+                  spacing: Style.spacing.md
+                  Text { text: root.iconFor(modelData.kind); textFormat: Text.PlainText; color: root.itemColor(root.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.icon * root.popupItemScale }
+                  ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: Style.spacing.xs
+                    Text { Layout.fillWidth: true; text: Model.label(modelData.kind) + " · " + modelData.count + (modelData.count === 1 ? " session" : " sessions") + " · " + Model.formatDuration(modelData.durationMs); textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * root.popupItemScale; font.weight: Font.DemiBold; elide: Text.ElideRight }
+                    Text { Layout.fillWidth: true; text: modelData.applications.join(", "); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
+                    Text { visible: modelData.newApplications.length > 0; Layout.fillWidth: true; text: "New in retained history: " + modelData.newApplications.join(", "); textFormat: Text.PlainText; color: root.itemColor(root.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
+                  }
                 }
               }
             }
@@ -1025,7 +1037,7 @@ Panel {
             Layout.fillWidth: true
             PanelSectionHeader { Layout.fillWidth: true; text: "History is off" }
             Text { Layout.fillWidth: true; text: "Enable history to keep completed activity on this device for up to seven days."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-            Button { text: "Open monitoring settings"; onClicked: root.showGlobalSettings("monitoring", "private-data") }
+            Button { text: "Open monitoring settings"; bordered: true; background: Util.alpha(root.activeThemeColor, 0.06); onClicked: root.showGlobalSettings("monitoring", "private-data") }
           }
 
           PrivacyMessageSurface {
@@ -1045,6 +1057,7 @@ Panel {
 
           GridLayout {
             id: historyRows
+            visible: root.setting("historyEnabled", false) === true
             Layout.fillWidth: true
             columns: root.popupGridColumns
             columnSpacing: root.popupDensity === "compact" ? Style.spacing.sm : Style.spacing.md
