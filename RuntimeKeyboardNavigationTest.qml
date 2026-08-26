@@ -75,6 +75,21 @@ ShellRoot {
     widget.moveDeviceEditor(1)
     if (widget.editingKind !== "location") throw new Error("device keyboard navigation crossed the upper boundary")
 
+    widget.open()
+    widget.closeCurrentLayer()
+    if (widget.editingKind !== "" || !widget.opened)
+      throw new Error("device dismissal closed the entire popup")
+    widget.showingGlobalSettings = true
+    widget.closeCurrentLayer()
+    if (widget.showingGlobalSettings || !widget.opened)
+      throw new Error("settings dismissal closed the entire popup")
+    widget.showingHistory = true
+    widget.closeCurrentLayer()
+    if (widget.showingHistory || !widget.opened)
+      throw new Error("history dismissal closed the entire popup")
+    widget.closeCurrentLayer()
+    if (widget.opened) throw new Error("top-level dismissal left the popup open")
+
     console.log("PRIVACY_QML_KEYBOARD_NAVIGATION_OK")
     Qt.quit()
   })

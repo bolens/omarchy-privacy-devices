@@ -51,6 +51,10 @@ run_harness() {
     printf '%s\n' "$output" >&2
     exit "$status"
   fi
+  if grep -Eq 'WARN scene:|CRITICAL:|FATAL:' <<<"$output"; then
+    printf 'QML runtime harness %s emitted runtime errors\n%s\n' "$file" "$output" >&2
+    return 1
+  fi
   grep -q "$marker" <<<"$output" || {
     printf 'QML runtime harness %s did not emit %s\n%s\n' "$file" "$marker" "$output" >&2
     return 1
@@ -107,6 +111,7 @@ run_harness RuntimeSelfTestAggregationTest.qml PRIVACY_QML_SELF_TEST_AGGREGATION
 run_harness RuntimeKeyboardNavigationTest.qml PRIVACY_QML_KEYBOARD_NAVIGATION_OK
 run_harness RuntimeControlRequestGatingTest.qml PRIVACY_QML_CONTROL_REQUEST_GATING_OK
 run_harness RuntimeObserverHealthStateTest.qml PRIVACY_QML_OBSERVER_HEALTH_STATE_OK
+run_harness RuntimeDeviceHealthAggregationTest.qml PRIVACY_QML_DEVICE_HEALTH_AGGREGATION_OK
 
 if [[ -n $requested_harness && $ran_harness -eq 0 ]]; then
   printf 'Requested QML runtime harness not found: %s\n' "$requested_harness" >&2

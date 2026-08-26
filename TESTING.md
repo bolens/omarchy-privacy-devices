@@ -60,6 +60,10 @@ The fast suite verifies that every `Runtime*Test.qml` harness is registered
 exactly once and owns one unique success marker, so adding a harness cannot
 silently leave it out of the real-engine suite.
 
+The runtime runner also rejects QML scene warnings and fatal/critical engine
+output even when a success marker was emitted, preventing late binding errors
+from being hidden by an otherwise successful assertion path.
+
 This runs shared policy, the assembled plugin, semantic appearance bindings,
 rendered bar and activity-card states, per-endpoint audio controls, validated
 device/settings deep links, two-step lockdown and undo presentation, user
@@ -73,8 +77,8 @@ feedback lifecycle, transfer request exclusion, multi-monitor deep-link routing,
 capture-preview cleanup and automatic expiry, debounced observer-session
 reconciliation, validated notification callback routing, reactive policy
 eligibility, keyboard selection and device navigation, control-request gating,
-observer-health state isolation, per-device reset isolation, endpoint feedback
-transitions,
+layered popup dismissal, observer-health state isolation and per-device health
+aggregation, per-device reset isolation, endpoint feedback transitions,
 verification timeouts, privacy-preset orchestration, self-test health aggregation,
 lockdown result states, destructive-history
 cancellation, rollback retry, external toggle updates, cross-device metadata
