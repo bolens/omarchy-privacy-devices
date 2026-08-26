@@ -61,6 +61,8 @@ maintainer guides that define release and validation procedures.
   state and execute the verified serial lockdown plan.
 - Report degraded fallback-observer health in the guided privacy self-test
   instead of silently treating the missing alias as healthy.
+- Give active-count summary rows complete pending and dependency state so the
+  bar does not emit QML binding warnings while rendering the summary icon.
 
 ## [0.6.0] - 2026-08-26
 

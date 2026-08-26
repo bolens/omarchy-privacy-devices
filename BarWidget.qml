@@ -82,7 +82,7 @@ Panel {
     {value: "show", label: "Show"}, {value: "hide", label: "Hide"}
   ]
   readonly property var normalBarItems: displayMode === "active-count"
-    ? [{kind: "summary", label: "Privacy", icon: activeCount > 0 ? "󰒃 " + activeCount : "󰒃", active: activeCount > 0, apps: [], controllable: false, controlEnabled: false, health: {status: "healthy"}, sessions: []}]
+    ? [{kind: "summary", label: "Privacy", icon: activeCount > 0 ? "󰒃 " + activeCount : "󰒃", active: activeCount > 0, apps: [], controllable: false, controlEnabled: false, pending: false, dependenciesReady: true, health: {status: "healthy"}, sessions: []}]
     : (displayMode === "active-only" ? activeItems() : visibleItems)
   readonly property var liveBarItems: monitoringDegraded && normalBarItems.length === 0
     ? [{kind: "summary", label: "Privacy", icon: "󰀦", active: false, apps: [], controllable: false, controlEnabled: false, health: {status: "degraded"}, sessions: []}]
