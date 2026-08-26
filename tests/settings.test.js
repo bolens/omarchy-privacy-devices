@@ -34,7 +34,7 @@ const globalKeys = [
   "notificationKinds", "notifyOnActivity", "notifyOnStop", "notifyOnControlChanges", "notifyOnObserverHealth",
   "notificationSuppressedApps", "historyEnabled", "blockableKinds", "directDeviceMonitoring",
   "directDevicePollSeconds", "showInferredAttribution", "locationPollSeconds", "recordingPollSeconds", "popupMaxHeight",
-  "activeColorRole", "inactiveColorRole", "disabledColorRole", "disabledOpacity",
+  "activeColorRole", "activeOpacity", "inactiveColorRole", "disabledColorRole", "blockedActiveColorRole", "blockedActiveOpacity", "disabledOpacity",
   "statusMarkerMode", "statePillStyle", "popupDensity", "popupLayout", "popupWidth", "popupItemScale", "popupIdleOpacity", "showStatePills", "showSessionCounts", "animatePending",
   "barIconScale", "barItemSpacing", "barItemPadding", "barMarkerPosition", "showBarSessionCounts",
   "showBarActiveMarker", "showBarDisabledMarker", "showBarPendingMarker", "showBarDegradedMarker"
@@ -46,7 +46,8 @@ assert.deepEqual(
   Object.assign({}, defaults, {_privacySettingsVersion: 1}),
   "every manifest default must survive the shared settings sanitizer"
 )
-assert.equal(defaults.showIdle, false, "idle activity icons must be hidden for new installations")
+assert.equal(defaults.showIdle, true, "idle activity icons must match the standard bar presentation")
+assert.equal(defaults.statusMarkerMode, "off", "bar activity markers must be off for new installations")
 
 for (const key of globalKeys) {
   assert.ok(Object.hasOwn(defaults, key), `global default missing: ${key}`)
@@ -132,7 +133,7 @@ assert.match(bar, /text: "Today"; bordered: true; selected: root\.historySummary
   "history must offer bounded today and seven-day summaries")
 assert.match(bar, /model: root\.historySummaryRows[\s\S]*?delegate: Rectangle[\s\S]*?id: summaryRow[\s\S]*?font\.weight: Font\.DemiBold/,
   "history summaries must have scannable grouped rows")
-assert.match(bar, /id: historyRows[\s\S]*?visible: root\.setting\("historyEnabled", false\) === true/,
+assert.match(bar, /id: historyRows[\s\S]*?visible: root\.historyPresentationEnabled/,
   "disabled history must not display retained activity rows")
 assert.match(bar, /Model\.lockdownActionPresentation\([\s\S]*?iconText: presentation\.icon[\s\S]*?tooltipText: presentation\.tooltip[\s\S]*?restorePrivacyLockdown\(\)[\s\S]*?requestPrivacyLockdown\(\)/,
   "one compact lock/unlock action must expose lockdown and observed-state undo")
@@ -140,9 +141,9 @@ assert.doesNotMatch(bar, /text: "Undo lockdown"/, "lockdown undo must not consum
 assert.match(activityCard, /text: !entry\.dependenciesReady \? "INSTALL" : \(entry\.kind === "screenshot" \? "CAPTURE" : controller\.itemStateLabel\(entry\)\)/,
   "every popup row must expose an explicit install, capture, or tested semantic state")
 assert.match(globalSettings, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")
-for (const label of ["Icon scale", "Space between bar items", "Bar item padding", "Bar status markers", "Marker position", "Active marker", "Disabled marker", "Verifying marker", "Degraded marker", "Popup state pills", "Popup density", "Popup layout", "Popup width", "Popup item scale", "Popup idle visibility", "State pills", "Popup session counts", "Bar session counts", "Animate verification", "Disabled opacity"])
+for (const label of ["Icon scale", "Space between bar items", "Bar item padding", "In use", "In-use opacity", "Enabled and idle", "Enabled-idle opacity", "Disabled", "Disabled opacity", "Blocked request", "Blocked-request opacity", "Bar status markers", "Marker position", "Active marker", "Disabled marker", "Verifying marker", "Degraded marker", "Popup state pills", "Popup density", "Popup layout", "Popup width", "Popup item scale", "Popup idle visibility", "State pills", "Popup session counts", "Bar session counts", "Animate verification"])
   assert.match(globalSettings, new RegExp(label), `${label} must be exposed in global visual settings`)
-assert.match(bar, /state === "active" \? showBarActiveMarker[\s\S]*?state === "disabled" \? showBarDisabledMarker[\s\S]*?state === "pending" \? showBarPendingMarker[\s\S]*?state === "unavailable" \? showBarDegradedMarker/,
+assert.match(bar, /state === "active" \? showBarActiveMarker[\s\S]*?state === "disabled" \|\| state === "blocked-active" \? showBarDisabledMarker[\s\S]*?state === "pending" \? showBarPendingMarker[\s\S]*?state === "unavailable" \? showBarDegradedMarker/,
   "bar status classes must have independent marker visibility")
 for (const label of ["Active marker icon", "Disabled marker icon", "Verifying marker icon", "Degraded marker icon"])
   assert.match(globalSettings, new RegExp(label), `${label} must be exposed for custom marker mode`)
@@ -259,5 +260,7 @@ for (const action of ["Clear stored history", "Export settings", "Import setting
   assert.match(monitoringSettings, new RegExp(`text: "${action}"; bordered: true`), `${action} must look actionable at rest`)
 for (const action of ["Save", "Send test"])
   assert.match(alertsSettings, new RegExp(`text: "${action}"; bordered: true`), `${action} must look actionable at rest`)
+assert.doesNotMatch(bar.match(/function itemColor\(entry\) \{[\s\S]*?^  \}/m)[0], /override\.(?:muted|unmuted)/,
+  "legacy audio color fields must not silently override global semantic colors")
 
 console.log("global settings contract tests passed")

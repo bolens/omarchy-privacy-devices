@@ -16,6 +16,7 @@ function node(mediaClass, name, extra = {}) {
 
 const defaults = {excludedApps: ["cava"], cameraKeywords: ["camera", "v4l2"], screenShareKeywords: ["portal", "screencast"]}
 if (context.privacyVisualState({kind: "camera", active: false, controllable: true, controlEnabled: false, health: {status: "healthy"}}) !== "disabled") throw new Error("blocked camera visual state")
+if (context.privacyVisualState({kind: "camera", active: true, controllable: true, controlEnabled: false, health: {status: "healthy"}}) !== "blocked-active") throw new Error("blocked active request visual state")
 if (context.privacyVisualState({kind: "location", active: false, controllable: true, controlEnabled: true, health: {status: "healthy"}}) !== "idle") throw new Error("available idle visual state")
 if (context.privacyVisualState({kind: "screen-recording", active: false, controllable: true, controlEnabled: false, health: {status: "healthy"}}) !== "idle") throw new Error("stopped recording is idle, not disabled")
 if (context.privacyVisualState({kind: "camera", active: true, controllable: true, controlEnabled: true, health: {status: "healthy"}}) !== "active") throw new Error("active visual state")
@@ -28,7 +29,7 @@ if (context.privacyStateMarker({kind: "camera", controlEnabled: false}, "off", t
 if (context.privacySessionCount({sessions: [{}, {}]}) !== 2 || context.privacySessionCount({sessions: [{}]}) !== 0) throw new Error("multi-session count badge")
 if (context.privacySessionCount({sessions: [{}, {}]}, false) !== 0) throw new Error("multi-session count suppression")
 const sanitized = context.sanitizeSettings({showIdle: "yes", popupMaxHeight: 9999, enabledKinds: ["camera", "camera", "bogus"], unknown: "discard"})
-if (JSON.stringify(sanitized) !== JSON.stringify({showIdle: false, popupMaxHeight: 900, enabledKinds: ["camera"], _privacySettingsVersion: 1})) throw new Error("settings sanitizer")
+if (JSON.stringify(sanitized) !== JSON.stringify({showIdle: true, popupMaxHeight: 900, enabledKinds: ["camera"], _privacySettingsVersion: 1})) throw new Error("settings sanitizer")
 const hardenedSettings = context.sanitizeSettings({
   idleOpacity: -4,
   displayMode: "invalid",
@@ -37,9 +38,11 @@ const hardenedSettings = context.sanitizeSettings({
   itemIdleVisibility: {camera: "yes", microphone: true},
   icons: {camera: " 󰄀\nmoretext ", microphone: "\n\t", bogus: "ignored"},
   itemLabels: {camera: "  Camera\nLabel  ", microphone: "\n\t", bogus: "ignored"},
-  itemColorRoles: {camera: {active: "accent", inactive: "danger", unexpected: "danger"}, bogus: {active: "urgent"}},
+  itemColorRoles: {camera: {active: "accent", blocked: "urgent", inactive: "danger", unexpected: "danger"}, bogus: {active: "urgent"}},
   itemStatusMarkerVisibility: {camera: false, bogus: true},
   disabledOpacity: 0,
+  activeOpacity: 4,
+  blockedActiveOpacity: 0,
   statusMarkerMode: "invalid",
   statePillStyle: "invalid",
   popupDensity: "invalid",
@@ -52,7 +55,7 @@ if (JSON.stringify(hardenedSettings.itemIdleVisibility) !== JSON.stringify({came
 if (hardenedSettings.icons.camera !== "󰄀moretex" || hardenedSettings.icons.microphone !== undefined || hardenedSettings.icons.bogus !== undefined) throw new Error("per-item icon sanitation")
 if (hardenedSettings.itemLabels.camera !== "CameraLabel" || hardenedSettings.itemLabels.microphone !== undefined || hardenedSettings.itemLabels.bogus !== undefined) throw new Error("per-item label sanitation")
 if (context.sanitizeSettings({itemLabels: {camera: "C".repeat(200)}}).itemLabels.camera.length !== 128) throw new Error("per-item label bound")
-if (JSON.stringify(hardenedSettings.itemColorRoles) !== JSON.stringify({camera: {active: "accent"}})) throw new Error("per-item role allowlist")
+if (JSON.stringify(hardenedSettings.itemColorRoles) !== JSON.stringify({camera: {active: "accent", blocked: "urgent"}})) throw new Error("per-item role allowlist")
 if (JSON.stringify(context.sanitizeSettings({itemColorRoles: {camera: {active: "danger"}}}).itemColorRoles) !== "{}") throw new Error("empty per-item role overrides")
 if (JSON.stringify(hardenedSettings.itemStatusMarkerVisibility) !== JSON.stringify({camera: false})) throw new Error("per-item marker visibility allowlist")
 
@@ -71,8 +74,8 @@ assert.deepEqual(JSON.parse(JSON.stringify(context.deviceBackendValidation("scre
 assert.equal(context.deviceBackendValidation("screen-recording", {
   recordingBackend: "custom", recordingProcessName: "recorder", recordingCustomStartCommand: "start", recordingCustomStopCommand: "stop"
 }).valid, true)
-if (hardenedSettings.disabledOpacity !== 0.25) throw new Error("disabled opacity bounds")
-if (hardenedSettings.statusMarkerMode !== "symbols" || hardenedSettings.statePillStyle !== "filled" || hardenedSettings.popupDensity !== "comfortable") throw new Error("visual enum defaults")
+if (hardenedSettings.disabledOpacity !== 0.25 || hardenedSettings.activeOpacity !== 1 || hardenedSettings.blockedActiveOpacity !== 0.1) throw new Error("state opacity bounds")
+if (hardenedSettings.statusMarkerMode !== "off" || hardenedSettings.statePillStyle !== "filled" || hardenedSettings.popupDensity !== "comfortable") throw new Error("visual enum defaults")
 if (hardenedSettings.showStatePills !== true) throw new Error("visual boolean normalization")
 if (context.settingsPage("monitoring") !== "monitoring" || context.settingsPage("unexpected") !== "general") throw new Error("settings page allowlist")
 if (context.settingsPage("appearance") !== "appearance") throw new Error("appearance settings page allowlist")

@@ -52,5 +52,8 @@ assert.equal(model.settingsScrollPosition(420, 1200, 600), 420)
 assert.equal(model.settingsScrollPosition(900, 1200, 600), 600, "deep links clamp at the scroll extent")
 assert.equal(model.settingsScrollPosition(-20, 1200, 600), 0, "deep links never overscroll above content")
 assert.equal(model.settingsScrollPosition(100, 400, 600), 0, "short settings pages remain at the top")
+assert.equal(model.deviceDeepLink("microphone"), "microphone")
+assert.equal(model.deviceDeepLink("audio-output"), "audio-output")
+assert.equal(model.deviceDeepLink("unknown"), "", "unknown device routes must not open a misleading detail page")
 
 console.log("popup navigation policy tests passed")

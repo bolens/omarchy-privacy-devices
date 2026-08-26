@@ -33,6 +33,11 @@ function settingsScrollPosition(targetY, contentHeight, viewportHeight) {
   return Math.max(0, Math.min(target, maximum))
 }
 
+function deviceDeepLink(kind) {
+  var requested = String(kind || "")
+  return KINDS.indexOf(requested) >= 0 ? requested : ""
+}
+
 function boundedPlainText(value, maximumLength) {
   if (typeof value !== "string") return ""
   return Array.from(value.replace(/[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]/g, "").trim()).slice(0, maximumLength).join("")
@@ -92,7 +97,7 @@ function privacySelfTest(input) {
 function sanitizeSettings(data) {
   var source = data && typeof data === "object" && !Array.isArray(data) ? data : {}
   var clean = {}, index, key
-  var booleans = {showIdle:false, showControls:true, deduplicateApps:true, notifyOnActivity:true, notifyOnStop:false,
+  var booleans = {showIdle:true, showControls:true, deduplicateApps:true, notifyOnActivity:true, notifyOnStop:false,
     notifyOnObserverHealth:false,
     notifyOnControlChanges:true, historyEnabled:false, directDeviceMonitoring:false, showInferredAttribution:true,
     showStatePills:true, showSessionCounts:true, showBarSessionCounts:true, animatePending:true,
@@ -112,7 +117,7 @@ function sanitizeSettings(data) {
     var disabledOpacity = Number(source.disabledOpacity)
     clean.disabledOpacity = Math.max(0.25, Math.min(1, isFinite(disabledOpacity) ? disabledOpacity : 1))
   }
-  var reals = {barIconScale:[0.75,1.5,1], popupItemScale:[0.85,1.3,1], popupIdleOpacity:[0.45,1,0.72]}
+  var reals = {barIconScale:[0.75,1.5,1], activeOpacity:[0.1,1,1], blockedActiveOpacity:[0.1,1,1], popupItemScale:[0.85,1.3,1], popupIdleOpacity:[0.45,1,0.72]}
   for (key in reals) if (source[key] !== undefined) {
     var realBounds = reals[key], realValue = Number(source[key])
     if (!isFinite(realValue)) realValue = realBounds[2]
@@ -124,9 +129,9 @@ function sanitizeSettings(data) {
   var stringLists = ["excludedApps", "hiddenApps", "notificationSuppressedApps", "hiddenDevices", "notificationSuppressedDevices", "cameraKeywords", "screenShareKeywords"]
   for (index = 0; index < stringLists.length; index++) if (Array.isArray(source[stringLists[index]]))
     clean[stringLists[index]] = unique(source[stringLists[index]].map(function(value) { return boundedPlainText(value, 256) }).filter(Boolean)).slice(0, 256)
-  var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["symbols","letters","custom","off"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], popupLayout:["adaptive","list","grid"], popupWidth:["narrow","standard","wide"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
+  var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["off","symbols","letters","custom"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], popupLayout:["adaptive","list","grid"], popupWidth:["narrow","standard","wide"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
     audioControlBackend:["auto","pactl","wpctl"], screenshotBackend:["omarchy","grim","grim-satty","hyprshot","flameshot","custom"],
-    activeColorRole:["bar-active","urgent","accent","foreground"], inactiveColorRole:["muted","foreground","accent"], disabledColorRole:["urgent","muted","accent","foreground","bar-active"],
+    activeColorRole:["accent","bar-active","urgent","foreground","muted"], inactiveColorRole:["foreground","bar-active","muted","accent","urgent"], disabledColorRole:["muted","urgent","accent","foreground","bar-active"], blockedActiveColorRole:["urgent","accent","bar-active","muted","foreground"],
     mutedColorRole:["urgent","muted","bar-active","accent","foreground"], unmutedColorRole:["foreground","bar-active","accent","muted","urgent"]}
   for (key in enums) if (source[key] !== undefined) clean[key] = enums[key].indexOf(source[key]) >= 0 ? source[key] : enums[key][0]
   var markerGlyphs = {barActiveMarkerIcon:"●", barDisabledMarkerIcon:"⊘", barPendingMarkerIcon:"…", barDegradedMarkerIcon:"!"}
@@ -157,6 +162,7 @@ function sanitizeSettings(data) {
           active:["bar-active","urgent","accent","foreground"],
           inactive:["muted","foreground","accent"],
           disabled:["urgent","muted","accent","foreground","bar-active"],
+          blocked:["urgent","accent","bar-active","muted","foreground"],
           muted:["urgent","muted","bar-active","accent","foreground"],
           unmuted:["foreground","bar-active","accent","muted","urgent"]
         }
@@ -220,12 +226,13 @@ function privacyVisualState(entry) {
   if (entry.pending === true) return "pending"
   if (entry.health && entry.health.status && entry.health.status !== "healthy") return "unavailable"
   var disableCapable = ["microphone", "audio-output", "camera", "screen-share", "location"].indexOf(String(entry.kind || "")) >= 0
+  if (disableCapable && entry.controlEnabled === false && entry.active === true) return "blocked-active"
   if (disableCapable && entry.controlEnabled === false) return "disabled"
   return entry.active === true ? "active" : "idle"
 }
 
 function privacyStateLabel(entry) {
-  var labels = {pending: "VERIFYING", unavailable: "DEGRADED", disabled: "DISABLED", active: "ACTIVE", idle: "IDLE"}
+  var labels = {pending: "VERIFYING", unavailable: "DEGRADED", "blocked-active": "BLOCKED REQUEST", disabled: "DISABLED", active: "ACTIVE", idle: "IDLE"}
   return labels[privacyVisualState(entry)] || "IDLE"
 }
 
@@ -282,11 +289,11 @@ function privacyStateMarker(entry, mode, visible, customMarkers) {
   var state = privacyVisualState(entry)
   if (mode === "custom") {
     var custom = customMarkers && typeof customMarkers === "object" ? customMarkers : {}
-    var customDefaults = {pending: "…", unavailable: "!", disabled: "⊘", active: "●", idle: ""}
+    var customDefaults = {pending: "…", unavailable: "!", "blocked-active": "⊘", disabled: "⊘", active: "●", idle: ""}
     return custom[state] === undefined ? customDefaults[state] || "" : String(custom[state])
   }
   if (mode === "letters") {
-    var letters = {pending: "V", unavailable: "!", disabled: "X", active: "A", idle: ""}
+    var letters = {pending: "V", unavailable: "!", "blocked-active": "X", disabled: "X", active: "A", idle: ""}
     return letters[state] || ""
   }
   var symbols = {pending: "…", unavailable: "!", disabled: "⊘", active: "●", idle: ""}

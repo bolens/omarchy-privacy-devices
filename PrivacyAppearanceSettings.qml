@@ -24,7 +24,6 @@ GridLayout {
       NumberField { Layout.fillWidth: true; label: "Icon scale (%)"; from: 75; to: 150; stepSize: 5; value: Math.round(page.controller.barIconScale * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({barIconScale: Number(value) / 100}) } }
       IntegerSetting { controller: page.controller; settingKey: "barItemSpacing"; label: "Space between bar items"; minimum: 0; maximum: 12; fallback: 0 }
       IntegerSetting { controller: page.controller; settingKey: "barItemPadding"; label: "Bar item padding"; minimum: 2; maximum: 12; fallback: 5 }
-      NumberField { Layout.fillWidth: true; label: "Idle opacity (%)"; from: 10; to: 100; stepSize: 5; value: Math.round(Number(page.controller.setting("idleOpacity", 0.45)) * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({idleOpacity: Number(value) / 100}) } }
     }
   }
   SettingsSurface {
@@ -32,15 +31,20 @@ GridLayout {
     Layout.fillWidth: true
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Theme colors" }
+    Text { Layout.fillWidth: true; text: "Blocked request applies when an application session remains observable while its device control is blocked. Some backends suppress the request entirely."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
     GridLayout {
       Layout.fillWidth: true
       columns: themeColorsSettings.width >= Style.space(420) ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
-      Dropdown { Layout.fillWidth: true; label: "Active"; options: ["bar-active", "urgent", "accent", "foreground"]; value: String(page.controller.setting("activeColorRole", "bar-active")); onChanged: function(value) { page.controller.persistSettings({activeColorRole: value}) } }
-      Dropdown { Layout.fillWidth: true; label: "Inactive"; options: ["muted", "foreground", "accent"]; value: String(page.controller.setting("inactiveColorRole", "muted")); onChanged: function(value) { page.controller.persistSettings({inactiveColorRole: value}) } }
-      Dropdown { Layout.fillWidth: true; label: "Disabled"; options: ["urgent", "muted", "accent", "foreground", "bar-active"]; value: String(page.controller.setting("disabledColorRole", "urgent")); onChanged: function(value) { page.controller.persistSettings({disabledColorRole: value}) } }
+      Dropdown { Layout.fillWidth: true; label: "In use"; options: ["accent", "bar-active", "urgent", "foreground", "muted"]; value: String(page.controller.setting("activeColorRole", "accent")); onChanged: function(value) { page.controller.persistSettings({activeColorRole: value}) } }
+      NumberField { Layout.fillWidth: true; label: "In-use opacity (%)"; from: 10; to: 100; stepSize: 5; value: Math.round(Number(page.controller.setting("activeOpacity", 1)) * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({activeOpacity: Number(value) / 100}) } }
+      Dropdown { Layout.fillWidth: true; label: "Enabled and idle"; options: ["foreground", "bar-active", "muted", "accent", "urgent"]; value: String(page.controller.setting("inactiveColorRole", "foreground")); onChanged: function(value) { page.controller.persistSettings({inactiveColorRole: value}) } }
+      NumberField { Layout.fillWidth: true; label: "Enabled-idle opacity (%)"; from: 10; to: 100; stepSize: 5; value: Math.round(Number(page.controller.setting("idleOpacity", 0.45)) * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({idleOpacity: Number(value) / 100}) } }
+      Dropdown { Layout.fillWidth: true; label: "Disabled"; options: ["muted", "urgent", "accent", "foreground", "bar-active"]; value: String(page.controller.setting("disabledColorRole", "muted")); onChanged: function(value) { page.controller.persistSettings({disabledColorRole: value}) } }
       NumberField { Layout.fillWidth: true; label: "Disabled opacity (%)"; from: 25; to: 100; stepSize: 5; value: Math.round(page.controller.disabledOpacity * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({disabledOpacity: Number(value) / 100}) } }
+      Dropdown { Layout.fillWidth: true; label: "Blocked request"; options: ["urgent", "accent", "bar-active", "muted", "foreground"]; value: String(page.controller.setting("blockedActiveColorRole", "urgent")); onChanged: function(value) { page.controller.persistSettings({blockedActiveColorRole: value}) } }
+      NumberField { Layout.fillWidth: true; label: "Blocked-request opacity (%)"; from: 10; to: 100; stepSize: 5; value: Math.round(Number(page.controller.setting("blockedActiveOpacity", 1)) * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({blockedActiveOpacity: Number(value) / 100}) } }
     }
   }
   SettingsSurface {

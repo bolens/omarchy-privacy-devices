@@ -21,7 +21,7 @@
     "defaults": {
       "enabledKinds": ["microphone", "audio-output", "camera", "screen-share", "screenshot", "screen-recording", "location"],
       "order": ["screen-recording", "screenshot", "screen-share", "camera", "microphone", "audio-output", "location"],
-      "showIdle": false,
+      "showIdle": true,
       "displayMode": "icons",
       "barIconScale": 1,
       "barItemSpacing": 0,
@@ -36,11 +36,14 @@
       "barDisabledMarkerIcon": "⊘",
       "barPendingMarkerIcon": "…",
       "barDegradedMarkerIcon": "!",
-      "activeColorRole": "bar-active",
-      "inactiveColorRole": "muted",
-      "disabledColorRole": "urgent",
+      "activeColorRole": "accent",
+      "activeOpacity": 1,
+      "inactiveColorRole": "foreground",
+      "disabledColorRole": "muted",
+      "blockedActiveColorRole": "urgent",
+      "blockedActiveOpacity": 1,
       "disabledOpacity": 1,
-      "statusMarkerMode": "symbols",
+      "statusMarkerMode": "off",
       "statePillStyle": "filled",
       "popupDensity": "comfortable",
       "popupLayout": "adaptive",
@@ -121,7 +124,7 @@
         "type": "boolean",
         "label": "Show idle activity icons",
         "description": "Keep enabled activity icons visible when they are not in use.",
-        "defaultValue": false
+        "defaultValue": true
       },
       {
         "key": "displayMode",
@@ -229,30 +232,56 @@
       {
         "key": "activeColorRole",
         "type": "enum",
-        "label": "Active theme color",
-        "options": ["bar-active", "urgent", "accent", "foreground"],
-        "defaultValue": "bar-active"
+        "label": "In-use theme color",
+        "options": ["accent", "bar-active", "urgent", "foreground", "muted"],
+        "defaultValue": "accent"
+      },
+      {
+        "key": "activeOpacity",
+        "type": "number",
+        "label": "In-use opacity",
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05,
+        "defaultValue": 1
       },
     {
       "key": "inactiveColorRole",
         "type": "enum",
-        "label": "Inactive theme color",
-        "options": ["muted", "foreground", "accent"],
-      "defaultValue": "muted"
+        "label": "Enabled-idle theme color",
+        "options": ["foreground", "bar-active", "muted", "accent", "urgent"],
+      "defaultValue": "foreground"
     },
     {
       "key": "disabledColorRole",
       "type": "enum",
       "label": "Disabled theme color",
-      "description": "Icon color for blocked or muted privacy controls.",
+      "description": "Icon color for controls that are disabled without a visible use request.",
       "options": [
-        "urgent",
         "muted",
+        "urgent",
         "accent",
         "foreground",
         "bar-active"
       ],
+      "defaultValue": "muted"
+    },
+    {
+      "key": "blockedActiveColorRole",
+      "type": "enum",
+      "label": "Blocked-request theme color",
+      "description": "Icon color when a visible application session requests a blocked device.",
+      "options": ["urgent", "accent", "bar-active", "muted", "foreground"],
       "defaultValue": "urgent"
+    },
+    {
+      "key": "blockedActiveOpacity",
+      "type": "number",
+      "label": "Blocked-request opacity",
+      "min": 0.1,
+      "max": 1,
+      "step": 0.05,
+      "defaultValue": 1
     },
     {
       "key": "disabledOpacity",
@@ -268,7 +297,7 @@
       "type": "enum",
       "label": "Bar status markers",
       "options": ["symbols", "letters", "custom", "off"],
-      "defaultValue": "symbols"
+      "defaultValue": "off"
     },
     {
       "key": "statePillStyle",

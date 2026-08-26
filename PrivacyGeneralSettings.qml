@@ -19,7 +19,7 @@ ColumnLayout {
       columns: page.controller.popupWidth === "wide" ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
-      PrivacySettingToggle { controller: page.controller; settingKey: "showIdle"; fallback: false; label: "Show idle activity icons"; description: "Keep activity icons visible while idle." }
+      PrivacySettingToggle { controller: page.controller; settingKey: "showIdle"; fallback: true; label: "Show idle activity icons"; description: "Keep activity icons visible while idle." }
       PrivacySettingToggle { controller: page.controller; settingKey: "showControls"; label: "Show privacy controls"; description: "Show inline switches and row actions." }
       PrivacySettingToggle { Layout.columnSpan: page.controller.popupWidth === "wide" ? 2 : 1; controller: page.controller; settingKey: "deduplicateApps"; label: "Deduplicate applications"; description: "List an app once when it owns several sessions." }
     }
