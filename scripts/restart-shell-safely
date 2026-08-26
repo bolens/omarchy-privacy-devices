@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+qs_command=${PRIVACY_QS_COMMAND:-qs}
+hyprctl_command=${PRIVACY_HYPRCTL_COMMAND:-hyprctl}
+history_command=${PRIVACY_HISTORY_COMMAND:-$root/privacy-history}
+settings_file=${PRIVACY_SETTINGS_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/shell.json}
+
+for command in "$qs_command" "$hyprctl_command" "$history_command"; do
+  command -v "$command" >/dev/null || { printf 'Missing required command: %s\n' "$command" >&2; exit 1; }
+done
+[[ -f $settings_file ]] || { printf 'Omarchy Shell settings not found: %s\n' "$settings_file" >&2; exit 1; }
+
+shell_pids() { "$qs_command" list --all | awk '/Process ID:/ { print $3 }'; }
+is_plugin_shell() {
+  local candidate=$1 shell_reply plugin_reply
+  shell_reply=$("$qs_command" ipc --pid "$candidate" call shell ping 2>/dev/null || true)
+  plugin_reply=$("$qs_command" ipc --pid "$candidate" call privacy-devices historyEnabled 2>/dev/null || true)
+  [[ $shell_reply == ok && $plugin_reply =~ ^(true|false)$ ]]
+}
+find_plugin_shell() {
+  local excluded=${1:-} candidate
+  while read -r candidate; do
+    [[ $candidate =~ ^[1-9][0-9]*$ && $candidate != "$excluded" ]] || continue
+    if is_plugin_shell "$candidate"; then printf '%s\n' "$candidate"; return 0; fi
+  done < <(shell_pids)
+  return 1
+}
+
+old_pid=$(find_plugin_shell) || { printf 'No IPC-ready Privacy Devices shell found.\n' >&2; exit 1; }
+temporary=$(mktemp -d "${TMPDIR:-/tmp}/privacy-shell-restart.XXXXXX")
+trap 'rm -rf -- "$temporary"' EXIT
+cp -- "$settings_file" "$temporary/settings.json"
+"$history_command" load >"$temporary/history.json"
+
+"$qs_command" kill --pid "$old_pid"
+for _attempt in {1..80}; do
+  if ! shell_pids | awk -v pid="$old_pid" '$1 == pid { found=1 } END { exit !found }'; then break; fi
+  sleep 0.1
+done
+if shell_pids | awk -v pid="$old_pid" '$1 == pid { found=1 } END { exit !found }'; then
+  printf 'Old shell %s did not exit; replacement was not launched.\n' "$old_pid" >&2
+  exit 1
+fi
+
+"$hyprctl_command" eval 'hl.dispatch(hl.dsp.exec_cmd("omarchy-launch-shell"))' >/dev/null
+new_pid=""
+for _attempt in {1..120}; do
+  new_pid=$(find_plugin_shell "$old_pid" || true)
+  [[ -n $new_pid ]] && break
+  sleep 0.1
+done
+[[ -n $new_pid ]] || { printf 'Replacement shell did not become IPC-ready.\n' >&2; exit 1; }
+
+cmp -s "$temporary/settings.json" "$settings_file" || { printf 'Shell settings changed during restart.\n' >&2; exit 1; }
+cmp -s "$temporary/history.json" <("$history_command" load) || { printf 'Privacy history changed during restart.\n' >&2; exit 1; }
+printf 'Restarted Privacy Devices shell safely: %s -> %s.\n' "$old_pid" "$new_pid"
