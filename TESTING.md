@@ -75,8 +75,9 @@ diagnostics, monitoring configuration and appearance presentation wiring,
 monitoring telemetry freshness, fallback observation composition, reactive
 audio-endpoint replacement, guarded card activation, diagnostic recovery,
 reactive session summaries, responsive navigation and lazy loading of every
-settings page, mutation
-feedback lifecycle, transfer request exclusion, multi-monitor deep-link routing,
+settings page, race-free polling of asynchronous settings writes and session
+reconciliation, mutation feedback lifecycle, transfer request exclusion,
+multi-monitor deep-link routing,
 capture-preview cleanup and automatic expiry, debounced observer-session
 reconciliation, validated notification callback routing, reactive policy
 eligibility, keyboard selection and device navigation, control-request gating,
@@ -87,9 +88,10 @@ lockdown result states, destructive-history
 cancellation, rollback retry, external toggle updates, cross-device metadata
 coalescing, backend reset completeness, external payload validation and
 stale-state cleanup, filtered status projection, diagnostics redaction,
-control-transaction lifecycle wiring, status-presentation wiring, redacted
-monitoring actions, subprocess
-failure/recovery, guarded activity-policy actions, private-data transfer
+diagnostic backend/state/exit-code projection, backend command selection,
+relocatable helper paths and escaped observer arguments, control-transaction
+lifecycle wiring, status-presentation wiring, redacted monitoring actions,
+subprocess failure/recovery, guarded activity-policy actions, private-data transfer
 controls, in-memory history search, confirmation, and private settings-transfer
 behavior in the real QML engine.
 

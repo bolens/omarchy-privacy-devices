@@ -74,23 +74,27 @@ ShellRoot {
         widget.persistSettings({showControls:false})
         root.stage = 1
       } else if (root.stage === 1) {
-        if (root.updates !== 1 || widget.showIdle !== false || widget.showControls !== false) throw new Error("plugin settings mutation integration failed")
+        if (root.updates !== 1 || widget.showIdle !== false || widget.showControls !== false) return
         widget.showGlobalSettings("general", "")
         root.stage = 2
       } else if (root.stage === 2) {
-        if (widget.globalSettingsPage !== "general" || !widget.settingsPageLoaded) throw new Error("general settings page did not load")
+        if (widget.globalSettingsPage !== "general") throw new Error("general settings page route changed")
+        if (!widget.settingsPageLoaded) return
         widget.showGlobalSettings("appearance", "")
         root.stage = 3
       } else if (root.stage === 3) {
-        if (widget.globalSettingsPage !== "appearance" || !widget.settingsPageLoaded) throw new Error("appearance settings page did not load")
+        if (widget.globalSettingsPage !== "appearance") throw new Error("appearance settings page route changed")
+        if (!widget.settingsPageLoaded) return
         widget.showGlobalSettings("alerts", "")
         root.stage = 4
       } else if (root.stage === 4) {
-        if (widget.globalSettingsPage !== "alerts" || !widget.settingsPageLoaded) throw new Error("alerts settings page did not load")
+        if (widget.globalSettingsPage !== "alerts") throw new Error("alerts settings page route changed")
+        if (!widget.settingsPageLoaded) return
         widget.showGlobalSettings("monitoring", "")
         root.stage = 5
       } else if (root.stage === 5) {
-        if (widget.globalSettingsPage !== "monitoring" || !widget.settingsPageLoaded) throw new Error("monitoring settings page did not reload")
+        if (widget.globalSettingsPage !== "monitoring") throw new Error("monitoring settings page route changed")
+        if (!widget.settingsPageLoaded) return
         widget.showHistory()
         if (!widget.showingHistory || widget.showingGlobalSettings) throw new Error("history navigation failed")
         widget.showActivity()

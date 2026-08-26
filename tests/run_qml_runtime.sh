@@ -115,6 +115,9 @@ run_harness RuntimeObserverHealthStateTest.qml PRIVACY_QML_OBSERVER_HEALTH_STATE
 run_harness RuntimeDeviceHealthAggregationTest.qml PRIVACY_QML_DEVICE_HEALTH_AGGREGATION_OK
 run_harness RuntimeMonitoringTelemetryTest.qml PRIVACY_QML_MONITORING_TELEMETRY_OK
 run_harness RuntimeFallbackObservationCompositionTest.qml PRIVACY_QML_FALLBACK_OBSERVATION_COMPOSITION_OK
+run_harness RuntimeBackendCommandSelectionTest.qml PRIVACY_QML_BACKEND_COMMAND_SELECTION_OK
+run_harness RuntimeDiagnosticProjectionTest.qml PRIVACY_QML_DIAGNOSTIC_PROJECTION_OK
+run_harness RuntimeHelperCommandBoundaryTest.qml PRIVACY_QML_HELPER_COMMAND_BOUNDARY_OK
 
 if [[ -n $requested_harness && $ran_harness -eq 0 ]]; then
   printf 'Requested QML runtime harness not found: %s\n' "$requested_harness" >&2
