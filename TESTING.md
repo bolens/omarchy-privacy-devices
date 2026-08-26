@@ -47,6 +47,10 @@ engine:
 tests/run_qml_runtime.sh
 ```
 
+The fast suite verifies that every `Runtime*Test.qml` harness is registered
+exactly once and owns one unique success marker, so adding a harness cannot
+silently leave it out of the real-engine suite.
+
 This runs shared policy, the assembled plugin, semantic appearance bindings,
 rendered bar and activity-card states, per-endpoint audio controls, validated
 device/settings deep links, two-step lockdown and undo presentation, user

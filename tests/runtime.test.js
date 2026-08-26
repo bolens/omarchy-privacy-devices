@@ -169,6 +169,19 @@ for (const [harness, marker] of [
   ["RuntimeDeviceBackendResetTest.qml", "PRIVACY_QML_DEVICE_BACKEND_RESET_OK"]
 ])
   assert.match(qmlRuntime, new RegExp(`run_harness ${harness} ${marker}`), `${harness} must run in the real QML suite`)
+const runtimeRegistrations = [...qmlRuntime.matchAll(/^run_harness (Runtime\S+Test\.qml) (\S+)$/gm)]
+  .map((match) => ({harness: match[1], marker: match[2]}))
+const runtimeHarnesses = fs.readdirSync(path.join(__dirname, ".."))
+  .filter((name) => /^Runtime.*Test\.qml$/.test(name)).sort()
+assert.deepEqual(runtimeRegistrations.map(({harness}) => harness).sort(), runtimeHarnesses,
+  "every QML runtime harness must be registered exactly once")
+assert.equal(new Set(runtimeRegistrations.map(({marker}) => marker)).size, runtimeRegistrations.length,
+  "QML runtime success markers must be unique")
+for (const {harness, marker} of runtimeRegistrations) {
+  const source = fs.readFileSync(path.join(__dirname, "..", harness), "utf8")
+  assert.equal((source.match(new RegExp(marker, "g")) || []).length, 1,
+    `${harness} must emit its registered marker exactly once`)
+}
 assert.match(screenshotWorkflow, /capture_panel device device/, "screenshot workflow must capture an individual device settings page")
 assert.ok(screenshotWorkflow.indexOf("capture_panel device device microphone") < screenshotWorkflow.indexOf("capture_panel activity activity"),
   "device capture must not redundantly reopen the activity view immediately after its standalone capture")
