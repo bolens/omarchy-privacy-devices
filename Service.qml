@@ -10,6 +10,10 @@ Item {
   property var shell: null
   property var manifest: null
   property var settings: ({})
+  property bool capturePreviewActive: false
+  property var capturePreviewHistory: []
+  property var capturePreviewSettings: ({})
+  readonly property var displayHistory: capturePreviewActive ? capturePreviewHistory : recentHistory
   property string observerHelperOverride: ""
   property var locationApps: []
   property bool locationActive: false
@@ -1065,6 +1069,23 @@ Item {
 
   IpcHandler {
     target: "privacy-devices-settings"
+    function beginCapture(settingsJson: string, historyJson: string): string {
+      try {
+        var previewSettings = JSON.parse(settingsJson || "{}")
+        var previewHistory = JSON.parse(historyJson || "[]")
+        if (!previewSettings || typeof previewSettings !== "object" || Array.isArray(previewSettings) || !Array.isArray(previewHistory)) return "invalid"
+        root.capturePreviewHistory = previewHistory
+        root.capturePreviewSettings = previewSettings
+        root.capturePreviewActive = true
+        return "ok"
+      } catch (error) { return "invalid" }
+    }
+    function endCapture(): string {
+      root.capturePreviewActive = false
+      root.capturePreviewHistory = []
+      root.capturePreviewSettings = ({})
+      return "ok"
+    }
     function open(page: string): string {
       root.requestedView = "settings"
       root.requestedSettingsPage = Model.settingsPage(page)

@@ -97,7 +97,7 @@ assert.match(bar, /function monitoringTelemetryText\(\)[\s\S]*?Model\.monitoring
   "observer telemetry copy must use the behavior-tested formatter")
 assert.match(bar, /function commitSettings\(candidate\)[\s\S]*?settingsMutationPending = true[\s\S]*?onOpenedChanged:[\s\S]*?else if \(settingsMutationPending\) Qt\.callLater\(root\.open\)/,
   "settings writes must preserve the open editor across shell config reloads")
-assert.match(bar, /function persistSettings\(values\)[\s\S]*?settingsMutationController\.submit\(settings, values\)/,
+assert.match(bar, /function persistSettings\(values\)[\s\S]*?settingsMutationController\.submit\(effectiveSettings, values\)/,
   "settings edits must enter the coalescing mutation boundary")
 assert.match(mutationController, /function submit\(current, patch\)[\s\S]*?pending \|\| current[\s\S]*?commitTimer\.restart\(\)/,
   "rapid mutations must merge onto the newest pending settings")

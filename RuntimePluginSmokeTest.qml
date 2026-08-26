@@ -44,6 +44,11 @@ ShellRoot {
 
   Component.onCompleted: {
     sharedService.configure({enabledKinds:[],historyEnabled:false,directDeviceMonitoring:false})
+    sharedService.capturePreviewSettings = ({showIdle:false,historyEnabled:true})
+    sharedService.capturePreviewHistory = [{kind:"camera",application:"Capture",startedAt:1,endedAt:2}]
+    sharedService.capturePreviewActive = true
+    if (widget.showIdle || sharedService.displayHistory.length !== 1) throw new Error("capture preview did not override presentation in memory")
+    sharedService.capturePreviewActive = false
     sharedService.configure({enabledKinds:[],historyEnabled:true,directDeviceMonitoring:false})
     if (sharedService.historyLoaded) throw new Error("re-enabled history did not start a fresh load")
     sharedService.configure({enabledKinds:[],historyEnabled:false,directDeviceMonitoring:false})

@@ -30,6 +30,12 @@ assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?lastSessionRefres
 assert.match(service, /requestedSettingsPage = Model\.settingsPage\(page\)/, "settings IPC pages must pass through the shared allowlist")
 assert.match(service, /!historyWasEnabled && settings\.historyEnabled === true\) historyLoaded = false[\s\S]*?loadHistory\(\)/,
   "re-enabling history must invalidate the disabled-state load sentinel")
+assert.match(service, /function beginCapture\(settingsJson: string, historyJson: string\)[\s\S]*?capturePreviewActive = true[\s\S]*?function endCapture\(\)[\s\S]*?capturePreviewActive = false/,
+  "capture previews must be controlled through bounded in-memory IPC")
+assert.match(bar, /effectiveSettings: privacyService && privacyService\.capturePreviewActive[\s\S]*?capturePreviewSettings/,
+  "capture preview settings must override presentation without replacing persisted settings")
+assert.match(bar, /filteredHistory: Model\.filterHistory\(privacyService \? privacyService\.displayHistory/,
+  "capture preview history must feed the visible history model")
 assert.match(screenshotWorkflow, /trap cleanup_capture EXIT INT TERM/, "screenshot capture must restore user and repository state on failure")
 assert.match(screenshotWorkflow, /--verify\) verify_only=true/,
   "capture must expose a repository-safe live verification mode")
@@ -234,7 +240,7 @@ assert.match(bar, /function showHistory\(\)[\s\S]*?privacyService\.loadHistory\(
   "opening history must request persisted entries without polling")
 assert.match(bar, /id:\s*historyView[\s\S]*?History is off[\s\S]*?Loading history[\s\S]*?No completed activity yet/,
   "history view must distinguish disabled, loading, and empty states")
-assert.match(bar, /filteredHistory:\s*Model\.filterHistory\(privacyService \? privacyService\.recentHistory : \[\], historyQuery\)/,
+assert.match(bar, /filteredHistory:\s*Model\.filterHistory\(privacyService \? privacyService\.displayHistory : \[\], historyQuery\)/,
   "history view must derive from the full service-bounded history")
 assert.equal((bar.match(/"Clear history"/g) || []).length, 1,
   "history clearing must have one explicit home")

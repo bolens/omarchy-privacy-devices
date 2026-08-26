@@ -13,6 +13,8 @@ Panel {
   manageIpc: false
 
   readonly property var privacyService: bar && bar.shell ? bar.shell.serviceFor(moduleName) : null
+  readonly property var effectiveSettings: privacyService && privacyService.capturePreviewActive
+    ? Object.assign({}, settings || {}, privacyService.capturePreviewSettings || {}) : settings
   readonly property var configuredOrder: Model.arraySetting(setting("order", []), Model.KINDS)
   readonly property bool showIdle: setting("showIdle", true) === true
   readonly property string displayMode: String(setting("displayMode", "icons"))
@@ -102,11 +104,11 @@ Panel {
     : (settingsMutationController.status === "saved" ? "Changes applied"
     : (settingsMutationController.status === "failed" ? "Settings update failed" + (settingsMutationController.detail ? ": " + settingsMutationController.detail : "") : ""))
   readonly property bool settingsPageLoaded: globalSettingsPageLoader.item !== null
-  readonly property var filteredHistory: Model.filterHistory(privacyService ? privacyService.recentHistory : [], historyQuery)
+  readonly property var filteredHistory: Model.filterHistory(privacyService ? privacyService.displayHistory : [], historyQuery)
   readonly property real openPanelIndicatorWidth: button.labelWidth
 
   function setting(key, fallback) {
-    return settings && settings[key] !== undefined ? settings[key] : fallback
+    return effectiveSettings && effectiveSettings[key] !== undefined ? effectiveSettings[key] : fallback
   }
 
   function syncService() {
@@ -313,7 +315,7 @@ Panel {
   }
 
   function persistSettings(values) {
-    settingsMutationController.submit(settings, values)
+    settingsMutationController.submit(effectiveSettings, values)
   }
 
   function commitSettings(candidate) {
@@ -343,12 +345,12 @@ Panel {
 
   function exportSettings() {
     settingsTransferResult.begin("Exporting…")
-    if (!settingsTransferController.request("export", Model.sanitizeSettings(settings))) settingsTransferResult.begin("Transfer busy")
+    if (!settingsTransferController.request("export", Model.sanitizeSettings(effectiveSettings))) settingsTransferResult.begin("Transfer busy")
   }
 
   function importSettings() {
     settingsTransferResult.begin("Importing…")
-    if (!settingsTransferController.request("import", Model.sanitizeSettings(settings))) settingsTransferResult.begin("Transfer busy")
+    if (!settingsTransferController.request("import", Model.sanitizeSettings(effectiveSettings))) settingsTransferResult.begin("Transfer busy")
   }
 
   function undoSettingsChange() {
@@ -358,7 +360,7 @@ Panel {
 
   function requestGlobalSettingsReset() {
     settingsTransferResult.begin("Saving undo point…")
-    if (!settingsTransferController.request("checkpoint", Model.sanitizeSettings(settings))) settingsTransferResult.begin("Transfer busy")
+    if (!settingsTransferController.request("checkpoint", Model.sanitizeSettings(effectiveSettings))) settingsTransferResult.begin("Transfer busy")
   }
 
   function handleSettingsTransfer(mode, payload) {
@@ -481,12 +483,12 @@ Panel {
   }
 
   function itemColorOverrideRole(kind, state) {
-    return Model.hasItemOverride(settings, "itemColorRoles", kind, state)
+    return Model.hasItemOverride(effectiveSettings, "itemColorRoles", kind, state)
       ? String(setting("itemColorRoles", {})[kind][state]) : "inherit"
   }
 
   function itemOverrideMode(group, kind) {
-    return Model.itemOverrideMode(settings, group, kind)
+    return Model.itemOverrideMode(effectiveSettings, group, kind)
   }
 
   function moveItem(kind, delta) {
@@ -645,10 +647,10 @@ Panel {
     var icons = setting("icons", {}) || {}
     return Object.prototype.hasOwnProperty.call(labels, kind)
       || (Object.prototype.hasOwnProperty.call(icons, kind) && String(icons[kind]) !== defaultIcon(kind))
-      || Model.hasItemOverride(settings, "itemColorRoles", kind)
-      || Model.hasItemOverride(settings, "itemIdleVisibility", kind)
-      || Model.hasItemOverride(settings, "itemIdleOpacity", kind)
-      || Model.hasItemOverride(settings, "itemStatusMarkerVisibility", kind)
+      || Model.hasItemOverride(effectiveSettings, "itemColorRoles", kind)
+      || Model.hasItemOverride(effectiveSettings, "itemIdleVisibility", kind)
+      || Model.hasItemOverride(effectiveSettings, "itemIdleOpacity", kind)
+      || Model.hasItemOverride(effectiveSettings, "itemStatusMarkerVisibility", kind)
   }
 
   function sharedText(value) {
@@ -890,14 +892,14 @@ Panel {
             Button { iconText: "󰁍"; tooltipText: "Back"; horizontalPadding: Style.spacing.controlGap; onClicked: root.showActivity() }
             Text { Layout.fillWidth: true; text: "Activity history"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
             Button {
-              visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.recentHistory.length > 0
+              visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.displayHistory.length > 0
               text: confirmationState.pending === "history" ? "Confirm clear" : "Clear history"
               onClicked: root.requestHistoryClear()
             }
           }
 
           RowLayout {
-            visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.recentHistory.length > 0
+            visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.displayHistory.length > 0
             Layout.fillWidth: true
             TextField {
               id: historySearch
@@ -919,7 +921,7 @@ Panel {
               Text {
                 id: historyCountText
                 anchors.centerIn: parent
-                text: Model.historyCountLabel(root.filteredHistory.length, privacyService.recentHistory.length)
+                text: Model.historyCountLabel(root.filteredHistory.length, privacyService.displayHistory.length)
                 textFormat: Text.PlainText
                 color: root.activeThemeColor
                 font.family: Style.font.family
@@ -943,12 +945,12 @@ Panel {
           }
 
           PrivacyMessageSurface {
-            visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.historyLoaded && privacyService.recentHistory.length === 0
+            visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.historyLoaded && privacyService.displayHistory.length === 0
             message: "No completed activity yet."
           }
 
           PrivacyMessageSurface {
-            visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.recentHistory.length > 0 && root.filteredHistory.length === 0
+            visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.displayHistory.length > 0 && root.filteredHistory.length === 0
             message: "No history matches your search."
           }
 
@@ -1138,7 +1140,7 @@ Panel {
               }
               Button {
                 text: "Use default"
-                enabled: Model.hasItemOverride(root.settings, "itemIdleOpacity", root.editingKind)
+                enabled: Model.hasItemOverride(root.effectiveSettings, "itemIdleOpacity", root.editingKind)
                 onClicked: root.persistItemIdleOpacity(root.editingKind, null)
               }
             }
