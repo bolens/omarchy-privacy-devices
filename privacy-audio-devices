@@ -28,7 +28,9 @@ def normalize(rows: object, kind: str) -> list[dict]:
         name = str(row.get("name", ""))
         if not NAME.fullmatch(name) or (kind == "microphone" and name.endswith(".monitor")):
             continue
-        label = TEXT_CONTROLS.sub("", str(row.get("description") or row.get("properties", {}).get("device.description") or name)).strip()
+        properties = row.get("properties")
+        description = properties.get("device.description") if isinstance(properties, dict) else None
+        label = TEXT_CONTROLS.sub("", str(row.get("description") or description or name)).strip()
         devices.append({"id": name, "label": label[:256], "muted": row.get("mute") is True})
     return devices
 

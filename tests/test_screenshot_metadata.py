@@ -51,6 +51,18 @@ class ScreenshotMetadataTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "missing screenshot asset"):
                 MODULE.update(html, root)
 
+    def test_rejects_invalid_or_zero_sized_png_headers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            invalid = root / "invalid.png"
+            invalid.write_bytes(b"not a png")
+            with self.assertRaisesRegex(ValueError, "not a PNG"):
+                MODULE.png_dimensions(invalid)
+            zero = root / "zero.png"
+            zero.write_bytes(MODULE.PNG_SIGNATURE + b"\0\0\0\rIHDR" + struct.pack(">II", 0, 50))
+            with self.assertRaisesRegex(ValueError, "invalid PNG dimensions"):
+                MODULE.png_dimensions(zero)
+
     def test_content_addresses_readme_images_and_replaces_stale_tokens(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

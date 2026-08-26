@@ -1,5 +1,8 @@
 import importlib.machinery
 import importlib.util
+import json
+import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -68,6 +71,25 @@ class SettingsTransferTests(unittest.TestCase):
             undo = Path(directory) / "settings-undo.json"
             MODULE.checkpoint_settings('{"_privacySettingsVersion":1,"popupMaxHeight":740}', undo)
             self.assertEqual(MODULE.undo_settings(undo)["popupMaxHeight"], 740)
+
+    def test_cli_export_import_checkpoint_and_undo_lifecycle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            environment = dict(os.environ, XDG_DATA_HOME=directory)
+            current = '{"_privacySettingsVersion":1,"showIdle":true}'
+            incoming = '{"_privacySettingsVersion":1,"showIdle":false}'
+            exported = subprocess.run([str(ROOT / "privacy-settings"), "export", incoming], env=environment, text=True, capture_output=True)
+            self.assertEqual(exported.returncode, 0, exported.stderr)
+            imported = subprocess.run([str(ROOT / "privacy-settings"), "import", current], env=environment, text=True, capture_output=True)
+            self.assertEqual(json.loads(imported.stdout)["showIdle"], False)
+            can_undo = subprocess.run([str(ROOT / "privacy-settings"), "can-undo"], env=environment, text=True, capture_output=True)
+            self.assertEqual((can_undo.returncode, can_undo.stdout.strip()), (0, "true"))
+            undone = subprocess.run([str(ROOT / "privacy-settings"), "undo"], env=environment, text=True, capture_output=True)
+            self.assertEqual(json.loads(undone.stdout)["showIdle"], True)
+            self.assertEqual(subprocess.run([str(ROOT / "privacy-settings"), "can-undo"], env=environment, capture_output=True).returncode, 1)
+
+            checkpoint = subprocess.run([str(ROOT / "privacy-settings"), "checkpoint", current], env=environment, text=True, capture_output=True)
+            self.assertEqual(checkpoint.returncode, 0, checkpoint.stderr)
+            self.assertEqual(subprocess.run([str(ROOT / "privacy-settings"), "can-undo"], env=environment, capture_output=True).returncode, 0)
 
 
 if __name__ == "__main__": unittest.main()

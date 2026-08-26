@@ -10,6 +10,7 @@ SERVICE = "org.freedesktop.GeoClue2"
 MANAGER_PATH = "/org/freedesktop/GeoClue2/Manager"
 CLIENT_PATH = re.compile(r"/org/freedesktop/GeoClue2/Client/\d+")
 MAX_OUTPUT_BYTES = 64 * 1024
+TEXT_CONTROLS = re.compile(r"[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]")
 
 
 def busctl(*arguments: str) -> str:
@@ -32,7 +33,7 @@ def desktop_id(path: str) -> str:
     value = busctl("get-property", SERVICE, path, "org.freedesktop.GeoClue2.Client", "DesktopId")
     if not value.startswith('s "') or not value.endswith('"'):
         return ""
-    return value[3:-1].strip()[:256]
+    return TEXT_CONTROLS.sub("", value[3:-1]).strip()[:256]
 
 
 def snapshot() -> dict:

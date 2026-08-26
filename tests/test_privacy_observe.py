@@ -1,6 +1,7 @@
 import importlib.machinery
 import importlib.util
 import os
+import errno
 import tempfile
 import unittest
 import sys
@@ -88,6 +89,23 @@ class DirectDeviceObservationTests(unittest.TestCase):
             "type": "fallback-snapshot", "version": 1, "healthy": True, "code": "ok",
             "activities": {"screen-recording": ["Recorder"], "screenshot": []},
         })
+
+    def test_device_event_wait_parses_relevant_masks_and_retries_interrupts(self):
+        events = MODULE.DeviceEvents.__new__(MODULE.DeviceEvents)
+        events.fd = 42
+        ignored = MODULE.EVENT_HEADER.pack(1, 0, 0, 0)
+        relevant = MODULE.EVENT_HEADER.pack(1, MODULE.IN_OPEN, 0, 4) + b"cam\0"
+        with patch.object(MODULE.select, "select", return_value=([42], [], [])), \
+             patch.object(MODULE.os, "read", side_effect=[OSError(errno.EINTR, "interrupted"), ignored + relevant, BlockingIOError()]):
+            self.assertTrue(events.wait(0.5))
+
+    def test_device_event_wait_times_out_without_reading(self):
+        events = MODULE.DeviceEvents.__new__(MODULE.DeviceEvents)
+        events.fd = 42
+        with patch.object(MODULE.select, "select", return_value=([], [], [])), \
+             patch.object(MODULE.os, "read") as read:
+            self.assertFalse(events.wait(-1))
+        read.assert_not_called()
 
 
 if __name__ == "__main__":

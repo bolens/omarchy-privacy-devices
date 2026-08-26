@@ -17,7 +17,10 @@ output="$output_dir/screenshot-$(date +%Y-%m-%d_%H-%M-%S).png"
 case "$backend" in
   grim)
     geometry=$(slurp) || exit 0
-    grim -g "$geometry" "$output"
+    partial="$output.partial"
+    trap 'rm -f -- "$partial"' EXIT INT TERM
+    grim -g "$geometry" "$partial"
+    mv -- "$partial" "$output"
     command -v wl-copy >/dev/null 2>&1 && wl-copy --type image/png <"$output"
     ;;
   grim-satty)

@@ -49,6 +49,8 @@ def write_atomic(path: Path, text: str) -> None:
 
 def update(action: str, path: Path, helper: Path) -> str:
     text = path.read_text(encoding="utf-8") if path.exists() else "{\n}\n"
+    if (START in text) != (END in text):
+        raise ValueError("menu extension contains an incomplete owned marker block")
     installed = START in text and END in text
     if action == "status":
         return "installed" if installed else "not-installed"

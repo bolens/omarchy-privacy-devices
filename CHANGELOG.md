@@ -49,6 +49,12 @@ maintainer guides that define release and validation procedures.
 
 ### Fixed
 
+- Prevent failed `grim` captures from leaving partial files that resemble successful screenshots.
+- Fail closed on malformed audio metadata, corrupt history encoding, unsafe
+  screenshot publication paths, and incomplete owned menu blocks.
+- Sanitize location-client labels and make capture recovery independent of the
+  caller's working directory.
+- Reject invalid zero-sized screenshot metadata before publishing documentation.
 - Prevent full-row clicks from activating hidden controls for screenshots or
   devices with unavailable dependencies.
 - Preserve zero in bounded integer settings instead of replacing it with the

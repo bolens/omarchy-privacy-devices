@@ -81,6 +81,12 @@ class HistoryTests(unittest.TestCase):
             path.write_text(" " * (MODULE.MAX_FILE_BYTES + 1))
             self.assertEqual(MODULE.load(path), [])
 
+    def test_load_fails_closed_on_non_utf8_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "history.json"
+            path.write_bytes(b"[\xff]")
+            self.assertEqual(MODULE.load(path), [])
+
     def test_batches_simultaneous_stops_in_one_ordered_transaction(self):
         now = 1_000_000_000
         older = MODULE.sanitize(self.entry(1, now - 5000))

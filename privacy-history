@@ -55,7 +55,7 @@ def load(path: Path) -> list[dict]:
             except ValueError:
                 continue
         return clean
-    except (OSError, json.JSONDecodeError, RecursionError):
+    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError):
         return []
 
 

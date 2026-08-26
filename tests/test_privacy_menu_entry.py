@@ -29,6 +29,15 @@ class MenuEntryTests(unittest.TestCase):
             self.assertNotIn(MODULE.START, removed)
             self.assertIn('"existing"', removed)
 
+    def test_rejects_incomplete_owned_marker_block(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "omarchy-menu.jsonc"
+            original = '{\n  // privacy-devices-menu-start\n  "existing": {}\n}\n'
+            path.write_text(original)
+            with self.assertRaisesRegex(ValueError, "incomplete"):
+                MODULE.update("install", path, Path("/fixed/privacy-action"))
+            self.assertEqual(path.read_text(), original)
+
 
 if __name__ == "__main__":
     unittest.main()

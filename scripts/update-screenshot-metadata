@@ -15,7 +15,10 @@ def png_dimensions(path: Path) -> tuple[int, int]:
         header = stream.read(24)
     if len(header) != 24 or header[:8] != PNG_SIGNATURE or header[12:16] != b"IHDR":
         raise ValueError(f"not a PNG image: {path}")
-    return struct.unpack(">II", header[16:24])
+    dimensions = struct.unpack(">II", header[16:24])
+    if not all(dimensions):
+        raise ValueError(f"invalid PNG dimensions: {path}")
+    return dimensions
 
 
 def update(html_path: Path, asset_dir: Path) -> None:

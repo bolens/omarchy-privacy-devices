@@ -32,6 +32,16 @@ class AudioDeviceTests(unittest.TestCase):
         self.assertEqual(devices[1], {"id": "fallback", "label": "Built-inAudio", "muted": False})
         self.assertLessEqual(len(devices), 255, "only the first 256 untrusted rows may be inspected")
 
+    def test_normalize_tolerates_malformed_endpoint_properties(self):
+        rows = [
+            {"name": "broken-list", "properties": ["not", "a", "mapping"]},
+            {"name": "broken-text", "properties": "not a mapping"},
+        ]
+        self.assertEqual(MODULE.normalize(rows, "audio-output"), [
+            {"id": "broken-list", "label": "broken-list", "muted": False},
+            {"id": "broken-text", "label": "broken-text", "muted": False},
+        ])
+
     def test_list_uses_the_matching_pactl_inventory(self):
         calls = []
         def runner(arguments, **kwargs):
