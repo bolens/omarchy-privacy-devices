@@ -237,20 +237,33 @@ function isExcluded(name, exclusions) {
   return false
 }
 
-function classifyNode(node, settings) {
+function classificationPolicy(settings) {
+  settings = settings || {}
+  return {
+    exclusions: lowerList(settings.excludedApps, ["cava"]),
+    cameras: lowerList(settings.cameraKeywords, ["camera", "webcam", "v4l2", "libcamera", "kamera"]),
+    shares: lowerList(settings.screenShareKeywords, ["portal", "screencast", "screen cast", "screen share", "desktop capture", "monitor"])
+  }
+}
+
+function containsAnyLowered(haystack, terms) {
+  for (var index = 0; index < terms.length; index++) {
+    if (haystack.indexOf(terms[index]) !== -1) return true
+  }
+  return false
+}
+
+function classifyNode(node, settings, preparedPolicy) {
   if (!node || !node.isStream) return ""
+  var policy = preparedPolicy || classificationPolicy(settings)
   var name = appName(node)
-  var exclusions = lowerList(settings.excludedApps, ["cava"])
-  if (isExcluded(name, exclusions)) return ""
+  if (isExcluded(name, policy.exclusions)) return ""
 
   var klass = mediaClass(node).toLowerCase()
-  var search = searchable(node)
-  var cameras = lowerList(settings.cameraKeywords, ["camera", "webcam", "v4l2", "libcamera", "kamera"])
-  var shares = lowerList(settings.screenShareKeywords, ["portal", "screencast", "screen cast", "screen share", "desktop capture", "monitor"])
-
   if (klass.indexOf("video") !== -1) {
-    if (containsAny(search, cameras)) return "camera"
-    if (containsAny(search, shares)) return "screen-share"
+    var search = searchable(node).toLowerCase()
+    if (containsAnyLowered(search, policy.cameras)) return "camera"
+    if (containsAnyLowered(search, policy.shares)) return "screen-share"
     return "screen-share"
   }
   if (klass.indexOf("stream/input/audio") !== -1 || (node.isSink === false && node.audio)) return "microphone"

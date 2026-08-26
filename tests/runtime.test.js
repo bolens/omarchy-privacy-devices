@@ -197,6 +197,8 @@ assert.doesNotMatch(screenshotWorkflow.match(/capture_panel\(\) \{[\s\S]*?^\}/m)
 assert.ok(screenshotWorkflow.lastIndexOf("resolve_geometry", screenshotWorkflow.indexOf("capture_panel history history")) >= 0,
   "bar geometry must be resolved before long-running capture operations")
 assert.match(service, /id:\s*fallbackObserverProc/, "process fallbacks must share one persistent structured observer")
+assert.match(service, /Model\.classifyNode\(node, settings, pipewireClassificationPolicy\)/,
+  "PipeWire classification must reuse normalized settings across stream nodes")
 assert.match(service, /function handleFallbackSnapshot\(line\) \{[\s\S]*?fallbackObserverRetiring[\s\S]*?return/,
   "retired fallback observers must reject buffered output")
 assert.match(service, /function handleDirectDeviceSnapshot\(text\) \{[\s\S]*?directObserverRetiring[\s\S]*?return/,

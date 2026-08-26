@@ -108,6 +108,7 @@ Item {
     .filter(function(kind) { return enabledKindList.indexOf(kind) !== -1 })
   readonly property var notificationKindList: Model.arraySetting(settings.notificationKinds,
     ["microphone", "camera", "screen-share", "screen-recording", "location"])
+  readonly property var pipewireClassificationPolicy: Model.classificationPolicy(settings)
   readonly property var sessionPolicies: ({
     hiddenApps: Model.arraySetting(settings.hiddenApps, []),
     notificationSuppressedApps: Model.arraySetting(settings.notificationSuppressedApps, [])
@@ -291,7 +292,7 @@ Item {
     var result = []
     for (var index = 0; index < streamNodes.length; index++) {
       var node = streamNodes[index]
-      var kind = Model.classifyNode(node, settings)
+      var kind = Model.classifyNode(node, settings, pipewireClassificationPolicy)
       if (!kind) continue
       var props = Model.properties(node)
       var application = Model.appName(node)
