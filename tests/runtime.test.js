@@ -28,7 +28,11 @@ assert.match(qmlRuntime, /runtime_dir="\$runtime_parent\/runtime tree"/,
 assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?lastSessionRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastSessionRefreshAt, now\)[\s\S]*?lastFallbackRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastFallbackRefreshAt, now\)[\s\S]*?fallbackObserverHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(fallbackObserverLastSeen, now\)[\s\S]*?directHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(directObserverLastSeen, now\)/,
   "every exported telemetry timestamp must use the behavior-tested freshness policy")
 assert.match(service, /requestedSettingsPage = Model\.settingsPage\(page\)/, "settings IPC pages must pass through the shared allowlist")
+assert.match(service, /!historyWasEnabled && settings\.historyEnabled === true\) historyLoaded = false[\s\S]*?loadHistory\(\)/,
+  "re-enabling history must invalidate the disabled-state load sentinel")
 assert.match(screenshotWorkflow, /trap cleanup_capture EXIT INT TERM/, "screenshot capture must restore user and repository state on failure")
+assert.match(screenshotWorkflow, /--verify\) verify_only=true/,
+  "capture must expose a repository-safe live verification mode")
 assert.match(screenshotWorkflow, /trap 'printf .*Capture failed at line %s.*LINENO.*' ERR/,
   "screenshot failures should identify their source line without tracing private state")
 assert.match(screenshotWorkflow, /flock -n 9/,
@@ -44,14 +48,22 @@ assert.match(screenshotWorkflow, /\.\/privacy-history append "\$history_samples"
 assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must reject workspaces containing user windows")
 assert.match(screenshotWorkflow, /restore_original_workspace\(\) \{[\s\S]*?for attempt in \{1\.\.20\}[\s\S]*?workspace == \"\$original_workspace\"/,
   "workspace restoration must wait until the compositor confirms the original workspace")
-assert.match(screenshotWorkflow, /restore_shell_settings\(\) \{[\s\S]*?cmp -s \"\$settings_snapshot\" \"\$settings_file\"[\s\S]*?settings_restore_status=\"ok\"/,
+assert.match(screenshotWorkflow, /stage_restored_shell_settings\(\) \{[\s\S]*?cmp -s \"\$settings_snapshot\" \"\$settings_file\"[\s\S]*?activate_restored_shell_settings\(\)/,
   "settings restoration must verify the preserved bytes before reporting success")
-assert.match(screenshotWorkflow, /restore_dnd\(\) \{[\s\S]*?call notifications setDnd[\s\S]*?call notifications isDnd[\s\S]*?actual == \"\$dnd_state\"/,
+assert.match(screenshotWorkflow, /restore_dnd\(\) \{[\s\S]*?dnd_changed == true[\s\S]*?call notifications setDnd[\s\S]*?call notifications isDnd[\s\S]*?actual == \"\$dnd_state\"/,
   "DND restoration must read back the requested state")
 assert.match(screenshotWorkflow, /Restoration: settings=%s history=%s dnd=%s workspace=%s shell=%s/,
   "capture must report every restored desktop-state category")
 assert.doesNotMatch(screenshotWorkflow, /restore_shell_settings >\/dev\/null 2>&1 \|\| true/,
   "settings restoration failures must not be suppressed")
+assert.match(screenshotWorkflow, /quiesce_capture_history\(\) \{[\s\S]*?historyEnabled\) = false[\s\S]*?actual_live == \"\[\]\"[\s\S]*?actual_persisted == \"\[\]\"[\s\S]*?stable_empty >= 15/,
+  "cleanup must quiesce capture-generated history before restoring the snapshot")
+assert.match(screenshotWorkflow, /quiesce_capture_history[\s\S]*?stage_restored_shell_settings[\s\S]*?restore_history[\s\S]*?activate_restored_shell_settings/,
+  "history must be restored while collection is disabled, before settings reactivate it")
+assert.match(screenshotWorkflow, /wait_for_restored_history\(\) \{[\s\S]*?call privacy-devices history[\s\S]*?\$actual == \$expected/,
+  "restoration must verify the live history view after re-enabling collection")
+assert.match(screenshotWorkflow, /notification_x=.*[\s\S]*?for attempt in \{1\.\.4\}[\s\S]*?notification send[\s\S]*?capture_has_content \"\$capture_dir\/notification\.png\"/,
+  "notification capture must retry transiently missing toasts")
 assert.match(screenshotWorkflow, /debugBarGeometry/, "bar screenshots must use measured live widget geometry")
 assert.match(screenshotWorkflow, /panel_capture_x=\$\(\(widget_x \+ widget_width \/ 2 - panel_width \/ 2 - panel_side_padding\)\)/,
   "panel captures must center on live widget geometry instead of using a stale offset")
@@ -89,7 +101,7 @@ assert.match(screenshotWorkflow, /capture_panel device device/, "screenshot work
 assert.match(screenshotWorkflow, /docs\/device\.png/, "screenshot workflow must publish the device settings capture")
 assert.match(screenshotWorkflow, /privacy-devices-settings openHistory[\s\S]*capture_panel history history/,
   "screenshot workflow must open and capture the dedicated history view through focused-monitor IPC")
-assert.match(screenshotWorkflow, /capture_panel history history[\s\S]*set_history_enabled false[\s\S]*capture_panel history-disabled history[\s\S]*restore_shell_settings/,
+assert.match(screenshotWorkflow, /capture_panel history history[\s\S]*set_history_enabled false[\s\S]*capture_panel history-disabled history[\s\S]*stage_restored_shell_settings/,
   "screenshot workflow must refresh the disabled history state and restore the real shell settings")
 assert.match(screenshotWorkflow, /set_showcase_settings\(\)[\s\S]*showBarActiveMarker: true[\s\S]*showBarDisabledMarker: true[\s\S]*statusMarkerMode: "symbols"/,
   "published captures should consistently showcase the default bar status markers")
@@ -107,20 +119,33 @@ assert.match(screenshotWorkflow, /docs\/history-disabled\.png/,
   "screenshot workflow must publish the disabled history capture")
 assert.match(screenshotWorkflow, /update-screenshot-metadata \"\$publish_dir\/docs\/index\.html\" \"\$publish_dir\/docs\" \"\$publish_dir\/README\.md\"/,
   "capture must synchronize Pages dimensions and content-addressed README images")
-assert.match(screenshotWorkflow, /restore_desktop[\s\S]*?publication_started=true[\s\S]*?install -m[\s\S]*?publication_complete=true/,
+assert.match(screenshotWorkflow, /restore_desktop[\s\S]*?publish-screenshot-assets \"\$publish_dir\"/,
   "repository assets must publish only after desktop restoration succeeds")
-assert.match(screenshotWorkflow, /rollback_publication\(\) \{[\s\S]*?publication_complete == false[\s\S]*?publish_backup_dir/,
-  "an interrupted screenshot publication must restore every original asset")
 assert.match(screenshotWorkflow, /optimize_png \"\$capture_dir\/activity\.png\" \"\$publish_dir\/preview\.png\"/,
   "optimized screenshots must remain staged until publication")
+assert.match(screenshotWorkflow, /verify_postconditions\(\) \{[\s\S]*?cmp -s[\s\S]*?wait_for_live_config[\s\S]*?actual_history[\s\S]*?actual_dnd[\s\S]*?workspace[\s\S]*?initial_shell_pid/,
+  "verification mode must check settings, live config, history, DND, workspace, and shell identity")
+for (const checkpoint of ["history-replaced", "settings-reloaded", "history-disabled"])
+  assert.match(screenshotWorkflow, new RegExp(`capture_checkpoint [\"']?${checkpoint.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+    `capture must expose the ${checkpoint} interruption checkpoint`)
 assert.match(screenshotWorkflow, /cmp -s "\$settings_snapshot" "\$settings_file"/,
   "successful capture must verify the original shell settings were restored byte-for-byte")
 assert.match(screenshotWorkflow, /function reload_shell_config|reload_shell_config\(\) \{[\s\S]*?call shell reloadConfig[\s\S]*?wait_for_live_config/,
   "settings swaps must reload through shell IPC and wait for effective state")
 assert.match(screenshotWorkflow, /wait_for_live_config\(\) \{[\s\S]*?call shell listShellConfig[\s\S]*?\$actual == \$expected/,
   "config reload verification must compare the complete live and persisted documents")
-assert.match(screenshotWorkflow, /install -m "\$settings_mode" "\$settings_snapshot" "\$settings_file"[\s\S]*?reload_shell_config[\s\S]*?settings_changed=false/,
+assert.match(screenshotWorkflow, /wait_for_plugin\(\) \{[\s\S]*?call privacy-devices historyEnabled[\s\S]*?\^\(true\|false\)\$/,
+  "config reloads must wait for the reconstructed plugin IPC target")
+assert.match(screenshotWorkflow, /reload_shell_config\(\) \{[\s\S]*?wait_for_live_config \|\| return 1[\s\S]*?wait_for_plugin/,
+  "config reload completion must include both shell config and plugin readiness")
+assert.match(screenshotWorkflow, /restore_desktop\(\) \{[\s\S]*?stage_restored_shell_settings[\s\S]*?restore_history[\s\S]*?activate_restored_shell_settings/,
   "restoration must stay armed until the shell confirms the restored snapshot")
+assert.match(screenshotWorkflow, /activate_restored_shell_settings\(\) \{[\s\S]*?verify_history[\s\S]*?wait_for_restored_history[\s\S]*?settings_restore_status=\"ok\"/,
+  "restoration must remain armed while live history verification is pending")
+assert.match(screenshotWorkflow, /capture_panel history-disabled[\s\S]*?activate_restored_shell_settings false/,
+  "the temporary mid-capture re-enable must defer final history convergence")
+assert.match(screenshotWorkflow, /cleanup_capture\(\) \{[\s\S]*?cleanup_failed == false[\s\S]*?rm -rf[\s\S]*?Preserved recovery snapshot/,
+  "failed cleanup must preserve its private recovery snapshot")
 assert.doesNotMatch(screenshotWorkflow, /omarchy restart shell|quickshell kill|omarchy-launch-shell/,
   "settings capture must not restart or replace the Quickshell process")
 assert.match(screenshotWorkflow, /omarchy notification send[\s\S]*--app-name[\s\S]*Privacy Devices[\s\S]*--icon[\s\S]*firefox/,

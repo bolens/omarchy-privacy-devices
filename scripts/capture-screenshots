@@ -6,17 +6,21 @@ trap 'printf "Capture failed at line %s.\n" "$LINENO" >&2' ERR
 plugin_id="io.github.bolens.privacy-devices"
 monitor=""
 capture_workspace=""
+verify_only=false
 settle_seconds=1
 panel_width=500
 panel_side_padding=16
 
 usage() {
   cat <<'EOF'
-Usage: scripts/capture-screenshots [--monitor NAME] [--workspace ID]
+Usage: scripts/capture-screenshots [--monitor NAME] [--workspace ID] [--verify]
 
 Capture the live plugin on an empty workspace, update repository screenshots,
 and restore the monitor's original workspace. Defaults to the focused monitor
 and the highest-numbered empty workspace already assigned to it.
+
+--verify performs the complete capture and restoration flow without publishing
+repository assets, then fails if any protected state or the shell PID changed.
 EOF
 }
 
@@ -24,6 +28,7 @@ while (($#)); do
   case "$1" in
     --monitor) monitor=${2:-}; shift 2 ;;
     --workspace) capture_workspace=${2:-}; shift 2 ;;
+    --verify) verify_only=true; shift ;;
     --help|-h) usage; exit 0 ;;
     *) printf 'Unknown argument: %s\n' "$1" >&2; usage >&2; exit 2 ;;
   esac
@@ -101,6 +106,17 @@ wait_for_live_config() {
   return 1
 }
 
+wait_for_plugin() {
+  local attempt reply
+  for attempt in {1..120}; do
+    reply=$(qs ipc --pid "$shell_pid" call privacy-devices historyEnabled 2>/dev/null || true)
+    [[ $reply =~ ^(true|false)$ ]] && return 0
+    sleep 0.1
+  done
+  printf 'Privacy Devices IPC did not become ready after config reload.\n' >&2
+  return 1
+}
+
 reload_shell_config() {
   local reply
   wait_for_shell || return 1
@@ -109,7 +125,8 @@ reload_shell_config() {
     printf 'Omarchy Shell rejected config reload: %s\n' "${reply:-no response}" >&2
     return 1
   }
-  wait_for_live_config
+  wait_for_live_config || return 1
+  wait_for_plugin
 }
 
 focus_capture_workspace() {
@@ -203,8 +220,7 @@ initial_shell_pid=$shell_pid
 
 capture_dir=$(mktemp -d)
 publish_dir="$capture_dir/publish"
-publish_backup_dir="$capture_dir/publish-backup"
-mkdir -p "$publish_dir/docs" "$publish_backup_dir/docs"
+mkdir -p "$publish_dir/docs"
 live_history=$(qs ipc --pid "$shell_pid" call privacy-devices history)
 persisted_history=$(./privacy-history load)
 history_snapshot=$(jq -cn --argjson live "$live_history" --argjson persisted "$persisted_history" '
@@ -212,35 +228,76 @@ history_snapshot=$(jq -cn --argjson live "$live_history" --argjson persisted "$p
 ')
 restored=false
 history_restored=false
-settings_changed=false
+history_capture_dirty=false
 notification_visible=false
 notification_summary="Privacy activity started · Screenshot example"
 dnd_state=""
+original_dnd_state=""
+dnd_changed=false
 settings_restore_status="unchanged"
 history_restore_status="pending"
 dnd_restore_status="unchanged"
 workspace_restore_status="pending"
 shell_identity_status="unchanged"
-publication_started=false
-publication_complete=false
-published_assets=()
+capture_checkpoint() {
+  local checkpoint=$1
+  if [[ ${PRIVACY_CAPTURE_TESTING:-0} == 1 && ${PRIVACY_CAPTURE_FAIL_AT:-} == "$checkpoint" ]]; then
+    printf 'Injected capture failure at %s.\n' "$checkpoint" >&2
+    return 1
+  fi
+}
 close_capture_notification() {
   if [[ $notification_visible == true ]]; then
     qs ipc --pid "$shell_pid" call notifications dismiss "$notification_summary" >/dev/null 2>&1 || true
     notification_visible=false
   fi
 }
-restore_shell_settings() {
-  if [[ $settings_changed == true ]]; then
-    install -m "$settings_mode" "$settings_snapshot" "$settings_file"
-    reload_shell_config
-    cmp -s "$settings_snapshot" "$settings_file" || {
-      printf 'Restored shell settings do not match the preserved snapshot.\n' >&2
-      return 1
-    }
-    settings_changed=false
-    settings_restore_status="ok"
-  fi
+quiesce_capture_history() {
+  local actual_live actual_persisted attempt stable_empty=0 temporary
+  [[ $history_capture_dirty == true ]] || return 0
+  temporary=$(mktemp "${settings_file}.XXXXXX")
+  jq --arg id "$plugin_id" ' (.. | objects | select(.id? == $id) | .historyEnabled) = false ' \
+    "$settings_file" >"$temporary"
+  chmod "$settings_mode" "$temporary"
+  mv -- "$temporary" "$settings_file"
+  reload_shell_config
+  for attempt in {1..80}; do
+    actual_live=$(qs ipc --pid "$shell_pid" call privacy-devices history 2>/dev/null || true)
+    actual_persisted=$(./privacy-history load 2>/dev/null || true)
+    if [[ $actual_live == "[]" && $actual_persisted == "[]" ]]; then
+      ((stable_empty += 1))
+      ((stable_empty >= 15)) && return 0
+    else
+      stable_empty=0
+    fi
+    sleep 0.1
+  done
+  printf 'Capture history did not quiesce before restoration.\n' >&2
+  return 1
+}
+stage_restored_shell_settings() {
+  install -m "$settings_mode" "$settings_snapshot" "$settings_file"
+  cmp -s "$settings_snapshot" "$settings_file" || {
+    printf 'Restored shell settings do not match the preserved snapshot.\n' >&2
+    return 1
+  }
+}
+wait_for_restored_history() {
+  local actual attempt
+  for attempt in {1..120}; do
+    actual=$(qs ipc --pid "$shell_pid" call privacy-devices history 2>/dev/null || true)
+    if jq -en --argjson expected "$history_snapshot" --argjson actual "${actual:-null}" \
+      '$actual == $expected' >/dev/null 2>&1; then return 0; fi
+    sleep 0.1
+  done
+  printf 'Live history did not match the restored snapshot.\n' >&2
+  return 1
+}
+activate_restored_shell_settings() {
+  local verify_history=${1:-true}
+  reload_shell_config
+  [[ $verify_history == false ]] || wait_for_restored_history
+  settings_restore_status="ok"
 }
 restore_history() {
   local restored_history
@@ -259,7 +316,7 @@ restore_history() {
 }
 restore_dnd() {
   local actual reply
-  [[ -n $dnd_state ]] || return 0
+  [[ $dnd_changed == true ]] || return 0
   reply=$(qs ipc --pid "$shell_pid" call notifications setDnd "$dnd_state" 2>/dev/null || true)
   actual=$(qs ipc --pid "$shell_pid" call notifications isDnd 2>/dev/null || true)
   [[ $reply == ok && $actual == "$dnd_state" ]] || {
@@ -267,6 +324,7 @@ restore_dnd() {
     return 1
   }
   dnd_state=""
+  dnd_changed=false
   dnd_restore_status="ok"
 }
 report_restoration() {
@@ -276,34 +334,36 @@ report_restoration() {
     "$workspace_restore_status" "$shell_identity_status"
 }
 restore_desktop() {
-  local restore_failed=false
+  local history_ready=true restore_failed=false
   if [[ $restored == false ]]; then
     close_capture_notification
     wait_for_shell || restore_failed=true
     restore_dnd || restore_failed=true
-    restore_shell_settings || restore_failed=true
+    quiesce_capture_history || { history_ready=false; restore_failed=true; }
     qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
-    restore_history || restore_failed=true
+    if [[ $history_ready == true ]]; then
+      stage_restored_shell_settings || { history_ready=false; restore_failed=true; }
+    fi
+    if [[ $history_ready == true ]]; then
+      restore_history || { history_ready=false; restore_failed=true; }
+    fi
+    if [[ $history_ready == true ]]; then
+      activate_restored_shell_settings || restore_failed=true
+    fi
     if restore_original_workspace; then workspace_restore_status="ok"; else restore_failed=true; fi
-    restored=true
+    [[ $restore_failed == false ]] && restored=true
     report_restoration
   fi
   [[ $restore_failed == false ]]
 }
-rollback_publication() {
-  local relative
-  [[ $publication_started == true && $publication_complete == false ]] || return 0
-  for relative in "${published_assets[@]}"; do
-    install -m "$(stat -c '%a' "$publish_backup_dir/$relative")" \
-      "$publish_backup_dir/$relative" "$relative"
-  done
-  printf 'Rolled back incomplete screenshot publication.\n' >&2
-}
 cleanup_capture() {
   local cleanup_failed=false
   restore_desktop || cleanup_failed=true
-  rollback_publication || cleanup_failed=true
-  rm -rf -- "$capture_dir"
+  if [[ $cleanup_failed == false ]]; then
+    rm -rf -- "$capture_dir"
+  else
+    printf 'Preserved recovery snapshot at %s.\n' "$capture_dir" >&2
+  fi
   [[ $cleanup_failed == false ]]
 }
 trap cleanup_capture EXIT INT TERM
@@ -324,7 +384,6 @@ set_history_enabled() {
   ' "$settings_file" >"$temporary"
   chmod "$settings_mode" "$temporary"
   mv -- "$temporary" "$settings_file"
-  settings_changed=true
   reload_shell_config
 }
 
@@ -344,7 +403,6 @@ set_showcase_settings() {
   ' "$settings_file" >"$temporary"
   chmod "$settings_mode" "$temporary"
   mv -- "$temporary" "$settings_file"
-  settings_changed=true
 }
 
 history_enabled=$(qs ipc --pid "$shell_pid" call privacy-devices historyEnabled)
@@ -361,15 +419,23 @@ history_samples=$(jq -cn --argjson now "$capture_now" '[
 ]')
 ./privacy-history clear >/dev/null
 ./privacy-history append "$history_samples" >/dev/null
+history_capture_dirty=true
+capture_checkpoint history-replaced
 set_showcase_settings
 reload_shell_config
+capture_checkpoint settings-reloaded
 focus_capture_workspace
 resolve_geometry
 
 capture_panel history history "" 660
 set_history_enabled false
+capture_checkpoint history-disabled
 capture_panel history-disabled history "" 240
-restore_shell_settings
+stage_restored_shell_settings
+restore_history
+activate_restored_shell_settings false
+history_restored=false
+history_restore_status="pending"
 cmp -s "$settings_snapshot" "$settings_file" || {
   printf 'Omarchy Shell settings did not restore exactly.\n' >&2
   exit 1
@@ -385,15 +451,25 @@ sleep "$settle_seconds"
 grim -o "$monitor" "$capture_dir/bar-full.png"
 
 dnd_state=$(qs ipc --pid "$shell_pid" call notifications isDnd)
+original_dnd_state=$dnd_state
 if [[ $dnd_state == on ]]; then
   qs ipc --pid "$shell_pid" call notifications setDnd off >/dev/null
+  dnd_changed=true
 fi
-omarchy notification send --app-name "Privacy Devices" \
-  --icon firefox --urgency normal --expire-time 15000 \
-  "$notification_summary" "Firefox: Microphone"
-notification_visible=true
-sleep "$settle_seconds"
-grim -o "$monitor" "$capture_dir/notification-full.png"
+notification_x=$((monitor_width - 428))
+((notification_x >= 0)) || { printf 'Monitor is too narrow for notification capture.\n' >&2; exit 1; }
+for attempt in {1..4}; do
+  omarchy notification send --app-name "Privacy Devices" \
+    --icon firefox --urgency normal --expire-time 15000 \
+    "$notification_summary" "Firefox: Microphone"
+  notification_visible=true
+  sleep "$settle_seconds"
+  grim -o "$monitor" "$capture_dir/notification-full.png"
+  magick "$capture_dir/notification-full.png" -crop "420x160+${notification_x}+30" \
+    +repage "$capture_dir/notification.png"
+  capture_has_content "$capture_dir/notification.png" && break
+  close_capture_notification
+done
 dismiss_result=$(qs ipc --pid "$shell_pid" call notifications dismiss "$notification_summary")
 if [[ $dismiss_result != ok ]]; then
   printf 'Capture notification dismissal was unavailable; it will expire automatically.\n' >&2
@@ -402,9 +478,6 @@ notification_visible=false
 restore_dnd
 
 magick "$capture_dir/bar-full.png" -crop "${widget_width}x50+${widget_x}+0" +repage "$capture_dir/bar.png"
-notification_x=$((monitor_width - 428))
-((notification_x >= 0)) || { printf 'Monitor is too narrow for notification capture.\n' >&2; exit 1; }
-magick "$capture_dir/notification-full.png" -crop "420x160+${notification_x}+30" +repage "$capture_dir/notification.png"
 
 validate_capture() {
   local image=$1
@@ -454,21 +527,38 @@ pngquant --force --quality=82-95 --speed 1 --strip \
 
 restore_desktop
 
+verify_postconditions() {
+  local actual_dnd actual_history focused workspace
+  cmp -s "$settings_snapshot" "$settings_file" || return 1
+  wait_for_live_config || return 1
+  actual_history=$(./privacy-history load)
+  jq -en --argjson expected "$history_snapshot" --argjson actual "$actual_history" '$actual == $expected' >/dev/null || return 1
+  actual_dnd=$(qs ipc --pid "$shell_pid" call notifications isDnd 2>/dev/null || true)
+  [[ -z $original_dnd_state || $actual_dnd == "$original_dnd_state" ]] || return 1
+  focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
+  workspace=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .activeWorkspace.id')
+  [[ $focused == true && $workspace == "$original_workspace" ]] || return 1
+  [[ $shell_pid == "$initial_shell_pid" ]] || {
+    printf 'Shell PID changed during verification: %s -> %s.\n' "$initial_shell_pid" "$shell_pid" >&2
+    return 1
+  }
+}
+
+if [[ $verify_only == true ]]; then
+  verify_postconditions
+  cleanup_capture
+  trap - EXIT INT TERM
+  printf 'Capture verification passed; repository assets were not published.\n'
+  exit 0
+fi
+
 published_assets=(
   README.md preview.png docs/preview.png docs/history.png docs/history-disabled.png
   docs/general.png docs/appearance.png docs/alerts.png docs/monitoring.png
   docs/monitoring-private.png docs/monitoring-health.png docs/device.png docs/bar.png
   docs/notification.png docs/social-card.png docs/index.html
 )
-for relative in "${published_assets[@]}"; do
-  mkdir -p "$publish_backup_dir/$(dirname "$relative")"
-  cp -- "$relative" "$publish_backup_dir/$relative"
-done
-publication_started=true
-for relative in "${published_assets[@]}"; do
-  install -m "$(stat -c '%a' "$relative")" "$publish_dir/$relative" "$relative"
-done
-publication_complete=true
+scripts/publish-screenshot-assets "$publish_dir" "${published_assets[@]}"
 
 cleanup_capture
 trap - EXIT INT TERM
