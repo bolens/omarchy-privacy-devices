@@ -13,30 +13,30 @@ screenshots, and screen recording.
 Contributors: [contributing guide](CONTRIBUTING.md) ·
 [architecture](ARCHITECTURE.md) · [security policy](SECURITY.md)
 
-![Privacy Devices activity panel showing live device state and controls](preview.png?v=e0db88755d75)
+![Privacy Devices activity panel showing live device state and controls](preview.png?v=213462fdd02e)
 
 The widget occupies only its privacy-device indicators in the center bar:
 
-![Privacy Devices indicators in their exact bar footprint](docs/bar.png?v=6970740d94cc)
+![Privacy Devices indicators in their exact bar footprint](docs/bar.png?v=2adc6937c16b)
 
 Activity notifications use the detected application icon when available:
 
-![Privacy Devices notification with an application icon](docs/notification.png?v=490627fdf09d)
+![Privacy Devices notification with an application icon](docs/notification.png?v=6363988f8c51)
 
 <details>
 <summary>Settings pages</summary>
 
 | General | Appearance |
 | --- | --- |
-| <img src="docs/general.png?v=0e572b3c8333" alt="General settings page" width="360"> | <img src="docs/appearance.png?v=efa2fa6cc913" alt="Appearance settings page" width="360"> |
+| <img src="docs/general.png?v=74e5f64b984f" alt="General settings page" width="360"> | <img src="docs/appearance.png?v=29ec6fa59758" alt="Appearance settings page" width="360"> |
 | Alerts | Monitoring |
-| <img src="docs/alerts.png?v=4b7927e60cc8" alt="Alerts settings page" width="360"> | <img src="docs/monitoring.png?v=ebb5b6e49b6b" alt="Monitoring settings page" width="360"> |
+| <img src="docs/alerts.png?v=811842998a17" alt="Alerts settings page" width="360"> | <img src="docs/monitoring.png?v=04df6108a621" alt="Monitoring settings page" width="360"> |
 | Private data | Observer health |
-| <img src="docs/monitoring-private.png?v=c4390900cc7e" alt="Private history and settings transfer controls" width="360"> | <img src="docs/monitoring-health.png?v=04cecd292234" alt="Monitoring status and observer health" width="360"> |
+| <img src="docs/monitoring-private.png?v=80cb29456013" alt="Private history and settings transfer controls" width="360"> | <img src="docs/monitoring-health.png?v=22cfdf315072" alt="Monitoring status and observer health" width="360"> |
 | Individual device settings | Activity history |
-| <img src="docs/device.png?v=3bb1fb0400d8" alt="Individual privacy-device settings page" width="360"> | <img src="docs/history.png?v=9825f32d4226" alt="Completed privacy activity history view" width="360"> |
+| <img src="docs/device.png?v=026710afa0f1" alt="Individual privacy-device settings page" width="360"> | <img src="docs/history.png?v=fa9e94ba92c3" alt="Completed privacy activity history view" width="360"> |
 | History disabled | |
-| <img src="docs/history-disabled.png?v=3f4c80917b4b" alt="Activity history disabled state" width="360"> | |
+| <img src="docs/history-disabled.png?v=1155cb013645" alt="Activity history disabled state" width="360"> | |
 
 </details>
 
@@ -45,17 +45,43 @@ Activity notifications use the detected application icon when available:
 - Per-application activity, session context, controls, and health for seven
   privacy-device classes.
 - Reactive PipeWire monitoring plus optional same-user direct-device coverage.
-- Verified mute, recording, camera, location, and screen-sharing controls.
+- Verified mute, recording, camera, location, and screen-sharing controls, plus
+  a confirmed privacy lockdown with observed-state undo.
+- Per-endpoint microphone and audio-output management on their device settings
+  pages, with exact hardware names and verified mute/unmute results.
 - Global and per-device appearance, ordering, visibility, backend, and status
   settings.
-- App-aware notifications, private diagnostics, searchable optional bounded
-  history, and versioned settings transfer with one-step undo.
+- App- and device-aware visibility and notification policies, friendly hardware
+  labels, private diagnostics, and searchable optional bounded history with
+  local today/seven-day summaries.
+- Click-through activity notifications, optional rate-limited observer-health
+  alerts, and a guided redacted self-test with remediation guidance.
+- Allowlisted IPC quick actions for activity, history, diagnostics, lockdown,
+  undo, and rescanning, suitable for thin launcher adapters.
+- Deep-linked IPC routes for the main activity view, a validated device detail,
+  a settings page, or a validated settings section.
 - Keyboard navigation throughout the popup and settings.
 - Persistent observers and bounded background work, with no network telemetry.
 
 See the [user guide](https://bolens.github.io/omarchy-privacy-devices/#usage)
 for supported controls, requirements, configuration, privacy behavior,
 troubleshooting, and lifecycle commands.
+
+Notification actions and launchers use the installed `privacy-action` helper.
+It accepts only `open-activity [kind]`, `open-history [kind]`,
+`open-diagnostics`, `lockdown`, `undo-lockdown`, and `rescan`; no observed
+metadata is interpreted as a command.
+
+To add searchable Privacy Devices rows to the Omarchy menu, run the optional,
+idempotent adapter from the installed plugin:
+
+```sh
+~/.config/omarchy/plugins/io.github.bolens.privacy-devices/privacy-menu-entry install
+```
+
+Use `status` to inspect it or `remove` to delete only the entries owned by this
+plugin. The lockdown row opens the existing confirmation step; it never changes
+device state directly.
 
 ## Quick install
 

@@ -2,10 +2,12 @@
 set -euo pipefail
 [[ $# == 1 && -d $1 ]] || { printf 'Usage: restore-capture-state RECOVERY_DIR\n' >&2; exit 2; }
 recovery=$1
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+history_command=${PRIVACY_HISTORY_COMMAND:-$root/privacy-history}
 settings="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/shell.json"
 [[ -f $recovery/shell.json && -f $recovery/history.json ]] || { printf 'Recovery directory is incomplete: %s\n' "$recovery" >&2; exit 1; }
 install -m "$(stat -c '%a' "$settings")" "$recovery/shell.json" "$settings"
-./privacy-history clear
+"$history_command" clear
 history=$(jq -c . "$recovery/history.json")
-[[ $history == "[]" ]] || ./privacy-history append "$history"
+[[ $history == "[]" ]] || "$history_command" append "$history"
 printf 'Restored settings and history from %s. Reload shell config when safe.\n' "$recovery"

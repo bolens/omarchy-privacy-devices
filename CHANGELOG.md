@@ -7,6 +7,71 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-26
+
+### Added
+
+- Add a confirmed, serial privacy lockdown for service-owned controls with
+  verified partial results and a 30-second observed-state undo.
+- Add bounded per-device visibility and notification policies plus friendly
+  hardware labels.
+- Add today and seven-day activity summaries derived from existing opt-in,
+  bounded local history without extending retention.
+- Add actionable activity/failure notifications and an allowlisted quick-action
+  adapter for activity, history, diagnostics, lockdown, undo, and rescanning.
+- Add optional transition-only observer-health alerts with per-source rate
+  limiting and redacted source/code details.
+- Add a guided, non-mutating privacy self-test with private storage permission
+  checks, remediation guidance, notification delivery test, and redacted copy.
+- Add an optional idempotent Omarchy menu adapter for searchable privacy
+  actions, with lockdown routed through the existing confirmation step.
+- Add verified per-endpoint block/allow controls for microphones and audio
+  outputs on their device settings pages.
+- Add validated p2p-style IPC deep links for the main view, individual device
+  details, settings pages, and settings sections while retaining legacy routes.
+
+### Changed
+
+- Match new installations to the standard bar presentation with idle device
+  icons visible and activity status markers disabled.
+- Keep screenshot capture presentation-neutral while freezing only its sample
+  activity and documentation history.
+- Use accent for allowed in-use devices, foreground for enabled idle devices,
+  muted for disabled devices, and urgent for observable blocked requests by
+  default, with global and per-device role overrides and opacity controls for
+  every global semantic color.
+- Align integer settings with the shell's native bounded number fields and
+  consolidate bar-layout controls into a balanced responsive grid.
+- Reflow observer-health actions into a balanced responsive grid and present
+  self-test output through the shared status surface.
+- Describe the requested device state in privacy-control success and failure
+  notifications instead of reporting a generic applied change.
+- Replace the activity-header lockdown text and separate undo button with one
+  compact, state-aware lock/unlock icon and tooltip.
+
+### Fixed
+
+- Prevent failed `grim` captures from leaving partial files that resemble successful screenshots.
+- Fail closed on malformed audio metadata, corrupt history encoding, unsafe
+  screenshot publication paths, and incomplete owned menu blocks.
+- Sanitize location-client labels and make capture recovery independent of the
+  caller's working directory.
+- Reject invalid zero-sized screenshot metadata before publishing documentation.
+- Prevent full-row clicks from activating hidden controls for screenshots or
+  devices with unavailable dependencies.
+- Preserve zero in bounded integer settings instead of replacing it with the
+  field fallback.
+- Preserve rapid per-device appearance edits to different fields while settings
+  writes are coalesced.
+- Describe an observable blocked request consistently in activity cards instead
+  of pairing its urgent state with an idle availability message.
+- Allow the compact privacy-lockdown control to enter its required confirmation
+  state and execute the verified serial lockdown plan.
+- Report degraded fallback-observer health in the guided privacy self-test
+  instead of silently treating the missing alias as healthy.
+- Give active-count summary rows complete pending and dependency state so the
+  bar does not emit QML binding warnings while rendering the summary icon.
+
 ## [0.6.0] - 2026-08-26
 
 ### Added
@@ -238,7 +303,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.3...v0.6.0
 [0.5.3]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.5.1...v0.5.2

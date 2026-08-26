@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+action=${1:-}
+argument=${2:-}
+case "$action" in
+  open-activity|open-history)
+    case "$argument" in
+      ""|microphone|audio-output|camera|screen-share|screenshot|screen-recording|location) ;;
+      *) exit 2 ;;
+    esac
+    ;;
+  open-diagnostics|lockdown|undo-lockdown|rescan)
+    [[ -z $argument ]] || exit 2
+    ;;
+  *) exit 2 ;;
+esac
+
+while read -r candidate; do
+  [[ $candidate =~ ^[1-9][0-9]*$ ]] || continue
+  [[ $(qs ipc --pid "$candidate" call shell ping 2>/dev/null || true) == ok ]] || continue
+  reply=$(qs ipc --pid "$candidate" call privacy-devices action "$action" "$argument" 2>/dev/null || true)
+  [[ $reply != unavailable && -n $reply ]] && exit 0
+done < <(qs list --all | awk '/Process ID:/ { print $3 }')
+exit 1

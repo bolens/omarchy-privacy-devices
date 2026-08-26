@@ -7,6 +7,11 @@ set -euo pipefail
 stage=$1
 shift
 [[ -d $stage ]] || { printf 'Screenshot stage does not exist: %s\n' "$stage" >&2; exit 2; }
+for relative in "$@"; do
+  case "$relative" in
+    ""|.|..|/*|../*|*/../*|*/..) printf 'Unsafe screenshot publication path: %s\n' "$relative" >&2; exit 2 ;;
+  esac
+done
 
 backup=$(mktemp -d "${TMPDIR:-/tmp}/privacy-screenshot-publish.XXXXXX")
 complete=false

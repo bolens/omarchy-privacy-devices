@@ -9,9 +9,12 @@ npm test
 ```
 
 The suites cover model policy, runtime wiring, settings/UI contracts, helpers,
-security boundaries, release metadata, documentation, and site assets. Helper
-tests use temporary state and fake commands; they do not modify devices or
-privileged services.
+security boundaries, release metadata, documentation, issue-form validation,
+and isolated site builds. Helper tests cover every selectable capture and
+dependency backend with temporary state and fake commands; they do not modify
+devices or privileged services. Corrupt state, malformed backend metadata,
+unsafe publication paths, recovery relocation, and subprocess failure behavior
+are exercised explicitly.
 
 Runtime contract checks also keep plugin entry points embeddable, helper paths
 relocatable, and detached commands argument-safe.
@@ -34,6 +37,7 @@ omarchy plugin validate "$validation_dir"
 qmllint -I "$OMARCHY_PATH/shell" \
   BarWidget.qml Service.qml SettingsSurface.qml IntegerSetting.qml \
   PrivacyActivityCard.qml DeviceSettingsEditor.qml DeviceDiagnostics.qml \
+  AudioEndpointSettings.qml \
   Privacy*Settings.qml PrivacySettingsNavigation.qml \
   PrivacyConfirmationController.qml PrivacySettingsTransferController.qml \
   Runtime*.qml
@@ -46,9 +50,65 @@ engine:
 tests/run_qml_runtime.sh
 ```
 
-This runs shared policy, the assembled plugin, user interaction, coalesced
-settings writes, subprocess failure/recovery, confirmation, and private
-settings-transfer behavior in the real QML engine.
+During iteration, run one registered harness by exact filename:
+
+```sh
+QML_RUNTIME_HARNESS=RuntimeKeyboardNavigationTest.qml tests/run_qml_runtime.sh
+```
+
+Stress a timing-sensitive focused harness with up to ten clean instances:
+
+```sh
+QML_RUNTIME_HARNESS=RuntimePluginSmokeTest.qml QML_RUNTIME_REPEAT=5 tests/run_qml_runtime.sh
+```
+
+An unknown filename fails instead of silently running zero tests. Leave the
+variables unset for the exhaustive single-pass suite used before commits and
+releases. Invalid repeat counts fail instead of weakening the run.
+
+The fast suite verifies that every `Runtime*Test.qml` harness is registered
+exactly once and owns one unique success marker, so adding a harness cannot
+silently leave it out of the real-engine suite.
+
+The runtime runner also rejects QML scene warnings and fatal/critical engine
+output even when a success marker was emitted, and requires the marker exactly
+once at runtime. This prevents late binding errors or repeating completion
+timers from being hidden by an otherwise successful assertion path.
+
+This runs shared policy, the assembled plugin, semantic appearance bindings,
+rendered bar and activity-card states, per-endpoint audio controls, validated
+device/settings deep links, two-step lockdown and undo presentation, user
+interaction, device-detail navigation, coalesced settings writes and assembled
+rollback, rapid per-device appearance edits, general and alert settings wiring,
+bounded integer and marker editors, reactive feedback surfaces, degraded device
+diagnostics, monitoring configuration and appearance presentation wiring,
+monitoring telemetry freshness, fallback observation composition, reactive
+audio-endpoint replacement, guarded card activation, diagnostic recovery,
+reactive session summaries, responsive navigation and lazy loading of every
+settings page, race-free polling of asynchronous settings writes and session
+reconciliation, mutation feedback lifecycle, transfer request exclusion,
+multi-monitor deep-link routing,
+current and compatibility IPC dispatch through the live Quickshell transport,
+owner-isolated capture lease/state/cleanup behavior,
+capture-preview cleanup and automatic expiry, debounced observer-session
+reconciliation, validated notification callback routing, reactive policy
+eligibility, keyboard selection and device navigation, control-request gating,
+layered popup dismissal, observer-health state isolation and per-device health
+aggregation, observer-session teardown and recovery suppression, per-device
+reset isolation, endpoint feedback transitions,
+verification timeouts, privacy-preset orchestration, self-test health aggregation,
+lockdown result states, destructive-history
+cancellation, rollback retry, external toggle updates, cross-device metadata
+coalescing, backend reset completeness, external payload validation and
+stale-state cleanup, filtered status projection, diagnostics redaction,
+diagnostic backend/state/exit-code projection, backend command selection,
+relocatable helper paths and escaped observer arguments, immutable service
+state/result mutations, capture-safe bar-session policies, active-count and
+attribution tooltip presentation, control-transaction
+lifecycle wiring, status-presentation wiring, redacted monitoring actions,
+subprocess failure/recovery, guarded activity-policy actions, private-data transfer
+controls, in-memory history search, confirmation, and private settings-transfer
+behavior in the real QML engine.
 
 ## Repository and site checks
 
@@ -103,6 +163,9 @@ Example read-only checks:
 qs ipc --pid "$shell_pid" call privacy-devices health
 qs ipc --pid "$shell_pid" call privacy-devices diagnostics safe
 qs ipc --pid "$shell_pid" call privacy-devices status
+qs ipc --pid "$shell_pid" call privacy-devices openDetails microphone
+qs ipc --pid "$shell_pid" call privacy-devices openSettings appearance
+qs ipc --pid "$shell_pid" call privacy-devices openSettingsSection monitoring observer-health
 qs ipc --pid "$shell_pid" call privacy-devices-settings openSection monitoring private-data
 ```
 

@@ -12,15 +12,35 @@ Item {
   property var settings: ({})
   property bool capturePreviewActive: false
   property var capturePreviewHistory: []
+  property var capturePreviewSessions: []
+  property var capturePreviewBarSessions: []
   property var capturePreviewSettings: ({})
+  property var barPresentations: ({})
+  property bool captureHistoryPresentationEnabled: true
   property string capturePreviewOwner: ""
   property double capturePreviewExpiresAt: 0
   readonly property var displayHistory: capturePreviewActive ? capturePreviewHistory : recentHistory
+  readonly property var displaySessions: capturePreviewActive ? capturePreviewSessions : activeSessions
+
+  function updateBarPresentation(screenName, presentation) {
+    var next = Object.assign({}, barPresentations)
+    next[String(screenName || "unknown")] = presentation || ({})
+    barPresentations = next
+  }
+
+  function anyBarOpen() {
+    var names = Object.keys(barPresentations)
+    for (var index = 0; index < names.length; index++) if (barPresentations[names[index]].opened === true) return true
+    return false
+  }
 
   function clearCapturePreview() {
     capturePreviewActive = false
     capturePreviewHistory = []
+    capturePreviewSessions = []
+    capturePreviewBarSessions = []
     capturePreviewSettings = ({})
+    captureHistoryPresentationEnabled = true
     capturePreviewOwner = ""
     capturePreviewExpiresAt = 0
   }
@@ -55,15 +75,25 @@ Item {
   property string requestedSettingsPage: "general"
   property string requestedSettingsSection: ""
   property string requestedView: "settings"
+  property string requestedViewArgument: ""
   property int settingsRequestSerial: 0
   property var notificationQueue: []
   property var suppressedObserverStarts: ({})
   property var controlTransactions: ({})
+  property string privacyPresetState: "idle"
+  property var privacyPresetQueue: []
+  property string privacyPresetActiveKind: ""
+  property var privacyPresetPrevious: ({})
+  property var privacyPresetResults: []
+  property bool privacyPresetUndoAvailable: false
+  property bool privacyPresetRestoring: false
   property var observerHealth: ({
     pipewire: {status: "healthy", source: "pipewire", code: "ok", reason: ""},
     "direct-device": {status: "healthy", source: "direct-device", code: "ok", reason: ""},
     "fallback-observer": {status: "healthy", source: "fallback-observer", code: "ok", reason: ""}
   })
+  property var observerHealthLastNotifiedAt: ({})
+  property var selfTestResult: ({status: "idle", checks: [], text: "Run the self-test to check local privacy monitoring."})
   property double lastSessionRefreshAt: 0
   property double lastFallbackRefreshAt: 0
   property string operationalConfiguration: ""
@@ -89,6 +119,9 @@ Item {
   property var dependencyReadyMap: ({})
   property var dependencyCheckedMap: ({})
   property var dependencyQueue: []
+  property var audioEndpointMap: ({microphone: [], "audio-output": []})
+  property string audioEndpointKind: ""
+  property string audioEndpointMessage: ""
   property string dependencyCheckKind: ""
   property bool dependencyRefreshPending: false
   readonly property bool microphoneMuted: fallbackMicrophoneMuted
@@ -111,7 +144,9 @@ Item {
   readonly property var pipewireClassificationPolicy: Model.classificationPolicy(settings)
   readonly property var sessionPolicies: ({
     hiddenApps: Model.arraySetting(settings.hiddenApps, []),
-    notificationSuppressedApps: Model.arraySetting(settings.notificationSuppressedApps, [])
+    notificationSuppressedApps: Model.arraySetting(settings.notificationSuppressedApps, []),
+    hiddenDevices: Model.arraySetting(settings.hiddenDevices, []),
+    notificationSuppressedDevices: Model.arraySetting(settings.notificationSuppressedDevices, [])
   })
   readonly property bool audioMonitoringEnabled: enabledKindList.indexOf("microphone") !== -1
     || enabledKindList.indexOf("audio-output") !== -1
@@ -133,6 +168,7 @@ Item {
   onRecordingActiveChanged: scheduleSessionRefresh()
   onScreenshotActiveChanged: scheduleSessionRefresh()
   onDirectObservationsChanged: scheduleSessionRefresh()
+  onControlTransactionsChanged: Qt.callLater(function() { root.advancePrivacyPreset() })
 
   function configure(next) {
     var historyWasEnabled = settings.historyEnabled === true
@@ -167,8 +203,21 @@ Item {
   }
 
   function setObserverHealth(source, status, code, reason) {
+    var previous = observerHealth[source]
     var next = Model.updateObserverHealth(observerHealth, source, status, code, reason)
-    if (next !== observerHealth) observerHealth = next
+    if (next !== observerHealth) {
+      observerHealth = next
+      if (settings.notifyOnObserverHealth === true) {
+        var now = Date.now()
+        var notice = Model.observerHealthNotice(previous, next[source], now, observerHealthLastNotifiedAt[source] || 0, 60000)
+        if (notice) {
+          var notified = Object.assign({}, observerHealthLastNotifiedAt)
+          notified[source] = now
+          observerHealthLastNotifiedAt = notified
+          notify(notice.title, notice.body, "dialog-warning-symbolic", "security-high-symbolic", "open-diagnostics", "")
+        }
+      }
+    }
   }
 
   function clearDirectObserverState() {
@@ -272,7 +321,24 @@ Item {
   }
 
   function sessionsFor(kind) {
-    return activeSessions.filter(function(session) { return !kind || session.kind === kind })
+    return displaySessions.filter(function(session) { return !kind || session.kind === kind })
+  }
+
+  function barSessionsFor(kind) {
+    var source = capturePreviewActive ? capturePreviewBarSessions : activeSessions
+    return source.filter(function(session) { return !kind || session.kind === kind })
+  }
+
+  function barAttributedSessionsFor(kind) {
+    return Model.filterAttribution(Model.visibleSessions(barSessionsFor(kind), policies()), settings.showInferredAttribution !== false)
+  }
+
+  function barAppsFor(kind) {
+    return Model.applicationsForSessions(barAttributedSessionsFor(kind), kind, settings.deduplicateApps !== false)
+  }
+
+  function barActive(kind) {
+    return kindEnabled(kind) && barSessionsFor(kind).length > 0
   }
 
   function visibleSessionsFor(kind) {
@@ -430,6 +496,44 @@ Item {
     return String(Qt.resolvedUrl("privacy-history")).replace(/^file:\/\//, "")
   }
 
+  function audioEndpointHelperPath() {
+    return String(Qt.resolvedUrl("privacy-audio-devices")).replace(/^file:\/\//, "")
+  }
+
+  function audioEndpoints(kind) {
+    var rows = audioEndpointMap[kind]
+    return Array.isArray(rows) ? rows : []
+  }
+
+  function acceptAudioEndpoints(kind, text) {
+    try {
+      var rows = JSON.parse(String(text || "[]"))
+      if (!Array.isArray(rows)) throw new Error("invalid endpoint list")
+      rows = Model.sanitizeAudioEndpoints(rows, 64)
+      var next = Object.assign({}, audioEndpointMap)
+      next[kind] = rows
+      audioEndpointMap = next
+      audioEndpointMessage = rows.length ? "" : "No audio endpoints detected."
+    } catch (error) { audioEndpointMessage = "Audio endpoints could not be read." }
+  }
+
+  function refreshAudioEndpoints(kind) {
+    if (["microphone", "audio-output"].indexOf(kind) === -1 || audioEndpointListProc.running || audioEndpointSetProc.running) return
+    audioEndpointKind = kind
+    audioEndpointMessage = "Loading audio endpoints…"
+    audioEndpointListProc.command = [audioEndpointHelperPath(), "list", kind]
+    audioEndpointListProc.running = true
+  }
+
+  function setAudioEndpointMuted(kind, identifier, muted) {
+    if (["microphone", "audio-output"].indexOf(kind) === -1 || audioEndpointListProc.running || audioEndpointSetProc.running) return false
+    audioEndpointKind = kind
+    audioEndpointMessage = muted ? "Blocking selected endpoint…" : "Allowing selected endpoint…"
+    audioEndpointSetProc.command = [audioEndpointHelperPath(), "set", kind, String(identifier), muted === true ? "true" : "false"]
+    audioEndpointSetProc.running = true
+    return true
+  }
+
   function loadHistory() {
     if (historyLoaded || historyLoadProc.running || settings.historyEnabled !== true) return
     historyLoadGeneration = historyGeneration
@@ -538,7 +642,7 @@ Item {
     var current = next[kind]
     next[kind] = Model.controlTransactionTransition(current, {type: "command", exitCode: exitCode}, Date.now())
     controlTransactions = next
-    if (next[kind] && next[kind].status === "failed") notifyControlResult(kind, exitCode)
+    if (next[kind] && next[kind].status === "failed") notifyControlResult(kind, next[kind].expectedEnabled, false)
   }
 
   function transitionControlTransaction(kind, event, now) {
@@ -549,7 +653,7 @@ Item {
     next[kind] = updated
     controlTransactions = next
     if (updated && (updated.status === "succeeded" || updated.status === "failed"))
-      notifyControlResult(kind, updated.status === "succeeded" ? 0 : updated.exitCode)
+      notifyControlResult(kind, updated.expectedEnabled, updated.status === "succeeded")
   }
 
   function verifyControlTransaction(kind, observedEnabled, probeValid) {
@@ -668,6 +772,97 @@ Item {
     return false
   }
 
+  function privacyPresetEntries() {
+    return ["microphone", "audio-output", "camera", "screen-share", "location"].map(function(kind) {
+      return {
+        kind: kind,
+        enabled: controlEnabled(kind),
+        controllable: kindEnabled(kind) && serviceControllable(kind),
+        dependenciesReady: dependenciesReady(kind),
+        pending: controlPending(kind) || controlProcessBusy(kind)
+      }
+    })
+  }
+
+  function startPrivacyPreset(plan, restoring) {
+    if (privacyPresetState === "applying" || privacyPresetState === "restoring") return false
+    privacyPresetRestoring = restoring === true
+    privacyPresetState = privacyPresetRestoring ? "restoring" : "applying"
+    privacyPresetQueue = plan.actions.slice()
+    privacyPresetResults = plan.skipped.slice()
+    privacyPresetActiveKind = ""
+    runNextPrivacyPreset()
+    return true
+  }
+
+  function requestPrivacyLockdown() {
+    var entries = privacyPresetEntries()
+    var previous = {}
+    for (var index = 0; index < entries.length; index++) previous[entries[index].kind] = entries[index].enabled === true
+    var plan = Model.privacyPresetPlan(entries, false)
+    privacyPresetPrevious = previous
+    privacyPresetUndoAvailable = false
+    privacyPresetUndoTimer.stop()
+    return startPrivacyPreset(plan, false)
+  }
+
+  function restorePrivacyLockdown() {
+    if (!privacyPresetUndoAvailable) return false
+    var plan = Model.privacyPresetPlan(privacyPresetEntries(), privacyPresetPrevious)
+    privacyPresetUndoAvailable = false
+    privacyPresetUndoTimer.stop()
+    return startPrivacyPreset(plan, true)
+  }
+
+  function runNextPrivacyPreset() {
+    var next = Model.nextPrivacyPresetAction(privacyPresetQueue, privacyPresetActiveKind)
+    if (next.action === "wait") return
+    if (next.action === "complete") {
+      var outcome = Model.privacyPresetOutcome(privacyPresetResults)
+      privacyPresetState = outcome.state
+      if (!privacyPresetRestoring && outcome.changed) {
+        privacyPresetUndoAvailable = true
+        privacyPresetUndoTimer.restart()
+      } else privacyPresetFeedbackTimer.restart()
+      privacyPresetRestoring = false
+      return
+    }
+    var action = next.current
+    privacyPresetQueue = next.queue
+    if ((controlEnabled(action.kind) === true) === action.expectedEnabled) {
+      privacyPresetResults = privacyPresetResults.concat([{kind: action.kind, reason: "already-set"}])
+      Qt.callLater(function() { root.runNextPrivacyPreset() })
+      return
+    }
+    privacyPresetActiveKind = action.kind
+    if (!toggleControl(action.kind)) {
+      privacyPresetResults = privacyPresetResults.concat([{kind: action.kind, reason: "request-failed"}])
+      privacyPresetActiveKind = ""
+      Qt.callLater(function() { root.runNextPrivacyPreset() })
+    }
+  }
+
+  function advancePrivacyPreset() {
+    if (!privacyPresetActiveKind) return
+    var transaction = controlTransactions[privacyPresetActiveKind]
+    if (!transaction || (transaction.status !== "succeeded" && transaction.status !== "failed")) return
+    privacyPresetResults = privacyPresetResults.concat([{
+      kind: privacyPresetActiveKind,
+      status: transaction.status,
+      reason: transaction.status === "failed" ? String(transaction.code || "failed") : ""
+    }])
+    privacyPresetActiveKind = ""
+    runNextPrivacyPreset()
+  }
+
+  function privacyPresetMessage() {
+    if (privacyPresetState === "applying") return "Applying privacy lockdown…"
+    if (privacyPresetState === "restoring") return "Restoring previous privacy state…"
+    if (privacyPresetState === "partial") return "Privacy preset finished with unavailable or failed controls."
+    if (privacyPresetState === "succeeded") return privacyPresetUndoAvailable ? "Privacy lockdown verified. Undo is available for 30 seconds." : "Privacy preset verified."
+    return ""
+  }
+
   function helperPath() {
     return String(Qt.resolvedUrl("privacy-control")).replace(/^file:\/\//, "")
   }
@@ -728,13 +923,23 @@ Item {
     return ""
   }
 
-  function notify(title, body, icon, fallbackIcon) {
+  function actionHelperPath() {
+    return String(Qt.resolvedUrl("privacy-action")).replace(/^file:\/\//, "")
+  }
+
+  function notificationAction(action, argument) {
+    return Model.privacyAction(action, argument)
+  }
+
+  function notify(title, body, icon, fallbackIcon, action, argument) {
     var command = [
       "omarchy", "notification", "send",
       "--app-name", "Privacy Devices"
     ]
     var resolvedIcon = resolvedNotificationIcon(icon, fallbackIcon)
     if (resolvedIcon) command.push("--icon", resolvedIcon)
+    var callback = notificationAction(action, argument)
+    if (callback) command.push("--exec", actionHelperPath(), callback.name, callback.argument)
     command.push("--urgency", "normal", Model.autoTextSafe(title), Model.autoTextSafe(body))
     Quickshell.execDetached(command)
   }
@@ -748,13 +953,81 @@ Item {
   function flushActivityNotifications() {
     var grouped = Model.coalesceNotificationEvents(notificationQueue)
     notificationQueue = []
-    if (grouped.count > 0) notify(grouped.title, grouped.body, grouped.icon, grouped.fallbackIcon)
+    if (grouped.count > 0) notify(grouped.title, grouped.body, grouped.icon, grouped.fallbackIcon,
+      grouped.count === 1 ? "open-activity" : "open-history", grouped.kind)
   }
 
-  function notifyControlResult(kind, exitCode) {
+  function notifyControlResult(kind, expectedEnabled, succeeded) {
     if (settings.notifyOnControlChanges === false) return
-    if (Number(exitCode) === 0) notify("Privacy control updated", Model.label(kind) + " change applied", Model.notificationKindIcon(kind), "security-high-symbolic")
-    else notify("Privacy control failed", Model.label(kind) + " was not changed", Model.notificationKindIcon(kind), "security-high-symbolic")
+    var result = Model.controlResultNotification(kind, expectedEnabled, succeeded)
+    notify(result.title, result.body, Model.notificationKindIcon(kind), "security-high-symbolic",
+      succeeded === true ? "open-activity" : "open-diagnostics", succeeded === true ? kind : "")
+  }
+
+  function requestPopupView(view, argument) {
+    requestedView = view
+    requestedViewArgument = String(argument || "")
+    requestedSettingsSection = ""
+    settingsRequestSerial++
+    if (anyBarOpen()) return view
+    return shell && typeof shell.summon === "function" && shell.summon("io.github.bolens.privacy-devices", "")
+      ? view : "unavailable"
+  }
+
+  function requestSettingsView(page, section) {
+    var target = Model.settingsDeepLink(page, section)
+    root.requestedView = "settings"
+    root.requestedSettingsPage = target.page
+    root.requestedSettingsSection = target.section
+    root.settingsRequestSerial++
+    if (!root.anyBarOpen() && (!root.shell || typeof root.shell.summon !== "function"
+        || !root.shell.summon("io.github.bolens.privacy-devices", ""))) return "unavailable"
+    return target.page + (target.section ? "#" + target.section : "")
+  }
+
+  function requestDeviceView(kind) {
+    var target = Model.deviceDeepLink(kind)
+    if (String(kind || "") && !target) return "invalid"
+    return root.requestPopupView("activity", target)
+  }
+
+  function dispatchPrivacyAction(name, argument) {
+    var action = Model.privacyAction(name, argument)
+    if (!action) return "invalid"
+    if (action.name === "open-activity") return requestPopupView("activity", action.argument)
+    if (action.name === "open-history") return requestPopupView("history", action.argument)
+    if (action.name === "open-diagnostics") return requestPopupView("diagnostics", "")
+    if (action.name === "lockdown") return requestPopupView("lockdown", "")
+    if (action.name === "undo-lockdown") return restorePrivacyLockdown() ? "ok" : "unavailable"
+    if (action.name === "rescan") { refreshFallbacks(); refreshDirectDevices(); refreshSessions(); return "ok" }
+    return "invalid"
+  }
+
+  function selfTestInput(historyStatus) {
+    var dependencies = {}, controls = {}
+    for (var index = 0; index < enabledKindList.length; index++) {
+      var kind = enabledKindList[index]
+      dependencies[kind] = dependenciesReady(kind)
+      if (serviceControllable(kind)) controls[kind] = controlRequestStatus(kind) !== "unsupported" && controlRequestStatus(kind) !== "dependency-unavailable"
+    }
+    var selfTestObserverHealth = Object.assign({}, observerHealth, {fallback: observerHealth["fallback-observer"]})
+    return {pipewireAvailable: pipewireAvailable, observerHealth: selfTestObserverHealth,
+      directDeviceEnabled: settings.directDeviceMonitoring === true, dependencies: dependencies, controls: controls,
+      history: {enabled: settings.historyEnabled === true, status: historyStatus}}
+  }
+
+  function runSelfTest() {
+    selfTestResult = Model.privacySelfTest(selfTestInput(settings.historyEnabled === true ? "checking" : "disabled"))
+    if (settings.historyEnabled !== true) return
+    if (!historyInspectProc.running) { historyInspectProc.command = [historyHelperPath(), "inspect"]; historyInspectProc.running = true }
+  }
+
+  function sendTestNotification() {
+    notify("Privacy notification test", "Click to open diagnostics", "security-high-symbolic", "dialog-information-symbolic", "open-diagnostics", "")
+  }
+
+  function copySelfTest() {
+    Quickshell.execDetached([String(Qt.resolvedUrl("privacy-diagnostics")).replace(/^file:\/\//, ""), JSON.stringify({version: 1, redacted: true, selfTest: selfTestResult})])
   }
 
   function refreshPreventativeControls() {
@@ -847,6 +1120,19 @@ Item {
     repeat: true
     running: root.kindEnabled("location")
     onTriggered: root.refreshLocation()
+  }
+  Timer {
+    id: privacyPresetUndoTimer
+    interval: 30000
+    onTriggered: {
+      root.privacyPresetUndoAvailable = false
+      if (root.privacyPresetState === "succeeded" || root.privacyPresetState === "partial") root.privacyPresetState = "idle"
+    }
+  }
+  Timer {
+    id: privacyPresetFeedbackTimer
+    interval: 8000
+    onTriggered: if (root.privacyPresetState !== "applying" && root.privacyPresetState !== "restoring") root.privacyPresetState = "idle"
   }
 
   Timer {
@@ -945,6 +1231,18 @@ Item {
   }
 
   Process {
+    id: audioEndpointListProc
+    onExited: function(exitCode) { if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoints could not be read." }
+    stdout: StdioCollector { id: audioEndpointListOutput; waitForEnd: true; onStreamFinished: root.acceptAudioEndpoints(root.audioEndpointKind, audioEndpointListOutput.text) }
+  }
+
+  Process {
+    id: audioEndpointSetProc
+    onExited: function(exitCode) { if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoint state was not changed." }
+    stdout: StdioCollector { id: audioEndpointSetOutput; waitForEnd: true; onStreamFinished: root.acceptAudioEndpoints(root.audioEndpointKind, audioEndpointSetOutput.text) }
+  }
+
+  Process {
     id: locationProc
     onExited: function(exitCode) { root.setResult("probe", "location", exitCode) }
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: function(text) { root.parseLocation(text) } }
@@ -1034,6 +1332,17 @@ Item {
   }
 
   Process {
+    id: historyInspectProc
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var status = "attention"
+        try { status = String(JSON.parse(String(text || "{}")).status || "attention") } catch (error) {}
+        root.selfTestResult = Model.privacySelfTest(root.selfTestInput(status))
+      }
+    }
+  }
+
+  Process {
     id: historyLoadProc
     onExited: function(exitCode) {
       if (root.historyLoadGeneration === root.historyGeneration)
@@ -1065,6 +1374,11 @@ Item {
 
   IpcHandler {
     target: "privacy-devices"
+    function open(): string { return root.requestDeviceView("") }
+    function openDetails(kind: string): string { return root.requestDeviceView(kind) }
+    function openSettings(page: string): string { return root.requestSettingsView(page, "") }
+    function openSettingsSection(page: string, section: string): string { return root.requestSettingsView(page, section) }
+    function openHistory(): string { return root.requestPopupView("history", "") }
     function status(): string { return JSON.stringify(root.snapshot()) }
     function sessions(): string { return JSON.stringify(root.activeSessions) }
     function health(): string {
@@ -1083,6 +1397,14 @@ Item {
       var status = root.controlRequestStatus(kind)
       return status === "ok" ? (root.toggleControl(kind) ? "ok" : "busy") : status
     }
+    function lockdown(): string { return root.requestPrivacyLockdown() ? "ok" : "busy" }
+    function undoLockdown(): string { return root.restorePrivacyLockdown() ? "ok" : "unavailable" }
+    function openActivity(kind: string): string { return root.requestPopupView("activity", kind) }
+    function openDiagnostics(): string { return root.requestPopupView("diagnostics", "") }
+    function action(name: string, argument: string): string {
+      var accepted = Model.privacyAction(name, argument)
+      return accepted ? root.dispatchPrivacyAction(accepted.name, accepted.argument) : "invalid"
+    }
   }
 
   IpcHandler {
@@ -1094,10 +1416,13 @@ Item {
         var owner = String(payload.owner || "")
         var previewSettings = payload.settings
         var previewHistory = payload.history
-        if (!/^[A-Za-z0-9_-]{24,128}$/.test(owner) || !previewSettings || typeof previewSettings !== "object" || Array.isArray(previewSettings) || !Array.isArray(previewHistory)) return "invalid"
+        var previewSessions = payload.sessions === undefined ? [] : payload.sessions
+        if (!/^[A-Za-z0-9_-]{24,128}$/.test(owner) || !previewSettings || typeof previewSettings !== "object" || Array.isArray(previewSettings) || !Array.isArray(previewHistory) || !Array.isArray(previewSessions)) return "invalid"
         if (root.capturePreviewActive && root.capturePreviewOwner !== owner) return "busy"
         root.capturePreviewHistory = previewHistory
-        root.capturePreviewSettings = previewSettings
+        root.capturePreviewSessions = Model.sanitizeCaptureSessions(previewSessions, Date.now())
+        root.capturePreviewBarSessions = Model.sanitizeCaptureSessions(root.activeSessions, Date.now())
+        root.capturePreviewSettings = Object.assign({}, Model.sanitizeSettings(root.settings), previewSettings)
         root.capturePreviewOwner = owner
         root.capturePreviewExpiresAt = Date.now() + 180000
         root.capturePreviewActive = true
@@ -1109,6 +1434,15 @@ Item {
       root.capturePreviewExpiresAt = Date.now() + 180000
       return "ok"
     }
+    function state(owner: string): string {
+      if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
+      return JSON.stringify({settings: root.capturePreviewSettings, sessions: root.capturePreviewSessions, barSessions: root.capturePreviewBarSessions})
+    }
+    function openHistoryDisabled(owner: string): string {
+      if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
+      root.captureHistoryPresentationEnabled = false
+      return root.requestPopupView("history", "") === "history" ? "history-disabled" : "unavailable"
+    }
     function endCapture(owner: string): string {
       if (!root.capturePreviewActive) return "ok"
       if (root.capturePreviewOwner !== owner) return "denied"
@@ -1119,27 +1453,10 @@ Item {
 
   IpcHandler {
     target: "privacy-devices-settings"
-    function open(page: string): string {
-      root.requestedView = "settings"
-      root.requestedSettingsPage = Model.settingsPage(page)
-      root.requestedSettingsSection = ""
-      root.settingsRequestSerial++
-      return root.shell && typeof root.shell.summon === "function" && root.shell.summon("io.github.bolens.privacy-devices", "") ? root.requestedSettingsPage : "unavailable"
-    }
-    function openSection(page: string, section: string): string {
-      var target = Model.settingsDeepLink(page, section)
-      root.requestedView = "settings"
-      root.requestedSettingsPage = target.page
-      root.requestedSettingsSection = target.section
-      root.settingsRequestSerial++
-      return root.shell && typeof root.shell.summon === "function" && root.shell.summon("io.github.bolens.privacy-devices", "")
-        ? target.page + (target.section ? "#" + target.section : "") : "unavailable"
-    }
+    function open(page: string): string { return root.requestSettingsView(page, "") }
+    function openSection(page: string, section: string): string { return root.requestSettingsView(page, section) }
     function openHistory(): string {
-      root.requestedView = "history"
-      root.requestedSettingsSection = ""
-      root.settingsRequestSerial++
-      return root.shell && typeof root.shell.summon === "function" && root.shell.summon("io.github.bolens.privacy-devices", "") ? "history" : "unavailable"
+      return root.requestPopupView("history", "")
     }
   }
 

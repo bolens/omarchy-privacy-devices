@@ -54,7 +54,7 @@ body:
     attributes:
       label: Plugin version
       description: Find this in `manifest.json` inside the installed plugin directory.
-      placeholder: 0.6.0
+      placeholder: 0.7.0
     validations:
       required: true
 

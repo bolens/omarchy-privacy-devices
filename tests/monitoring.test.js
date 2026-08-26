@@ -30,6 +30,39 @@ assert.equal(model.freshnessAgeSeconds(0, 20_000), -1)
 assert.equal(model.freshnessAgeSeconds(18_501, 20_000), 1)
 assert.equal(model.freshnessAgeSeconds(25_000, 20_000), 0)
 
+assert.equal(model.observerHealthNotice(
+  {status: "healthy"}, {status: "degraded", source: "direct-device", code: "heartbeat_stale"},
+  20_000, 0, 60_000
+).phase, "degraded", "a healthy observer becoming degraded should alert")
+assert.equal(model.observerHealthNotice(
+  {status: "degraded"}, {status: "healthy", source: "direct-device", code: "ok"},
+  90_000, 20_000, 60_000
+).phase, "recovered", "a later recovery should alert")
+assert.equal(model.observerHealthNotice(
+  {status: "degraded"}, {status: "healthy", source: "direct-device", code: "ok"},
+  50_000, 20_000, 60_000
+), null, "health alerts must be rate limited")
+assert.equal(model.observerHealthNotice(null, {status: "degraded"}, 20_000, 0, 60_000), null,
+  "initial observer discovery must not alert")
+
+const selfTest = model.privacySelfTest({
+  pipewireAvailable: true,
+  observerHealth: {
+    "direct-device": {status: "degraded", code: "heartbeat_stale"},
+    "fallback-observer": {status: "healthy", code: "ok"}
+  },
+  directDeviceEnabled: true,
+  dependencies: {microphone: true, camera: false},
+  controls: {microphone: true, camera: true},
+  history: {enabled: true, status: "private"}
+})
+assert.equal(selfTest.status, "attention")
+assert.equal(selfTest.checks.length, 6)
+assert.deepEqual(JSON.parse(JSON.stringify(selfTest.checks.map(check => check.status))),
+  ["passed", "attention", "passed", "attention", "passed", "passed"])
+assert.match(selfTest.text, /observer heartbeat_stale/)
+assert.doesNotMatch(selfTest.text, /application|device name/i, "self-test output stays redacted")
+
 const initialHealth = {
   pipewire: {status: "healthy", source: "pipewire", code: "ok", reason: ""},
   watcher: {status: "healthy", source: "watcher", code: "ok", reason: ""}

@@ -74,14 +74,22 @@ cat "$MOCK_HISTORY"
   const settings = path.join(temporary, "settings.json")
   const settingsSnapshot = path.join(temporary, "settings-snapshot.json")
   const historySnapshot = path.join(temporary, "history.json")
+  const liveHistory = path.join(temporary, "live-history.json")
   fs.writeFileSync(settings, "{}\n")
   fs.writeFileSync(settingsSnapshot, "{}\n")
   fs.writeFileSync(historySnapshot, "[]\n")
+  fs.writeFileSync(liveHistory, "[]\n")
   const postArgs = [settingsSnapshot, settings, historySnapshot, "DP-1", "4", "101", "101", "off"]
   const postEnv = { PRIVACY_QS_COMMAND: qs, PRIVACY_HYPRCTL_COMMAND: hyprctl,
-    PRIVACY_HISTORY_COMMAND: historyCommand, MOCK_HISTORY: historySnapshot, MOCK_SHELL: "up",
+    PRIVACY_HISTORY_COMMAND: historyCommand, MOCK_HISTORY: liveHistory, MOCK_SHELL: "up",
     MOCK_LEASE: "ok", MOCK_DND: "off", MOCK_FOCUSED: "true", MOCK_WORKSPACE: "4" }
   run(postconditions, postArgs, postEnv)
+  fs.writeFileSync(settings, '{"changed":true}\n')
+  assert.match(execute(postconditions, postArgs, postEnv).stderr, /settings changed/i)
+  fs.writeFileSync(settings, "{}\n")
+  fs.writeFileSync(liveHistory, '[{"changed":true}]\n')
+  assert.match(execute(postconditions, postArgs, postEnv).stderr, /history changed/i)
+  fs.writeFileSync(liveHistory, "[]\n")
   assert.match(execute(postconditions, postArgs, { ...postEnv, MOCK_DND: "on" }).stderr, /DND state/)
   assert.match(execute(postconditions, postArgs, { ...postEnv, MOCK_WORKSPACE: "5" }).stderr, /workspace/)
   assert.match(execute(postconditions, [...postArgs.slice(0, 6), "202", "off"], postEnv).stderr, /PID changed/)

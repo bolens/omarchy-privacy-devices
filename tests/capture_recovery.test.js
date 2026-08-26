@@ -15,7 +15,7 @@ fs.writeFileSync(path.join(recovery, "shell.json"), '{"restored":true}')
 fs.writeFileSync(path.join(recovery, "history.json"), "[]")
 
 const result = spawnSync(path.join(root, "scripts", "restore-capture-state"), [recovery], {
-  cwd: root,
+  cwd: temporary,
   encoding: "utf8",
   env: {...process.env, XDG_CONFIG_HOME: path.join(temporary, "config"), XDG_STATE_HOME: path.join(temporary, "state")},
 })

@@ -20,8 +20,10 @@ Panel {
   readonly property string displayMode: String(setting("displayMode", "icons"))
   readonly property bool showControls: setting("showControls", true) === true
   readonly property real idleOpacity: Math.max(0.1, Math.min(1, Number(setting("idleOpacity", 0.45))))
+  readonly property real activeOpacity: Math.max(0.1, Math.min(1, Number(setting("activeOpacity", 1))))
   readonly property real disabledOpacity: Math.max(0.25, Math.min(1, Number(setting("disabledOpacity", 1))))
-  readonly property string statusMarkerMode: String(setting("statusMarkerMode", "symbols"))
+  readonly property real blockedActiveOpacity: Math.max(0.1, Math.min(1, Number(setting("blockedActiveOpacity", 1))))
+  readonly property string statusMarkerMode: String(setting("statusMarkerMode", "off"))
   readonly property string barMarkerPosition: String(setting("barMarkerPosition", "after"))
   readonly property real barIconScale: Math.max(0.75, Math.min(1.5, Number(setting("barIconScale", 1))))
   readonly property int barItemSpacing: Math.max(0, Math.min(12, Number(setting("barItemSpacing", 0))))
@@ -51,13 +53,15 @@ Panel {
     idle: ""
   })
   readonly property bool animatePending: setting("animatePending", true) === true
-  readonly property color activeThemeColor: themeColor(String(setting("activeColorRole", "bar-active")), true)
-  readonly property color inactiveThemeColor: themeColor(String(setting("inactiveColorRole", "muted")), false)
-  readonly property color disabledThemeColor: themeColor(String(setting("disabledColorRole", "urgent")), true)
+  readonly property color activeThemeColor: themeColor(String(setting("activeColorRole", "accent")), true)
+  readonly property color inactiveThemeColor: themeColor(String(setting("inactiveColorRole", "foreground")), false)
+  readonly property color disabledThemeColor: themeColor(String(setting("disabledColorRole", "muted")), false)
+  readonly property color blockedActiveThemeColor: themeColor(String(setting("blockedActiveColorRole", "urgent")), true)
   readonly property color mutedThemeColor: themeColor(String(setting("mutedColorRole", "urgent")), true)
   readonly property color unmutedThemeColor: themeColor(String(setting("unmutedColorRole", "foreground")), false)
   readonly property var activitySourceItems: orderedKinds().map(function(kind) { return item(kind) })
-  readonly property var visibleItems: activitySourceItems.filter(function(entry) { return entry.active || itemShowsWhenIdle(entry.kind) })
+  readonly property var barSourceItems: orderedKinds().map(function(kind) { return barItem(kind) })
+  readonly property var visibleItems: barSourceItems.filter(function(entry) { return entry.active || itemShowsWhenIdle(entry.kind) })
   readonly property var activeItemList: visibleItems.filter(function(entry) { return entry.active })
   readonly property int activeCount: activeItemList.length
   readonly property bool monitoringDegraded: privacyService && typeof privacyService.monitoringDegraded === "function" ? privacyService.monitoringDegraded() : false
@@ -78,17 +82,21 @@ Panel {
     {value: "show", label: "Show"}, {value: "hide", label: "Hide"}
   ]
   readonly property var normalBarItems: displayMode === "active-count"
-    ? [{kind: "summary", label: "Privacy", icon: activeCount > 0 ? "󰒃 " + activeCount : "󰒃", active: activeCount > 0, apps: [], controllable: false, controlEnabled: false, health: {status: "healthy"}, sessions: []}]
+    ? [{kind: "summary", label: "Privacy", icon: activeCount > 0 ? "󰒃 " + activeCount : "󰒃", active: activeCount > 0, apps: [], controllable: false, controlEnabled: false, pending: false, dependenciesReady: true, health: {status: "healthy"}, sessions: []}]
     : (displayMode === "active-only" ? activeItems() : visibleItems)
-  readonly property var barItems: monitoringDegraded && normalBarItems.length === 0
+  readonly property var liveBarItems: monitoringDegraded && normalBarItems.length === 0
     ? [{kind: "summary", label: "Privacy", icon: "󰀦", active: false, apps: [], controllable: false, controlEnabled: false, health: {status: "degraded"}, sessions: []}]
     : normalBarItems
+  property var captureFrozenBarItems: []
+  readonly property var barItems: privacyService && privacyService.capturePreviewActive && captureFrozenBarItems.length > 0
+    ? captureFrozenBarItems : liveBarItems
   readonly property bool verticalBar: bar && bar.vertical === true
   readonly property int barFlowColumns: iconGrid.columns
   property string editingKind: ""
   property bool showingGlobalSettings: false
   property bool showingHistory: false
   property string historyQuery: ""
+  property int historySummaryWindow: 24 * 60 * 60 * 1000
   property bool settingsMutationPending: false
   property string globalSettingsPage: "general"
   property string pendingSettingsSection: ""
@@ -104,11 +112,32 @@ Panel {
     : (settingsMutationController.status === "saved" ? "Changes applied"
     : (settingsMutationController.status === "failed" ? "Settings update failed" + (settingsMutationController.detail ? ": " + settingsMutationController.detail : "") : ""))
   readonly property bool settingsPageLoaded: globalSettingsPageLoader.item !== null
+  readonly property var lockdownActionControl: lockdownButton
+  readonly property var privacyPresetFeedbackSurface: presetFeedback
+  readonly property string confirmationPending: confirmationState.pending
+  readonly property var historySearchControl: historySearch
+  readonly property var historyCountLabel: historyCountText
+  readonly property var historyDisabledSettingsControl: historyDisabledSettingsButton
   readonly property var filteredHistory: Model.filterHistory(privacyService ? privacyService.displayHistory : [], historyQuery)
+  readonly property var historySummaryRows: Model.historySummary(privacyService ? privacyService.displayHistory : [], durationNow, historySummaryWindow)
+  readonly property bool historyPresentationEnabled: privacyService && privacyService.capturePreviewActive && privacyService.requestedView === "history"
+    ? privacyService.captureHistoryPresentationEnabled !== false : setting("historyEnabled", false) === true
+  readonly property var editingSessions: editingKind && privacyService ? privacyService.attributedSessionsFor(editingKind) : []
+  readonly property var editingDevices: Model.unique(editingSessions.map(function(session) { return String(session.device || "") }).filter(Boolean))
   readonly property real openPanelIndicatorWidth: button.labelWidth
 
   function setting(key, fallback) {
     return effectiveSettings && effectiveSettings[key] !== undefined ? effectiveSettings[key] : fallback
+  }
+
+  function mutationSetting(key, fallback) {
+    var candidate = settingsMutationController.pending || effectiveSettings
+    return candidate && candidate[key] !== undefined ? candidate[key] : fallback
+  }
+
+  function publishCaptureBarPresentation() {
+    if (!privacyService) return
+    privacyService.updateBarPresentation(bar && bar.screen ? bar.screen.name : "unknown", {opened: opened})
   }
 
   function syncService() {
@@ -173,7 +202,16 @@ Panel {
   function handleSettingsRequest() {
     if (!opened || !privacyService || privacyService.settingsRequestSerial <= handledSettingsRequestSerial) return
     handledSettingsRequestSerial = privacyService.settingsRequestSerial
-    if (privacyService.requestedView === "history") showHistory()
+    if (privacyService.requestedView === "history") {
+      historyQuery = privacyService.requestedViewArgument ? Model.label(privacyService.requestedViewArgument) : ""
+      showHistory()
+    } else if (privacyService.requestedView === "activity") {
+      showActivity()
+      editingKind = Model.KINDS.indexOf(privacyService.requestedViewArgument) >= 0 ? privacyService.requestedViewArgument : ""
+    } else if (privacyService.requestedView === "lockdown") {
+      showActivity()
+      confirmationState.request("lockdown")
+    } else if (privacyService.requestedView === "diagnostics") showGlobalSettings("monitoring", "observer-health")
     else showGlobalSettings(privacyService.requestedSettingsPage, privacyService.requestedSettingsSection)
   }
 
@@ -183,6 +221,20 @@ Panel {
     if (action === "settings") { showActivity(); return }
     if (action === "history") { showActivity(); return }
     close()
+  }
+
+  function activateLockdownAction() {
+    if (!privacyService || privacyService.privacyPresetState === "applying" || privacyService.privacyPresetState === "restoring") return false
+    var presentation = Model.lockdownActionPresentation(privacyService.privacyPresetUndoAvailable, confirmationState.pending === "lockdown")
+    if (presentation.action === "restore") {
+      var restored = privacyService.restorePrivacyLockdown()
+      confirmationState.clear()
+      return restored
+    }
+    if (!confirmationState.request("lockdown")) return false
+    var requested = privacyService.requestPrivacyLockdown()
+    confirmationState.clear()
+    return requested
   }
 
   function moveActivitySelection(delta) {
@@ -230,6 +282,20 @@ Panel {
     return Model.unique(String(value || "").split(",").map(function(entry) { return entry.trim() }).filter(Boolean))
   }
 
+  function deviceLabel(device) {
+    return Model.deviceLabel(device, setting("deviceLabels", {}))
+  }
+
+  function persistDeviceLabel(device, value) {
+    var labels = Object.assign({}, mutationSetting("deviceLabels", {}) || {})
+    var key = String(device || "")
+    var text = String(value || "").trim()
+    if (!key) return
+    if (text && text !== key) labels[key] = text
+    else delete labels[key]
+    persistSettings({deviceLabels: labels})
+  }
+
   function item(kind) {
     var apps = privacyService ? privacyService.appsFor(kind) : []
     return {
@@ -245,6 +311,15 @@ Panel {
       health: privacyService && typeof privacyService.healthFor === "function" ? privacyService.healthFor(kind) : {status: "healthy", summary: ""},
       sessions: privacyService && typeof privacyService.attributedSessionsFor === "function" ? privacyService.attributedSessionsFor(kind) : []
     }
+  }
+
+  function barItem(kind) {
+    var entry = item(kind)
+    if (!privacyService || typeof privacyService.barActive !== "function") return entry
+    entry.active = privacyService.barActive(kind)
+    entry.apps = privacyService.barAppsFor(kind)
+    entry.sessions = privacyService.barAttributedSessionsFor(kind)
+    return entry
   }
 
   function themeColor(role, activeFallback) {
@@ -284,7 +359,7 @@ Panel {
   function itemStateMarker(entry) {
     var state = itemVisualState(entry)
     var stateVisible = state === "active" ? showBarActiveMarker
-      : (state === "disabled" ? showBarDisabledMarker
+      : (state === "disabled" || state === "blocked-active" ? showBarDisabledMarker
       : (state === "pending" ? showBarPendingMarker
       : (state === "unavailable" ? showBarDegradedMarker : true)))
     return Model.privacyStateMarker(entry, statusMarkerMode, itemStatusMarkerVisible(entry.kind) && stateVisible, customBarMarkers)
@@ -305,13 +380,11 @@ Panel {
     if (state === "pending") return Color.accent
     var roles = setting("itemColorRoles", {}) || {}
     var override = roles[entry.kind] || {}
-    if (isAudioControl(entry)) return entry.controlEnabled
-      ? themeColor(String(override.unmuted || setting("unmutedColorRole", "foreground")), false)
-      : themeColor(String(override.muted || setting("mutedColorRole", "urgent")), true)
-    if (state === "disabled") return themeColor(String(override.disabled || setting("disabledColorRole", "urgent")), true)
+    if (state === "blocked-active") return themeColor(String(override.blocked || setting("blockedActiveColorRole", "urgent")), true)
+    if (state === "disabled") return themeColor(String(override.disabled || setting("disabledColorRole", "muted")), false)
     return state === "active"
-      ? themeColor(String(override.active || setting("activeColorRole", "bar-active")), true)
-      : themeColor(String(override.inactive || setting("inactiveColorRole", "muted")), false)
+      ? themeColor(String(override.active || setting("activeColorRole", "accent")), true)
+      : themeColor(String(override.inactive || setting("inactiveColorRole", "foreground")), false)
   }
 
   function persistSettings(values) {
@@ -403,8 +476,14 @@ Panel {
       barDegradedMarkerIcon: "!",
       showControls: true,
       idleOpacity: 0.45,
+      activeOpacity: 1,
       disabledOpacity: 1,
-      statusMarkerMode: "symbols",
+      blockedActiveOpacity: 1,
+      activeColorRole: "accent",
+      inactiveColorRole: "foreground",
+      disabledColorRole: "muted",
+      blockedActiveColorRole: "urgent",
+      statusMarkerMode: "off",
       statePillStyle: "filled",
       popupDensity: "comfortable",
       popupLayout: "adaptive",
@@ -418,9 +497,13 @@ Panel {
       notifyOnActivity: true,
       notifyOnStop: false,
       notifyOnControlChanges: true,
+      notifyOnObserverHealth: false,
       historyEnabled: false,
       hiddenApps: [],
       notificationSuppressedApps: [],
+      hiddenDevices: [],
+      notificationSuppressedDevices: [],
+      deviceLabels: {},
       directDeviceMonitoring: false,
       showInferredAttribution: true,
       directDevicePollSeconds: 5,
@@ -436,7 +519,7 @@ Panel {
   }
 
   function persistIcon(kind, value) {
-    var icons = JSON.parse(JSON.stringify(setting("icons", {}) || {}))
+    var icons = JSON.parse(JSON.stringify(mutationSetting("icons", {}) || {}))
     icons[kind] = String(value || "")
     persistSettings({icons: icons})
     Qt.callLater(function() { if (root.editingKind === kind) iconEditor.text = root.iconFor(kind) })
@@ -448,7 +531,7 @@ Panel {
   }
 
   function persistLabel(kind, value) {
-    var labels = JSON.parse(JSON.stringify(setting("itemLabels", {}) || {}))
+    var labels = JSON.parse(JSON.stringify(mutationSetting("itemLabels", {}) || {}))
     var text = String(value || "").trim()
     if (text) labels[kind] = text
     else delete labels[kind]
@@ -457,7 +540,7 @@ Panel {
   }
 
   function persistItemColor(kind, state, role) {
-    var roles = JSON.parse(JSON.stringify(setting("itemColorRoles", {}) || {}))
+    var roles = JSON.parse(JSON.stringify(mutationSetting("itemColorRoles", {}) || {}))
     if (role === "inherit") {
       if (roles[kind]) {
         delete roles[kind][state]
@@ -471,7 +554,7 @@ Panel {
   }
 
   function persistItemStatusMarker(kind, mode) {
-    var visibility = JSON.parse(JSON.stringify(setting("itemStatusMarkerVisibility", {}) || {}))
+    var visibility = JSON.parse(JSON.stringify(mutationSetting("itemStatusMarkerVisibility", {}) || {}))
     if (mode === "inherit") delete visibility[kind]
     else visibility[kind] = mode === "show"
     persistSettings({itemStatusMarkerVisibility: visibility})
@@ -514,7 +597,7 @@ Panel {
   }
 
   function persistItemIdleVisibility(kind, mode) {
-    var overrides = JSON.parse(JSON.stringify(setting("itemIdleVisibility", {}) || {}))
+    var overrides = JSON.parse(JSON.stringify(mutationSetting("itemIdleVisibility", {}) || {}))
     if (mode === "inherit") delete overrides[kind]
     else overrides[kind] = mode === "show"
     persistSettings({itemIdleVisibility: overrides})
@@ -527,19 +610,19 @@ Panel {
   }
 
   function persistItemIdleOpacity(kind, percent) {
-    var overrides = JSON.parse(JSON.stringify(setting("itemIdleOpacity", {}) || {}))
+    var overrides = JSON.parse(JSON.stringify(mutationSetting("itemIdleOpacity", {}) || {}))
     if (percent === null || percent === undefined) delete overrides[kind]
     else overrides[kind] = Math.max(10, Math.min(100, Number(percent))) / 100
     persistSettings({itemIdleOpacity: overrides})
   }
 
   function itemResetValues(kind) {
-    var icons = JSON.parse(JSON.stringify(setting("icons", {}) || {}))
-    var roles = JSON.parse(JSON.stringify(setting("itemColorRoles", {}) || {}))
-    var visibility = JSON.parse(JSON.stringify(setting("itemIdleVisibility", {}) || {}))
-    var opacity = JSON.parse(JSON.stringify(setting("itemIdleOpacity", {}) || {}))
-    var markerVisibility = JSON.parse(JSON.stringify(setting("itemStatusMarkerVisibility", {}) || {}))
-    var labels = JSON.parse(JSON.stringify(setting("itemLabels", {}) || {}))
+    var icons = JSON.parse(JSON.stringify(mutationSetting("icons", {}) || {}))
+    var roles = JSON.parse(JSON.stringify(mutationSetting("itemColorRoles", {}) || {}))
+    var visibility = JSON.parse(JSON.stringify(mutationSetting("itemIdleVisibility", {}) || {}))
+    var opacity = JSON.parse(JSON.stringify(mutationSetting("itemIdleOpacity", {}) || {}))
+    var markerVisibility = JSON.parse(JSON.stringify(mutationSetting("itemStatusMarkerVisibility", {}) || {}))
+    var labels = JSON.parse(JSON.stringify(mutationSetting("itemLabels", {}) || {}))
     delete icons[kind]
     delete roles[kind]
     delete visibility[kind]
@@ -706,10 +789,14 @@ Panel {
   visible: root.barItems.length > 0
 
   onSettingsChanged: Qt.callLater(syncService)
-  onEditingKindChanged: Qt.callLater(syncDeviceEditors)
-  onPrivacyServiceChanged: Qt.callLater(syncService)
+  onEditingKindChanged: {
+    Qt.callLater(syncDeviceEditors)
+    if (privacyService && isAudioControl({kind: editingKind})) privacyService.refreshAudioEndpoints(editingKind)
+  }
+  onPrivacyServiceChanged: Qt.callLater(function() { syncService(); publishCaptureBarPresentation() })
   onActivitySourceItemsChanged: syncDisplayedItems()
   onOpenedChanged: {
+    publishCaptureBarPresentation()
     if (opened) {
       durationNow = Date.now()
       handleSettingsRequest()
@@ -721,6 +808,13 @@ Panel {
       showingHistory = false
       globalSettingsPage = "general"
       contentFlick.contentY = 0
+    }
+  }
+  Connections {
+    target: root.privacyService
+    function onCapturePreviewActiveChanged() {
+      root.captureFrozenBarItems = root.privacyService && root.privacyService.capturePreviewActive
+        ? root.liveBarItems.map(function(entry) { return Object.assign({}, entry) }) : []
     }
   }
   Connections {
@@ -773,7 +867,8 @@ Panel {
           foreground: root.itemColor(modelData)
           activeColor: root.itemColor(modelData)
           opacity: root.itemVisualState(modelData) === "idle" ? root.itemIdleOpacity(modelData.kind)
-            : (root.itemVisualState(modelData) === "disabled" ? root.disabledOpacity : 1)
+            : (root.itemVisualState(modelData) === "disabled" ? root.disabledOpacity
+            : (root.itemVisualState(modelData) === "blocked-active" ? root.blockedActiveOpacity : root.activeOpacity))
           SequentialAnimation on opacity {
             running: modelData.pending && root.animatePending
             loops: Animation.Infinite
@@ -874,10 +969,34 @@ Panel {
             onClicked: root.showHistory()
           }
           Button {
+            id: lockdownButton
+            objectName: "privacyLockdownButton"
+            readonly property var presentation: Model.lockdownActionPresentation(
+              privacyService && privacyService.privacyPresetUndoAvailable,
+              confirmationState.pending === "lockdown")
+            iconText: presentation.icon
+            enabled: privacyService && privacyService.privacyPresetState !== "applying" && privacyService.privacyPresetState !== "restoring"
+            tooltipText: presentation.tooltip
+            horizontalPadding: Style.spacing.controlGap
+            onClicked: root.activateLockdownAction()
+          }
+          Button {
             iconText: "󰒓"
             tooltipText: "Global settings"
             horizontalPadding: Style.spacing.controlGap
             onClicked: root.showGlobalSettings("general")
+          }
+        }
+
+        RowLayout {
+          visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory && privacyService && privacyService.privacyPresetMessage() !== ""
+          Layout.fillWidth: true
+          PrivacyMessageSurface {
+            id: presetFeedback
+            objectName: "privacyPresetFeedback"
+            Layout.fillWidth: true
+            message: privacyService ? privacyService.privacyPresetMessage() : ""
+            kind: privacyService && privacyService.privacyPresetState === "partial" ? "error" : "info"
           }
         }
 
@@ -892,14 +1011,52 @@ Panel {
             Button { iconText: "󰁍"; tooltipText: "Back"; horizontalPadding: Style.spacing.controlGap; onClicked: root.showActivity() }
             Text { Layout.fillWidth: true; text: "Activity history"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
             Button {
-              visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.displayHistory.length > 0
+              visible: root.historyPresentationEnabled && privacyService && privacyService.displayHistory.length > 0
               text: confirmationState.pending === "history" ? "Confirm clear" : "Clear history"
               onClicked: root.requestHistoryClear()
             }
           }
 
+          SettingsSurface {
+            visible: root.historyPresentationEnabled && root.historySummaryRows.length > 0
+            Layout.fillWidth: true
+            PanelSectionHeader { Layout.fillWidth: true; text: "Privacy summary" }
+            RowLayout {
+              Layout.fillWidth: true
+              Button { text: "Today"; bordered: true; selected: root.historySummaryWindow === 24 * 60 * 60 * 1000; onClicked: root.historySummaryWindow = 24 * 60 * 60 * 1000 }
+              Button { text: "7 days"; bordered: true; selected: root.historySummaryWindow === 7 * 24 * 60 * 60 * 1000; onClicked: root.historySummaryWindow = 7 * 24 * 60 * 60 * 1000 }
+              Item { Layout.fillWidth: true }
+            }
+            Repeater {
+              model: root.historySummaryRows
+              delegate: Rectangle {
+                required property var modelData
+                Layout.fillWidth: true
+                implicitHeight: summaryRow.implicitHeight + Style.spacing.md * 2
+                radius: Style.cornerRadius
+                color: Util.alpha(root.itemColor(root.item(modelData.kind)), 0.045)
+                border.width: 1
+                border.color: Util.alpha(root.itemColor(root.item(modelData.kind)), 0.14)
+                RowLayout {
+                  id: summaryRow
+                  anchors.fill: parent
+                  anchors.margins: Style.spacing.md
+                  spacing: Style.spacing.md
+                  Text { text: root.iconFor(modelData.kind); textFormat: Text.PlainText; color: root.itemColor(root.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.icon * root.popupItemScale }
+                  ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: Style.spacing.xs
+                    Text { Layout.fillWidth: true; text: Model.label(modelData.kind) + " · " + modelData.count + (modelData.count === 1 ? " session" : " sessions") + " · " + Model.formatDuration(modelData.durationMs); textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * root.popupItemScale; font.weight: Font.DemiBold; elide: Text.ElideRight }
+                    Text { Layout.fillWidth: true; text: modelData.applications.join(", "); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
+                    Text { visible: modelData.newApplications.length > 0; Layout.fillWidth: true; text: "New in retained history: " + modelData.newApplications.join(", "); textFormat: Text.PlainText; color: root.itemColor(root.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
+                  }
+                }
+              }
+            }
+          }
+
           RowLayout {
-            visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.displayHistory.length > 0
+            visible: root.historyPresentationEnabled && privacyService && privacyService.displayHistory.length > 0
             Layout.fillWidth: true
             TextField {
               id: historySearch
@@ -932,30 +1089,31 @@ Panel {
           }
 
           SettingsSurface {
-            visible: root.setting("historyEnabled", false) !== true
+            visible: !root.historyPresentationEnabled
             Layout.fillWidth: true
             PanelSectionHeader { Layout.fillWidth: true; text: "History is off" }
             Text { Layout.fillWidth: true; text: "Enable history to keep completed activity on this device for up to seven days."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-            Button { text: "Open monitoring settings"; onClicked: root.showGlobalSettings("monitoring", "private-data") }
+            Button { id: historyDisabledSettingsButton; text: "Open monitoring settings"; bordered: true; background: Util.alpha(root.activeThemeColor, 0.06); onClicked: root.showGlobalSettings("monitoring", "private-data") }
           }
 
           PrivacyMessageSurface {
-            visible: root.setting("historyEnabled", false) === true && privacyService && !privacyService.historyLoaded
+            visible: root.historyPresentationEnabled && privacyService && !privacyService.historyLoaded
             message: "Loading history…"
           }
 
           PrivacyMessageSurface {
-            visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.historyLoaded && privacyService.displayHistory.length === 0
+            visible: root.historyPresentationEnabled && privacyService && privacyService.historyLoaded && privacyService.displayHistory.length === 0
             message: "No completed activity yet."
           }
 
           PrivacyMessageSurface {
-            visible: root.setting("historyEnabled", false) === true && privacyService && privacyService.displayHistory.length > 0 && root.filteredHistory.length === 0
+            visible: root.historyPresentationEnabled && privacyService && privacyService.displayHistory.length > 0 && root.filteredHistory.length === 0
             message: "No history matches your search."
           }
 
           GridLayout {
             id: historyRows
+            visible: root.historyPresentationEnabled
             Layout.fillWidth: true
             columns: root.popupGridColumns
             columnSpacing: root.popupDensity === "compact" ? Style.spacing.sm : Style.spacing.md
@@ -982,7 +1140,7 @@ Panel {
                       Text { text: Model.historyPeriodLabel(modelData.endedAt, root.durationNow); textFormat: Text.PlainText; color: root.itemColor(root.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; font.weight: Font.DemiBold }
                     }
                     Text { Layout.fillWidth: true; text: Model.label(modelData.kind) + " · " + Model.formatDuration(modelData.durationMs) + " · " + Model.historyAgeLabel(modelData.endedAt, root.durationNow) + (modelData.confidence && String(modelData.confidence).toLowerCase() !== "confirmed" ? " · Inferred" : ""); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, root.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
-                    Text { visible: root.popupDensity !== "compact" && Boolean(modelData.device); Layout.fillWidth: true; text: String(modelData.device || ""); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, root.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
+                    Text { visible: root.popupDensity !== "compact" && Boolean(modelData.device); Layout.fillWidth: true; text: root.deviceLabel(modelData.device); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, root.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * root.popupItemScale; elide: Text.ElideRight }
                   }
                 }
               }
@@ -1013,7 +1171,7 @@ Panel {
             onLoaded: Qt.callLater(root.scrollToSettingsSection)
           }
 
-          Button { Layout.alignment: Qt.AlignRight; text: "Reset global settings"; enabled: !root.settingsTransferRunning; onClicked: root.requestGlobalSettingsReset() }
+          Button { Layout.alignment: Qt.AlignRight; iconText: "󰑐"; text: "Reset global settings"; bordered: true; background: Util.alpha(root.activeThemeColor, 0.06); enabled: !root.settingsTransferRunning; onClicked: root.requestGlobalSettingsReset() }
         }
 
         DeviceSettingsEditor {
@@ -1053,6 +1211,11 @@ Panel {
             }
           }
 
+          AudioEndpointSettings {
+            visible: root.isAudioControl({kind: root.editingKind})
+            controller: root
+          }
+
           SettingsSurface {
             id: appearanceSurface
             accent: root.activeThemeColor
@@ -1079,7 +1242,7 @@ Panel {
                 RowLayout {
                   Layout.fillWidth: true
                   TextField { id: labelEditor; Layout.fillWidth: true; placeholderText: "Display label"; text: root.editingKind ? root.labelFor(root.editingKind) : ""; maximumLength: 128; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistLabel(root.editingKind, text) }
-                  Button { text: "Save"; tooltipText: "Save display label"; enabled: appearanceSurface.labelDirty; onClicked: root.persistLabel(root.editingKind, labelEditor.text) }
+                  Button { text: "Save"; bordered: true; tooltipText: "Save display label"; enabled: appearanceSurface.labelDirty; onClicked: root.persistLabel(root.editingKind, labelEditor.text) }
                 }
               }
               ColumnLayout {
@@ -1089,7 +1252,7 @@ Panel {
                 RowLayout {
                   Layout.fillWidth: true
                   TextField { id: iconEditor; Layout.fillWidth: true; placeholderText: "Icon"; text: root.editingKind ? root.iconFor(root.editingKind) : ""; maximumLength: 8; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistIcon(root.editingKind, text) }
-                  Button { text: "Save"; tooltipText: "Save device icon"; enabled: appearanceSurface.iconDirty; onClicked: root.persistIcon(root.editingKind, iconEditor.text) }
+                  Button { text: "Save"; bordered: true; tooltipText: "Save device icon"; enabled: appearanceSurface.iconDirty; onClicked: root.persistIcon(root.editingKind, iconEditor.text) }
                 }
               }
             }
@@ -1101,26 +1264,32 @@ Panel {
               rowSpacing: Style.spacing.md
               Dropdown {
                 Layout.fillWidth: true
-                label: root.isAudioControl({kind: root.editingKind}) ? "Muted color" : "Active color"
+                label: "In-use color"
                 options: root.deviceColorRoleOptions
-                value: root.itemColorOverrideRole(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "muted" : "active")
-                onChanged: function(value) { root.persistItemColor(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "muted" : "active", value) }
+                value: root.itemColorOverrideRole(root.editingKind, "active")
+                onChanged: function(value) { root.persistItemColor(root.editingKind, "active", value) }
               }
               Dropdown {
                 Layout.fillWidth: true
-                label: root.isAudioControl({kind: root.editingKind}) ? "Unmuted color" : "Inactive color"
+                label: "Idle color"
                 options: root.deviceColorRoleOptions
-                value: root.itemColorOverrideRole(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "unmuted" : "inactive")
-                onChanged: function(value) { root.persistItemColor(root.editingKind, root.isAudioControl({kind: root.editingKind}) ? "unmuted" : "inactive", value) }
+                value: root.itemColorOverrideRole(root.editingKind, "inactive")
+                onChanged: function(value) { root.persistItemColor(root.editingKind, "inactive", value) }
               }
               Dropdown {
-                visible: root.isPreventativeControl({kind: root.editingKind})
                 Layout.fillWidth: true
-                Layout.columnSpan: root.popupWidth === "wide" ? 2 : 1
                 label: "Disabled color"
                 options: root.deviceColorRoleOptions
                 value: root.itemColorOverrideRole(root.editingKind, "disabled")
                 onChanged: function(value) { root.persistItemColor(root.editingKind, "disabled", value) }
+              }
+              Dropdown {
+                visible: root.isPreventativeControl({kind: root.editingKind}) || root.isAudioControl({kind: root.editingKind})
+                Layout.fillWidth: true
+                label: "Blocked-request color"
+                options: root.deviceColorRoleOptions
+                value: root.itemColorOverrideRole(root.editingKind, "blocked")
+                onChanged: function(value) { root.persistItemColor(root.editingKind, "blocked", value) }
               }
             }
 
@@ -1182,6 +1351,27 @@ Panel {
               options: root.deviceVisibilityOptions
               value: root.itemOverrideMode("itemIdleVisibility", root.editingKind)
               onChanged: function(value) { root.persistItemIdleVisibility(root.editingKind, value) }
+            }
+          }
+
+          SettingsSurface {
+            visible: root.editingDevices.length > 0
+            Layout.fillWidth: true
+            accent: root.activeThemeColor
+            PanelSectionHeader { Layout.fillWidth: true; text: "Detected hardware" }
+            Repeater {
+              model: root.editingDevices
+              delegate: ColumnLayout {
+                required property string modelData
+                Layout.fillWidth: true
+                spacing: Style.spacing.xs
+                Text { Layout.fillWidth: true; text: modelData; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; elide: Text.ElideMiddle }
+                RowLayout {
+                  Layout.fillWidth: true
+                  TextField { id: deviceLabelEditor; Layout.fillWidth: true; text: root.deviceLabel(modelData); placeholderText: "Friendly device name"; maximumLength: 128; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistDeviceLabel(modelData, text) }
+                  Button { text: "Save name"; enabled: deviceLabelEditor.text.trim() !== root.deviceLabel(modelData); onClicked: root.persistDeviceLabel(modelData, deviceLabelEditor.text) }
+                }
+              }
             }
           }
 
@@ -1457,6 +1647,19 @@ Panel {
             wrapMode: Text.WordWrap
           }
           Button { text: "Restore all"; onClicked: root.clearPolicy("hiddenApps") }
+        }
+
+        ColumnLayout {
+          visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory && (Model.arraySetting(root.setting("hiddenDevices", []), []).length > 0 || Model.arraySetting(root.setting("notificationSuppressedDevices", []), []).length > 0)
+          Layout.fillWidth: true
+          spacing: Style.spacing.sm
+          PanelSectionHeader { Layout.fillWidth: true; text: "Device policies" }
+          Text { Layout.fillWidth: true; text: "Hidden: " + (Model.arraySetting(root.setting("hiddenDevices", []), []).join(", ") || "None"); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+          Text { Layout.fillWidth: true; text: "Alerts muted: " + (Model.arraySetting(root.setting("notificationSuppressedDevices", []), []).join(", ") || "None"); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+          RowLayout {
+            Button { text: "Restore hidden"; onClicked: root.clearPolicy("hiddenDevices") }
+            Button { text: "Restore alerts"; onClicked: root.clearPolicy("notificationSuppressedDevices") }
+          }
         }
 
         Text {

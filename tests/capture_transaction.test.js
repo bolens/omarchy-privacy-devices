@@ -36,4 +36,13 @@ assert.equal(fs.readFileSync(path.join(directory, "one"), "utf8"), "old-one")
 assert.equal(fs.readFileSync(path.join(directory, "two"), "utf8"), "old-two")
 fs.rmSync(directory, { recursive: true })
 
+directory = fixture()
+for (const unsafe of ["../outside", path.join(directory, "one")]) {
+  result = spawnSync(publisher, ["stage", unsafe], { cwd: directory, encoding: "utf8" })
+  assert.equal(result.status, 2, `unsafe publication path accepted: ${unsafe}`)
+  assert.match(result.stderr, /Unsafe screenshot publication path/)
+}
+assert.equal(fs.readFileSync(path.join(directory, "one"), "utf8"), "old-one")
+fs.rmSync(directory, { recursive: true })
+
 console.log("capture publication transaction tests passed")

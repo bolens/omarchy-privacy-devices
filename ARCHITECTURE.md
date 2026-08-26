@@ -74,6 +74,9 @@ normal operation poll-driven.
   activity.
 - Control commands are not successful until an observed state matches the
   requested state; verification has a bounded timeout.
+- Per-endpoint audio control re-enumerates PipeWire-Pulse sources or sinks,
+  allowlists the exact endpoint name, applies one mute state, and re-reads the
+  endpoint before publishing the result.
 - Service IPC owns only headless state controls; capture actions remain with
   the focused bar, and rejected requests return an explicit result.
 - A pending control retains its verification probe if monitoring settings
@@ -82,6 +85,8 @@ normal operation poll-driven.
   policy, so configuration churn cannot diverge their scheduling behavior.
 - Pending controls retain the last observed state rather than presenting an
   optimistic result.
+- Privacy lockdown serializes existing per-device control transactions, records
+  partial failures, and restores only from the observed pre-lockdown snapshot.
 - Settings are allowlisted, bounded, and versioned before reaching runtime;
   IPC pages and direct helper arguments are validated again at their ingress.
 - Rapid settings edits merge before one shell update; submission failures
@@ -92,7 +97,20 @@ normal operation poll-driven.
   checks prevent asynchronous loads from crossing clear/disable boundaries.
 - Session metadata is stripped of control characters and bounded before it is
   used for identity, rendering, IPC, notifications, or persistence.
+- Device visibility, alert suppression, and friendly labels use the same
+  normalized session identity policy as application rules.
+- History summaries are projections of the existing bounded retained rows;
+  they neither extend retention nor create a second data store.
 - Diagnostics are redacted by default and bounded before clipboard transfer.
+- Notification callbacks and launcher adapters share `privacy-action`, whose
+  action names and optional device kind are allowlisted before shell IPC.
+- `privacy-menu-entry` is an opt-in, idempotent adapter for Omarchy's extension
+  file. It atomically owns one marked block and routes lockdown to UI
+  confirmation rather than directly invoking controls.
+- Observer health alerts publish only healthy/degraded transitions, redact
+  details to source and code, and rate-limit each source. The self-test reads
+  state without changing controls; notification delivery remains an explicit
+  user-triggered test.
 - Shared presentation policies own visual state, navigation boundaries, scroll
   deferral, diagnostics, telemetry text, and device-action guidance; QML owns
   composition and input routing.
@@ -107,6 +125,10 @@ GeoClue discovery uses fixed `busctl` argument arrays, bounded output, and
 per-call timeouts rather than an inline shell pipeline.
 Trusted capture helpers and Omarchy commands launch as argument arrays; only
 the documented custom-command escape hatch crosses the shell-string boundary.
+Audio endpoint names are discovered locally and passed to `pactl` only after
+an exact match against a fresh, bounded source/sink inventory.
+Notification `--exec` callbacks contain a fixed helper path plus allowlisted
+tokens; application and device metadata never enters the callback command.
 
 Monitoring reads metadata only. It never opens camera or microphone devices,
 captures media, or sends telemetry over the network.

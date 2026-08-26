@@ -44,11 +44,18 @@ if shell_pids | awk -v pid="$old_pid" '$1 == pid { found=1 } END { exit !found }
   exit 1
 fi
 
-"$hyprctl_command" eval 'hl.dispatch(hl.dsp.exec_cmd("omarchy-launch-shell"))' >/dev/null
 new_pid=""
-for _attempt in {1..120}; do
+for _attempt in {1..20}; do
   new_pid=$(find_plugin_shell "$old_pid" || true)
   [[ -n $new_pid ]] && break
+  sleep 0.1
+done
+if [[ -z $new_pid ]]; then
+  "$hyprctl_command" eval 'hl.dispatch(hl.dsp.exec_cmd("omarchy-launch-shell"))' >/dev/null
+fi
+for _attempt in {1..120}; do
+  [[ -n $new_pid ]] && break
+  new_pid=$(find_plugin_shell "$old_pid" || true)
   sleep 0.1
 done
 [[ -n $new_pid ]] || { printf 'Replacement shell did not become IPC-ready.\n' >&2; exit 1; }

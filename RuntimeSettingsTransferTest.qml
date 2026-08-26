@@ -31,7 +31,10 @@ ShellRoot {
     running: true
     onTriggered: {
       if (transfer.running) return
+      if (transfer.request("invalid", {}) || transfer.running) throw new Error("invalid transfer mode was accepted")
       if (!transfer.request("export", {_privacySettingsVersion:1})) throw new Error("export request rejected")
+      if (transfer.request("checkpoint", {}) || transfer.refreshUndoAvailability())
+        throw new Error("overlapping transfer request was accepted")
       stop()
     }
   }

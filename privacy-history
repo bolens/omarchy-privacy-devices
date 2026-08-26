@@ -55,7 +55,7 @@ def load(path: Path) -> list[dict]:
             except ValueError:
                 continue
         return clean
-    except (OSError, json.JSONDecodeError, RecursionError):
+    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError):
         return []
 
 
@@ -113,11 +113,21 @@ def save(path: Path, entries: list[dict]) -> None:
         raise
 
 
+def inspect_storage(path: Path) -> dict:
+    directory_mode = format(path.parent.stat().st_mode & 0o777, "03o") if path.parent.exists() else "missing"
+    file_mode = format(path.stat().st_mode & 0o777, "03o") if path.exists() else "missing"
+    private = directory_mode == "700" and (file_mode == "600" or file_mode == "missing")
+    return {"status": "private" if private else "attention", "directoryMode": directory_mode, "fileMode": file_mode}
+
+
 def main() -> int:
     action = sys.argv[1] if len(sys.argv) > 1 else "load"
-    if not ((action in ("load", "clear") and len(sys.argv) == 2) or (action == "append" and len(sys.argv) == 3)):
+    if not ((action in ("load", "clear", "inspect") and len(sys.argv) == 2) or (action == "append" and len(sys.argv) == 3)):
         return 2
     path = state_file()
+    if action == "inspect":
+        print(json.dumps(inspect_storage(path), separators=(",", ":")))
+        return 0
     with locked(path):
         if action == "load":
             existing = load(path)

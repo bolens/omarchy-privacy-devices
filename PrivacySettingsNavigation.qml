@@ -16,6 +16,7 @@ ColumnLayout {
   }
 
   GridLayout {
+    objectName: "settingsPageGrid"
     Layout.fillWidth: true
     columns: navigation.controller.popupWidth === "narrow" ? 2 : 4
     columnSpacing: Style.spacing.sm

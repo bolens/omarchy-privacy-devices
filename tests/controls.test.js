@@ -8,6 +8,56 @@ const model = {}
 vm.createContext(model)
 vm.runInContext(source, model)
 
+for (const [kind, name, enabled, disabled] of [
+  ["microphone", "Microphone", "unmuted", "muted"],
+  ["audio-output", "Audio output", "unmuted", "muted"],
+  ["camera", "Camera", "allowed", "blocked"],
+  ["screen-share", "Screen sharing", "allowed", "blocked"],
+  ["location", "Location", "allowed", "blocked"],
+  ["screen-recording", "Screen recording", "started", "stopped"],
+  ["screenshot", "Screenshot", "enabled", "disabled"],
+]) {
+  for (const [expectedEnabled, state] of [[true, enabled], [false, disabled]]) {
+    assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification(kind, expectedEnabled, true))), {
+      title: `${name} ${state}`, body: `${name} access is now ${state}`
+    })
+    assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification(kind, expectedEnabled, false))), {
+      title: `${name} could not be ${state}`, body: "The requested privacy-control state was not applied"
+    })
+  }
+}
+assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification("custom-device", true, true))), {
+  title: "custom-device enabled", body: "custom-device access is now enabled"
+})
+
+assert.deepEqual(JSON.parse(JSON.stringify(model.sanitizeAudioEndpoints([
+  {id: "alsa_input.safe", label: " Desk\n\u202eMic ", muted: true},
+  {id: "bad name", label: "Unsafe", muted: false},
+  {id: "alsa_input.loose", label: "Loose", muted: 1},
+  "not-an-endpoint"
+], 2))), [
+  {id: "alsa_input.safe", label: "DeskMic", muted: true}
+])
+
+assert.deepEqual(JSON.parse(JSON.stringify(model.sanitizeCaptureSessions([
+  {kind: "microphone", application: " Browser\n", device: " USB Mic ", source: "pipewire", confidence: "confirmed", startedAt: 900},
+  {kind: "unknown", application: "Ignored", startedAt: 800},
+  {kind: "camera", application: "Camera", startedAt: 1200}
+], 1000))), [
+  {kind: "microphone", application: "Browser", device: "USB Mic", source: "pipewire", confidence: "confirmed", detail: "", icon: "", id: "[\"microphone\",\"browser\",\"usb mic\",\"pipewire\"]", startedAt: 900},
+  {kind: "camera", application: "Camera", device: "Unknown device", source: "unknown", confidence: "inferred", detail: "", icon: "", id: "[\"camera\",\"camera\",\"unknown device\",\"unknown\"]", startedAt: 1000}
+])
+
+assert.deepEqual(JSON.parse(JSON.stringify(model.lockdownActionPresentation(false, false))), {
+  icon: "󰌾", tooltip: "Lock down privacy controls", action: "lockdown"
+})
+assert.deepEqual(JSON.parse(JSON.stringify(model.lockdownActionPresentation(false, true))), {
+  icon: "󰌾", tooltip: "Confirm privacy lockdown", action: "lockdown"
+})
+assert.deepEqual(JSON.parse(JSON.stringify(model.lockdownActionPresentation(true, true))), {
+  icon: "󰌿", tooltip: "Restore the privacy state from before lockdown", action: "restore"
+})
+
 const applying = model.controlTransactionTransition(null, {type: "begin", expectedEnabled: false}, 1_000)
 assert.deepEqual(JSON.parse(JSON.stringify(applying)), {
   status: "applying", expectedEnabled: false, startedAt: 1_000,
@@ -55,5 +105,42 @@ assert.equal(model.controlRequestStatus(request({serviceOwned: false})), "unsupp
 assert.equal(model.controlRequestStatus(request({dependenciesReady: false})), "unavailable")
 assert.equal(model.controlRequestStatus(request({pending: true})), "busy")
 assert.equal(model.controlRequestStatus(request({processBusy: true})), "busy")
+
+const lockdown = model.privacyPresetPlan([
+  {kind: "microphone", enabled: true, controllable: true, dependenciesReady: true, pending: false},
+  {kind: "camera", enabled: false, controllable: true, dependenciesReady: true, pending: false},
+  {kind: "location", enabled: true, controllable: true, dependenciesReady: false, pending: false},
+  {kind: "screenshot", enabled: false, controllable: false, dependenciesReady: true, pending: false}
+], false)
+assert.deepEqual(JSON.parse(JSON.stringify(lockdown)), {
+  actions: [{kind: "microphone", expectedEnabled: false}],
+  skipped: [
+    {kind: "camera", reason: "already-set"},
+    {kind: "location", reason: "unavailable"},
+    {kind: "screenshot", reason: "unsupported"}
+  ]
+})
+assert.deepEqual(JSON.parse(JSON.stringify(model.privacyPresetPlan([
+  {kind: "microphone", enabled: false, controllable: true, dependenciesReady: true, pending: false},
+  {kind: "camera", enabled: false, controllable: true, dependenciesReady: true, pending: true}
+], {microphone: true, camera: true}))), {
+  actions: [{kind: "microphone", expectedEnabled: true}],
+  skipped: [{kind: "camera", reason: "busy"}]
+})
+assert.deepEqual(JSON.parse(JSON.stringify(model.nextPrivacyPresetAction([
+  {kind: "microphone", expectedEnabled: false}, {kind: "camera", expectedEnabled: false}
+], ""))), {
+  action: "apply", current: {kind: "microphone", expectedEnabled: false},
+  queue: [{kind: "camera", expectedEnabled: false}]
+})
+assert.equal(model.nextPrivacyPresetAction([{kind: "camera"}], "microphone").action, "wait")
+assert.equal(model.nextPrivacyPresetAction([], "").action, "complete")
+assert.deepEqual(JSON.parse(JSON.stringify(model.privacyPresetOutcome([
+  {kind: "microphone", status: "succeeded", reason: ""},
+  {kind: "location", reason: "unavailable"}
+]))), {state: "partial", changed: true})
+assert.deepEqual(JSON.parse(JSON.stringify(model.privacyPresetOutcome([
+  {kind: "camera", reason: "already-set"}, {kind: "screenshot", reason: "unsupported"}
+]))), {state: "succeeded", changed: false})
 
 console.log("control transaction tests passed")

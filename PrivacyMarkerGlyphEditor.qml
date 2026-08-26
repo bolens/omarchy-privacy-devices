@@ -16,6 +16,7 @@ ColumnLayout {
     Layout.fillWidth: true
     TextField {
       id: markerEditor
+      objectName: "markerGlyphField"
       Layout.fillWidth: true
       text: String(editor.controller.setting(editor.settingKey, editor.fallback))
       maximumLength: 8
@@ -24,7 +25,7 @@ ColumnLayout {
       font.family: Style.font.family
       onAccepted: editor.save()
     }
-    Button { text: "Save"; onClicked: editor.save() }
+    Button { objectName: "markerGlyphSaveButton"; text: "Save"; onClicked: editor.save() }
   }
   function save() {
     var update = {}

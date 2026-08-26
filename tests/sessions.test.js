@@ -59,11 +59,17 @@ const observation = (overrides = {}) => Object.assign({
   ]
   const policies = {
     hiddenApps: ["noise suppression"],
-    notificationSuppressedApps: ["firefox"]
+    notificationSuppressedApps: ["firefox"],
+    hiddenDevices: ["virtual source"],
+    notificationSuppressedDevices: ["conference mic"]
   }
   assert.deepEqual(Array.from(model.visibleSessions(sessions, policies).map(x => x.application)), ["Firefox"])
   assert.equal(model.shouldNotifyForSession(sessions[0], policies), true, "hiding does not silently suppress alerts")
   assert.equal(model.shouldNotifyForSession(sessions[1], policies), false)
+  assert.equal(model.visibleSessions([observation({device: "Virtual Source"})], policies).length, 0)
+  assert.equal(model.shouldNotifyForSession(observation({application: "Calls", device: "Conference Mic"}), policies), false)
+  assert.equal(model.deviceLabel("alsa_input.usb", {"alsa_input.usb": "Desk microphone"}), "Desk microphone")
+  assert.equal(model.deviceLabel("Built-in Audio", {}), "Built-in Audio")
   assert.deepEqual(Array.from(model.filterAttribution([
     observation({application: "Confirmed", confidence: "confirmed"}),
     observation({application: "Heuristic", confidence: "inferred"})
@@ -139,6 +145,17 @@ const observation = (overrides = {}) => Object.assign({
   assert.equal(model.historyCountLabel(1, 1), "1 entry")
   assert.equal(model.historyCountLabel(3, 3), "3 entries")
   assert.equal(model.historyCountLabel(2, 8), "2 of 8")
+
+  const summary = model.historySummary([
+    {kind: "microphone", application: "Firefox", durationMs: 5_000, endedAt: 99_000},
+    {kind: "microphone", application: "Calls", durationMs: 7_000, endedAt: 95_000},
+    {kind: "microphone", application: "Firefox", durationMs: 1_000, endedAt: 10_000},
+    {kind: "camera", application: "OBS", durationMs: 20_000, endedAt: 10_000}
+  ], 100_000, 20_000)
+  assert.deepEqual(JSON.parse(JSON.stringify(summary)), [{
+    kind: "microphone", count: 2, durationMs: 12_000,
+    applications: ["Firefox", "Calls"], newApplications: ["Calls"], lastEndedAt: 99_000
+  }])
 }
 
 {

@@ -37,6 +37,12 @@ class LocationProbeTests(unittest.TestCase):
             self.assertEqual(MODULE.snapshot()["active"], False)
             busctl.assert_called_once()
 
+    def test_desktop_ids_are_plain_text_and_bounded(self):
+        with patch.object(MODULE, "busctl", return_value='s "  Maps\\n\u202eevil  ' + 'x' * 300 + '"'):
+            value = MODULE.desktop_id("/org/freedesktop/GeoClue2/Client/1")
+        self.assertNotRegex(value, r"[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]")
+        self.assertEqual(len(value), 256)
+
     def test_busctl_is_bounded_and_never_uses_a_shell(self):
         completed = subprocess.CompletedProcess([], 0, stdout=b"value", stderr=b"")
         with patch.object(MODULE.subprocess, "run", return_value=completed) as run:

@@ -9,6 +9,7 @@ const capturePostconditions = fs.readFileSync(path.join(__dirname, "..", "script
 const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
 const ci = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "ci.yml"), "utf8")
 const qmlRuntime = fs.readFileSync(path.join(__dirname, "run_qml_runtime.sh"), "utf8")
+const runtimeSmoke = fs.readFileSync(path.join(__dirname, "..", "RuntimePluginSmokeTest.qml"), "utf8")
 const serviceEntryPoint = service.trimStart()
 const barEntryPoint = bar.trimStart()
 
@@ -24,12 +25,29 @@ assert.doesNotMatch(qmlRuntime, /\/home\/[^/]+\//,
   "the QML runtime test must not contain a developer-specific executable path")
 assert.match(qmlRuntime, /QUICKSHELL_BIN:-quickshell/,
   "the QML runtime test should use PATH discovery while retaining an explicit override")
+assert.match(qmlRuntime, /active_harness=.*[\s\S]*?cleanup_runtime\(\)[\s\S]*?kill --path "\$active_harness" --any-display[\s\S]*?trap cleanup_runtime EXIT INT TERM/,
+  "QML runtime harnesses must terminate their exact Quickshell instance on exit or interruption")
 assert.match(qmlRuntime, /runtime_dir="\$runtime_parent\/runtime tree"/,
   "the QML runtime suite must exercise relocatable plugin paths containing spaces")
+assert.match(qmlRuntime, /QML_RUNTIME_HARNESS/,
+  "the QML runtime suite must support focused harness runs")
+assert.match(qmlRuntime, /Requested QML runtime harness not found/,
+  "focused QML runs must reject unknown harnesses")
+assert.match(qmlRuntime, /WARN scene:|CRITICAL:|FATAL:/,
+  "QML runtime harnesses must fail on engine errors even after a success marker")
+assert.match(qmlRuntime, /emitted runtime errors/,
+  "QML runtime failures must identify log-based errors")
+assert.match(qmlRuntime, /marker_count=.*grep -Fc/,
+  "QML runtime harnesses must emit their success marker exactly once")
+assert.match(qmlRuntime, /QML_RUNTIME_REPEAT/,
+  "the QML runtime suite must support bounded repeated harness runs")
+assert.match(qmlRuntime, /repeat count must be an integer from 1 to 10/,
+  "invalid QML runtime repeat counts must fail closed")
 
 assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?lastSessionRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastSessionRefreshAt, now\)[\s\S]*?lastFallbackRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastFallbackRefreshAt, now\)[\s\S]*?fallbackObserverHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(fallbackObserverLastSeen, now\)[\s\S]*?directHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(directObserverLastSeen, now\)/,
   "every exported telemetry timestamp must use the behavior-tested freshness policy")
-assert.match(service, /requestedSettingsPage = Model\.settingsPage\(page\)/, "settings IPC pages must pass through the shared allowlist")
+assert.match(service, /function requestSettingsView\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)/,
+  "settings IPC routes must pass through the shared page and section allowlist")
 assert.match(service, /!historyWasEnabled && settings\.historyEnabled === true\) historyLoaded = false[\s\S]*?loadHistory\(\)/,
   "re-enabling history must invalidate the disabled-state load sentinel")
 assert.match(service, /function protocol\(\): string \{ return "2" \}[\s\S]*?function beginCapture\(payloadB64: string\)[\s\S]*?capturePreviewOwner[\s\S]*?function renew\(owner: string\)[\s\S]*?function endCapture\(owner: string\)/,
@@ -80,8 +98,12 @@ assert.match(screenshotWorkflow, /set_capture_preview\(\) \{[\s\S]*?beginCapture
 assert.doesNotMatch(screenshotWorkflow, /privacy-history (clear|append)|reloadConfig|mv -- .*settings_file/,
   "capture must never mutate user history, replace settings, or reload shell config")
 assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must reject workspaces containing user windows")
+assert.match(screenshotWorkflow, /select\(\.focused\) \| \.name[\s\S]*?focus_capture_workspace\(\)[\s\S]*?monitor = \\"\$monitor\\"[\s\S]*?workspace = \\"\$capture_workspace\\"/,
+  "capture must select and verify the focused monitor before switching its workspace")
 assert.match(screenshotWorkflow, /restore_original_workspace\(\) \{[\s\S]*?for attempt in \{1\.\.20\}[\s\S]*?workspace == \"\$original_workspace\"/,
   "workspace restoration must wait until the compositor confirms the original workspace")
+assert.match(screenshotWorkflow, /cursor_json=\$\(hyprctl cursorpos -j\)[\s\S]*?park_capture_cursor\(\)[\s\S]*?restore_cursor\(\)[\s\S]*?hl\.dsp\.cursor\.move/,
+  "capture must park the cursor away from bar evidence and restore its exact position")
 assert.match(screenshotWorkflow, /restore_dnd\(\) \{[\s\S]*?dnd_changed == true[\s\S]*?call notifications setDnd[\s\S]*?call notifications isDnd[\s\S]*?actual == \"\$dnd_state\"/,
   "DND restoration must read back the requested state")
 assert.match(screenshotWorkflow, /Restoration: settings=%s history=%s dnd=%s workspace=%s shell=%s/,
@@ -100,12 +122,25 @@ for (const qml of [
   "PrivacySettingsNavigation.qml", "PrivacyConfirmationController.qml",
   "PrivacySettingsTransferController.qml", "PrivacySettingsMutationController.qml",
   "PrivacySettingsTransferResult.qml", "PrivacySettingToggle.qml",
-  "PrivacyMessageSurface.qml", "RuntimeSettingsNavigationTest.qml",
+  "PrivacyMessageSurface.qml", "AudioEndpointSettings.qml", "RuntimeSettingsNavigationTest.qml",
   "RuntimeConfirmationTest.qml", "RuntimeObserverLifecycleTest.qml",
   "RuntimeSettingsTransferTest.qml", "RuntimeSettingsMutationTest.qml",
   "RuntimeSettingsTransferFailureTest.qml", "RuntimeObserverRecoveryTest.qml",
   "RuntimePluginSmokeTest.qml", "RuntimeSettingToggleTest.qml",
-  "RuntimeSettingsTransferResultTest.qml"
+  "RuntimeSettingsTransferResultTest.qml", "RuntimeAppearanceSettingsTest.qml",
+  "RuntimeDeepLinkTest.qml", "RuntimeAudioEndpointSettingsTest.qml",
+  "RuntimeBarSemanticColorTest.qml", "RuntimeActivityCardStateTest.qml",
+  "RuntimeLockdownButtonTest.qml", "RuntimeDeviceSettingsNavigationTest.qml",
+  "RuntimeSettingsRollbackTest.qml", "RuntimeDeviceDiagnosticsTest.qml",
+  "RuntimeMonitoringActionsTest.qml", "RuntimeActivityPolicyActionsTest.qml",
+  "RuntimePrivateDataActionsTest.qml", "RuntimeHistoryViewTest.qml",
+  "RuntimeDeviceAppearanceMutationTest.qml", "RuntimeGeneralSettingsTest.qml",
+  "RuntimeAlertsSettingsTest.qml", "RuntimeIntegerSettingTest.qml",
+  "RuntimeMarkerGlyphEditorTest.qml", "RuntimeMessageSurfaceTest.qml",
+  "RuntimeMonitoringConfigurationTest.qml", "RuntimeAppearancePresentationTest.qml",
+  "RuntimeActivityCardInteractionTest.qml", "RuntimeActivitySessionSummaryTest.qml",
+  "RuntimeCapturePreviewLifecycleTest.qml", "RuntimeAudioEndpointFeedbackTest.qml",
+  "RuntimeDeviceMetadataMutationTest.qml", "RuntimeDeviceBackendResetTest.qml"
 ])
   assert.match(ci, new RegExp(`qmllint[^']*${qml}`), `CI must lint ${qml}`)
 for (const [harness, marker] of [
@@ -118,27 +153,104 @@ for (const [harness, marker] of [
   ["RuntimeObserverRecoveryTest.qml", "PRIVACY_QML_OBSERVER_RECOVERY_OK"],
   ["RuntimePluginSmokeTest.qml", "PRIVACY_QML_PLUGIN_SMOKE_OK"],
   ["RuntimeSettingToggleTest.qml", "PRIVACY_QML_SETTING_TOGGLE_OK"],
-  ["RuntimeSettingsTransferResultTest.qml", "PRIVACY_QML_SETTINGS_TRANSFER_RESULT_OK"]
+  ["RuntimeSettingsTransferResultTest.qml", "PRIVACY_QML_SETTINGS_TRANSFER_RESULT_OK"],
+  ["RuntimeAppearanceSettingsTest.qml", "PRIVACY_QML_APPEARANCE_SETTINGS_OK"],
+  ["RuntimeDeepLinkTest.qml", "PRIVACY_QML_DEEP_LINK_OK"],
+  ["RuntimeAudioEndpointSettingsTest.qml", "PRIVACY_QML_AUDIO_ENDPOINT_SETTINGS_OK"],
+  ["RuntimeBarSemanticColorTest.qml", "PRIVACY_QML_BAR_SEMANTIC_COLOR_OK"],
+  ["RuntimeActivityCardStateTest.qml", "PRIVACY_QML_ACTIVITY_CARD_STATE_OK"],
+  ["RuntimeLockdownButtonTest.qml", "PRIVACY_QML_LOCKDOWN_BUTTON_OK"],
+  ["RuntimeDeviceSettingsNavigationTest.qml", "PRIVACY_QML_DEVICE_SETTINGS_NAVIGATION_OK"],
+  ["RuntimeSettingsRollbackTest.qml", "PRIVACY_QML_SETTINGS_ROLLBACK_OK"],
+  ["RuntimeDeviceDiagnosticsTest.qml", "PRIVACY_QML_DEVICE_DIAGNOSTICS_OK"],
+  ["RuntimeMonitoringActionsTest.qml", "PRIVACY_QML_MONITORING_ACTIONS_OK"],
+  ["RuntimeActivityPolicyActionsTest.qml", "PRIVACY_QML_ACTIVITY_POLICY_ACTIONS_OK"],
+  ["RuntimePrivateDataActionsTest.qml", "PRIVACY_QML_PRIVATE_DATA_ACTIONS_OK"],
+  ["RuntimeHistoryViewTest.qml", "PRIVACY_QML_HISTORY_VIEW_OK"],
+  ["RuntimeDeviceAppearanceMutationTest.qml", "PRIVACY_QML_DEVICE_APPEARANCE_MUTATION_OK"],
+  ["RuntimeGeneralSettingsTest.qml", "PRIVACY_QML_GENERAL_SETTINGS_OK"],
+  ["RuntimeAlertsSettingsTest.qml", "PRIVACY_QML_ALERTS_SETTINGS_OK"],
+  ["RuntimeIntegerSettingTest.qml", "PRIVACY_QML_INTEGER_SETTING_OK"],
+  ["RuntimeMarkerGlyphEditorTest.qml", "PRIVACY_QML_MARKER_GLYPH_EDITOR_OK"],
+  ["RuntimeMessageSurfaceTest.qml", "PRIVACY_QML_MESSAGE_SURFACE_OK"],
+  ["RuntimeMonitoringConfigurationTest.qml", "PRIVACY_QML_MONITORING_CONFIGURATION_OK"],
+  ["RuntimeAppearancePresentationTest.qml", "PRIVACY_QML_APPEARANCE_PRESENTATION_OK"],
+  ["RuntimeActivityCardInteractionTest.qml", "PRIVACY_QML_ACTIVITY_CARD_INTERACTION_OK"],
+  ["RuntimeActivitySessionSummaryTest.qml", "PRIVACY_QML_ACTIVITY_SESSION_SUMMARY_OK"],
+  ["RuntimeCapturePreviewLifecycleTest.qml", "PRIVACY_QML_CAPTURE_PREVIEW_LIFECYCLE_OK"],
+  ["RuntimeAudioEndpointFeedbackTest.qml", "PRIVACY_QML_AUDIO_ENDPOINT_FEEDBACK_OK"],
+  ["RuntimeDeviceMetadataMutationTest.qml", "PRIVACY_QML_DEVICE_METADATA_MUTATION_OK"],
+  ["RuntimeDeviceBackendResetTest.qml", "PRIVACY_QML_DEVICE_BACKEND_RESET_OK"]
 ])
   assert.match(qmlRuntime, new RegExp(`run_harness ${harness} ${marker}`), `${harness} must run in the real QML suite`)
+const runtimeRegistrations = [...qmlRuntime.matchAll(/^run_harness (Runtime\S+Test\.qml) (\S+)$/gm)]
+  .map((match) => ({harness: match[1], marker: match[2]}))
+const runtimeHarnesses = fs.readdirSync(path.join(__dirname, ".."))
+  .filter((name) => /^Runtime.*Test\.qml$/.test(name)).sort()
+assert.deepEqual(runtimeRegistrations.map(({harness}) => harness).sort(), runtimeHarnesses,
+  "every QML runtime harness must be registered exactly once")
+assert.equal(new Set(runtimeRegistrations.map(({marker}) => marker)).size, runtimeRegistrations.length,
+  "QML runtime success markers must be unique")
+for (const {harness, marker} of runtimeRegistrations) {
+  const source = fs.readFileSync(path.join(__dirname, "..", harness), "utf8")
+  assert.equal((source.match(new RegExp(marker, "g")) || []).length, 1,
+    `${harness} must emit its registered marker exactly once`)
+}
 assert.match(screenshotWorkflow, /capture_panel device device/, "screenshot workflow must capture an individual device settings page")
+assert.ok(screenshotWorkflow.indexOf("capture_panel device device microphone") < screenshotWorkflow.indexOf("capture_panel activity activity"),
+  "device capture must not redundantly reopen the activity view immediately after its standalone capture")
+assert.match(screenshotWorkflow, /privacy-devices openActivity "\$\{page:-microphone\}"[\s\S]*?capture_panel device device microphone/,
+  "device documentation must show the endpoint-aware microphone settings page")
 assert.match(screenshotWorkflow, /docs\/device\.png/, "screenshot workflow must publish the device settings capture")
-assert.match(screenshotWorkflow, /privacy-devices-settings openHistory[\s\S]*capture_panel history history/,
-  "screenshot workflow must open and capture the dedicated history view through focused-monitor IPC")
-assert.match(screenshotWorkflow, /capture_panel history history[\s\S]*set_capture_preview false[\s\S]*capture_panel history-disabled history[\s\S]*set_capture_preview true/,
-  "screenshot workflow must switch history presentation entirely in memory")
-assert.match(screenshotWorkflow, /set_capture_preview\(\)[\s\S]*showBarActiveMarker:true[\s\S]*showBarDisabledMarker:true[\s\S]*statusMarkerMode:"symbols"/,
-  "published captures should consistently showcase the default bar status markers")
-assert.match(screenshotWorkflow, /capture_panel history-disabled history "" 240/,
-  "the compact disabled-history view should not publish a mostly empty tall crop")
-assert.match(screenshotWorkflow, /capture_panel monitoring-private settings-section monitoring 330 private-data 115/,
+assert.doesNotMatch(screenshotWorkflow, /capture_panel history history/,
+  "live capture must retain history evidence without entering its bar-relayouting surface")
+assert.match(screenshotWorkflow, /expect_ipc_reply\(\)[\s\S]*?\[\[ \$reply == "\$expected" \]\][\s\S]*?history\) expect_ipc_reply history[\s\S]*?device\)[\s\S]*?expect_ipc_reply activity/,
+  "capture must verify that IPC opened the intended view before taking a screenshot")
+assert.equal((screenshotWorkflow.match(/^set_capture_preview$/gm) || []).length, 1,
+  "capture must install one immutable presentation preview for the full workflow")
+assert.doesNotMatch(screenshotWorkflow, /capture_panel history-disabled/,
+  "live capture must not render the compact history state that relayouts the shell bar")
+assert.match(service, /function openHistoryDisabled\(owner: string\)[\s\S]*?capturePreviewOwner !== owner[\s\S]*?captureHistoryPresentationEnabled = false[\s\S]*?requestPopupView\("history"/,
+  "history-disabled capture routing must be owner-scoped")
+assert.match(service, /function state\(owner: string\)[\s\S]*?capturePreviewOwner !== owner[\s\S]*?capturePreviewSettings[\s\S]*?capturePreviewSessions[\s\S]*?capturePreviewBarSessions/,
+  "capture IPC must expose an owner-scoped immutable presentation snapshot")
+assert.match(service, /capturePreviewBarSessions = Model\.sanitizeCaptureSessions\(root\.activeSessions, Date\.now\(\)\)/,
+  "capture must freeze the real pre-capture bar sessions")
+assert.match(service, /capturePreviewSettings = Object\.assign\(\{\}, Model\.sanitizeSettings\(root\.settings\), previewSettings\)/,
+  "capture must freeze the user's full sanitized presentation settings without overriding them")
+assert.match(bar, /barSourceItems:[\s\S]*?barItem\(kind\)[\s\S]*?visibleItems: barSourceItems/,
+  "bar rendering must remain isolated from deterministic popup sample sessions")
+assert.match(runtimeSmoke, /requestedView = "history"[\s\S]*?captureHistoryPresentationEnabled = false[\s\S]*?historyPresentationEnabled[\s\S]*?sessionsFor\("camera"\)\.length !== 1/,
+  "runtime smoke coverage must prove disabled-history rendering preserves bar preview sessions")
+assert.match(screenshotWorkflow, /capture_preview_state=.*[\s\S]*?current_preview_state=.*privacy-devices-capture-v2 state[\s\S]*?current_preview_state == "\$capture_preview_state"/,
+  "every capture checkpoint must reject bar preview state drift")
+assert.match(screenshotWorkflow, /capture_panel general settings general[\s\S]*?capture_preview_state=\$\(qs ipc[\s\S]*?capture_bar_signature baseline >\/dev\/null/,
+  "semantic state and the visual bar artifact must share the initial open-popup state")
+assert.match(screenshotWorkflow, /capture_bar_signature\(\)[\s\S]*?magick "\$crop" -format '%#'/,
+  "capture must derive a pixel-level bar signature")
+assert.match(screenshotWorkflow, /capture_bar_signature\(\)[\s\S]*?debugBarGeometry[\s\S]*?sample_x[\s\S]*?sample_width/,
+  "bar invariants must follow live widget geometry instead of stale crop coordinates")
+assert.match(screenshotWorkflow, /capture_bar_signature baseline >\/dev\/null/,
+  "capture must retain a baseline bar artifact for visual regression evidence")
+assert.match(screenshotWorkflow, /set_capture_preview\(\)[\s\S]*settings=\$\(jq -cn '\{\}'\)/,
+  "capture must preserve the user's complete bar presentation")
+assert.doesNotMatch(screenshotWorkflow.match(/set_capture_preview\(\) \{[\s\S]*?^\}/m)[0],
+  /showIdle|displayMode|statusMarkerMode|showBarActiveMarker|showBarDisabledMarker/,
+  "capture preview must not override any bar setting")
+assert.match(screenshotWorkflow, /activity_samples=[\s\S]*?microphone[\s\S]*?audio-output[\s\S]*?screenshot/,
+  "published bar and activity views must use deterministic preview sessions")
+assert.match(screenshotWorkflow, /--argjson sessions "\$activity_samples"[\s\S]*sessions:\$sessions/,
+  "capture preview payload must carry the deterministic sessions")
+assert.match(service, /readonly property var displaySessions: capturePreviewActive \? capturePreviewSessions : activeSessions[\s\S]*?function sessionsFor\(kind\)[\s\S]*?displaySessions\.filter/,
+  "capture sessions must override only presentation consumers")
+assert.match(screenshotWorkflow, /capture_panel monitoring-private settings-section monitoring 395 private-data 70/,
   "capture must showcase private history and settings transfer at its deep link")
 assert.match(screenshotWorkflow, /capture_panel monitoring-health settings-section monitoring 290 observer-health 390/,
   "capture must showcase observer health at its deep link")
 assert.match(screenshotWorkflow, /docs\/history\.png/,
   "screenshot workflow must publish the history capture")
 assert.match(screenshotWorkflow, /docs\/history-disabled\.png/,
-  "screenshot workflow must publish the disabled history capture")
+  "screenshot workflow must retain the validated disabled-history reference capture")
 assert.match(screenshotWorkflow, /update-screenshot-metadata \"\$publish_dir\/docs\/index\.html\" \"\$publish_dir\/docs\" \"\$publish_dir\/README\.md\"/,
   "capture must synchronize Pages dimensions and content-addressed README images")
 assert.match(screenshotWorkflow, /restore_desktop[\s\S]*?publish-screenshot-assets \"\$publish_dir\"/,
@@ -147,7 +259,7 @@ assert.match(screenshotWorkflow, /optimize_png \"\$capture_dir\/activity\.png\" 
   "optimized screenshots must remain staged until publication")
 assert.match(screenshotWorkflow, /verify_postconditions\(\) \{[\s\S]*?verify-capture-postconditions[\s\S]*?initial_shell_pid[\s\S]*?original_dnd_state/,
   "verification mode must check untouched settings/history, DND, workspace, and shell identity")
-for (const checkpoint of ["preview-enabled", "history-disabled"])
+for (const checkpoint of ["preview-enabled"])
   assert.match(screenshotWorkflow, new RegExp(`capture_checkpoint [\"']?${checkpoint.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
     `capture must expose the ${checkpoint} interruption checkpoint`)
 assert.match(capturePostconditions, /cmp -s "\$settings_snapshot" "\$settings_file"/,
@@ -170,12 +282,17 @@ assert.doesNotMatch(screenshotWorkflow, /dismiss_result[\s\S]{0,160}exit 1/,
   "notification cleanup limitations must not discard otherwise valid screenshots")
 assert.match(screenshotWorkflow, /docs\/notification\.png/,
   "screenshot workflow must publish the notification capture")
-assert.match(screenshotWorkflow, /wtype -k Return/, "device capture must use wtype's portable Enter key name")
+assert.doesNotMatch(screenshotWorkflow, /device\)[\s\S]{0,240}?wtype/,
+  "device capture must use deterministic IPC instead of keyboard selection")
 assert.match(screenshotWorkflow, /call shell summon "\$plugin_id" ""/, "activity capture must explicitly summon the main widget view")
-assert.match(screenshotWorkflow, /capture_panel\(\)[\s\S]*?call shell hide "\$plugin_id"[\s\S]*?settings\) qs ipc --pid "\$shell_pid" call privacy-devices-settings open "\$page"/,
-  "settings capture must normalize popup state before opening each page")
+assert.doesNotMatch(screenshotWorkflow.match(/capture_panel\(\) \{[\s\S]*?^\}/m)[0], /call shell hide/,
+  "panel capture must switch views without repeatedly hiding and reopening the bar popup")
 assert.match(screenshotWorkflow, /function validate_capture|validate_capture\(\)/, "screenshot workflow must reject blank captures")
 assert.match(screenshotWorkflow, /colors >= 8/, "capture validation must reject low-content images")
+assert.match(screenshotWorkflow, /Capture dimensions do not match its view[\s\S]*?Duplicate captures:/,
+  "capture publication must reject wrong-sized or repeated view assets")
+assert.equal((screenshotWorkflow.match(/optimize_png "\$capture_dir\/\$page\.png"/g) || []).length, 1,
+  "each settings screenshot must be optimized exactly once")
 assert.match(screenshotWorkflow, /wait_for_shell\(\)[\s\S]*?for attempt in \{1\.\.40\}/,
   "capture must wait conditionally for a restarted shell instead of assuming startup duration")
 assert.doesNotMatch(screenshotWorkflow, /omarchy-overlay\/shell\/shell\.qml/,
@@ -192,9 +309,11 @@ assert.match(screenshotWorkflow, /python3 -c 'import time; print\(time\.time_ns\
   "capture must derive portable millisecond timestamps from Python")
 assert.match(screenshotWorkflow, /capture_panel\(\)[\s\S]*?for attempt in \{1\.\.4\}[\s\S]*?capture_has_content/,
   "each popup capture must retry until its target crop contains real content")
+assert.match(screenshotWorkflow, /capture_has_panel\(\)[\s\S]*?-crop '400x80\+66\+30'[\s\S]*?-threshold 35%[\s\S]*?value < 0\.70[\s\S]*?capture_has_panel "\$capture_dir\/\$name\.png"/,
+  "panel capture must reject colorful wallpaper-only crops")
 assert.doesNotMatch(screenshotWorkflow.match(/capture_panel\(\) \{[\s\S]*?^\}/m)[0], /wait_for_shell/,
   "capture retries must remain pinned to the shell that owns the preview lease")
-assert.ok(screenshotWorkflow.lastIndexOf("resolve_geometry", screenshotWorkflow.indexOf("capture_panel history history")) >= 0,
+assert.ok(screenshotWorkflow.lastIndexOf("resolve_geometry", screenshotWorkflow.indexOf("capture_panel general settings general")) >= 0,
   "bar geometry must be resolved before long-running capture operations")
 assert.match(service, /id:\s*fallbackObserverProc/, "process fallbacks must share one persistent structured observer")
 assert.match(service, /Model\.classifyNode\(node, settings, pipewireClassificationPolicy\)/,
@@ -207,12 +326,18 @@ assert.match(service, /"watch-fallbacks"/, "fallback observer must use the struc
 assert.match(service, /settings\.recordingPollSeconds/, "the persistent fallback observer must honor the configured scan interval")
 assert.doesNotMatch(service, /id:\s*(?:recordingProc|screenshotProc)/, "recording and screenshot detection must not spawn periodic QML processes")
 assert.doesNotMatch(service, /id:\s*(?:recordingTimer|screenshotTimer)/, "persistent observation must replace recording and screenshot polling timers")
-assert.match(service, /target:\s*"privacy-devices-settings"[\s\S]*?shell\.summon/, "singleton service must route settings to the focused monitor")
-assert.match(service, /function openSection\(page: string, section: string\): string[\s\S]*?Model\.settingsDeepLink\(page, section\)[\s\S]*?requestedSettingsSection = target\.section[\s\S]*?shell\.summon/,
+assert.match(service, /function requestSettingsView\(page, section\)[\s\S]*?shell\.summon/, "singleton service must route settings to the focused monitor")
+assert.match(service, /function requestSettingsView\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)[\s\S]*?requestedSettingsSection = target\.section[\s\S]*?shell\.summon/,
   "settings IPC must expose validated section deep links through focused-monitor routing")
-assert.match(service, /function open\(page: string\): string[\s\S]*?requestedSettingsSection = ""/,
+assert.match(service, /function anyBarOpen\(\)[\s\S]*?barPresentations[\s\S]*?opened === true[\s\S]*?settingsRequestSerial\+\+[\s\S]*?anyBarOpen\(\)\) return view[\s\S]*?shell\.summon/,
+  "deep links must switch an open widget in place without re-summoning its bar presentation")
+assert.match(service, /function open\(page: string\): string \{ return root\.requestSettingsView\(page, ""\) \}/,
   "page-only IPC navigation must clear stale section targets")
-assert.match(service, /function openHistory\(\): string[\s\S]*?requestedView = "history"[\s\S]*?shell\.summon/,
+assert.match(service, /target:\s*"privacy-devices"[\s\S]*?function openDetails\(kind: string\): string[\s\S]*?function openSettings\(page: string\): string[\s\S]*?function openSettingsSection\(page: string, section: string\): string/,
+  "primary IPC must expose p2p-style deep links for device and settings destinations")
+assert.match(service, /function requestDeviceView\(kind\)[\s\S]*?Model\.deviceDeepLink\(kind\)[\s\S]*?return "invalid"/,
+  "device deep links must reject unknown detail destinations")
+assert.match(service, /function openHistory\(\): string[\s\S]*?requestPopupView\("history", ""\)/,
   "history IPC must use the singleton service's focused-monitor routing")
 assert.doesNotMatch(bar, /target:\s*"privacy-devices-settings"/, "per-monitor widgets must not compete for settings IPC ownership")
 assert.match(service, /id:\s*notificationFlush[\s\S]*?interval:\s*400/, "activity notifications must use a bounded coalescing window")
@@ -228,6 +353,14 @@ assert.match(service, /function beginControlVerification\(kind, exitCode\)[\s\S]
   "command results must enter the behavior-tested reducer")
 assert.match(service, /function verifyControlTransaction\(kind, observedEnabled, probeValid\)[\s\S]*?transitionControlTransaction\(kind, \{type: "observation", enabled: observedEnabled, valid: probeValid\}\)/,
   "observations must verify controls through the behavior-tested reducer")
+assert.match(service, /function requestPrivacyLockdown\(\)[\s\S]*?Model\.privacyPresetPlan\([\s\S]*?runNextPrivacyPreset\(\)/,
+  "privacy lockdown must use the behavior-tested serial preset plan")
+assert.match(service, /function restorePrivacyLockdown\(\)[\s\S]*?Model\.privacyPresetPlan\(privacyPresetEntries\(\), privacyPresetPrevious\)/,
+  "privacy lockdown undo must derive restoration from observed prior state")
+assert.match(service, /onControlTransactionsChanged:[\s\S]*?advancePrivacyPreset\(\)/,
+  "preset orchestration must advance only after control transactions settle")
+assert.match(service, /function policies\(\)[\s\S]*?sessionPolicies/,
+  "runtime session consumers must share normalized app and device policy")
 assert.match(service, /transitionControlTransaction\(kind, \{type: "timeout"\}, now\)/, "verification must delegate bounded timeout handling to the tested reducer")
 assert.doesNotMatch(service, /fallbackMicrophoneMuted\s*=\s*!fallbackMicrophoneMuted/, "controls must preserve the last observed microphone state while verification is pending")
 assert.doesNotMatch(service, /fallbackOutputMuted\s*=\s*!fallbackOutputMuted/, "controls must preserve the last observed output state while verification is pending")
@@ -280,8 +413,10 @@ assert.match(bar, /text === "s" \|\| text === "S"[\s\S]*?showGlobalSettings\("ge
   "the advertised S command must open settings")
 assert.match(bar, /text === "r" \|\| text === "R"[\s\S]*?refreshFallbacks\(\)/,
   "the advertised R command must request an observer refresh")
-assert.match(bar, /readonly property var activitySourceItems:\s*orderedKinds\(\)\.map/, "bar device state must be built once per reactive update")
-assert.match(bar, /readonly property var visibleItems:\s*activitySourceItems\.filter/, "visible bar state must derive from the shared device snapshot")
+assert.match(bar, /readonly property var activitySourceItems:\s*orderedKinds\(\)\.map/, "activity popup state must be built once per reactive update")
+assert.match(bar, /readonly property var visibleItems:\s*barSourceItems\.filter/, "visible bar state must derive from its frozen capture snapshot")
+assert.match(bar, /captureFrozenBarItems[\s\S]*?barItems:[\s\S]*?captureFrozenBarItems[\s\S]*?onCapturePreviewActiveChanged[\s\S]*?liveBarItems\.map/,
+  "capture preview must freeze the rendered bar model across popup loader changes")
 assert.match(bar, /readonly property var activeItemList:\s*visibleItems\.filter/, "active bar state must be cached for all consumers")
 assert.match(bar, /readonly property int activeCount:\s*activeItemList\.length/, "active count must not allocate another filtered list")
 assert.doesNotMatch(bar, /function buildVisibleItems\(/, "bar rendering must not independently rebuild device state")
@@ -328,6 +463,24 @@ assert.match(service, /resolvedNotificationIcon\([^,]+,\s*[^)]+\)[\s\S]*?candida
   "an unavailable application icon must retry a device or service fallback")
 assert.match(service, /--icon/,
   "resolved application or service icons must be sent with notifications")
+assert.match(service, /command\.push\("--exec", actionHelperPath\(\), callback\.name, callback\.argument\)/,
+  "notification callbacks must enter through the fixed action helper")
+assert.match(service, /function notificationAction\(action, argument\)[\s\S]*?Model\.privacyAction\(action, argument\)/,
+  "notification actions must use the shared allowlist")
+assert.match(service, /function openActivity\(kind: string\): string[\s\S]*?root\.requestPopupView\("activity", kind\)/,
+  "IPC must expose focused activity navigation")
+assert.match(service, /function openDiagnostics\(\): string[\s\S]*?root\.requestPopupView\("diagnostics", ""\)/,
+  "IPC must expose focused diagnostics navigation")
+assert.match(service, /function action\(name: string, argument: string\): string[\s\S]*?Model\.privacyAction\(name, argument\)/,
+  "search adapters must use the same allowlisted dispatcher")
+assert.match(service, /action\.name === "lockdown"\) return requestPopupView\("lockdown", ""\)/,
+  "launcher lockdown must route to confirmation instead of changing controls")
+assert.match(bar, /requestedView === "lockdown"[\s\S]*?confirmationState\.request\("lockdown"\)/,
+  "the focused launcher route must arm the existing two-step confirmation")
+assert.match(service, /notifyOnObserverHealth[\s\S]*?Model\.observerHealthNotice\(/,
+  "observer health alerts must use transition and rate-limit policy")
+assert.match(service, /function runSelfTest\(\)[\s\S]*?Model\.privacySelfTest\(/,
+  "guided self-test must use the behavior-tested report model")
 assert.match(service, /props\["application\.icon-name"\]/,
   "PipeWire application icon metadata must reach the notification pipeline")
 assert.match(service, /"watch",\s*"--heartbeat"/, "direct-device monitoring must use one persistent observer")
@@ -370,6 +523,14 @@ assert.match(service, /function handleSessionTransitions\(transition\)[\s\S]*?Mo
   "observer recovery must not announce uncertain sessions as new activity")
 assert.match(service, /function serviceControllable\(kind\)[\s\S]*?\["microphone", "audio-output", "camera", "screen-share", "location"\]/,
   "headless control must be limited to actions owned by the singleton service")
+assert.match(service, /function setAudioEndpointMuted\(kind, identifier, muted\)[\s\S]*?audioEndpointHelperPath\(\), "set", kind, String\(identifier\)/,
+  "per-endpoint audio control must cross one bounded helper boundary")
+assert.match(service, /function acceptAudioEndpoints\(kind, text\)[\s\S]*?sanitizeAudioEndpoints\(rows, 64\)/,
+  "audio endpoint state must remain bounded before reaching the UI")
+assert.match(service, /function acceptAudioEndpoints\(kind, text\)[\s\S]*?Model\.sanitizeAudioEndpoints\(rows, 64\)/,
+  "audio endpoint process output must be sanitized again at the QML trust boundary")
+assert.match(service, /id: audioEndpointListOutput[\s\S]*?audioEndpointListOutput\.text[\s\S]*?id: audioEndpointSetOutput[\s\S]*?audioEndpointSetOutput\.text/,
+  "audio endpoint collectors must read Quickshell's collected text property")
 assert.match(service, /function toggleControl\(kind\)[\s\S]*?if \(controlRequestStatus\(kind\) !== "ok"\) return false/,
   "control requests must reject disabled, unsupported, and pending devices")
 assert.match(service, /function controlRequestStatus\(kind\)[\s\S]*?Model\.controlRequestStatus\(/,

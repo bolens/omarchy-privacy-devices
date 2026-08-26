@@ -18,6 +18,13 @@ LOADER.exec_module(MODULE)
 
 
 class HistoryTests(unittest.TestCase):
+    def test_inspect_reports_private_storage_without_exposing_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "plugin" / "history.json"
+            MODULE.save(path, [])
+            result = MODULE.inspect_storage(path)
+            self.assertEqual(result, {"status": "private", "directoryMode": "700", "fileMode": "600"})
+
     def entry(self, index, ended_at):
         return {
             "id": str(index), "kind": "microphone", "application": f"App {index}",
@@ -72,6 +79,12 @@ class HistoryTests(unittest.TestCase):
             self.assertNotIn("unexpected", MODULE.load(path)[0])
 
             path.write_text(" " * (MODULE.MAX_FILE_BYTES + 1))
+            self.assertEqual(MODULE.load(path), [])
+
+    def test_load_fails_closed_on_non_utf8_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "history.json"
+            path.write_bytes(b"[\xff]")
             self.assertEqual(MODULE.load(path), [])
 
     def test_batches_simultaneous_stops_in_one_ordered_transaction(self):

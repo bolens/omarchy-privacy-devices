@@ -11,9 +11,11 @@ const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), 
 
 assert.match(runner, /for test_file in tests\/\*\.test\.js/, "the canonical runner must discover every JavaScript suite")
 assert.match(runner, /python3 -m unittest discover -s tests -p 'test_\*\.py'/, "the canonical runner must discover every Python suite")
-for (const helper of ["privacy-history", "privacy-location", "privacy-observe", "privacy-diagnostics", "privacy-settings"])
+for (const helper of ["privacy-audio-devices", "privacy-diagnostics", "privacy-history", "privacy-location", "privacy-menu-entry", "privacy-observe", "privacy-settings"])
   assert.match(runner, new RegExp(`python3 -m py_compile[^\\n]*${helper}`), `the canonical runner must compile ${helper}`)
 assert.match(runner, /shellcheck[\s\S]*?privacy-control[\s\S]*?tests\/run_qml_runtime\.sh[\s\S]*?tests\/fixtures\/\*/, "the canonical runner must lint runtime, maintainer, and fixture shell scripts")
+for (const helper of ["privacy-action", "scripts/build-site.sh"])
+  assert.match(runner, new RegExp(`shellcheck[\\s\\S]*?${helper.replace(".", "\\.")}`), `the canonical runner must lint ${helper}`)
 assert.match(ci, /name: Run behavior suite[\s\S]*?run: tests\/run_all\.sh/, "CI must delegate the behavior suite to the canonical runner")
 const pluginJob = ci.slice(ci.indexOf("\n  plugin:\n"), ci.indexOf("\n  repository:\n"))
 assert.ok(pluginJob.indexOf("run: npm ci") >= 0 && pluginJob.indexOf("run: npm ci") < pluginJob.indexOf("run: tests/run_all.sh"),

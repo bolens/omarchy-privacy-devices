@@ -18,6 +18,8 @@ const messageSurface = fs.readFileSync(path.join(root, "PrivacyMessageSurface.qm
 const settingToggle = fs.readFileSync(path.join(root, "PrivacySettingToggle.qml"), "utf8")
 const transferResult = fs.readFileSync(path.join(root, "PrivacySettingsTransferResult.qml"), "utf8")
 const monitoringSettings = fs.readFileSync(path.join(root, "PrivacyMonitoringSettings.qml"), "utf8")
+const alertsSettings = fs.readFileSync(path.join(root, "PrivacyAlertsSettings.qml"), "utf8")
+const audioEndpointSettings = fs.readFileSync(path.join(root, "AudioEndpointSettings.qml"), "utf8")
 const globalSettings = ["PrivacyGeneralSettings.qml", "PrivacyAppearanceSettings.qml", "PrivacyAlertsSettings.qml", "PrivacyMonitoringSettings.qml", "PrivacyMarkerGlyphEditor.qml"]
   .map(file => fs.readFileSync(path.join(root, file), "utf8")).join("\n")
 const settingsUi = bar + "\n" + globalSettings
@@ -29,10 +31,10 @@ vm.runInContext(fs.readFileSync(path.join(root, "Model.js"), "utf8").replace(/^\
 const schema = new Map(manifest.barWidget.schema.map(entry => [entry.key, entry]))
 const globalKeys = [
   "enabledKinds", "showIdle", "displayMode", "showControls", "idleOpacity", "deduplicateApps",
-  "notificationKinds", "notifyOnActivity", "notifyOnStop", "notifyOnControlChanges",
+  "notificationKinds", "notifyOnActivity", "notifyOnStop", "notifyOnControlChanges", "notifyOnObserverHealth",
   "notificationSuppressedApps", "historyEnabled", "blockableKinds", "directDeviceMonitoring",
   "directDevicePollSeconds", "showInferredAttribution", "locationPollSeconds", "recordingPollSeconds", "popupMaxHeight",
-  "activeColorRole", "inactiveColorRole", "disabledColorRole", "disabledOpacity",
+  "activeColorRole", "activeOpacity", "inactiveColorRole", "disabledColorRole", "blockedActiveColorRole", "blockedActiveOpacity", "disabledOpacity",
   "statusMarkerMode", "statePillStyle", "popupDensity", "popupLayout", "popupWidth", "popupItemScale", "popupIdleOpacity", "showStatePills", "showSessionCounts", "animatePending",
   "barIconScale", "barItemSpacing", "barItemPadding", "barMarkerPosition", "showBarSessionCounts",
   "showBarActiveMarker", "showBarDisabledMarker", "showBarPendingMarker", "showBarDegradedMarker"
@@ -44,6 +46,8 @@ assert.deepEqual(
   Object.assign({}, defaults, {_privacySettingsVersion: 1}),
   "every manifest default must survive the shared settings sanitizer"
 )
+assert.equal(defaults.showIdle, true, "idle activity icons must match the standard bar presentation")
+assert.equal(defaults.statusMarkerMode, "off", "bar activity markers must be off for new installations")
 
 for (const key of globalKeys) {
   assert.ok(Object.hasOwn(defaults, key), `global default missing: ${key}`)
@@ -60,7 +64,7 @@ for (const key of globalKeys) {
 
 assert.match(settingsNavigation, /value:"appearance"/, "appearance settings need a dedicated page")
 assert.match(settingsNavigation, /objectName: "settingsPageButton-" \+ modelData\.value/, "settings tabs must be addressable by runtime interaction tests")
-assert.match(bar, /text: "Reset global settings"[\s\S]*?onClicked: root\.requestGlobalSettingsReset\(\)/,
+assert.match(bar, /iconText: "󰑐"[\s\S]*?text: "Reset global settings"[\s\S]*?bordered: true[\s\S]*?onClicked: root\.requestGlobalSettingsReset\(\)/,
   "the global reset action must use the guarded request path")
 assert.match(bar, /function requestGlobalSettingsReset\(\)[\s\S]*?request\("checkpoint"/,
   "the global reset request must preserve an undo point before reset policy")
@@ -78,7 +82,8 @@ assert.match(bar, /settingsRequestSerial <= handledSettingsRequestSerial[\s\S]*?
 assert.match(bar, /onSettingsRequestSerialChanged\(\) \{ root\.handleSettingsRequest\(\) \}/,
   "settings IPC page changes must apply while the popup remains open")
 assert.match(surface, /default property alias content:/, "settings groups need a reusable visual surface")
-assert.match(integer, /IntValidator[\s\S]*?bottom:[\s\S]*?top:/, "integer settings must enforce their declared bounds")
+assert.match(integer, /NumberField[\s\S]*?from: field\.minimum[\s\S]*?to: field\.maximum[\s\S]*?stepSize: field\.stepSize[\s\S]*?onModified:/,
+  "integer settings must use the native bounded numeric control")
 assert.match(bar, /Loader\s*\{\s*id:\s*globalSettingsPageLoader[\s\S]*?sourceComponent:[\s\S]*?globalSettingsPage/, "only the active settings page should be instantiated")
 assert.match(bar, /function showGlobalSettings\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)[\s\S]*?pendingSettingsSection = target\.section[\s\S]*?Qt\.callLater\(root\.scrollToSettingsSection\)/,
   "settings navigation must preserve a validated section deep link until layout completes")
@@ -118,12 +123,27 @@ assert.match(monitoringSettings, /text: "Private data"[\s\S]*?text: "Export sett
 assert.equal((globalSettings.match(/label: "Keep recent activity"/g) || []).length, 1, "history controls must not be duplicated across settings pages")
 assert.equal((globalSettings.match(/text: "Export settings"/g) || []).length, 1, "settings transfer must have one clear home")
 assert.match(activityCard, /HoverHandler[\s\S]*?selectedKind/, "hover should track keyboard selection without polling")
+assert.match(activityCard, /addPolicyValue\("hiddenDevices"[\s\S]*?addPolicyValue\("notificationSuppressedDevices"/,
+  "active device rows must expose visibility and alert policy actions")
+assert.match(bar, /function persistDeviceLabel\(device, value\)[\s\S]*?deviceLabels/,
+  "friendly device names must persist through the sanitized settings boundary")
+assert.match(bar, /Model\.historySummary\([\s\S]*?historySummaryWindow/,
+  "history insights must project existing retained rows without separate storage")
+assert.match(bar, /text: "Today"; bordered: true; selected: root\.historySummaryWindow === 24 \* 60 \* 60 \* 1000[\s\S]*?text: "7 days"; bordered: true; selected: root\.historySummaryWindow === 7 \* 24 \* 60 \* 60 \* 1000[\s\S]*?historySummaryRows/,
+  "history must offer bounded today and seven-day summaries")
+assert.match(bar, /model: root\.historySummaryRows[\s\S]*?delegate: Rectangle[\s\S]*?id: summaryRow[\s\S]*?font\.weight: Font\.DemiBold/,
+  "history summaries must have scannable grouped rows")
+assert.match(bar, /id: historyRows[\s\S]*?visible: root\.historyPresentationEnabled/,
+  "disabled history must not display retained activity rows")
+assert.match(bar, /function activateLockdownAction\(\)[\s\S]*?Model\.lockdownActionPresentation\([\s\S]*?restorePrivacyLockdown\(\)[\s\S]*?confirmationState\.request\("lockdown"\)[\s\S]*?requestPrivacyLockdown\(\)[\s\S]*?objectName: "privacyLockdownButton"[\s\S]*?iconText: presentation\.icon[\s\S]*?tooltipText: presentation\.tooltip[\s\S]*?onClicked: root\.activateLockdownAction\(\)/,
+  "one compact lock/unlock action must expose lockdown and observed-state undo")
+assert.doesNotMatch(bar, /text: "Undo lockdown"/, "lockdown undo must not consume a second text-button row")
 assert.match(activityCard, /text: !entry\.dependenciesReady \? "INSTALL" : \(entry\.kind === "screenshot" \? "CAPTURE" : controller\.itemStateLabel\(entry\)\)/,
   "every popup row must expose an explicit install, capture, or tested semantic state")
 assert.match(globalSettings, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")
-for (const label of ["Icon scale", "Space between bar items", "Bar item padding", "Bar status markers", "Marker position", "Active marker", "Disabled marker", "Verifying marker", "Degraded marker", "Popup state pills", "Popup density", "Popup layout", "Popup width", "Popup item scale", "Popup idle visibility", "State pills", "Popup session counts", "Bar session counts", "Animate verification", "Disabled opacity"])
+for (const label of ["Icon scale", "Space between bar items", "Bar item padding", "In use", "In-use opacity", "Enabled and idle", "Enabled-idle opacity", "Disabled", "Disabled opacity", "Blocked request", "Blocked-request opacity", "Bar status markers", "Marker position", "Active marker", "Disabled marker", "Verifying marker", "Degraded marker", "Popup state pills", "Popup density", "Popup layout", "Popup width", "Popup item scale", "Popup idle visibility", "State pills", "Popup session counts", "Bar session counts", "Animate verification"])
   assert.match(globalSettings, new RegExp(label), `${label} must be exposed in global visual settings`)
-assert.match(bar, /state === "active" \? showBarActiveMarker[\s\S]*?state === "disabled" \? showBarDisabledMarker[\s\S]*?state === "pending" \? showBarPendingMarker[\s\S]*?state === "unavailable" \? showBarDegradedMarker/,
+assert.match(bar, /state === "active" \? showBarActiveMarker[\s\S]*?state === "disabled" \|\| state === "blocked-active" \? showBarDisabledMarker[\s\S]*?state === "pending" \? showBarPendingMarker[\s\S]*?state === "unavailable" \? showBarDegradedMarker/,
   "bar status classes must have independent marker visibility")
 for (const label of ["Active marker icon", "Disabled marker icon", "Verifying marker icon", "Degraded marker icon"])
   assert.match(globalSettings, new RegExp(label), `${label} must be exposed for custom marker mode`)
@@ -154,6 +174,14 @@ assert.match(bar, /label: "Show status markers for this device"[\s\S]*?Global st
 for (const label of ["Bar preview", "Display label", "Device icon"])
   assert.match(bar, new RegExp(`text: "${label}"`), `${label} must remain visible without relying on input placeholders`)
 assert.match(bar, /Shared by microphone and audio output/, "shared audio backend scope must be explicit")
+assert.match(audioEndpointSettings, /surface\.kind === "microphone" \? "Microphone devices" : "Audio output devices"[\s\S]*?audioEndpoints\(surface\.kind\)/,
+  "audio settings pages must enumerate their exact hardware endpoints")
+assert.match(audioEndpointSettings, /text: modelData\.muted \? "Allow" : "Block"[\s\S]*?setAudioEndpointMuted\(surface\.kind, modelData\.id, !modelData\.muted\)/,
+  "each audio endpoint must expose its own observed block control")
+assert.match(audioEndpointSettings, /PanelSectionHeader[\s\S]*?iconText: "󰑓"[\s\S]*?tooltipText: "Refresh devices"/,
+  "endpoint refresh must stay compact in the section header")
+assert.match(audioEndpointSettings, /delegate: Rectangle[\s\S]*?border\.color:[\s\S]*?Blocked · muted[\s\S]*?horizontalPadding: Style\.spacing\.md/,
+  "endpoint controls must remain visually grouped with readable action targets")
 assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceEditor\(dx\)/,
   "left and right keys must navigate device editors")
 assert.match(bar, /function moveDeviceEditor\(delta\)[\s\S]*?Model\.nextNavigationKind\(order, editingKind, delta\)/,
@@ -165,7 +193,7 @@ assert.match(bar, /confirmationState\.pending === "backend"[\s\S]*?Confirm share
   "shared audio resets must require an explicit second action")
 assert.match(bar, /function syncDeviceEditors\(\)[\s\S]*?labelEditor\.text = root\.labelFor\(editingKind\)[\s\S]*?customRecorderStopEditor\.text/,
   "changing devices must replace every editable field instead of retaining stale input")
-assert.match(bar, /onEditingKindChanged: Qt\.callLater\(syncDeviceEditors\)/,
+assert.match(bar, /onEditingKindChanged:\s*\{[\s\S]*?Qt\.callLater\(syncDeviceEditors\)/,
   "device-editor synchronization must run after every device transition")
 assert.match(confirmationController, /guardMilliseconds:\s*5000[\s\S]*?onTriggered: controller\.pending = ""/,
   "shared reset confirmations must expire")
@@ -207,6 +235,12 @@ assert.match(bar, /text: "Reset device appearance"[\s\S]*?default label, icon, c
   "device reset copy must match every reset field")
 assert.match(activityCard, /controller\.statePillStyle === "filled"[\s\S]*?controller\.statePillStyle === "minimal"/, "state-pill styles must alter fill and border presentation")
 assert.match(activityCard, /controller\.popupDensity === "compact"[\s\S]*?verticalPadding/, "popup density must alter row spacing")
+assert.match(activityCard, /id: policyMenu[\s\S]*?Hide application[\s\S]*?Hide device[\s\S]*?Mute device alerts/,
+  "row policy actions must live in one compact overflow menu")
+assert.match(activityCard, /tooltipText: "More privacy actions"[\s\S]*?policyMenu\.open\(\)/,
+  "active rows must expose one discoverable policy affordance")
+assert.doesNotMatch(activityCard, /Button \{ visible: entry\.active[\s\S]{0,160}?text: "Hide"/,
+  "full policy buttons must not crowd the primary toggle row")
 assert.match(activityCard, /visible: card\.visualState !== "idle" \|\| !controller\.showStatePills/,
   "idle cards must not repeat state text already carried by the visible pill")
 assert.match(activityCard, /function sessionSummary\(session\)[\s\S]*?session\.device[\s\S]*?formatDuration[\s\S]*?Inferred/,
@@ -216,5 +250,17 @@ assert.match(bar, /Layout\.columnSpan: root\.popupGridColumns === 2[\s\S]*?root\
 assert.match(bar, /running:\s*modelData\.pending && root\.animatePending/, "pending animation must honor its visual setting")
 assert.match(bar, /Timer \{[\s\S]*?running: root\.opened[\s\S]*?onTriggered: if \(!contentFlick\.moving\) root\.durationNow = Date\.now\(\)/,
   "the duration timer must pause rendered time updates while the user scrolls")
+assert.match(monitoringSettings, /columns: observerHealthSettings\.width >= Style\.space\(360\) \? 2 : 1/,
+  "self-test actions must reflow instead of crowding narrow popups")
+assert.match(monitoringSettings, /columns: fallbackPollingSettings\.width >= Style\.space\(360\) \? 2 : 1/,
+  "short fallback intervals must share a row at standard settings width")
+assert.match(monitoringSettings, /PrivacyMessageSurface[\s\S]*?selfTestResult\.text/,
+  "self-test results must use the shared status surface")
+for (const action of ["Clear stored history", "Export settings", "Import settings", "Run self-test", "Send test alert", "Copy diagnostics"])
+  assert.match(monitoringSettings, new RegExp(`text: "${action}"; bordered: true`), `${action} must look actionable at rest`)
+for (const action of ["Save", "Send test"])
+  assert.match(alertsSettings, new RegExp(`text: "${action}"; bordered: true`), `${action} must look actionable at rest`)
+assert.doesNotMatch(bar.match(/function itemColor\(entry\) \{[\s\S]*?^  \}/m)[0], /override\.(?:muted|unmuted)/,
+  "legacy audio color fields must not silently override global semantic colors")
 
 console.log("global settings contract tests passed")

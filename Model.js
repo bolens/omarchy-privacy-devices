@@ -33,15 +33,72 @@ function settingsScrollPosition(targetY, contentHeight, viewportHeight) {
   return Math.max(0, Math.min(target, maximum))
 }
 
+function deviceDeepLink(kind) {
+  var requested = String(kind || "")
+  return KINDS.indexOf(requested) >= 0 ? requested : ""
+}
+
 function boundedPlainText(value, maximumLength) {
   if (typeof value !== "string") return ""
   return Array.from(value.replace(/[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]/g, "").trim()).slice(0, maximumLength).join("")
+}
+
+function privacyAction(name, argument) {
+  var allowed = ["open-activity", "open-history", "open-diagnostics", "lockdown", "undo-lockdown", "rescan"]
+  var action = String(name || "")
+  if (allowed.indexOf(action) === -1) return null
+  var value = String(argument || "")
+  if (action === "open-activity" || action === "open-history") {
+    if (value && KINDS.indexOf(value) === -1) return null
+  } else if (value) return null
+  return {name: action, argument: value}
+}
+
+function observerHealthNotice(previous, next, now, lastNotifiedAt, minimumInterval) {
+  if (!previous || !next || previous.status === next.status) return null
+  var phase = next.status === "healthy" && previous.status !== "healthy" ? "recovered"
+    : next.status !== "healthy" && previous.status === "healthy" ? "degraded" : ""
+  if (!phase || (Number(lastNotifiedAt) > 0 && Number(now) - Number(lastNotifiedAt) < Number(minimumInterval))) return null
+  var source = boundedPlainText(String(next.source || "observer"), 64) || "observer"
+  var code = boundedPlainText(String(next.code || "unknown"), 64) || "unknown"
+  return {
+    phase: phase,
+    title: phase === "recovered" ? "Privacy observer recovered" : "Privacy observer degraded",
+    body: source + " · " + code
+  }
+}
+
+function privacySelfTest(input) {
+  var source = input || {}, health = source.observerHealth || {}, dependencies = source.dependencies || {}, controls = source.controls || {}
+  function check(label, passed, detail, remediation) {
+    return {label: label, status: passed ? "passed" : "attention", detail: String(detail), remediation: passed ? "" : String(remediation)}
+  }
+  function observer(name, enabled) {
+    var state = health[name] || {status: "healthy", code: "disabled"}
+    return check(name + " observer", !enabled || state.status === "healthy",
+      enabled ? "observer " + String(state.code || "unknown") : "disabled",
+      "Rescan observers; if it persists, copy private diagnostics.")
+  }
+  var dependencyFailures = Object.keys(dependencies).filter(function(kind) { return dependencies[kind] !== true })
+  var controlFailures = Object.keys(controls).filter(function(kind) { return controls[kind] !== true })
+  var history = source.history || {enabled: false, status: "disabled"}
+  var checks = [
+    check("PipeWire", source.pipewireAvailable === true, source.pipewireAvailable === true ? "reactive" : "unavailable", "Start the PipeWire user services."),
+    observer("direct-device", source.directDeviceEnabled === true),
+    observer("fallback", true),
+    check("Dependencies", dependencyFailures.length === 0, dependencyFailures.length ? "missing: " + dependencyFailures.join(", ") : "ready", "Install the dependencies shown in device diagnostics."),
+    check("Controls", controlFailures.length === 0, controlFailures.length ? "unavailable: " + controlFailures.join(", ") : "available without state changes", "Review device control diagnostics."),
+    check("Private history", history.enabled !== true || history.status === "private", history.enabled === true ? String(history.status || "unknown") : "disabled", "Repair history directory/file permissions to 0700/0600.")
+  ]
+  var lines = checks.map(function(row) { return (row.status === "passed" ? "PASS" : "CHECK") + " · " + row.label + " · " + row.detail + (row.remediation ? " · " + row.remediation : "") })
+  return {status: checks.some(function(row) { return row.status !== "passed" }) ? "attention" : "passed", checks: checks, text: lines.join("\n")}
 }
 
 function sanitizeSettings(data) {
   var source = data && typeof data === "object" && !Array.isArray(data) ? data : {}
   var clean = {}, index, key
   var booleans = {showIdle:true, showControls:true, deduplicateApps:true, notifyOnActivity:true, notifyOnStop:false,
+    notifyOnObserverHealth:false,
     notifyOnControlChanges:true, historyEnabled:false, directDeviceMonitoring:false, showInferredAttribution:true,
     showStatePills:true, showSessionCounts:true, showBarSessionCounts:true, animatePending:true,
     showBarActiveMarker:true, showBarDisabledMarker:true, showBarPendingMarker:true, showBarDegradedMarker:true}
@@ -60,7 +117,7 @@ function sanitizeSettings(data) {
     var disabledOpacity = Number(source.disabledOpacity)
     clean.disabledOpacity = Math.max(0.25, Math.min(1, isFinite(disabledOpacity) ? disabledOpacity : 1))
   }
-  var reals = {barIconScale:[0.75,1.5,1], popupItemScale:[0.85,1.3,1], popupIdleOpacity:[0.45,1,0.72]}
+  var reals = {barIconScale:[0.75,1.5,1], activeOpacity:[0.1,1,1], blockedActiveOpacity:[0.1,1,1], popupItemScale:[0.85,1.3,1], popupIdleOpacity:[0.45,1,0.72]}
   for (key in reals) if (source[key] !== undefined) {
     var realBounds = reals[key], realValue = Number(source[key])
     if (!isFinite(realValue)) realValue = realBounds[2]
@@ -69,12 +126,12 @@ function sanitizeSettings(data) {
   var kindLists = ["enabledKinds", "order", "notificationKinds", "blockableKinds"]
   for (index = 0; index < kindLists.length; index++) if (Array.isArray(source[kindLists[index]]))
     clean[kindLists[index]] = unique(source[kindLists[index]].filter(function(value) { return KINDS.indexOf(value) >= 0 })).slice(0, KINDS.length)
-  var stringLists = ["excludedApps", "hiddenApps", "notificationSuppressedApps", "cameraKeywords", "screenShareKeywords"]
+  var stringLists = ["excludedApps", "hiddenApps", "notificationSuppressedApps", "hiddenDevices", "notificationSuppressedDevices", "cameraKeywords", "screenShareKeywords"]
   for (index = 0; index < stringLists.length; index++) if (Array.isArray(source[stringLists[index]]))
     clean[stringLists[index]] = unique(source[stringLists[index]].map(function(value) { return boundedPlainText(value, 256) }).filter(Boolean)).slice(0, 256)
-  var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["symbols","letters","custom","off"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], popupLayout:["adaptive","list","grid"], popupWidth:["narrow","standard","wide"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
+  var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["off","symbols","letters","custom"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], popupLayout:["adaptive","list","grid"], popupWidth:["narrow","standard","wide"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
     audioControlBackend:["auto","pactl","wpctl"], screenshotBackend:["omarchy","grim","grim-satty","hyprshot","flameshot","custom"],
-    activeColorRole:["bar-active","urgent","accent","foreground"], inactiveColorRole:["muted","foreground","accent"], disabledColorRole:["urgent","muted","accent","foreground","bar-active"],
+    activeColorRole:["accent","bar-active","urgent","foreground","muted"], inactiveColorRole:["foreground","bar-active","muted","accent","urgent"], disabledColorRole:["muted","urgent","accent","foreground","bar-active"], blockedActiveColorRole:["urgent","accent","bar-active","muted","foreground"],
     mutedColorRole:["urgent","muted","bar-active","accent","foreground"], unmutedColorRole:["foreground","bar-active","accent","muted","urgent"]}
   for (key in enums) if (source[key] !== undefined) clean[key] = enums[key].indexOf(source[key]) >= 0 ? source[key] : enums[key][0]
   var markerGlyphs = {barActiveMarkerIcon:"●", barDisabledMarkerIcon:"⊘", barPendingMarkerIcon:"…", barDegradedMarkerIcon:"!"}
@@ -86,9 +143,13 @@ function sanitizeSettings(data) {
   for (index = 0; index < commands.length; index++) if (source[commands[index]] !== undefined) clean[commands[index]] = String(source[commands[index]] || "").slice(0, 4096)
   var processNames = ["screenshotProcessName", "recordingProcessName"]
   for (index = 0; index < processNames.length; index++) if (source[processNames[index]] !== undefined) clean[processNames[index]] = boundedPlainText(source[processNames[index]], 256)
-  var maps = ["icons", "itemColorRoles", "itemIdleOpacity", "itemIdleVisibility", "itemStatusMarkerVisibility", "itemLabels"]
+  var maps = ["icons", "itemColorRoles", "itemIdleOpacity", "itemIdleVisibility", "itemStatusMarkerVisibility", "itemLabels", "deviceLabels"]
   for (index = 0; index < maps.length; index++) if (source[maps[index]] && typeof source[maps[index]] === "object" && !Array.isArray(source[maps[index]])) {
-    var mapName = maps[index], map = {}, keys = Object.keys(source[mapName]).filter(function(value) { return KINDS.indexOf(value) >= 0 }).slice(0, KINDS.length)
+    var mapName = maps[index], map = {}, keys = Object.keys(source[mapName]).filter(function(value) {
+      if (mapName !== "deviceLabels") return KINDS.indexOf(value) >= 0
+      var normalized = boundedPlainText(String(value), 512)
+      return normalized && ["__proto__", "constructor", "prototype"].indexOf(normalized.toLowerCase()) === -1
+    }).slice(0, mapName === "deviceLabels" ? 64 : KINDS.length)
     for (var mapIndex = 0; mapIndex < keys.length; mapIndex++) {
       var mapKey = keys[mapIndex], mapValue = source[mapName][mapKey]
       if (mapName === "itemIdleVisibility" || mapName === "itemStatusMarkerVisibility") map[mapKey] = mapValue === true
@@ -101,6 +162,7 @@ function sanitizeSettings(data) {
           active:["bar-active","urgent","accent","foreground"],
           inactive:["muted","foreground","accent"],
           disabled:["urgent","muted","accent","foreground","bar-active"],
+          blocked:["urgent","accent","bar-active","muted","foreground"],
           muted:["urgent","muted","bar-active","accent","foreground"],
           unmuted:["foreground","bar-active","accent","muted","urgent"]
         }
@@ -116,6 +178,10 @@ function sanitizeSettings(data) {
       } else if (mapName === "itemLabels") {
         var itemLabel = boundedPlainText(mapValue, 128)
         if (itemLabel) map[mapKey] = itemLabel
+      } else if (mapName === "deviceLabels") {
+        var deviceKey = boundedPlainText(String(mapKey), 512)
+        var deviceLabelValue = boundedPlainText(mapValue, 128)
+        if (deviceKey && deviceLabelValue) map[deviceKey] = deviceLabelValue
       }
     }
     clean[mapName] = map
@@ -160,13 +226,62 @@ function privacyVisualState(entry) {
   if (entry.pending === true) return "pending"
   if (entry.health && entry.health.status && entry.health.status !== "healthy") return "unavailable"
   var disableCapable = ["microphone", "audio-output", "camera", "screen-share", "location"].indexOf(String(entry.kind || "")) >= 0
+  if (disableCapable && entry.controlEnabled === false && entry.active === true) return "blocked-active"
   if (disableCapable && entry.controlEnabled === false) return "disabled"
   return entry.active === true ? "active" : "idle"
 }
 
 function privacyStateLabel(entry) {
-  var labels = {pending: "VERIFYING", unavailable: "DEGRADED", disabled: "DISABLED", active: "ACTIVE", idle: "IDLE"}
+  var labels = {pending: "VERIFYING", unavailable: "DEGRADED", "blocked-active": "BLOCKED REQUEST", disabled: "DISABLED", active: "ACTIVE", idle: "IDLE"}
   return labels[privacyVisualState(entry)] || "IDLE"
+}
+
+function controlResultNotification(kind, expectedEnabled, succeeded) {
+  var names = {
+    microphone: "Microphone", "audio-output": "Audio output", camera: "Camera",
+    "screen-share": "Screen sharing", location: "Location",
+    "screen-recording": "Screen recording", screenshot: "Screenshot"
+  }
+  var enabledWords = {
+    microphone: "unmuted", "audio-output": "unmuted", camera: "allowed",
+    "screen-share": "allowed", location: "allowed", "screen-recording": "started", screenshot: "enabled"
+  }
+  var disabledWords = {
+    microphone: "muted", "audio-output": "muted", camera: "blocked",
+    "screen-share": "blocked", location: "blocked", "screen-recording": "stopped", screenshot: "disabled"
+  }
+  var name = names[kind] || label(kind)
+  var state = expectedEnabled === true ? (enabledWords[kind] || "enabled") : (disabledWords[kind] || "disabled")
+  return succeeded === true
+    ? {title: name + " " + state, body: name + " access is now " + state}
+    : {title: name + " could not be " + state, body: "The requested privacy-control state was not applied"}
+}
+
+function sanitizeAudioEndpoints(rows, maximumCount) {
+  if (!Array.isArray(rows)) return []
+  var limit = Math.max(0, Math.min(64, Math.floor(Number(maximumCount) || 64)))
+  var result = []
+  for (var index = 0; index < rows.length && result.length < limit; index++) {
+    var row = rows[index]
+    if (!row || typeof row !== "object" || Array.isArray(row)) continue
+    var identifier = typeof row.id === "string" ? row.id : ""
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(identifier)) continue
+    var endpointLabel = boundedPlainText(row.label, 256) || identifier
+    if (typeof row.muted !== "boolean") continue
+    result.push({id: identifier, label: endpointLabel, muted: row.muted})
+  }
+  return result
+}
+
+function lockdownActionPresentation(undoAvailable, confirmationPending) {
+  if (undoAvailable === true) return {
+    icon: "󰌿", tooltip: "Restore the privacy state from before lockdown", action: "restore"
+  }
+  return {
+    icon: "󰌾",
+    tooltip: confirmationPending === true ? "Confirm privacy lockdown" : "Lock down privacy controls",
+    action: "lockdown"
+  }
 }
 
 function privacyStateMarker(entry, mode, visible, customMarkers) {
@@ -174,11 +289,11 @@ function privacyStateMarker(entry, mode, visible, customMarkers) {
   var state = privacyVisualState(entry)
   if (mode === "custom") {
     var custom = customMarkers && typeof customMarkers === "object" ? customMarkers : {}
-    var customDefaults = {pending: "…", unavailable: "!", disabled: "⊘", active: "●", idle: ""}
+    var customDefaults = {pending: "…", unavailable: "!", "blocked-active": "⊘", disabled: "⊘", active: "●", idle: ""}
     return custom[state] === undefined ? customDefaults[state] || "" : String(custom[state])
   }
   if (mode === "letters") {
-    var letters = {pending: "V", unavailable: "!", disabled: "X", active: "A", idle: ""}
+    var letters = {pending: "V", unavailable: "!", "blocked-active": "X", disabled: "X", active: "A", idle: ""}
     return letters[state] || ""
   }
   var symbols = {pending: "…", unavailable: "!", disabled: "⊘", active: "●", idle: ""}
@@ -307,6 +422,21 @@ function normalizeObservation(observation) {
   return normalized
 }
 
+function sanitizeCaptureSessions(rows, now) {
+  if (!Array.isArray(rows)) return []
+  var timestamp = Number(now)
+  if (!isFinite(timestamp) || timestamp < 0) timestamp = 0
+  var result = []
+  for (var index = 0; index < rows.length && result.length < 64; index++) {
+    var normalized = normalizeObservation(rows[index])
+    if (KINDS.indexOf(normalized.kind) === -1) continue
+    var startedAt = Number(rows[index] && rows[index].startedAt)
+    normalized.startedAt = isFinite(startedAt) ? Math.max(0, Math.min(timestamp, startedAt)) : timestamp
+    result.push(normalized)
+  }
+  return result
+}
+
 function reconcileSessions(previous, observations, now) {
   var timestamp = Number(now)
   var oldById = {}
@@ -400,6 +530,7 @@ function visibleSessions(sessions, policies) {
   policies = policies || {}
   return (Array.isArray(sessions) ? sessions : []).filter(function(session) {
     return !policyContains(policies.hiddenApps, session.application)
+      && !policyContains(policies.hiddenDevices, session.device)
   })
 }
 
@@ -411,6 +542,13 @@ function filterAttribution(sessions, showInferred) {
 function shouldNotifyForSession(session, policies) {
   policies = policies || {}
   return !policyContains(policies.notificationSuppressedApps, session.application)
+    && !policyContains(policies.notificationSuppressedDevices, session.device)
+}
+
+function deviceLabel(device, labels) {
+  var value = String(device || "Unknown device")
+  var map = labels && typeof labels === "object" && !Array.isArray(labels) ? labels : {}
+  return map[value] ? String(map[value]) : value
 }
 
 function aggregateHealth(states) {
@@ -479,6 +617,43 @@ function controlRequestStatus(request) {
   if (state.dependenciesReady !== true) return "unavailable"
   if (state.pending === true || state.processBusy === true) return "busy"
   return "ok"
+}
+
+function privacyPresetPlan(entries, desired) {
+  var rows = Array.isArray(entries) ? entries : []
+  var desiredMap = desired && typeof desired === "object" ? desired : null
+  var actions = [], skipped = []
+  for (var index = 0; index < rows.length; index++) {
+    var entry = rows[index] || {}
+    var kind = String(entry.kind || "")
+    var expected = desiredMap ? desiredMap[kind] === true : desired === true
+    var reason = ""
+    if (entry.controllable !== true) reason = "unsupported"
+    else if (entry.dependenciesReady !== true) reason = "unavailable"
+    else if (entry.pending === true) reason = "busy"
+    else if ((entry.enabled === true) === expected) reason = "already-set"
+    if (reason) skipped.push({kind: kind, reason: reason})
+    else actions.push({kind: kind, expectedEnabled: expected})
+  }
+  return {actions: actions, skipped: skipped}
+}
+
+function nextPrivacyPresetAction(queue, activeKind) {
+  var remaining = Array.isArray(queue) ? queue.slice() : []
+  if (String(activeKind || "")) return {action: "wait", current: null, queue: remaining}
+  if (!remaining.length) return {action: "complete", current: null, queue: remaining}
+  return {action: "apply", current: remaining.shift(), queue: remaining}
+}
+
+function privacyPresetOutcome(results) {
+  var rows = Array.isArray(results) ? results : []
+  var changed = false, failed = false
+  for (var index = 0; index < rows.length; index++) {
+    var result = rows[index] || {}
+    if (result.status === "succeeded") changed = true
+    if (result.reason && result.reason !== "already-set" && result.reason !== "unsupported") failed = true
+  }
+  return {state: failed ? "partial" : "succeeded", changed: changed}
 }
 
 function appendHistory(history, session, now, limits) {
@@ -743,6 +918,41 @@ function historyCountLabel(visibleCount, totalCount) {
   return visible + (visible === 1 ? " entry" : " entries")
 }
 
+function historySummary(history, now, windowMilliseconds) {
+  var rows = Array.isArray(history) ? history : []
+  var current = Number(now)
+  var windowMs = Math.max(0, Number(windowMilliseconds) || 0)
+  var byKind = {}, order = [], retainedCounts = {}
+  for (var countIndex = 0; countIndex < rows.length; countIndex++) {
+    var countEntry = rows[countIndex] || {}
+    var countKind = String(countEntry.kind || "")
+    var countApplication = boundedPlainText(String(countEntry.application || "Unknown application"), 256) || "Unknown application"
+    var countKey = countKind + "\u0000" + normalizedKey(countApplication)
+    retainedCounts[countKey] = (retainedCounts[countKey] || 0) + 1
+  }
+  for (var index = 0; index < rows.length; index++) {
+    var entry = rows[index] || {}
+    var endedAt = Number(entry.endedAt)
+    if (!isFinite(endedAt) || endedAt < current - windowMs || endedAt > current) continue
+    var kind = String(entry.kind || "")
+    if (!kind) continue
+    if (!byKind[kind]) {
+      byKind[kind] = {kind: kind, count: 0, durationMs: 0, applications: [], newApplications: [], lastEndedAt: 0}
+      order.push(kind)
+    }
+    var summary = byKind[kind]
+    summary.count++
+    summary.durationMs += Math.max(0, Number(entry.durationMs) || 0)
+    summary.lastEndedAt = Math.max(summary.lastEndedAt, endedAt)
+    var application = boundedPlainText(String(entry.application || "Unknown application"), 256) || "Unknown application"
+    if (summary.applications.indexOf(application) === -1 && summary.applications.length < 5) summary.applications.push(application)
+    if (retainedCounts[kind + "\u0000" + normalizedKey(application)] === 1
+        && summary.newApplications.indexOf(application) === -1 && summary.newApplications.length < 5)
+      summary.newApplications.push(application)
+  }
+  return order.map(function(kind) { return byKind[kind] }).sort(function(left, right) { return right.lastEndedAt - left.lastEndedAt })
+}
+
 function coalesceNotificationEvents(events) {
   var rows = Array.isArray(events) ? events : []
   if (!rows.length) return {title: "Privacy activity", body: "", count: 0, icon: "security-high-symbolic"}
@@ -774,7 +984,7 @@ function coalesceNotificationEvents(events) {
     ? iconNames[0]
     : fallbackIcon
   return {title: "Privacy activity " + phase, body: lines.join("\n"), count: count,
-    icon: notificationIcon, fallbackIcon: fallbackIcon}
+    icon: notificationIcon, fallbackIcon: fallbackIcon, kind: kindNames.length === 1 ? kindNames[0] : ""}
 }
 
 function notificationIconName(value) {

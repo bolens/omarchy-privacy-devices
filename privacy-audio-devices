@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""List and mute exact PipeWire-Pulse audio endpoints."""
+
+import json
+import re
+import subprocess
+import sys
+
+NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+TEXT_CONTROLS = re.compile(r"[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]")
+
+
+def endpoint_type(kind: str) -> str:
+    if kind == "microphone":
+        return "sources"
+    if kind == "audio-output":
+        return "sinks"
+    raise ValueError("unsupported audio kind")
+
+
+def normalize(rows: object, kind: str) -> list[dict]:
+    if not isinstance(rows, list):
+        return []
+    devices = []
+    for row in rows[:256]:
+        if not isinstance(row, dict):
+            continue
+        name = str(row.get("name", ""))
+        if not NAME.fullmatch(name) or (kind == "microphone" and name.endswith(".monitor")):
+            continue
+        properties = row.get("properties")
+        description = properties.get("device.description") if isinstance(properties, dict) else None
+        label = TEXT_CONTROLS.sub("", str(row.get("description") or description or name)).strip()
+        devices.append({"id": name, "label": label[:256], "muted": row.get("mute") is True})
+    return devices
+
+
+def list_devices(kind: str, runner=subprocess.run) -> list[dict]:
+    result = runner(["pactl", "-f", "json", "list", endpoint_type(kind)], check=True,
+                    text=True, capture_output=True, timeout=5)
+    return normalize(json.loads(result.stdout), kind)
+
+
+def set_muted(kind: str, identifier: str, muted: bool, runner=subprocess.run) -> list[dict]:
+    devices = list_devices(kind, runner)
+    if identifier not in [device["id"] for device in devices]:
+        raise ValueError("unknown audio endpoint")
+    target = "source" if kind == "microphone" else "sink"
+    runner(["pactl", f"set-{target}-mute", identifier, "1" if muted else "0"],
+           check=True, text=True, capture_output=True, timeout=5)
+    observed = list_devices(kind, runner)
+    match = next((device for device in observed if device["id"] == identifier), None)
+    if not match or match["muted"] is not muted:
+        raise ValueError("audio endpoint state was not verified")
+    return observed
+
+
+def main() -> int:
+    action = sys.argv[1] if len(sys.argv) > 1 else "list"
+    if action == "list" and len(sys.argv) == 3:
+        print(json.dumps(list_devices(sys.argv[2]), separators=(",", ":")))
+        return 0
+    if action == "set" and len(sys.argv) == 5 and sys.argv[4] in ("true", "false"):
+        devices = set_muted(sys.argv[2], sys.argv[3], sys.argv[4] == "true")
+        print(json.dumps(devices, separators=(",", ":")))
+        return 0
+    return 2
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except (OSError, ValueError, json.JSONDecodeError, subprocess.SubprocessError) as error:
+        print(str(error), file=sys.stderr)
+        raise SystemExit(1)

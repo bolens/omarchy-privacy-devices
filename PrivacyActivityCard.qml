@@ -15,13 +15,40 @@ Rectangle {
   readonly property bool tiled: controller.popupGridColumns > 1
   readonly property real itemScale: controller.popupItemScale
   readonly property real verticalPadding: (compact ? Style.spacing.sm : Style.spacing.md) * itemScale
+  readonly property bool hasPolicyActions: (entry.active && entry.apps.length > 0)
+    || (entry.sessions.length > 0 && Boolean(entry.sessions[0].device))
   readonly property bool hasInlineActions: controller.showStatePills
-    || (entry.active && entry.apps.length > 0)
+    || hasPolicyActions
     || (controller.showControls && entry.controllable && entry.kind !== "screenshot" && entry.dependenciesReady)
+
+  function hideApplication() {
+    if (!entry.active || entry.apps.length === 0) return false
+    controller.addPolicyValue("hiddenApps", entry.apps[0])
+    return true
+  }
+
+  function hideDevice() {
+    if (entry.sessions.length === 0 || !entry.sessions[0].device) return false
+    controller.addPolicyValue("hiddenDevices", entry.sessions[0].device)
+    return true
+  }
+
+  function muteDeviceAlerts() {
+    if (entry.sessions.length === 0 || !entry.sessions[0].device) return false
+    controller.addPolicyValue("notificationSuppressedDevices", entry.sessions[0].device)
+    return true
+  }
+
+  function activate(button) {
+    controller.selectedKind = entry.kind
+    if (button === Qt.MiddleButton) { controller.editingKind = entry.kind; return }
+    if (controller.showControls && entry.controllable && entry.kind !== "screenshot"
+        && entry.dependenciesReady && !entry.pending) controller.toggleEntry(entry)
+  }
 
   function sessionSummary(session) {
     var parts = []
-    if (session.device) parts.push(String(session.device))
+    if (session.device) parts.push(controller.deviceLabel(session.device))
     parts.push(Model.formatDuration(controller.durationNow - Number(session.startedAt || controller.durationNow)))
     if (session.confidence && String(session.confidence).toLowerCase() !== "confirmed") parts.push("Inferred")
     if (entry.sessions.length > 1) parts.push("+" + (entry.sessions.length - 1) + " more")
@@ -43,13 +70,12 @@ Rectangle {
   }
 
   MouseArea {
+    objectName: "activityCardClickArea"
     anchors.fill: parent
     acceptedButtons: Qt.LeftButton | Qt.MiddleButton
     cursorShape: Qt.PointingHandCursor
     onClicked: function(mouse) {
-      controller.selectedKind = entry.kind
-      if (mouse.button === Qt.MiddleButton) { controller.editingKind = entry.kind; return }
-      if (controller.showControls && entry.controllable && !entry.pending) controller.toggleEntry(entry)
+      card.activate(mouse.button)
     }
   }
 
@@ -73,25 +99,29 @@ Rectangle {
           spacing: Style.spacing.sm
           Text { Layout.fillWidth: true; text: entry.label; textFormat: Text.PlainText; color: Color.popups.text; opacity: card.visualState === "idle" ? controller.popupIdleOpacity : 1; font.family: Style.font.family; font.pixelSize: Style.font.body * card.itemScale; font.weight: card.visualState === "active" ? Font.DemiBold : Font.Normal; elide: Text.ElideRight }
           Rectangle {
+            objectName: "activitySessionCountBadge"
             visible: controller.itemSessionCount(entry) > 1
             implicitWidth: sessionCountText.implicitWidth + Style.spacing.sm
             implicitHeight: sessionCountText.implicitHeight + 2
             radius: implicitHeight / 2
             color: Util.alpha(controller.itemColor(entry), 0.18)
-            Text { id: sessionCountText; anchors.centerIn: parent; text: String(controller.itemSessionCount(entry)); textFormat: Text.PlainText; color: controller.itemColor(entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
+            Text { id: sessionCountText; objectName: "activitySessionCount"; anchors.centerIn: parent; text: String(controller.itemSessionCount(entry)); textFormat: Text.PlainText; color: controller.itemColor(entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
           }
         }
         Text {
+          objectName: "activityStateDescription"
           visible: card.visualState !== "idle" || !controller.showStatePills
           Layout.fillWidth: true
           text: card.visualState === "unavailable" ? "Monitoring degraded · " + entry.health.summary
             : card.visualState === "pending" ? "Waiting for observed state confirmation"
+            : card.visualState === "blocked-active" ? "Blocked request observed"
             : card.visualState === "disabled" ? "Blocked by privacy control"
             : card.visualState === "active" ? (entry.apps.length ? entry.apps.join(", ") : "Activity hidden by policy")
             : "Available · not in use"
           textFormat: Text.PlainText; color: card.visualState === "active" ? Color.popups.text : controller.inactiveThemeColor; opacity: card.visualState === "idle" ? controller.popupIdleOpacity : 1; font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; elide: Text.ElideRight
         }
         Text {
+          objectName: "activitySessionSummary"
           visible: entry.sessions.length > 0
           Layout.fillWidth: true
           property var firstSession: entry.sessions.length ? entry.sessions[0] : ({})
@@ -106,7 +136,19 @@ Rectangle {
       Layout.fillWidth: card.tiled
       Layout.alignment: Qt.AlignRight
       spacing: Style.spacing.sm * card.itemScale
-      Button { visible: entry.active && entry.apps.length > 0; text: "Hide"; tooltipText: "Hide this application from the bar; alerts remain enabled"; onClicked: controller.addPolicyValue("hiddenApps", entry.apps[0]) }
+      Button {
+        visible: card.hasPolicyActions
+        iconText: "󰇙"
+        tooltipText: "More privacy actions"
+        horizontalPadding: Style.spacing.controlGap
+        onClicked: policyMenu.open()
+      }
+      Menu {
+        id: policyMenu
+        MenuItem { visible: entry.active && entry.apps.length > 0; text: "Hide application"; onTriggered: card.hideApplication() }
+        MenuItem { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Hide device"; onTriggered: card.hideDevice() }
+        MenuItem { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Mute device alerts"; onTriggered: card.muteDeviceAlerts() }
+      }
       Item { visible: card.tiled; Layout.fillWidth: card.tiled }
       Rectangle {
         visible: controller.showStatePills
@@ -116,7 +158,7 @@ Rectangle {
         color: controller.statePillStyle === "filled" ? Util.alpha(controller.itemColor(entry), 0.14) : "transparent"
         border.width: controller.statePillStyle === "minimal" ? 0 : 1
         border.color: Util.alpha(controller.itemColor(entry), controller.statePillStyle === "outline" ? 0.7 : 0.45)
-        Text { id: stateText; anchors.centerIn: parent; text: !entry.dependenciesReady ? "INSTALL" : (entry.kind === "screenshot" ? "CAPTURE" : controller.itemStateLabel(entry)); textFormat: Text.PlainText; color: controller.itemColor(entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
+        Text { id: stateText; objectName: "activityStatePillText"; anchors.centerIn: parent; text: !entry.dependenciesReady ? "INSTALL" : (entry.kind === "screenshot" ? "CAPTURE" : controller.itemStateLabel(entry)); textFormat: Text.PlainText; color: controller.itemColor(entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
       }
       ToggleSwitch { visible: controller.showControls && entry.controllable && entry.kind !== "screenshot" && entry.dependenciesReady; checked: entry.controlEnabled; busy: entry.pending; interactive: false; foreground: Color.popups.text; accent: controller.isAudioControl(entry) ? (entry.controlEnabled ? controller.unmutedThemeColor : controller.mutedThemeColor) : controller.activeThemeColor }
     }

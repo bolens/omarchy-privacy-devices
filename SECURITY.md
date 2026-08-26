@@ -43,12 +43,26 @@ command explicitly supplied by the user are not vulnerabilities in the plugin.
 - Recorder shutdown is limited to an owner-matched PID whose `/proc` executable
   is `wf-recorder`; broad name-based termination is forbidden.
 - History and settings exports are size-bounded, atomically replaced, and
-  stored in owner-only user directories. They contain no media.
+  stored in owner-only user directories. They contain no media. Device policy
+  names and aliases are bounded settings metadata and may identify local
+  hardware, so exported settings should be treated as private.
+- Privacy lockdown uses the same verified, allowlisted per-device controls as
+  individual actions. It applies them serially, reports partial failures, and
+  keeps its observed-state undo only in memory for 30 seconds.
 - Custom screenshot and recording commands are an explicit user-controlled
   escape hatch. Imported settings must be reviewed before those backends are
   selected or run.
 - Built-in capture helpers and Omarchy commands use argument arrays and never
   inherit the custom-command shell-string boundary.
+- Per-endpoint audio mutations accept only bounded Pulse endpoint identifiers
+  found in a fresh local inventory and verify the resulting mute state.
+- Notification and launcher actions enter through an allowlisted helper. Their
+  commands never contain observed application, process, or device text.
+- The optional menu installer atomically edits only its marked block, preserves
+  existing entries, and routes lockdown through the UI's two-step confirmation.
+- Observer alerts expose only bounded source/code identifiers. Guided self-test
+  and copied results omit session identities and inspect history permissions
+  without exposing its filesystem path.
 
 ## Release security checklist
 
