@@ -336,7 +336,7 @@ Item {
     }
     for (index = 0; index < publishable.stopped.length; index++) {
       var stopped = publishable.stopped[index]
-      if (settings.historyEnabled === true) {
+      if (settings.historyEnabled === true && !capturePreviewActive) {
         recentHistory = Model.appendHistory(recentHistory, stopped, Date.now(), {maxEntries: 100, maxAgeMs: 7 * 24 * 60 * 60 * 1000})
         stoppedForHistory.push(stopped)
       }
@@ -1068,11 +1068,12 @@ Item {
   }
 
   IpcHandler {
-    target: "privacy-devices-settings"
-    function beginCapture(settingsJson: string, historyJson: string): string {
+    target: "privacy-devices-capture-v2"
+    function beginCapture(payloadB64: string): string {
       try {
-        var previewSettings = JSON.parse(settingsJson || "{}")
-        var previewHistory = JSON.parse(historyJson || "[]")
+        var payload = JSON.parse(Qt.atob(payloadB64 || ""))
+        var previewSettings = payload.settings
+        var previewHistory = payload.history
         if (!previewSettings || typeof previewSettings !== "object" || Array.isArray(previewSettings) || !Array.isArray(previewHistory)) return "invalid"
         root.capturePreviewHistory = previewHistory
         root.capturePreviewSettings = previewSettings
@@ -1086,6 +1087,10 @@ Item {
       root.capturePreviewSettings = ({})
       return "ok"
     }
+  }
+
+  IpcHandler {
+    target: "privacy-devices-settings"
     function open(page: string): string {
       root.requestedView = "settings"
       root.requestedSettingsPage = Model.settingsPage(page)

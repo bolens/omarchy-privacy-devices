@@ -7,13 +7,14 @@ plugin_id="io.github.bolens.privacy-devices"
 monitor=""
 capture_workspace=""
 verify_only=false
+report_file=""
 settle_seconds=1
 panel_width=500
 panel_side_padding=16
 
 usage() {
   cat <<'EOF'
-Usage: scripts/capture-screenshots [--monitor NAME] [--workspace ID] [--verify]
+Usage: scripts/capture-screenshots [--monitor NAME] [--workspace ID] [--verify] [--report FILE]
 
 Capture the live plugin on an empty workspace, update repository screenshots,
 and restore the monitor's original workspace. Defaults to the focused monitor
@@ -29,12 +30,13 @@ while (($#)); do
     --monitor) monitor=${2:-}; shift 2 ;;
     --workspace) capture_workspace=${2:-}; shift 2 ;;
     --verify) verify_only=true; shift ;;
+    --report) report_file=${2:-}; shift 2 ;;
     --help|-h) usage; exit 0 ;;
     *) printf 'Unknown argument: %s\n' "$1" >&2; usage >&2; exit 2 ;;
   esac
 done
 
-for command in qs hyprctl jq grim magick pngquant wtype omarchy python3 flock; do
+for command in qs hyprctl jq grim magick pngquant wtype omarchy python3 flock base64 find sha256sum; do
   command -v "$command" >/dev/null || { printf 'Missing required command: %s\n' "$command" >&2; exit 1; }
 done
 
@@ -61,6 +63,7 @@ if [[ -z $capture_workspace ]]; then
   ' < <(hyprctl workspaces -j))
 fi
 [[ $capture_workspace =~ ^[1-9][0-9]*$ ]] || { printf 'Capture workspace must be a positive integer.\n' >&2; exit 2; }
+printf '{"pid":%s,"monitor":"%s","workspace":%s}\n' "$$" "$monitor" "$capture_workspace" >&9
 
 window_count=$(jq -r --argjson workspace "$capture_workspace" '[.[] | select(.workspace.id == $workspace)] | length' < <(hyprctl clients -j))
 ((window_count == 0)) || {
@@ -90,43 +93,6 @@ wait_for_shell() {
   done
   printf 'Omarchy Shell did not become IPC-ready.\n' >&2
   return 1
-}
-
-wait_for_live_config() {
-  local attempt actual expected
-  expected=$(jq -c . "$settings_file") || return 1
-  for attempt in {1..40}; do
-    actual=$(qs ipc --pid "$shell_pid" call shell listShellConfig 2>/dev/null || true)
-    if jq -en --argjson expected "$expected" --argjson actual "${actual:-null}" '$actual == $expected' >/dev/null 2>&1; then
-      return 0
-    fi
-    sleep 0.1
-  done
-  printf 'Live shell configuration did not match %s.\n' "$settings_file" >&2
-  return 1
-}
-
-wait_for_plugin() {
-  local attempt reply
-  for attempt in {1..120}; do
-    reply=$(qs ipc --pid "$shell_pid" call privacy-devices historyEnabled 2>/dev/null || true)
-    [[ $reply =~ ^(true|false)$ ]] && return 0
-    sleep 0.1
-  done
-  printf 'Privacy Devices IPC did not become ready after config reload.\n' >&2
-  return 1
-}
-
-reload_shell_config() {
-  local reply
-  wait_for_shell || return 1
-  reply=$(qs ipc --pid "$shell_pid" call shell reloadConfig 2>/dev/null || true)
-  [[ $reply == ok ]] || {
-    printf 'Omarchy Shell rejected config reload: %s\n' "${reply:-no response}" >&2
-    return 1
-  }
-  wait_for_live_config || return 1
-  wait_for_plugin
 }
 
 focus_capture_workspace() {
@@ -189,6 +155,7 @@ capture_panel() {
   local name=$1 mode=$2 page=${3:-} height=${4:-660} section=${5:-} crop_top=${6:-20} attempt
   for attempt in {1..4}; do
     : "$attempt"
+    check_capture_environment || return 1
     wait_for_shell || return 1
     focus_capture_workspace || return 1
     qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
@@ -218,29 +185,45 @@ capture_panel() {
 wait_for_shell
 initial_shell_pid=$shell_pid
 
-capture_dir=$(mktemp -d)
+recovery_root="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy-privacy-devices/captures"
+mkdir -p "$recovery_root"
+chmod 0700 "$recovery_root"
+capture_dir=$(mktemp -d "$recovery_root/capture.XXXXXX")
 publish_dir="$capture_dir/publish"
 mkdir -p "$publish_dir/docs"
-live_history=$(qs ipc --pid "$shell_pid" call privacy-devices history)
-persisted_history=$(./privacy-history load)
-history_snapshot=$(jq -cn --argjson live "$live_history" --argjson persisted "$persisted_history" '
-  $live + $persisted | unique_by([.id, .endedAt]) | sort_by(.endedAt) | reverse | .[:100]
-')
+settings_file="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/shell.json"
+[[ -f $settings_file ]] || { printf 'Omarchy Shell settings not found: %s\n' "$settings_file" >&2; exit 1; }
+settings_snapshot="$capture_dir/shell.json"
+history_snapshot="$capture_dir/history.json"
+cp -- "$settings_file" "$settings_snapshot"
+./privacy-history load >"$history_snapshot"
 restored=false
-history_restored=false
-history_capture_dirty=false
+preview_active=false
 notification_visible=false
 notification_summary="Privacy activity started · Screenshot example"
 dnd_state=""
 original_dnd_state=""
 dnd_changed=false
-settings_restore_status="unchanged"
-history_restore_status="pending"
+settings_restore_status="untouched"
+history_restore_status="untouched"
 dnd_restore_status="unchanged"
 workspace_restore_status="pending"
 shell_identity_status="unchanged"
+plugin_root="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins"
+plugin_fingerprint=$(find "$plugin_root" -type f -printf '%T@ %p\n' 2>/dev/null | sort | sha256sum | awk '{print $1}')
+check_capture_environment() {
+  local current_fingerprint
+  [[ $(qs ipc --pid "$initial_shell_pid" call shell ping 2>/dev/null || true) == ok ]] || {
+    printf 'Omarchy Shell changed during capture.\n' >&2; return 1;
+  }
+  current_fingerprint=$(find "$plugin_root" -type f -printf '%T@ %p\n' 2>/dev/null | sort | sha256sum | awk '{print $1}')
+  [[ $current_fingerprint == "$plugin_fingerprint" ]] || {
+    printf 'Plugin files changed during capture; aborting before publication.\n' >&2; return 1;
+  }
+}
 capture_checkpoint() {
   local checkpoint=$1
+  check_capture_environment || return 1
   if [[ ${PRIVACY_CAPTURE_TESTING:-0} == 1 && ${PRIVACY_CAPTURE_FAIL_AT:-} == "$checkpoint" ]]; then
     printf 'Injected capture failure at %s.\n' "$checkpoint" >&2
     return 1
@@ -252,67 +235,20 @@ close_capture_notification() {
     notification_visible=false
   fi
 }
-quiesce_capture_history() {
-  local actual_live actual_persisted attempt stable_empty=0 temporary
-  [[ $history_capture_dirty == true ]] || return 0
-  temporary=$(mktemp "${settings_file}.XXXXXX")
-  jq --arg id "$plugin_id" ' (.. | objects | select(.id? == $id) | .historyEnabled) = false ' \
-    "$settings_file" >"$temporary"
-  chmod "$settings_mode" "$temporary"
-  mv -- "$temporary" "$settings_file"
-  reload_shell_config
-  for attempt in {1..80}; do
-    actual_live=$(qs ipc --pid "$shell_pid" call privacy-devices history 2>/dev/null || true)
-    actual_persisted=$(./privacy-history load 2>/dev/null || true)
-    if [[ $actual_live == "[]" && $actual_persisted == "[]" ]]; then
-      ((stable_empty += 1))
-      ((stable_empty >= 15)) && return 0
-    else
-      stable_empty=0
-    fi
-    sleep 0.1
-  done
-  printf 'Capture history did not quiesce before restoration.\n' >&2
-  return 1
+set_capture_preview() {
+  local enabled=$1 payload reply settings
+  settings=$(jq -cn --argjson enabled "$enabled" '{displayMode:"icons",showIdle:true,showBarActiveMarker:true,showBarDisabledMarker:true,statusMarkerMode:"symbols",historyEnabled:$enabled}')
+  payload=$(jq -cn --argjson settings "$settings" --argjson history "$history_samples" '{settings:$settings,history:$history}' | base64 -w 0)
+  reply=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 beginCapture "$payload" 2>/dev/null || true)
+  [[ $reply == ok ]] || { printf 'Could not activate in-memory capture preview.\n' >&2; return 1; }
+  preview_active=true
 }
-stage_restored_shell_settings() {
-  install -m "$settings_mode" "$settings_snapshot" "$settings_file"
-  cmp -s "$settings_snapshot" "$settings_file" || {
-    printf 'Restored shell settings do not match the preserved snapshot.\n' >&2
-    return 1
-  }
-}
-wait_for_restored_history() {
-  local actual attempt
-  for attempt in {1..120}; do
-    actual=$(qs ipc --pid "$shell_pid" call privacy-devices history 2>/dev/null || true)
-    if jq -en --argjson expected "$history_snapshot" --argjson actual "${actual:-null}" \
-      '$actual == $expected' >/dev/null 2>&1; then return 0; fi
-    sleep 0.1
-  done
-  printf 'Live history did not match the restored snapshot.\n' >&2
-  return 1
-}
-activate_restored_shell_settings() {
-  local verify_history=${1:-true}
-  reload_shell_config
-  [[ $verify_history == false ]] || wait_for_restored_history
-  settings_restore_status="ok"
-}
-restore_history() {
-  local restored_history
-  [[ $history_restored == false ]] || return 0
-  ./privacy-history clear >/dev/null
-  if [[ $history_snapshot != "[]" ]]; then
-    ./privacy-history append "$history_snapshot" >/dev/null
-  fi
-  restored_history=$(./privacy-history load)
-  jq -en --argjson expected "$history_snapshot" --argjson actual "$restored_history" '$actual == $expected' >/dev/null || {
-    printf 'Restored history does not match the preserved snapshot.\n' >&2
-    return 1
-  }
-  history_restored=true
-  history_restore_status="ok"
+end_capture_preview() {
+  local reply
+  [[ $preview_active == true ]] || return 0
+  reply=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 endCapture 2>/dev/null || true)
+  [[ $reply == ok ]] || { printf 'Could not clear in-memory capture preview.\n' >&2; return 1; }
+  preview_active=false
 }
 restore_dnd() {
   local actual reply
@@ -334,22 +270,13 @@ report_restoration() {
     "$workspace_restore_status" "$shell_identity_status"
 }
 restore_desktop() {
-  local history_ready=true restore_failed=false
+  local restore_failed=false
   if [[ $restored == false ]]; then
     close_capture_notification
     wait_for_shell || restore_failed=true
     restore_dnd || restore_failed=true
-    quiesce_capture_history || { history_ready=false; restore_failed=true; }
+    end_capture_preview || restore_failed=true
     qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
-    if [[ $history_ready == true ]]; then
-      stage_restored_shell_settings || { history_ready=false; restore_failed=true; }
-    fi
-    if [[ $history_ready == true ]]; then
-      restore_history || { history_ready=false; restore_failed=true; }
-    fi
-    if [[ $history_ready == true ]]; then
-      activate_restored_shell_settings || restore_failed=true
-    fi
     if restore_original_workspace; then workspace_restore_status="ok"; else restore_failed=true; fi
     [[ $restore_failed == false ]] && restored=true
     report_restoration
@@ -368,78 +295,22 @@ cleanup_capture() {
 }
 trap cleanup_capture EXIT INT TERM
 
-settings_file="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/shell.json"
-[[ -f $settings_file ]] || { printf 'Omarchy Shell settings not found: %s\n' "$settings_file" >&2; exit 1; }
-settings_snapshot="$capture_dir/shell.json"
-settings_mode=$(stat -c '%a' "$settings_file")
-cp -- "$settings_file" "$settings_snapshot"
-
-set_history_enabled() {
-  local enabled=$1 temporary matches
-  matches=$(jq --arg id "$plugin_id" '[.. | objects | select(.id? == $id)] | length' "$settings_file")
-  [[ $matches == 1 ]] || { printf 'Expected one configured %s widget; found %s.\n' "$plugin_id" "$matches" >&2; return 1; }
-  temporary=$(mktemp "${settings_file}.XXXXXX")
-  jq --arg id "$plugin_id" --argjson enabled "$enabled" '
-    (.. | objects | select(.id? == $id) | .historyEnabled) = $enabled
-  ' "$settings_file" >"$temporary"
-  chmod "$settings_mode" "$temporary"
-  mv -- "$temporary" "$settings_file"
-  reload_shell_config
-}
-
-set_showcase_settings() {
-  local temporary matches
-  matches=$(jq --arg id "$plugin_id" '[.. | objects | select(.id? == $id)] | length' "$settings_file")
-  [[ $matches == 1 ]] || { printf 'Expected one configured %s widget; found %s.\n' "$plugin_id" "$matches" >&2; return 1; }
-  temporary=$(mktemp "${settings_file}.XXXXXX")
-  jq --arg id "$plugin_id" '
-    (.. | objects | select(.id? == $id)) |= . + {
-      displayMode: "icons",
-      showIdle: true,
-      showBarActiveMarker: true,
-      showBarDisabledMarker: true,
-      statusMarkerMode: "symbols"
-    }
-  ' "$settings_file" >"$temporary"
-  chmod "$settings_mode" "$temporary"
-  mv -- "$temporary" "$settings_file"
-}
-
-history_enabled=$(qs ipc --pid "$shell_pid" call privacy-devices historyEnabled)
-[[ $history_enabled == true ]] || {
-  printf 'Enable activity history before refreshing screenshots.\n' >&2
-  exit 1
-}
-
 capture_now=$(python3 -c 'import time; print(time.time_ns() // 1_000_000)')
 history_samples=$(jq -cn --argjson now "$capture_now" '[
   {id:"capture-firefox-microphone",kind:"microphone",application:"Firefox",device:"USB microphone",source:"pipewire",confidence:"confirmed",startedAt:($now-185000),endedAt:($now-5000),durationMs:180000},
   {id:"capture-obs-camera",kind:"camera",application:"OBS Studio",device:"Integrated camera",source:"pipewire",confidence:"confirmed",startedAt:($now-3900000),endedAt:($now-300000),durationMs:3600000},
   {id:"capture-chromium-screen",kind:"screen-share",application:"Chromium",device:"Desktop portal",source:"pipewire",confidence:"confirmed",startedAt:($now-8700000),endedAt:($now-7800000),durationMs:900000}
 ]')
-./privacy-history clear >/dev/null
-./privacy-history append "$history_samples" >/dev/null
-history_capture_dirty=true
-capture_checkpoint history-replaced
-set_showcase_settings
-reload_shell_config
-capture_checkpoint settings-reloaded
+set_capture_preview true
+capture_checkpoint preview-enabled
 focus_capture_workspace
 resolve_geometry
 
 capture_panel history history "" 660
-set_history_enabled false
+set_capture_preview false
 capture_checkpoint history-disabled
 capture_panel history-disabled history "" 240
-stage_restored_shell_settings
-restore_history
-activate_restored_shell_settings false
-history_restored=false
-history_restore_status="pending"
-cmp -s "$settings_snapshot" "$settings_file" || {
-  printf 'Omarchy Shell settings did not restore exactly.\n' >&2
-  exit 1
-}
+set_capture_preview true
 for page in general appearance alerts monitoring; do capture_panel "$page" settings "$page" 660; done
 capture_panel monitoring-private settings-section monitoring 330 private-data 115
 capture_panel monitoring-health settings-section monitoring 290 observer-health 390
@@ -528,11 +399,9 @@ pngquant --force --quality=82-95 --speed 1 --strip \
 restore_desktop
 
 verify_postconditions() {
-  local actual_dnd actual_history focused workspace
+  local actual_dnd focused workspace
   cmp -s "$settings_snapshot" "$settings_file" || return 1
-  wait_for_live_config || return 1
-  actual_history=$(./privacy-history load)
-  jq -en --argjson expected "$history_snapshot" --argjson actual "$actual_history" '$actual == $expected' >/dev/null || return 1
+  cmp -s "$history_snapshot" <(./privacy-history load) || return 1
   actual_dnd=$(qs ipc --pid "$shell_pid" call notifications isDnd 2>/dev/null || true)
   [[ -z $original_dnd_state || $actual_dnd == "$original_dnd_state" ]] || return 1
   focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
@@ -543,9 +412,17 @@ verify_postconditions() {
     return 1
   }
 }
+write_report() {
+  local destination=${report_file:-$capture_dir/verification.json}
+  jq -n --arg mode "$([[ $verify_only == true ]] && printf verify || printf publish)" \
+    --argjson pid "$initial_shell_pid" --arg monitor "$monitor" --argjson workspace "$original_workspace" \
+    '{version:1,result:"passed",mode:$mode,shellPid:$pid,monitor:$monitor,restoredWorkspace:$workspace,settings:"untouched",history:"untouched",dnd:"preserved"}' >"$destination"
+  if [[ -z $report_file ]]; then jq -c . "$destination"; else printf 'Verification report: %s\n' "$report_file"; fi
+}
 
 if [[ $verify_only == true ]]; then
   verify_postconditions
+  write_report
   cleanup_capture
   trap - EXIT INT TERM
   printf 'Capture verification passed; repository assets were not published.\n'
@@ -558,7 +435,9 @@ published_assets=(
   docs/monitoring-private.png docs/monitoring-health.png docs/device.png docs/bar.png
   docs/notification.png docs/social-card.png docs/index.html
 )
+check_capture_environment
 scripts/publish-screenshot-assets "$publish_dir" "${published_assets[@]}"
+write_report
 
 cleanup_capture
 trap - EXIT INT TERM
