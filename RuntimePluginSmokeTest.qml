@@ -49,6 +49,10 @@ ShellRoot {
     sharedService.capturePreviewSessions = [{kind:"camera",application:"Capture",startedAt:1}]
     sharedService.capturePreviewActive = true
     if (widget.showIdle || sharedService.displayHistory.length !== 1 || sharedService.sessionsFor("camera").length !== 1) throw new Error("capture preview did not override presentation in memory")
+    sharedService.requestedView = "history-disabled"
+    if (widget.setting("historyEnabled", true) !== false || widget.showIdle || sharedService.sessionsFor("camera").length !== 1)
+      throw new Error("disabled-history view changed the immutable bar preview")
+    sharedService.requestedView = "activity"
     sharedService.capturePreviewActive = false
     sharedService.configure({enabledKinds:[],historyEnabled:true,directDeviceMonitoring:false})
     if (sharedService.historyLoaded) throw new Error("re-enabled history did not start a fresh load")

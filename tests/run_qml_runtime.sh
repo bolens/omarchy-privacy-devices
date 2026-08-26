@@ -16,7 +16,14 @@ fi
 runtime_parent="$(mktemp -d)"
 runtime_dir="$runtime_parent/runtime tree"
 mkdir "$runtime_dir"
-trap 'rm -rf -- "$runtime_parent"' EXIT
+active_harness=""
+cleanup_runtime() {
+  if [[ -n $active_harness ]]; then
+    "$quickshell_bin" kill --path "$active_harness" --any-display >/dev/null 2>&1 || true
+  fi
+  rm -rf -- "$runtime_parent"
+}
+trap cleanup_runtime EXIT INT TERM
 
 [[ -d "$shell_root/Commons" && -d "$shell_root/Ui" ]] || {
   printf 'Omarchy Shell modules not found under %s\n' "$shell_root" >&2
@@ -29,10 +36,13 @@ ln -s -- "$shell_root/Ui" "$runtime_dir/Ui"
 
 run_harness() {
   local file=$1 marker=$2 output status
+  active_harness="$runtime_dir/$file"
   set +e
-  output="$(timeout 4 "$quickshell_bin" --no-color --path "$runtime_dir/$file" 2>&1)"
+  output="$(timeout 4 "$quickshell_bin" --no-color --path "$active_harness" 2>&1)"
   status=$?
   set -e
+  "$quickshell_bin" kill --path "$active_harness" --any-display >/dev/null 2>&1 || true
+  active_harness=""
   if [[ $status -ne 0 && $status -ne 124 ]]; then
     printf '%s\n' "$output" >&2
     exit "$status"

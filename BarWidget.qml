@@ -112,6 +112,7 @@ Panel {
   readonly property real openPanelIndicatorWidth: button.labelWidth
 
   function setting(key, fallback) {
+    if (key === "historyEnabled" && privacyService && privacyService.requestedView === "history-disabled") return false
     return effectiveSettings && effectiveSettings[key] !== undefined ? effectiveSettings[key] : fallback
   }
 
@@ -177,7 +178,7 @@ Panel {
   function handleSettingsRequest() {
     if (!opened || !privacyService || privacyService.settingsRequestSerial <= handledSettingsRequestSerial) return
     handledSettingsRequestSerial = privacyService.settingsRequestSerial
-    if (privacyService.requestedView === "history") {
+    if (privacyService.requestedView === "history" || privacyService.requestedView === "history-disabled") {
       historyQuery = privacyService.requestedViewArgument ? Model.label(privacyService.requestedViewArgument) : ""
       showHistory()
     } else if (privacyService.requestedView === "activity") {

@@ -9,6 +9,7 @@ const capturePostconditions = fs.readFileSync(path.join(__dirname, "..", "script
 const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
 const ci = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "ci.yml"), "utf8")
 const qmlRuntime = fs.readFileSync(path.join(__dirname, "run_qml_runtime.sh"), "utf8")
+const runtimeSmoke = fs.readFileSync(path.join(__dirname, "..", "RuntimePluginSmokeTest.qml"), "utf8")
 const serviceEntryPoint = service.trimStart()
 const barEntryPoint = bar.trimStart()
 
@@ -24,6 +25,8 @@ assert.doesNotMatch(qmlRuntime, /\/home\/[^/]+\//,
   "the QML runtime test must not contain a developer-specific executable path")
 assert.match(qmlRuntime, /QUICKSHELL_BIN:-quickshell/,
   "the QML runtime test should use PATH discovery while retaining an explicit override")
+assert.match(qmlRuntime, /active_harness=.*[\s\S]*?cleanup_runtime\(\)[\s\S]*?kill --path "\$active_harness" --any-display[\s\S]*?trap cleanup_runtime EXIT INT TERM/,
+  "QML runtime harnesses must terminate their exact Quickshell instance on exit or interruption")
 assert.match(qmlRuntime, /runtime_dir="\$runtime_parent\/runtime tree"/,
   "the QML runtime suite must exercise relocatable plugin paths containing spaces")
 
@@ -131,8 +134,18 @@ assert.match(screenshotWorkflow, /privacy-devices-settings openHistory[\s\S]*cap
   "screenshot workflow must open and capture the dedicated history view through focused-monitor IPC")
 assert.match(screenshotWorkflow, /expect_ipc_reply\(\)[\s\S]*?\[\[ \$reply == "\$expected" \]\][\s\S]*?history\) expect_ipc_reply history[\s\S]*?device\)[\s\S]*?expect_ipc_reply activity/,
   "capture must verify that IPC opened the intended view before taking a screenshot")
-assert.match(screenshotWorkflow, /capture_panel history history[\s\S]*set_capture_preview false[\s\S]*capture_panel history-disabled history[\s\S]*set_capture_preview true/,
-  "screenshot workflow must switch history presentation entirely in memory")
+assert.equal((screenshotWorkflow.match(/^set_capture_preview$/gm) || []).length, 1,
+  "capture must install one immutable presentation preview for the full workflow")
+assert.match(screenshotWorkflow, /capture_panel history history[\s\S]*capture_panel history-disabled history-disabled/,
+  "history-disabled evidence must use a view override without reconfiguring the bar preview")
+assert.match(service, /function openHistoryDisabled\(owner: string\)[\s\S]*?capturePreviewOwner !== owner[\s\S]*?requestPopupView\("history-disabled"/,
+  "history-disabled capture routing must be owner-scoped")
+assert.match(service, /function state\(owner: string\)[\s\S]*?capturePreviewOwner !== owner[\s\S]*?capturePreviewSettings[\s\S]*?capturePreviewSessions/,
+  "capture IPC must expose an owner-scoped immutable presentation snapshot")
+assert.match(runtimeSmoke, /requestedView = "history-disabled"[\s\S]*?setting\("historyEnabled", true\) !== false[\s\S]*?sessionsFor\("camera"\)\.length !== 1/,
+  "runtime smoke coverage must prove disabled-history rendering preserves bar preview sessions")
+assert.match(screenshotWorkflow, /capture_preview_state=.*[\s\S]*?current_preview_state=.*privacy-devices-capture-v2 state[\s\S]*?current_preview_state == "\$capture_preview_state"/,
+  "every capture checkpoint must reject bar preview state drift")
 assert.match(screenshotWorkflow, /set_capture_preview\(\)[\s\S]*showBarActiveMarker:true[\s\S]*showBarDisabledMarker:true[\s\S]*statusMarkerMode:"symbols"/,
   "published captures should consistently showcase the default bar status markers")
 assert.match(screenshotWorkflow, /set_capture_preview\(\)[\s\S]*showIdle:false/,
@@ -143,7 +156,7 @@ assert.match(screenshotWorkflow, /--argjson sessions "\$activity_samples"[\s\S]*
   "capture preview payload must carry the deterministic sessions")
 assert.match(service, /readonly property var displaySessions: capturePreviewActive \? capturePreviewSessions : activeSessions[\s\S]*?function sessionsFor\(kind\)[\s\S]*?displaySessions\.filter/,
   "capture sessions must override only presentation consumers")
-assert.match(screenshotWorkflow, /capture_panel history-disabled history "" 240/,
+assert.match(screenshotWorkflow, /capture_panel history-disabled history-disabled "" 240/,
   "the compact disabled-history view should not publish a mostly empty tall crop")
 assert.match(screenshotWorkflow, /capture_panel monitoring-private settings-section monitoring 395 private-data 70/,
   "capture must showcase private history and settings transfer at its deep link")

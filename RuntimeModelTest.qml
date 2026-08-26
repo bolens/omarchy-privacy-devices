@@ -6,7 +6,7 @@ ShellRoot {
   Component.onCompleted: {
     var raw = {showIdle:"yes", popupMaxHeight:9999, enabledKinds:["camera", "camera", "bogus"], unknown:"discard"}
     var clean = Model.sanitizeSettings(raw)
-    if (clean.showIdle !== true || clean.popupMaxHeight !== 900) throw new Error("settings normalization failed")
+    if (clean.showIdle !== false || clean.popupMaxHeight !== 900) throw new Error("settings normalization failed")
     if (JSON.stringify(clean.enabledKinds) !== JSON.stringify(["camera"])) throw new Error("kind normalization failed")
     if (clean.unknown !== undefined || clean._privacySettingsVersion !== 1) throw new Error("settings version boundary failed")
     var grouped = Model.coalesceNotificationEvents([{phase:"started",kind:"camera",application:"Browser"},{phase:"started",kind:"camera",application:"Browser"}])

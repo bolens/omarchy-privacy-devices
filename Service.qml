@@ -1375,6 +1375,14 @@ Item {
       root.capturePreviewExpiresAt = Date.now() + 180000
       return "ok"
     }
+    function state(owner: string): string {
+      if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
+      return JSON.stringify({settings: root.capturePreviewSettings, sessions: root.capturePreviewSessions})
+    }
+    function openHistoryDisabled(owner: string): string {
+      if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
+      return root.requestPopupView("history-disabled", "") === "history-disabled" ? "history-disabled" : "unavailable"
+    }
     function endCapture(owner: string): string {
       if (!root.capturePreviewActive) return "ok"
       if (root.capturePreviewOwner !== owner) return "denied"
