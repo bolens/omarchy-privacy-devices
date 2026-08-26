@@ -64,7 +64,9 @@ feedback lifecycle, transfer request exclusion, multi-monitor deep-link routing,
 capture-preview cleanup, reactive policy eligibility, per-device reset isolation,
 endpoint feedback transitions, lockdown result states, destructive-history
 cancellation, rollback retry, external toggle updates, cross-device metadata
-coalescing, backend reset completeness, status-presentation wiring, redacted monitoring actions, subprocess
+coalescing, backend reset completeness, external payload validation and stale-state
+cleanup, filtered status projection, diagnostics redaction, control-transaction
+lifecycle wiring, status-presentation wiring, redacted monitoring actions, subprocess
 failure/recovery, guarded activity-policy actions, private-data transfer
 controls, in-memory history search, confirmation, and private settings-transfer
 behavior in the real QML engine.
