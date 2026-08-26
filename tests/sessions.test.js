@@ -152,7 +152,9 @@ const observation = (overrides = {}) => Object.assign({
   const elapsedMs = Number(process.hrtime.bigint() - before) / 1_000_000
   assert.equal(continued.active.length, 5_000)
   assert.equal(continued.started.length, 0)
-  assert.ok(elapsedMs < 500, `5,000-session reconciliation took ${elapsedMs.toFixed(1)}ms`)
+  // Leave enough headroom for shared CI runners while still catching an
+  // accidental return to quadratic session matching.
+  assert.ok(elapsedMs < 2_000, `5,000-session reconciliation took ${elapsedMs.toFixed(1)}ms`)
 }
 
 {
