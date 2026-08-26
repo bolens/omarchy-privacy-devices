@@ -50,8 +50,9 @@ tests/run_qml_runtime.sh
 This runs shared policy, the assembled plugin, semantic appearance bindings,
 rendered bar and activity-card states, per-endpoint audio controls, validated
 device/settings deep links, two-step lockdown and undo presentation, user
-interaction, coalesced settings writes, subprocess failure/recovery,
-confirmation, and private settings-transfer behavior in the real QML engine.
+interaction, device-detail navigation, coalesced settings writes and assembled
+rollback, subprocess failure/recovery, confirmation, and private
+settings-transfer behavior in the real QML engine.
 
 ## Repository and site checks
 

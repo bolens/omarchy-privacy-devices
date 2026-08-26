@@ -16,12 +16,14 @@ ColumnLayout {
   RowLayout {
     Layout.fillWidth: true
     Button {
+      objectName: "deviceSettingsBackButton"
       iconText: "󰁍"
       tooltipText: "Back to privacy activity"
       horizontalPadding: Style.spacing.controlGap
       onClicked: editor.backRequested()
     }
     Text {
+      objectName: "deviceSettingsTitle"
       Layout.fillWidth: true
       text: Model.label(editor.controller.editingKind) + " settings"
       textFormat: Text.PlainText
@@ -31,6 +33,7 @@ ColumnLayout {
       font.weight: Font.DemiBold
     }
     Button {
+      objectName: "deviceSettingsPreviousButton"
       iconText: "󰅁"
       tooltipText: "Previous device"
       enabled: editor.controller.canMoveItem(editor.controller.editingKind, -1)
@@ -38,6 +41,7 @@ ColumnLayout {
       onClicked: editor.controller.moveDeviceEditor(-1)
     }
     Button {
+      objectName: "deviceSettingsNextButton"
       iconText: "󰅂"
       tooltipText: "Next device"
       enabled: editor.controller.canMoveItem(editor.controller.editingKind, 1)
