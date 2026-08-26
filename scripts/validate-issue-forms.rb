@@ -2,10 +2,12 @@
 
 require "yaml"
 
-forms = Dir[File.join(__dir__, "..", ".github", "ISSUE_TEMPLATE", "*.yml")]
+template_directory = ENV.fetch("ISSUE_TEMPLATE_DIR", File.join(__dir__, "..", ".github", "ISSUE_TEMPLATE"))
+forms = Dir[File.join(template_directory, "*.yml")]
 errors = []
 names = []
 allowed_types = %w[checkboxes dropdown input markdown textarea upload].freeze
+errors << "no issue forms found" if forms.empty?
 
 forms.each do |path|
   document = YAML.safe_load_file(path, permitted_classes: [], aliases: false)
@@ -55,4 +57,3 @@ errors << "issue form names must be unique" unless names.compact.uniq.length == 
 
 abort(errors.join("\n")) unless errors.empty?
 puts "issue forms valid"
-

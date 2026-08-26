@@ -9,9 +9,12 @@ npm test
 ```
 
 The suites cover model policy, runtime wiring, settings/UI contracts, helpers,
-security boundaries, release metadata, documentation, and site assets. Helper
-tests use temporary state and fake commands; they do not modify devices or
-privileged services.
+security boundaries, release metadata, documentation, issue-form validation,
+and isolated site builds. Helper tests cover every selectable capture and
+dependency backend with temporary state and fake commands; they do not modify
+devices or privileged services. Corrupt state, malformed backend metadata,
+unsafe publication paths, recovery relocation, and subprocess failure behavior
+are exercised explicitly.
 
 Runtime contract checks also keep plugin entry points embeddable, helper paths
 relocatable, and detached commands argument-safe.
