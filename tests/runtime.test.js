@@ -39,6 +39,10 @@ assert.match(qmlRuntime, /emitted runtime errors/,
   "QML runtime failures must identify log-based errors")
 assert.match(qmlRuntime, /marker_count=.*grep -Fc/,
   "QML runtime harnesses must emit their success marker exactly once")
+assert.match(qmlRuntime, /QML_RUNTIME_REPEAT/,
+  "the QML runtime suite must support bounded repeated harness runs")
+assert.match(qmlRuntime, /repeat count must be an integer from 1 to 10/,
+  "invalid QML runtime repeat counts must fail closed")
 
 assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?lastSessionRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastSessionRefreshAt, now\)[\s\S]*?lastFallbackRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastFallbackRefreshAt, now\)[\s\S]*?fallbackObserverHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(fallbackObserverLastSeen, now\)[\s\S]*?directHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(directObserverLastSeen, now\)/,
   "every exported telemetry timestamp must use the behavior-tested freshness policy")

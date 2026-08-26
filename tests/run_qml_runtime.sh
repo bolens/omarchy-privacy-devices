@@ -5,7 +5,12 @@ plugin_dir="$(cd -- "$(dirname -- "$0")/.." && pwd)"
 quickshell_bin="${QUICKSHELL_BIN:-quickshell}"
 shell_root="${OMARCHY_SHELL_ROOT:-}"
 requested_harness="${QML_RUNTIME_HARNESS:-}"
+repeat_count="${QML_RUNTIME_REPEAT:-1}"
 ran_harness=0
+if [[ ! $repeat_count =~ ^[0-9]+$ || $repeat_count -lt 1 || $repeat_count -gt 10 ]]; then
+  printf 'QML runtime repeat count must be an integer from 1 to 10: %s\n' "$repeat_count" >&2
+  exit 2
+fi
 command -v "$quickshell_bin" >/dev/null 2>&1 || {
   printf 'Quickshell executable not found: %s\n' "$quickshell_bin" >&2
   exit 127
@@ -37,29 +42,31 @@ ln -s -- "$shell_root/Commons" "$runtime_dir/Commons"
 ln -s -- "$shell_root/Ui" "$runtime_dir/Ui"
 
 run_harness() {
-  local file=$1 marker=$2 output status marker_count
+  local file=$1 marker=$2 output status marker_count iteration
   if [[ -n $requested_harness && $file != "$requested_harness" ]]; then return 0; fi
   ran_harness=1
-  active_harness="$runtime_dir/$file"
-  set +e
-  output="$(timeout 4 "$quickshell_bin" --no-color --path "$active_harness" 2>&1)"
-  status=$?
-  set -e
-  "$quickshell_bin" kill --path "$active_harness" --any-display >/dev/null 2>&1 || true
-  active_harness=""
-  if [[ $status -ne 0 && $status -ne 124 ]]; then
-    printf '%s\n' "$output" >&2
-    exit "$status"
-  fi
-  if grep -Eq 'WARN scene:|CRITICAL:|FATAL:' <<<"$output"; then
-    printf 'QML runtime harness %s emitted runtime errors\n%s\n' "$file" "$output" >&2
-    return 1
-  fi
-  marker_count=$(grep -Fc "$marker" <<<"$output" || true)
-  [[ $marker_count -eq 1 ]] || {
-    printf 'QML runtime harness %s emitted %s %s times; expected exactly once\n%s\n' "$file" "$marker" "$marker_count" "$output" >&2
-    return 1
-  }
+  for ((iteration=1; iteration<=repeat_count; iteration++)); do
+    active_harness="$runtime_dir/$file"
+    set +e
+    output="$(timeout 4 "$quickshell_bin" --no-color --path "$active_harness" 2>&1)"
+    status=$?
+    set -e
+    "$quickshell_bin" kill --path "$active_harness" --any-display >/dev/null 2>&1 || true
+    active_harness=""
+    if [[ $status -ne 0 && $status -ne 124 ]]; then
+      printf 'QML runtime harness %s failed on iteration %s\n%s\n' "$file" "$iteration" "$output" >&2
+      return "$status"
+    fi
+    if grep -Eq 'WARN scene:|CRITICAL:|FATAL:' <<<"$output"; then
+      printf 'QML runtime harness %s emitted runtime errors on iteration %s\n%s\n' "$file" "$iteration" "$output" >&2
+      return 1
+    fi
+    marker_count=$(grep -Fc "$marker" <<<"$output" || true)
+    [[ $marker_count -eq 1 ]] || {
+      printf 'QML runtime harness %s emitted %s %s times on iteration %s; expected exactly once\n%s\n' "$file" "$marker" "$marker_count" "$iteration" "$output" >&2
+      return 1
+    }
+  done
 }
 
 run_harness RuntimeModelTest.qml PRIVACY_QML_RUNTIME_OK
@@ -118,6 +125,10 @@ run_harness RuntimeFallbackObservationCompositionTest.qml PRIVACY_QML_FALLBACK_O
 run_harness RuntimeBackendCommandSelectionTest.qml PRIVACY_QML_BACKEND_COMMAND_SELECTION_OK
 run_harness RuntimeDiagnosticProjectionTest.qml PRIVACY_QML_DIAGNOSTIC_PROJECTION_OK
 run_harness RuntimeHelperCommandBoundaryTest.qml PRIVACY_QML_HELPER_COMMAND_BOUNDARY_OK
+run_harness RuntimeServiceStateMutationTest.qml PRIVACY_QML_SERVICE_STATE_MUTATION_OK
+run_harness RuntimeBarSessionPolicyTest.qml PRIVACY_QML_BAR_SESSION_POLICY_OK
+run_harness RuntimeObserverSessionTeardownTest.qml PRIVACY_QML_OBSERVER_SESSION_TEARDOWN_OK
+run_harness RuntimeIpcDispatchTest.qml PRIVACY_QML_IPC_DISPATCH_OK
 
 if [[ -n $requested_harness && $ran_harness -eq 0 ]]; then
   printf 'Requested QML runtime harness not found: %s\n' "$requested_harness" >&2

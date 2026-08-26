@@ -53,8 +53,15 @@ During iteration, run one registered harness by exact filename:
 QML_RUNTIME_HARNESS=RuntimeKeyboardNavigationTest.qml tests/run_qml_runtime.sh
 ```
 
+Stress a timing-sensitive focused harness with up to ten clean instances:
+
+```sh
+QML_RUNTIME_HARNESS=RuntimePluginSmokeTest.qml QML_RUNTIME_REPEAT=5 tests/run_qml_runtime.sh
+```
+
 An unknown filename fails instead of silently running zero tests. Leave the
-variable unset for the exhaustive suite used before commits and releases.
+variables unset for the exhaustive single-pass suite used before commits and
+releases. Invalid repeat counts fail instead of weakening the run.
 
 The fast suite verifies that every `Runtime*Test.qml` harness is registered
 exactly once and owns one unique success marker, so adding a harness cannot
@@ -78,18 +85,23 @@ reactive session summaries, responsive navigation and lazy loading of every
 settings page, race-free polling of asynchronous settings writes and session
 reconciliation, mutation feedback lifecycle, transfer request exclusion,
 multi-monitor deep-link routing,
+current and compatibility IPC dispatch through the live Quickshell transport,
+owner-isolated capture lease/state/cleanup behavior,
 capture-preview cleanup and automatic expiry, debounced observer-session
 reconciliation, validated notification callback routing, reactive policy
 eligibility, keyboard selection and device navigation, control-request gating,
 layered popup dismissal, observer-health state isolation and per-device health
-aggregation, per-device reset isolation, endpoint feedback transitions,
+aggregation, observer-session teardown and recovery suppression, per-device
+reset isolation, endpoint feedback transitions,
 verification timeouts, privacy-preset orchestration, self-test health aggregation,
 lockdown result states, destructive-history
 cancellation, rollback retry, external toggle updates, cross-device metadata
 coalescing, backend reset completeness, external payload validation and
 stale-state cleanup, filtered status projection, diagnostics redaction,
 diagnostic backend/state/exit-code projection, backend command selection,
-relocatable helper paths and escaped observer arguments, control-transaction
+relocatable helper paths and escaped observer arguments, immutable service
+state/result mutations, capture-safe bar-session policies, active-count and
+attribution tooltip presentation, control-transaction
 lifecycle wiring, status-presentation wiring, redacted monitoring actions,
 subprocess failure/recovery, guarded activity-policy actions, private-data transfer
 controls, in-memory history search, confirmation, and private settings-transfer

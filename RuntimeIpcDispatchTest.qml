@@ -1,0 +1,91 @@
+import Quickshell
+import Quickshell.Io
+import QtQuick
+
+ShellRoot {
+  id: root
+  readonly property string configPath: Quickshell.shellPath("RuntimeIpcDispatchTest.qml")
+  readonly property string ipcExecutable: String(Quickshell.env("QUICKSHELL_BIN") || "quickshell")
+  readonly property string owner: "runtime_ipc_owner_1234567890"
+  readonly property string otherOwner: "runtime_ipc_other_1234567890"
+  readonly property string capturePayload: Qt.btoa(JSON.stringify({
+    owner: owner,
+    settings: {showActivityIndicators:false},
+    history: [{kind:"camera", application:"Runtime Camera"}],
+    sessions: [{kind:"microphone", application:"Runtime Voice", source:"pipewire", confidence:"confirmed", startedAt:1}]
+  }))
+  property int summons: 0
+  property int step: 0
+  property var steps: [
+    {target:"privacy-devices-capture-v2", method:"protocol", args:[], expected:"2"},
+    {target:"privacy-devices", method:"openDetails", args:["microphone"], expected:"activity"},
+    {target:"privacy-devices", method:"openSettingsSection", args:["monitoring", "observer-health"], expected:"monitoring#observer-health"},
+    {target:"privacy-devices", method:"status", args:[], expected:"[]"},
+    {target:"privacy-devices", method:"health", args:[], expected:"{}"},
+    {target:"privacy-devices", method:"action", args:["shell-command", "camera"], expected:"invalid"},
+    {target:"privacy-devices-settings", method:"open", args:["appearance"], expected:"appearance"},
+    {target:"privacy-devices-settings", method:"openSection", args:["monitoring", "private-data"], expected:"monitoring#private-data"},
+    {target:"privacy-devices-capture-v2", method:"beginCapture", args:["not-base64"], expected:"invalid"},
+    {target:"privacy-devices-capture-v2", method:"beginCapture", args:[capturePayload], expected:"ok"},
+    {target:"privacy-devices-capture-v2", method:"beginCapture", args:[Qt.btoa(JSON.stringify({owner:otherOwner, settings:{}, history:[], sessions:[]}))], expected:"busy"},
+    {target:"privacy-devices-capture-v2", method:"renew", args:[otherOwner], expected:"denied"},
+    {target:"privacy-devices-capture-v2", method:"state", args:[owner], validator:"capture-state"},
+    {target:"privacy-devices-capture-v2", method:"renew", args:[owner], expected:"ok"},
+    {target:"privacy-devices-capture-v2", method:"endCapture", args:[otherOwner], expected:"denied"},
+    {target:"privacy-devices-capture-v2", method:"endCapture", args:[owner], expected:"ok"},
+    {target:"privacy-devices-capture-v2", method:"state", args:[owner], expected:"denied"},
+    {target:"privacy-devices-capture-v2", method:"endCapture", args:[owner], expected:"ok"}
+  ]
+
+  QtObject {
+    id: shellMock
+    function summon(pluginId, argument) {
+      if (pluginId !== "io.github.bolens.privacy-devices" || argument !== "")
+        throw new Error("IPC summoned the wrong plugin")
+      root.summons++
+      return true
+    }
+  }
+  Service { id: service; shell: shellMock; settings: ({enabledKinds:[]}) }
+
+  function runNext() {
+    if (step >= steps.length) {
+      if (service.requestedView !== "settings" || service.requestedSettingsPage !== "monitoring"
+          || service.requestedSettingsSection !== "private-data" || root.summons !== 4
+          || service.capturePreviewActive)
+        throw new Error("IPC calls did not preserve routed service state")
+      console.log("PRIVACY_QML_IPC_DISPATCH_OK")
+      Qt.quit()
+      return
+    }
+    var current = steps[step]
+    ipc.command = [ipcExecutable, "ipc", "--path", configPath, "call", current.target, current.method].concat(current.args)
+    ipc.running = true
+  }
+
+  function responseAccepted(current, response) {
+    if (current.validator !== "capture-state") return response === current.expected
+    try {
+      var state = JSON.parse(response)
+      return state.settings.showActivityIndicators === false
+        && state.sessions.length === 1 && state.sessions[0].application === "Runtime Voice"
+        && Array.isArray(state.barSessions)
+    } catch (error) { return false }
+  }
+
+  Process {
+    id: ipc
+    stdout: StdioCollector { id: ipcOutput; waitForEnd: true }
+    stderr: StdioCollector { id: ipcError; waitForEnd: true }
+    onExited: function(exitCode) {
+      var current = root.steps[root.step]
+      var response = String(ipcOutput.text || "").trim()
+      if (exitCode !== 0 || !root.responseAccepted(current, response))
+        throw new Error("IPC " + current.target + "." + current.method + " failed: " + response + " " + String(ipcError.text || "").trim())
+      root.step++
+      Qt.callLater(root.runNext)
+    }
+  }
+
+  Component.onCompleted: Qt.callLater(runNext)
+}
