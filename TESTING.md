@@ -80,7 +80,9 @@ only one capture at a time, discovers the shell through IPC, uses measured
 widget geometry, and swaps in bounded example history. It restores the original
 shell settings, real history, DND state, and workspace even on failure. Review
 images before committing them. Capture fails if restored settings or history do
-not exactly match their preserved snapshots.
+not exactly match their preserved snapshots. Settings swaps use the shell's
+live `reloadConfig` IPC and verify its effective configuration, so capture and
+restoration do not restart Quickshell or race a shutting-down process.
 
 ## Live verification
 

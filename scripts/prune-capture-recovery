@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+[[ $# == 1 || $# == 2 ]] || { printf 'Usage: prune-capture-recovery RECOVERY_ROOT [DAYS]\n' >&2; exit 2; }
+root=$1
+days=${2:-7}
+[[ -d $root && $days =~ ^[0-9]+$ ]] || { printf 'Invalid recovery root or retention days.\n' >&2; exit 2; }
+
+find "$root" -mindepth 1 -maxdepth 1 -type d -name 'capture.*' -mtime "+$days" -exec rm -rf -- {} +

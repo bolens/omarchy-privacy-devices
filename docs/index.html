@@ -418,19 +418,87 @@
         gap: 1rem;
       }
 
-      .settings-gallery {
+      .gallery-explorers {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 1rem;
+        gap: 2rem;
       }
 
-      .gallery-title {
+      .gallery-explorer {
+        display: grid;
+        grid-template-columns: 14rem minmax(0, 1fr);
+        gap: 1.25rem;
+        align-items: start;
+      }
+
+      .gallery-copy {
+        position: sticky;
+        top: 6rem;
+      }
+
+      .gallery-copy h3 {
+        margin: 0.35rem 0 0.65rem;
+        font-size: 1.35rem;
+      }
+
+      .gallery-copy p {
         margin: 0 0 1rem;
         color: var(--muted);
-        font: 700 0.78rem/1.2 system-ui, sans-serif;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
+        font: 0.92rem/1.55 system-ui, sans-serif;
       }
+
+      .gallery-tabs {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+      }
+
+      .gallery-tab {
+        appearance: none;
+        width: 100%;
+        padding: 0.7rem 0.8rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--muted);
+        font: 700 0.8rem/1.2 ui-monospace, monospace;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .gallery-tab[aria-selected="true"] {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: var(--background);
+      }
+
+      .gallery-stage { min-width: 0; }
+
+      .gallery-panel {
+        margin: 0;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: linear-gradient(145deg, var(--surface-light), var(--surface));
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+      }
+
+      .gallery-panel img {
+        display: block;
+        width: min(100%, 532px);
+        height: auto;
+        margin: 0 auto;
+        border-radius: 9px;
+      }
+
+      .gallery-panel figcaption {
+        max-width: 532px;
+        margin: 0.85rem auto 0;
+        color: var(--muted);
+        font: 0.9rem/1.5 system-ui, sans-serif;
+      }
+
+      .gallery-panel figcaption strong { color: var(--text); }
+      .js .gallery-stage .gallery-panel[hidden] { display: none; }
 
       .screenshot-card {
         margin: 0;
@@ -763,7 +831,10 @@
         .hero { grid-template-columns: 1fr; padding-top: 3.5rem; }
         .preview { max-width: 500px; }
         .features { grid-template-columns: 1fr; }
-        .guide-grid, .steps, .interface-showcase, .settings-gallery { grid-template-columns: 1fr; }
+        .guide-grid, .steps, .interface-showcase, .gallery-explorer { grid-template-columns: 1fr; }
+        .gallery-copy { position: static; }
+        .gallery-tabs { flex-direction: row; overflow-x: auto; padding-bottom: 0.25rem; }
+        .gallery-tab { width: auto; flex: 0 0 auto; white-space: nowrap; }
         .requirements { grid-template-columns: 1fr; }
         .requirement-list li { display: grid; }
         .requirement-list span { text-align: left; }
@@ -871,44 +942,47 @@
               </figure>
             </div>
           </div>
-          <h3 class="gallery-title">Settings and details</h3>
-          <div class="settings-gallery">
-            <figure class="screenshot-card">
-              <img src="general.png" alt="General settings page" width="532" height="660" loading="lazy" decoding="async">
-              <figcaption>Monitoring scope and general behavior.</figcaption>
-            </figure>
-            <figure class="screenshot-card">
-              <img src="appearance.png" alt="Appearance settings page with bar layout and theme controls" width="532" height="660" loading="lazy" decoding="async">
-              <figcaption>Bar layout, colors, and status presentation.</figcaption>
-            </figure>
-            <figure class="screenshot-card">
-              <img src="alerts.png" alt="Alerts settings page" width="532" height="660" loading="lazy" decoding="async">
-              <figcaption>Activity, control, and application alert policy.</figcaption>
-            </figure>
-            <figure class="screenshot-card">
-              <img src="monitoring.png" alt="Monitoring settings page" width="532" height="660" loading="lazy" decoding="async">
-              <figcaption>Enhanced coverage and fallback polling.</figcaption>
-            </figure>
-            <figure class="screenshot-card">
-              <img src="monitoring-private.png" alt="Monitoring settings focused on private history and settings transfer" width="532" height="330" loading="lazy" decoding="async">
-              <figcaption>Optional local history plus private export, import, reset, and one-step undo.</figcaption>
-            </figure>
-            <figure class="screenshot-card">
-              <img src="monitoring-health.png" alt="Monitoring settings focused on status guidance and observer health" width="532" height="290" loading="lazy" decoding="async">
-              <figcaption>Status semantics, live observer health, and redacted diagnostics.</figcaption>
-            </figure>
-            <figure class="screenshot-card">
-              <img src="device.png" alt="Individual privacy-device settings page" width="532" height="660" loading="lazy" decoding="async">
-              <figcaption>Per-device appearance, backend, diagnostics, and resets.</figcaption>
-            </figure>
-            <figure class="screenshot-card">
-              <img src="history.png" alt="Completed privacy activity history view" width="532" height="660" loading="lazy" decoding="async">
-              <figcaption>Searchable completed activity with duration, source, confidence, and application context.</figcaption>
-            </figure>
-            <figure class="screenshot-card">
-              <img src="history-disabled.png" alt="Activity history disabled state with link to monitoring settings" width="532" height="240" loading="lazy" decoding="async">
-              <figcaption>A direct opt-in path when private local history is disabled.</figcaption>
-            </figure>
+          <div class="gallery-explorers">
+            <div class="gallery-explorer" data-gallery>
+              <div class="gallery-copy">
+                <div class="eyebrow">Settings explorer</div>
+                <h3>Configure by intent.</h3>
+                <p>Move between focused settings pages without scrolling through every capture at once.</p>
+                <div class="gallery-tabs" role="tablist" aria-label="Settings screenshots">
+                  <button class="gallery-tab" id="tab-settings-general" type="button" role="tab" aria-selected="true" aria-controls="settings-general" data-target="settings-general">General</button>
+                  <button class="gallery-tab" id="tab-settings-appearance" type="button" role="tab" aria-selected="false" aria-controls="settings-appearance" data-target="settings-appearance">Appearance</button>
+                  <button class="gallery-tab" id="tab-settings-alerts" type="button" role="tab" aria-selected="false" aria-controls="settings-alerts" data-target="settings-alerts">Alerts</button>
+                  <button class="gallery-tab" id="tab-settings-monitoring" type="button" role="tab" aria-selected="false" aria-controls="settings-monitoring" data-target="settings-monitoring">Monitoring</button>
+                </div>
+              </div>
+              <div class="gallery-stage">
+                <figure class="gallery-panel" id="settings-general" role="tabpanel" aria-labelledby="tab-settings-general"><img src="general.png" alt="General settings page" width="532" height="660" loading="lazy" decoding="async"><figcaption><strong>General</strong> · Monitoring scope and everyday behavior.</figcaption></figure>
+                <figure class="gallery-panel" id="settings-appearance" role="tabpanel" aria-labelledby="tab-settings-appearance"><img src="appearance.png" alt="Appearance settings page with bar layout and theme controls" width="532" height="660" loading="lazy" decoding="async"><figcaption><strong>Appearance</strong> · Responsive layouts, sizing, colors, and status presentation.</figcaption></figure>
+                <figure class="gallery-panel" id="settings-alerts" role="tabpanel" aria-labelledby="tab-settings-alerts"><img src="alerts.png" alt="Alerts settings page" width="532" height="660" loading="lazy" decoding="async"><figcaption><strong>Alerts</strong> · Activity, control, and per-application notification policy.</figcaption></figure>
+                <figure class="gallery-panel" id="settings-monitoring" role="tabpanel" aria-labelledby="tab-settings-monitoring"><img src="monitoring.png" alt="Monitoring settings page" width="532" height="660" loading="lazy" decoding="async"><figcaption><strong>Monitoring</strong> · Enhanced coverage, fallback polling, privacy, and observer health.</figcaption></figure>
+              </div>
+            </div>
+            <div class="gallery-explorer" data-gallery>
+              <div class="gallery-copy">
+                <div class="eyebrow">Workflow details</div>
+                <h3>Inspect the deeper states.</h3>
+                <p>Review device customization, local history, private data, and monitoring health on demand.</p>
+                <div class="gallery-tabs" role="tablist" aria-label="Detail screenshots">
+                  <button class="gallery-tab" id="tab-detail-device" type="button" role="tab" aria-selected="true" aria-controls="detail-device" data-target="detail-device">Device</button>
+                  <button class="gallery-tab" id="tab-detail-history" type="button" role="tab" aria-selected="false" aria-controls="detail-history" data-target="detail-history">History</button>
+                  <button class="gallery-tab" id="tab-detail-history-off" type="button" role="tab" aria-selected="false" aria-controls="detail-history-off" data-target="detail-history-off">History off</button>
+                  <button class="gallery-tab" id="tab-detail-private" type="button" role="tab" aria-selected="false" aria-controls="detail-private" data-target="detail-private">Private data</button>
+                  <button class="gallery-tab" id="tab-detail-health" type="button" role="tab" aria-selected="false" aria-controls="detail-health" data-target="detail-health">Health</button>
+                </div>
+              </div>
+              <div class="gallery-stage">
+                <figure class="gallery-panel" id="detail-device" role="tabpanel" aria-labelledby="tab-detail-device"><img src="device.png" alt="Individual privacy-device settings page" width="532" height="660" loading="lazy" decoding="async"><figcaption><strong>Device</strong> · Per-device appearance, placement, backend, diagnostics, and resets.</figcaption></figure>
+                <figure class="gallery-panel" id="detail-history" role="tabpanel" aria-labelledby="tab-detail-history"><img src="history.png" alt="Completed privacy activity history view" width="532" height="660" loading="lazy" decoding="async"><figcaption><strong>History</strong> · Search completed activity by device, application, and time.</figcaption></figure>
+                <figure class="gallery-panel" id="detail-history-off" role="tabpanel" aria-labelledby="tab-detail-history-off"><img src="history-disabled.png" alt="Activity history disabled state with link to monitoring settings" width="532" height="240" loading="lazy" decoding="async"><figcaption><strong>History off</strong> · A direct opt-in path keeps private retention explicit.</figcaption></figure>
+                <figure class="gallery-panel" id="detail-private" role="tabpanel" aria-labelledby="tab-detail-private"><img src="monitoring-private.png" alt="Monitoring settings focused on private history and settings transfer" width="532" height="330" loading="lazy" decoding="async"><figcaption><strong>Private data</strong> · Local history plus export, import, and one-step undo.</figcaption></figure>
+                <figure class="gallery-panel" id="detail-health" role="tabpanel" aria-labelledby="tab-detail-health"><img src="monitoring-health.png" alt="Monitoring settings focused on status guidance and observer health" width="532" height="290" loading="lazy" decoding="async"><figcaption><strong>Health</strong> · Live observer status and redacted diagnostics.</figcaption></figure>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1139,6 +1213,34 @@
       } else {
         revealElements.forEach((element) => element.classList.add("is-visible"));
       }
+
+      document.querySelectorAll("[data-gallery]").forEach((gallery) => {
+        const tabs = Array.from(gallery.querySelectorAll('[role="tab"]'));
+        const panels = Array.from(gallery.querySelectorAll('[role="tabpanel"]'));
+        const activate = (tab) => {
+          tabs.forEach((item) => {
+            const selected = item === tab;
+            item.setAttribute("aria-selected", String(selected));
+            item.tabIndex = selected ? 0 : -1;
+          });
+          panels.forEach((panel) => { panel.hidden = panel.id !== tab.dataset.target; });
+        };
+
+        tabs.forEach((tab, index) => {
+          tab.addEventListener("click", () => activate(tab));
+          tab.addEventListener("keydown", (event) => {
+            if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const nextIndex = event.key === "Home" ? 0
+              : (event.key === "End" ? tabs.length - 1
+              : (index + (["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : -1) + tabs.length) % tabs.length);
+            tabs[nextIndex].focus();
+            activate(tabs[nextIndex]);
+          });
+        });
+
+        activate(tabs[0]);
+      });
 
       document.querySelectorAll("[data-copy]").forEach((button) => {
         button.addEventListener("click", async () => {

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+[[ $# == 1 && -d $1 ]] || { printf 'Usage: capture-plugin-fingerprint PLUGIN_ROOT\n' >&2; exit 2; }
+root=$1
+
+find "$root" -type f \
+  \( -name '*.qml' -o -name '*.js' -o -name 'plugin.json' \) \
+  ! -path '*/tests/*' ! -name 'Runtime*Test.qml' ! -name '*Test.qml' \
+  -printf '%P\0' \
+  | sort -z \
+  | while IFS= read -r -d '' relative; do
+      printf '%s\0' "$relative"
+      sha256sum "$root/$relative"
+    done \
+  | sha256sum \
+  | awk '{print $1}'

@@ -15,9 +15,11 @@ ColumnLayout {
     Text { Layout.fillWidth: true; text: "Global settings"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
   }
 
-  RowLayout {
+  GridLayout {
     Layout.fillWidth: true
-    spacing: Style.spacing.sm
+    columns: navigation.controller.popupWidth === "narrow" ? 2 : 4
+    columnSpacing: Style.spacing.sm
+    rowSpacing: Style.spacing.sm
     Repeater {
       model: [
         {label:"General",value:"general"},

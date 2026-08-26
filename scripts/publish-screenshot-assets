@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+[[ $# -ge 2 ]] || { printf 'Usage: publish-screenshot-assets STAGE FILE...\n' >&2; exit 2; }
+
+stage=$1
+shift
+[[ -d $stage ]] || { printf 'Screenshot stage does not exist: %s\n' "$stage" >&2; exit 2; }
+
+backup=$(mktemp -d "${TMPDIR:-/tmp}/privacy-screenshot-publish.XXXXXX")
+complete=false
+
+rollback() {
+  local status=$? relative
+  if [[ $complete == false ]]; then
+    for relative in "$@"; do
+      [[ -f $backup/$relative ]] || continue
+      install -m "$(stat -c '%a' "$backup/$relative")" "$backup/$relative" "$relative"
+    done
+    ((status == 0)) || printf 'Rolled back incomplete screenshot publication.\n' >&2
+  fi
+  rm -rf -- "$backup"
+  return "$status"
+}
+trap 'rollback "$@"' EXIT INT TERM
+
+for relative in "$@"; do
+  [[ -f $relative && -f $stage/$relative ]] || {
+    printf 'Missing screenshot publication file: %s\n' "$relative" >&2
+    exit 1
+  }
+  mkdir -p "$backup/$(dirname "$relative")"
+  cp -- "$relative" "$backup/$relative"
+done
+
+for relative in "$@"; do
+  install -m "$(stat -c '%a' "$relative")" "$stage/$relative" "$relative"
+  if [[ ${PRIVACY_CAPTURE_TESTING:-0} == 1 && ${PRIVACY_CAPTURE_FAIL_AT:-} == "published:$relative" ]]; then
+    printf 'Injected capture failure at published:%s.\n' "$relative" >&2
+    exit 1
+  fi
+done
+
+complete=true

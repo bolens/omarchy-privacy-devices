@@ -10,6 +10,27 @@ Item {
   property var shell: null
   property var manifest: null
   property var settings: ({})
+  property bool capturePreviewActive: false
+  property var capturePreviewHistory: []
+  property var capturePreviewSettings: ({})
+  property string capturePreviewOwner: ""
+  property double capturePreviewExpiresAt: 0
+  readonly property var displayHistory: capturePreviewActive ? capturePreviewHistory : recentHistory
+
+  function clearCapturePreview() {
+    capturePreviewActive = false
+    capturePreviewHistory = []
+    capturePreviewSettings = ({})
+    capturePreviewOwner = ""
+    capturePreviewExpiresAt = 0
+  }
+
+  Timer {
+    interval: 1000
+    repeat: true
+    running: root.capturePreviewActive
+    onTriggered: if (Date.now() >= root.capturePreviewExpiresAt) root.clearCapturePreview()
+  }
   property string observerHelperOverride: ""
   property var locationApps: []
   property bool locationActive: false
@@ -87,6 +108,7 @@ Item {
     .filter(function(kind) { return enabledKindList.indexOf(kind) !== -1 })
   readonly property var notificationKindList: Model.arraySetting(settings.notificationKinds,
     ["microphone", "camera", "screen-share", "screen-recording", "location"])
+  readonly property var pipewireClassificationPolicy: Model.classificationPolicy(settings)
   readonly property var sessionPolicies: ({
     hiddenApps: Model.arraySetting(settings.hiddenApps, []),
     notificationSuppressedApps: Model.arraySetting(settings.notificationSuppressedApps, [])
@@ -120,7 +142,10 @@ Item {
     settings = nextSettings
     locationTimer.interval = boundedSeconds(settings.locationPollSeconds, 15, 5, 300) * 1000
     if (settings.historyEnabled !== true && (!historyConfigurationInitialized || historyWasEnabled)) clearHistory()
-    else loadHistory()
+    else {
+      if (!historyWasEnabled && settings.historyEnabled === true) historyLoaded = false
+      loadHistory()
+    }
     historyConfigurationInitialized = true
     if (monitoringChanged) {
       operationalConfiguration = nextOperationalConfiguration
@@ -267,7 +292,7 @@ Item {
     var result = []
     for (var index = 0; index < streamNodes.length; index++) {
       var node = streamNodes[index]
-      var kind = Model.classifyNode(node, settings)
+      var kind = Model.classifyNode(node, settings, pipewireClassificationPolicy)
       if (!kind) continue
       var props = Model.properties(node)
       var application = Model.appName(node)
@@ -329,7 +354,7 @@ Item {
     }
     for (index = 0; index < publishable.stopped.length; index++) {
       var stopped = publishable.stopped[index]
-      if (settings.historyEnabled === true) {
+      if (settings.historyEnabled === true && !capturePreviewActive) {
         recentHistory = Model.appendHistory(recentHistory, stopped, Date.now(), {maxEntries: 100, maxAgeMs: 7 * 24 * 60 * 60 * 1000})
         stoppedForHistory.push(stopped)
       }
@@ -1057,6 +1082,38 @@ Item {
     function toggle(kind: string): string {
       var status = root.controlRequestStatus(kind)
       return status === "ok" ? (root.toggleControl(kind) ? "ok" : "busy") : status
+    }
+  }
+
+  IpcHandler {
+    target: "privacy-devices-capture-v2"
+    function protocol(): string { return "2" }
+    function beginCapture(payloadB64: string): string {
+      try {
+        var payload = JSON.parse(Qt.atob(payloadB64 || ""))
+        var owner = String(payload.owner || "")
+        var previewSettings = payload.settings
+        var previewHistory = payload.history
+        if (!/^[A-Za-z0-9_-]{24,128}$/.test(owner) || !previewSettings || typeof previewSettings !== "object" || Array.isArray(previewSettings) || !Array.isArray(previewHistory)) return "invalid"
+        if (root.capturePreviewActive && root.capturePreviewOwner !== owner) return "busy"
+        root.capturePreviewHistory = previewHistory
+        root.capturePreviewSettings = previewSettings
+        root.capturePreviewOwner = owner
+        root.capturePreviewExpiresAt = Date.now() + 180000
+        root.capturePreviewActive = true
+        return "ok"
+      } catch (error) { return "invalid" }
+    }
+    function renew(owner: string): string {
+      if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
+      root.capturePreviewExpiresAt = Date.now() + 180000
+      return "ok"
+    }
+    function endCapture(owner: string): string {
+      if (!root.capturePreviewActive) return "ok"
+      if (root.capturePreviewOwner !== owner) return "denied"
+      root.clearCapturePreview()
+      return "ok"
     }
   }
 

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+[[ $# == 5 ]] || { printf 'Usage: capture-environment-guard PID OWNER PLUGIN_ROOT FINGERPRINT PREVIEW_ACTIVE\n' >&2; exit 2; }
+pid=$1 owner=$2 plugin_root=$3 expected_fingerprint=$4 preview_active=$5
+qs_command=${PRIVACY_QS_COMMAND:-qs}
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+fingerprint_command=${PRIVACY_FINGERPRINT_COMMAND:-$root/scripts/capture-plugin-fingerprint}
+
+[[ $("$qs_command" ipc --pid "$pid" call shell ping 2>/dev/null || true) == ok ]] || {
+  printf 'Omarchy Shell changed during capture.\n' >&2; exit 1;
+}
+if [[ $preview_active == true ]]; then
+  [[ $("$qs_command" ipc --pid "$pid" call privacy-devices-capture-v2 renew "$owner" 2>/dev/null || true) == ok ]] || {
+    printf 'Capture preview lease was lost.\n' >&2; exit 1;
+  }
+fi
+[[ $("$fingerprint_command" "$plugin_root") == "$expected_fingerprint" ]] || {
+  printf 'Plugin runtime files changed during capture; aborting before publication.\n' >&2; exit 1;
+}

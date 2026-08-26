@@ -18,13 +18,13 @@ ColumnLayout {
   Layout.fillWidth: true
   spacing: Style.spacing.xs
 
-  Text { Layout.fillWidth: true; text: field.label + " (" + field.minimum + "–" + field.maximum + ")"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
-  Text { visible: field.description !== ""; Layout.fillWidth: true; text: field.description; textFormat: Text.PlainText; color: Color.muted; wrapMode: Text.WordWrap; font.family: Style.font.family; font.pixelSize: Style.font.caption }
   RowLayout {
     Layout.fillWidth: true
+    spacing: Style.spacing.sm
+    Text { Layout.fillWidth: true; text: field.label + " (" + field.minimum + "–" + field.maximum + ")"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
     TextField {
       id: editor
-      Layout.fillWidth: true
+      Layout.preferredWidth: Style.space(92)
       text: String(field.controller.setting(field.settingKey, field.fallback))
       inputMethodHints: Qt.ImhDigitsOnly
       foreground: Color.popups.text
@@ -35,6 +35,7 @@ ColumnLayout {
     }
     Button { text: "Save"; enabled: editor.acceptableInput; onClicked: field.save() }
   }
+  Text { visible: field.description !== ""; Layout.fillWidth: true; text: field.description; textFormat: Text.PlainText; color: Color.muted; wrapMode: Text.WordWrap; font.family: Style.font.family; font.pixelSize: Style.font.caption }
 
   function save() {
     var value = Math.max(minimum, Math.min(maximum, Number(editor.text) || fallback))

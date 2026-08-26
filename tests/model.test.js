@@ -78,6 +78,21 @@ if (context.settingsPage("monitoring") !== "monitoring" || context.settingsPage(
 if (context.settingsPage("appearance") !== "appearance") throw new Error("appearance settings page allowlist")
 if (context.sanitizeSettings({recordingProcessName: "x".repeat(300)}).recordingProcessName.length !== 256) throw new Error("process-name bound")
 if (context.sanitizeSettings({recordingProcessName: "  recorder\nname  "}).recordingProcessName !== "recordername") throw new Error("process-name plain-text sanitation")
+
+const classificationSettings = {
+  excludedApps: ["Ignored"],
+  cameraKeywords: ["WEBCAM"],
+  screenShareKeywords: ["PORTAL"]
+}
+const classificationPolicy = context.classificationPolicy(classificationSettings)
+assert.deepEqual(JSON.parse(JSON.stringify(classificationPolicy)), {
+  exclusions: ["ignored"], cameras: ["webcam"], shares: ["portal"]
+})
+const cameraNode = {isStream: true, ready: true, properties: {
+  "application.name": "Calls", "media.class": "Video/Source", "media.name": "USB Webcam"
+}}
+assert.equal(context.classifyNode(cameraNode, classificationSettings, classificationPolicy), "camera",
+  "prepared classification policy preserves keyword matching")
 const barAppearance = context.sanitizeSettings({barIconScale: 9, barItemSpacing: -4, barItemPadding: "bad", barMarkerPosition: "sideways", showBarSessionCounts: "yes"})
 if (barAppearance.barIconScale !== 1.5 || barAppearance.barItemSpacing !== 0 || barAppearance.barItemPadding !== 5) throw new Error("bar appearance numeric bounds")
 if (barAppearance.barMarkerPosition !== "after" || barAppearance.showBarSessionCounts !== true) throw new Error("bar appearance enum and boolean normalization")
