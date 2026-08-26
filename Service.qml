@@ -13,17 +13,34 @@ Item {
   property bool capturePreviewActive: false
   property var capturePreviewHistory: []
   property var capturePreviewSessions: []
+  property var capturePreviewBarSessions: []
   property var capturePreviewSettings: ({})
+  property var barPresentations: ({})
+  property bool captureHistoryPresentationEnabled: true
   property string capturePreviewOwner: ""
   property double capturePreviewExpiresAt: 0
   readonly property var displayHistory: capturePreviewActive ? capturePreviewHistory : recentHistory
   readonly property var displaySessions: capturePreviewActive ? capturePreviewSessions : activeSessions
 
+  function updateBarPresentation(screenName, presentation) {
+    var next = Object.assign({}, barPresentations)
+    next[String(screenName || "unknown")] = presentation || ({})
+    barPresentations = next
+  }
+
+  function anyBarOpen() {
+    var names = Object.keys(barPresentations)
+    for (var index = 0; index < names.length; index++) if (barPresentations[names[index]].opened === true) return true
+    return false
+  }
+
   function clearCapturePreview() {
     capturePreviewActive = false
     capturePreviewHistory = []
     capturePreviewSessions = []
+    capturePreviewBarSessions = []
     capturePreviewSettings = ({})
+    captureHistoryPresentationEnabled = true
     capturePreviewOwner = ""
     capturePreviewExpiresAt = 0
   }
@@ -305,6 +322,23 @@ Item {
 
   function sessionsFor(kind) {
     return displaySessions.filter(function(session) { return !kind || session.kind === kind })
+  }
+
+  function barSessionsFor(kind) {
+    var source = capturePreviewActive ? capturePreviewBarSessions : activeSessions
+    return source.filter(function(session) { return !kind || session.kind === kind })
+  }
+
+  function barAttributedSessionsFor(kind) {
+    return Model.filterAttribution(Model.visibleSessions(barSessionsFor(kind), policies()), settings.showInferredAttribution !== false)
+  }
+
+  function barAppsFor(kind) {
+    return Model.applicationsForSessions(barAttributedSessionsFor(kind), kind, settings.deduplicateApps !== false)
+  }
+
+  function barActive(kind) {
+    return kindEnabled(kind) && barSessionsFor(kind).length > 0
   }
 
   function visibleSessionsFor(kind) {
@@ -935,8 +969,26 @@ Item {
     requestedViewArgument = String(argument || "")
     requestedSettingsSection = ""
     settingsRequestSerial++
+    if (anyBarOpen()) return view
     return shell && typeof shell.summon === "function" && shell.summon("io.github.bolens.privacy-devices", "")
       ? view : "unavailable"
+  }
+
+  function requestSettingsView(page, section) {
+    var target = Model.settingsDeepLink(page, section)
+    root.requestedView = "settings"
+    root.requestedSettingsPage = target.page
+    root.requestedSettingsSection = target.section
+    root.settingsRequestSerial++
+    if (!root.anyBarOpen() && (!root.shell || typeof root.shell.summon !== "function"
+        || !root.shell.summon("io.github.bolens.privacy-devices", ""))) return "unavailable"
+    return target.page + (target.section ? "#" + target.section : "")
+  }
+
+  function requestDeviceView(kind) {
+    var target = Model.deviceDeepLink(kind)
+    if (String(kind || "") && !target) return "invalid"
+    return root.requestPopupView("activity", target)
   }
 
   function dispatchPrivacyAction(name, argument) {
@@ -1321,6 +1373,11 @@ Item {
 
   IpcHandler {
     target: "privacy-devices"
+    function open(): string { return root.requestDeviceView("") }
+    function openDetails(kind: string): string { return root.requestDeviceView(kind) }
+    function openSettings(page: string): string { return root.requestSettingsView(page, "") }
+    function openSettingsSection(page: string, section: string): string { return root.requestSettingsView(page, section) }
+    function openHistory(): string { return root.requestPopupView("history", "") }
     function status(): string { return JSON.stringify(root.snapshot()) }
     function sessions(): string { return JSON.stringify(root.activeSessions) }
     function health(): string {
@@ -1363,7 +1420,8 @@ Item {
         if (root.capturePreviewActive && root.capturePreviewOwner !== owner) return "busy"
         root.capturePreviewHistory = previewHistory
         root.capturePreviewSessions = Model.sanitizeCaptureSessions(previewSessions, Date.now())
-        root.capturePreviewSettings = previewSettings
+        root.capturePreviewBarSessions = Model.sanitizeCaptureSessions(root.activeSessions, Date.now())
+        root.capturePreviewSettings = Object.assign({}, Model.sanitizeSettings(root.settings), previewSettings)
         root.capturePreviewOwner = owner
         root.capturePreviewExpiresAt = Date.now() + 180000
         root.capturePreviewActive = true
@@ -1377,11 +1435,12 @@ Item {
     }
     function state(owner: string): string {
       if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
-      return JSON.stringify({settings: root.capturePreviewSettings, sessions: root.capturePreviewSessions})
+      return JSON.stringify({settings: root.capturePreviewSettings, sessions: root.capturePreviewSessions, barSessions: root.capturePreviewBarSessions})
     }
     function openHistoryDisabled(owner: string): string {
       if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
-      return root.requestPopupView("history-disabled", "") === "history-disabled" ? "history-disabled" : "unavailable"
+      root.captureHistoryPresentationEnabled = false
+      return root.requestPopupView("history", "") === "history" ? "history-disabled" : "unavailable"
     }
     function endCapture(owner: string): string {
       if (!root.capturePreviewActive) return "ok"
@@ -1393,22 +1452,8 @@ Item {
 
   IpcHandler {
     target: "privacy-devices-settings"
-    function open(page: string): string {
-      root.requestedView = "settings"
-      root.requestedSettingsPage = Model.settingsPage(page)
-      root.requestedSettingsSection = ""
-      root.settingsRequestSerial++
-      return root.shell && typeof root.shell.summon === "function" && root.shell.summon("io.github.bolens.privacy-devices", "") ? root.requestedSettingsPage : "unavailable"
-    }
-    function openSection(page: string, section: string): string {
-      var target = Model.settingsDeepLink(page, section)
-      root.requestedView = "settings"
-      root.requestedSettingsPage = target.page
-      root.requestedSettingsSection = target.section
-      root.settingsRequestSerial++
-      return root.shell && typeof root.shell.summon === "function" && root.shell.summon("io.github.bolens.privacy-devices", "")
-        ? target.page + (target.section ? "#" + target.section : "") : "unavailable"
-    }
+    function open(page: string): string { return root.requestSettingsView(page, "") }
+    function openSection(page: string, section: string): string { return root.requestSettingsView(page, section) }
     function openHistory(): string {
       return root.requestPopupView("history", "")
     }

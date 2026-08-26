@@ -104,6 +104,9 @@ Example read-only checks:
 qs ipc --pid "$shell_pid" call privacy-devices health
 qs ipc --pid "$shell_pid" call privacy-devices diagnostics safe
 qs ipc --pid "$shell_pid" call privacy-devices status
+qs ipc --pid "$shell_pid" call privacy-devices openDetails microphone
+qs ipc --pid "$shell_pid" call privacy-devices openSettings appearance
+qs ipc --pid "$shell_pid" call privacy-devices openSettingsSection monitoring observer-health
 qs ipc --pid "$shell_pid" call privacy-devices-settings openSection monitoring private-data
 ```
 

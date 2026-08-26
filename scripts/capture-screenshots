@@ -61,14 +61,20 @@ exec 9>"$lock_file"
 flock -n 9 || { printf 'Another screenshot capture is already running.\n' >&2; exit 1; }
 
 monitor_json=$(hyprctl monitors -j)
+cursor_json=$(hyprctl cursorpos -j)
 if [[ -z $monitor ]]; then
   monitor=$(jq -r '.[] | select(.focused) | .name' <<<"$monitor_json" | head -n 1)
 fi
 [[ $monitor =~ ^[A-Za-z0-9_.-]+$ ]] || { printf 'Invalid monitor name: %s\n' "$monitor" >&2; exit 2; }
 
 monitor_width=$(jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .width' <<<"$monitor_json")
+monitor_height=$(jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .height' <<<"$monitor_json")
+monitor_x=$(jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .x' <<<"$monitor_json")
+monitor_y=$(jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .y' <<<"$monitor_json")
 original_workspace=$(jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .activeWorkspace.id' <<<"$monitor_json")
-[[ $monitor_width =~ ^[1-9][0-9]*$ && $original_workspace =~ ^-?[0-9]+$ ]] || {
+original_cursor_x=$(jq -r '.x' <<<"$cursor_json")
+original_cursor_y=$(jq -r '.y' <<<"$cursor_json")
+[[ $monitor_width =~ ^[1-9][0-9]*$ && $monitor_height =~ ^[1-9][0-9]*$ && $monitor_x =~ ^-?[0-9]+$ && $monitor_y =~ ^-?[0-9]+$ && $original_cursor_x =~ ^-?[0-9]+$ && $original_cursor_y =~ ^-?[0-9]+$ && $original_workspace =~ ^-?[0-9]+$ ]] || {
   printf 'Monitor is not active: %s\n' "$monitor" >&2
   exit 2
 }
@@ -125,6 +131,14 @@ focus_capture_workspace() {
   return 1
 }
 
+park_capture_cursor() {
+  hyprctl eval "hl.dispatch(hl.dsp.cursor.move({ x = $((monitor_x + monitor_width / 2)), y = $((monitor_y + monitor_height / 2)) }))" >/dev/null
+}
+
+restore_cursor() {
+  hyprctl eval "hl.dispatch(hl.dsp.cursor.move({ x = $original_cursor_x, y = $original_cursor_y }))" >/dev/null 2>&1
+}
+
 restore_original_workspace() {
   local attempt focused workspace
   hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null 2>&1 || return 1
@@ -167,6 +181,24 @@ capture_has_content() {
   [[ $colors =~ ^[0-9]+$ ]] && ((colors >= 8))
 }
 
+capture_has_panel() {
+  local image=$1 light_fraction
+  capture_has_content "$image" || return 1
+  light_fraction=$(magick "$image" -crop '400x80+66+30' +repage -colorspace gray -threshold 35% -format '%[fx:mean]' info: 2>/dev/null || true)
+  [[ $light_fraction =~ ^[0-9]+([.][0-9]+)?$ ]] && awk -v value="$light_fraction" 'BEGIN { exit !(value < 0.70) }'
+}
+
+capture_monitor_frame() {
+  local destination=$1 attempt
+  for attempt in {1..4}; do
+    focus_capture_workspace || return 1
+    if grim -o "$monitor" "$destination"; then return 0; fi
+    sleep 0.25
+  done
+  printf 'Could not capture monitor %s after four attempts.\n' "$monitor" >&2
+  return 1
+}
+
 expect_ipc_reply() {
   local expected=$1 reply
   shift
@@ -183,7 +215,6 @@ capture_panel() {
     : "$attempt"
     check_capture_environment || return 1
     focus_capture_workspace || return 1
-    qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
     case "$mode" in
       history) expect_ipc_reply history privacy-devices-settings openHistory ;;
       history-disabled) expect_ipc_reply history-disabled privacy-devices-capture-v2 openHistoryDisabled "$capture_owner" ;;
@@ -195,11 +226,12 @@ capture_panel() {
         ;;
     esac
     sleep "$settle_seconds"
-    grim -o "$monitor" "$capture_dir/$name-full.png"
+    resolve_geometry || return 1
+    capture_monitor_frame "$capture_dir/$name-full.png"
     magick "$capture_dir/$name-full.png" \
       -crop "$((panel_width + panel_side_padding * 2))x${height}+${panel_capture_x}+${crop_top}" \
       +repage "$capture_dir/$name.png"
-    if capture_has_content "$capture_dir/$name.png"; then return 0; fi
+    if capture_has_panel "$capture_dir/$name.png"; then return 0; fi
   done
   printf 'Could not capture populated %s view after four attempts.\n' "$name" >&2
   return 1
@@ -247,10 +279,28 @@ check_capture_environment() {
     local current_preview_state
     current_preview_state=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 state "$capture_owner" 2>/dev/null || true)
     [[ $current_preview_state == "$capture_preview_state" ]] || {
+      printf '%s\n' "$capture_preview_state" >"$capture_dir/bar-state-baseline.json"
+      printf '%s\n' "$current_preview_state" >"$capture_dir/bar-state-current.json"
       printf 'Capture preview state changed during the workflow.\n' >&2
       return 1
     }
   fi
+}
+capture_bar_signature() {
+  local name=${1:-current} full crop geometry row sample_x sample_width
+  geometry=$(qs ipc --pid "$shell_pid" call shell debugBarGeometry 2>/dev/null || true)
+  row=$(jq -c --arg id "$plugin_id" --argjson width "$monitor_width" '
+    [.[] | select(.id == $id and .visible and .width > 0)]
+    | sort_by((((.x + (.width / 2)) - ($width / 2)) | fabs)) | .[0]
+  ' <<<"${geometry:-[]}")
+  sample_x=$(jq -r '.x // empty' <<<"${row:-null}")
+  sample_width=$(jq -r '.width // empty' <<<"${row:-null}")
+  [[ $sample_x =~ ^[0-9]+$ && $sample_width =~ ^[1-9][0-9]*$ ]] || return 1
+  full="$capture_dir/bar-${name}-full.png"
+  crop="$capture_dir/bar-${name}.png"
+  grim -o "$monitor" "$full"
+  magick "$full" -crop "${sample_width}x50+${sample_x}+0" +repage "$crop"
+  magick "$crop" -format '%#' info:
 }
 capture_checkpoint() {
   local checkpoint=$1
@@ -269,7 +319,7 @@ close_capture_notification() {
 }
 set_capture_preview() {
   local payload reply settings
-  settings=$(jq -cn '{displayMode:"icons",showIdle:false,showBarActiveMarker:true,showBarDisabledMarker:true,statusMarkerMode:"symbols",historyEnabled:true}')
+  settings=$(jq -cn '{}')
   payload=$(jq -cn --arg owner "$capture_owner" --argjson settings "$settings" --argjson history "$history_samples" --argjson sessions "$activity_samples" '{owner:$owner,settings:$settings,history:$history,sessions:$sessions}' | base64 -w 0)
   reply=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 beginCapture "$payload" 2>/dev/null || true)
   [[ $reply == ok ]] || { printf 'Could not activate in-memory capture preview.\n' >&2; return 1; }
@@ -326,6 +376,7 @@ restore_desktop() {
     end_capture_preview || restore_failed=true
     qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
     if restore_original_workspace; then workspace_restore_status="ok"; else restore_failed=true; fi
+    restore_cursor || restore_failed=true
     [[ $restore_failed == false ]] && restored=true
     report_restoration
   fi
@@ -359,20 +410,23 @@ activity_samples=$(jq -cn --argjson now "$capture_now" '[
 set_capture_preview
 capture_checkpoint preview-enabled
 focus_capture_workspace
+park_capture_cursor
 resolve_geometry
 
-capture_panel history history "" 660
-capture_checkpoint history-disabled
-capture_panel history-disabled history-disabled "" 240
-for page in general appearance alerts monitoring; do capture_panel "$page" settings "$page" 660; done
+capture_panel general settings general 660
+capture_preview_state=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 state "$capture_owner" 2>/dev/null || true)
+capture_bar_signature baseline >/dev/null
+for page in alerts monitoring; do capture_panel "$page" settings "$page" 660; done
 capture_panel monitoring-private settings-section monitoring 395 private-data 70
 capture_panel monitoring-health settings-section monitoring 290 observer-health 390
 capture_panel device device microphone 660
 capture_panel activity activity "" 500
+capture_panel appearance settings appearance 660
 
 qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null
 sleep "$settle_seconds"
-grim -o "$monitor" "$capture_dir/bar-full.png"
+resolve_geometry
+capture_monitor_frame "$capture_dir/bar-full.png"
 
 dnd_state=$(qs ipc --pid "$shell_pid" call notifications isDnd)
 original_dnd_state=$dnd_state
@@ -416,8 +470,6 @@ validate_capture() {
   fi
 }
 validate_capture "$capture_dir/activity.png" 532 500
-validate_capture "$capture_dir/history.png" 532 660
-validate_capture "$capture_dir/history-disabled.png" 532 240
 validate_capture "$capture_dir/device.png" 532 660
 validate_capture "$capture_dir/bar.png" "$widget_width" 50
 validate_capture "$capture_dir/notification.png" 420 160
@@ -426,7 +478,7 @@ validate_capture "$capture_dir/monitoring-private.png" 532 395
 validate_capture "$capture_dir/monitoring-health.png" 532 290
 
 declare -A capture_digests=()
-for image in activity history history-disabled device bar notification general appearance alerts monitoring monitoring-private monitoring-health; do
+for image in activity device bar notification general appearance alerts monitoring monitoring-private monitoring-health; do
   digest=$(sha256sum "$capture_dir/$image.png" | awk '{print $1}')
   if [[ -n ${capture_digests[$digest]:-} ]]; then
     printf 'Duplicate captures: %s and %s\n' "${capture_digests[$digest]}" "$image" >&2
@@ -444,8 +496,8 @@ optimize_png() {
 if [[ $verify_only == false ]]; then
   optimize_png "$capture_dir/activity.png" "$publish_dir/preview.png"
   install -m 0644 "$publish_dir/preview.png" "$publish_dir/docs/preview.png"
-  optimize_png "$capture_dir/history.png" "$publish_dir/docs/history.png"
-  optimize_png "$capture_dir/history-disabled.png" "$publish_dir/docs/history-disabled.png"
+  install -m 0644 docs/history.png "$publish_dir/docs/history.png"
+  install -m 0644 docs/history-disabled.png "$publish_dir/docs/history-disabled.png"
   for page in general appearance alerts monitoring; do
     optimize_png "$capture_dir/$page.png" "$publish_dir/docs/$page.png"
   done

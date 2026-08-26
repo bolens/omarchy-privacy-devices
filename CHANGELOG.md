@@ -25,11 +25,19 @@ maintainer guides that define release and validation procedures.
   actions, with lockdown routed through the existing confirmation step.
 - Add verified per-endpoint block/allow controls for microphones and audio
   outputs on their device settings pages.
+- Add validated p2p-style IPC deep links for the main view, individual device
+  details, settings pages, and settings sections while retaining legacy routes.
 
 ### Changed
 
-- Hide idle activity icons by default on new installations while preserving
-  existing users' saved visibility choice.
+- Match new installations to the standard bar presentation with idle device
+  icons visible and activity status markers disabled.
+- Keep screenshot capture presentation-neutral while freezing only its sample
+  activity and documentation history.
+- Use accent for allowed in-use devices, foreground for enabled idle devices,
+  muted for disabled devices, and urgent for observable blocked requests by
+  default, with global and per-device role overrides and opacity controls for
+  every global semantic color.
 - Align integer settings with the shell's native bounded number fields and
   consolidate bar-layout controls into a balanced responsive grid.
 - Reflow observer-health actions into a balanced responsive grid and present

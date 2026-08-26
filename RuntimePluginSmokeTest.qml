@@ -44,15 +44,18 @@ ShellRoot {
 
   Component.onCompleted: {
     sharedService.configure({enabledKinds:[],historyEnabled:false,directDeviceMonitoring:false})
-    sharedService.capturePreviewSettings = ({showIdle:false,historyEnabled:true})
+    sharedService.capturePreviewSettings = ({})
     sharedService.capturePreviewHistory = [{kind:"camera",application:"Capture",startedAt:1,endedAt:2}]
     sharedService.capturePreviewSessions = [{kind:"camera",application:"Capture",startedAt:1}]
+    sharedService.capturePreviewBarSessions = []
     sharedService.capturePreviewActive = true
-    if (widget.showIdle || sharedService.displayHistory.length !== 1 || sharedService.sessionsFor("camera").length !== 1) throw new Error("capture preview did not override presentation in memory")
-    sharedService.requestedView = "history-disabled"
-    if (widget.setting("historyEnabled", true) !== false || widget.showIdle || sharedService.sessionsFor("camera").length !== 1)
+    if (!widget.showIdle || sharedService.displayHistory.length !== 1 || sharedService.sessionsFor("camera").length !== 1 || sharedService.barActive("camera")) throw new Error("capture preview did not preserve presentation settings")
+    sharedService.requestedView = "history"
+    sharedService.captureHistoryPresentationEnabled = false
+    if (widget.historyPresentationEnabled || !widget.showIdle || sharedService.sessionsFor("camera").length !== 1)
       throw new Error("disabled-history view changed the immutable bar preview")
     sharedService.requestedView = "activity"
+    sharedService.captureHistoryPresentationEnabled = true
     sharedService.capturePreviewActive = false
     sharedService.configure({enabledKinds:[],historyEnabled:true,directDeviceMonitoring:false})
     if (sharedService.historyLoaded) throw new Error("re-enabled history did not start a fresh load")
