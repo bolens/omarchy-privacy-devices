@@ -49,6 +49,8 @@ maintainer guides that define release and validation procedures.
 
 ### Fixed
 
+- Preserve zero in bounded integer settings instead of replacing it with the
+  field fallback.
 - Preserve rapid per-device appearance edits to different fields while settings
   writes are coalesced.
 - Describe an observable blocked request consistently in activity cards instead

@@ -19,7 +19,7 @@ Rectangle {
     anchors.fill: parent
     anchors.margins: Style.spacing.md
     spacing: Style.spacing.sm
-    Text { text: surface.icon; textFormat: Text.PlainText; color: surface.tone; font.family: Style.font.family; font.pixelSize: Style.font.body; font.weight: Font.DemiBold }
+    Text { objectName: "messageSurfaceIcon"; text: surface.icon; textFormat: Text.PlainText; color: surface.tone; font.family: Style.font.family; font.pixelSize: Style.font.body; font.weight: Font.DemiBold }
     Text { objectName: "messageSurfaceText"; Layout.fillWidth: true; text: surface.message; textFormat: Text.PlainText; color: Color.popups.text; wrapMode: Text.WordWrap; font.family: Style.font.family; font.pixelSize: Style.font.caption }
   }
 }

@@ -18,6 +18,7 @@ ColumnLayout {
   spacing: Style.spacing.xs
 
   NumberField {
+    objectName: "integerSettingField"
     Layout.fillWidth: true
     label: field.label + " (" + field.minimum + "–" + field.maximum + ")"
     from: field.minimum
@@ -32,7 +33,8 @@ ColumnLayout {
   Text { visible: field.description !== ""; Layout.fillWidth: true; text: field.description; textFormat: Text.PlainText; color: Color.muted; wrapMode: Text.WordWrap; font.family: Style.font.family; font.pixelSize: Style.font.caption }
 
   function save(candidate) {
-    var value = Math.max(minimum, Math.min(maximum, Number(candidate) || fallback))
+    var numeric = Number(candidate)
+    var value = Math.max(minimum, Math.min(maximum, isFinite(numeric) ? numeric : fallback))
     var update = {}
     update[settingKey] = value
     controller.persistSettings(update)

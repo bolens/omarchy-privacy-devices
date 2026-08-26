@@ -121,7 +121,8 @@ for (const qml of [
   "RuntimeMonitoringActionsTest.qml", "RuntimeActivityPolicyActionsTest.qml",
   "RuntimePrivateDataActionsTest.qml", "RuntimeHistoryViewTest.qml",
   "RuntimeDeviceAppearanceMutationTest.qml", "RuntimeGeneralSettingsTest.qml",
-  "RuntimeAlertsSettingsTest.qml"
+  "RuntimeAlertsSettingsTest.qml", "RuntimeIntegerSettingTest.qml",
+  "RuntimeMarkerGlyphEditorTest.qml", "RuntimeMessageSurfaceTest.qml"
 ])
   assert.match(ci, new RegExp(`qmllint[^']*${qml}`), `CI must lint ${qml}`)
 for (const [harness, marker] of [
@@ -150,7 +151,10 @@ for (const [harness, marker] of [
   ["RuntimeHistoryViewTest.qml", "PRIVACY_QML_HISTORY_VIEW_OK"],
   ["RuntimeDeviceAppearanceMutationTest.qml", "PRIVACY_QML_DEVICE_APPEARANCE_MUTATION_OK"],
   ["RuntimeGeneralSettingsTest.qml", "PRIVACY_QML_GENERAL_SETTINGS_OK"],
-  ["RuntimeAlertsSettingsTest.qml", "PRIVACY_QML_ALERTS_SETTINGS_OK"]
+  ["RuntimeAlertsSettingsTest.qml", "PRIVACY_QML_ALERTS_SETTINGS_OK"],
+  ["RuntimeIntegerSettingTest.qml", "PRIVACY_QML_INTEGER_SETTING_OK"],
+  ["RuntimeMarkerGlyphEditorTest.qml", "PRIVACY_QML_MARKER_GLYPH_EDITOR_OK"],
+  ["RuntimeMessageSurfaceTest.qml", "PRIVACY_QML_MESSAGE_SURFACE_OK"]
 ])
   assert.match(qmlRuntime, new RegExp(`run_harness ${harness} ${marker}`), `${harness} must run in the real QML suite`)
 assert.match(screenshotWorkflow, /capture_panel device device/, "screenshot workflow must capture an individual device settings page")
