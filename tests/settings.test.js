@@ -170,6 +170,10 @@ assert.match(audioEndpointSettings, /surface\.kind === "microphone" \? "Micropho
   "audio settings pages must enumerate their exact hardware endpoints")
 assert.match(audioEndpointSettings, /text: modelData\.muted \? "Allow" : "Block"[\s\S]*?setAudioEndpointMuted\(surface\.kind, modelData\.id, !modelData\.muted\)/,
   "each audio endpoint must expose its own observed block control")
+assert.match(audioEndpointSettings, /PanelSectionHeader[\s\S]*?iconText: "󰑓"[\s\S]*?tooltipText: "Refresh devices"/,
+  "endpoint refresh must stay compact in the section header")
+assert.match(audioEndpointSettings, /delegate: Rectangle[\s\S]*?border\.color:[\s\S]*?Blocked · muted[\s\S]*?horizontalPadding: Style\.spacing\.md/,
+  "endpoint controls must remain visually grouped with readable action targets")
 assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceEditor\(dx\)/,
   "left and right keys must navigate device editors")
 assert.match(bar, /function moveDeviceEditor\(delta\)[\s\S]*?Model\.nextNavigationKind\(order, editingKind, delta\)/,
