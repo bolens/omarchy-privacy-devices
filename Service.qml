@@ -1010,7 +1010,8 @@ Item {
       dependencies[kind] = dependenciesReady(kind)
       if (serviceControllable(kind)) controls[kind] = controlRequestStatus(kind) !== "unsupported" && controlRequestStatus(kind) !== "dependency-unavailable"
     }
-    return {pipewireAvailable: pipewireAvailable, observerHealth: observerHealth,
+    var selfTestObserverHealth = Object.assign({}, observerHealth, {fallback: observerHealth["fallback-observer"]})
+    return {pipewireAvailable: pipewireAvailable, observerHealth: selfTestObserverHealth,
       directDeviceEnabled: settings.directDeviceMonitoring === true, dependencies: dependencies, controls: controls,
       history: {enabled: settings.historyEnabled === true, status: historyStatus}}
   }

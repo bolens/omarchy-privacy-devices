@@ -59,6 +59,8 @@ maintainer guides that define release and validation procedures.
   of pairing its urgent state with an idle availability message.
 - Allow the compact privacy-lockdown control to enter its required confirmation
   state and execute the verified serial lockdown plan.
+- Report degraded fallback-observer health in the guided privacy self-test
+  instead of silently treating the missing alias as healthy.
 
 ## [0.6.0] - 2026-08-26
 

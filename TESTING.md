@@ -63,12 +63,14 @@ recovery, reactive session summaries, responsive settings navigation, mutation
 feedback lifecycle, transfer request exclusion, multi-monitor deep-link routing,
 capture-preview cleanup and automatic expiry, debounced observer-session
 reconciliation, validated notification callback routing, reactive policy
-eligibility, per-device reset isolation,
-endpoint feedback transitions, lockdown result states, destructive-history
+eligibility, per-device reset isolation, endpoint feedback transitions,
+verification timeouts, privacy-preset orchestration, self-test health aggregation,
+lockdown result states, destructive-history
 cancellation, rollback retry, external toggle updates, cross-device metadata
-coalescing, backend reset completeness, external payload validation and stale-state
-cleanup, filtered status projection, diagnostics redaction, control-transaction
-lifecycle wiring, status-presentation wiring, redacted monitoring actions, subprocess
+coalescing, backend reset completeness, external payload validation and
+stale-state cleanup, filtered status projection, diagnostics redaction,
+control-transaction lifecycle wiring, status-presentation wiring, redacted
+monitoring actions, subprocess
 failure/recovery, guarded activity-policy actions, private-data transfer
 controls, in-memory history search, confirmation, and private settings-transfer
 behavior in the real QML engine.
