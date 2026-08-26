@@ -379,21 +379,36 @@ restore_dnd
 magick "$capture_dir/bar-full.png" -crop "${widget_width}x50+${widget_x}+0" +repage "$capture_dir/bar.png"
 
 validate_capture() {
-  local image=$1
+  local image=$1 expected_width=$2 expected_height=$3 actual
   if ! capture_has_content "$image"; then
     printf 'Capture has too little visual content: %s\n' "$image" >&2
     exit 1
   fi
+  actual=$(magick identify -format '%wx%h' "$image")
+  if [[ $actual != "${expected_width}x${expected_height}" ]]; then
+    printf 'Capture dimensions do not match its view: %s expected=%sx%s actual=%s\n' "$image" "$expected_width" "$expected_height" "$actual" >&2
+    exit 1
+  fi
 }
-validate_capture "$capture_dir/activity.png"
-validate_capture "$capture_dir/history.png"
-validate_capture "$capture_dir/history-disabled.png"
-validate_capture "$capture_dir/device.png"
-validate_capture "$capture_dir/bar.png"
-validate_capture "$capture_dir/notification.png"
-for page in general appearance alerts monitoring; do validate_capture "$capture_dir/$page.png"; done
-validate_capture "$capture_dir/monitoring-private.png"
-validate_capture "$capture_dir/monitoring-health.png"
+validate_capture "$capture_dir/activity.png" 532 500
+validate_capture "$capture_dir/history.png" 532 660
+validate_capture "$capture_dir/history-disabled.png" 532 240
+validate_capture "$capture_dir/device.png" 532 660
+validate_capture "$capture_dir/bar.png" "$widget_width" 50
+validate_capture "$capture_dir/notification.png" 420 160
+for page in general appearance alerts monitoring; do validate_capture "$capture_dir/$page.png" 532 660; done
+validate_capture "$capture_dir/monitoring-private.png" 532 330
+validate_capture "$capture_dir/monitoring-health.png" 532 290
+
+declare -A capture_digests=()
+for image in activity history history-disabled device bar notification general appearance alerts monitoring monitoring-private monitoring-health; do
+  digest=$(sha256sum "$capture_dir/$image.png" | awk '{print $1}')
+  if [[ -n ${capture_digests[$digest]:-} ]]; then
+    printf 'Duplicate captures: %s and %s\n' "${capture_digests[$digest]}" "$image" >&2
+    exit 1
+  fi
+  capture_digests[$digest]=$image
+done
 
 optimize_png() {
   local source=$1 destination=$2

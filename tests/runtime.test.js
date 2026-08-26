@@ -179,6 +179,10 @@ assert.match(screenshotWorkflow, /capture_panel\(\)[\s\S]*?call shell hide "\$pl
   "settings capture must normalize popup state before opening each page")
 assert.match(screenshotWorkflow, /function validate_capture|validate_capture\(\)/, "screenshot workflow must reject blank captures")
 assert.match(screenshotWorkflow, /colors >= 8/, "capture validation must reject low-content images")
+assert.match(screenshotWorkflow, /Capture dimensions do not match its view[\s\S]*?Duplicate captures:/,
+  "capture publication must reject wrong-sized or repeated view assets")
+assert.equal((screenshotWorkflow.match(/optimize_png "\$capture_dir\/\$page\.png"/g) || []).length, 1,
+  "each settings screenshot must be optimized exactly once")
 assert.match(screenshotWorkflow, /wait_for_shell\(\)[\s\S]*?for attempt in \{1\.\.40\}/,
   "capture must wait conditionally for a restarted shell instead of assuming startup duration")
 assert.doesNotMatch(screenshotWorkflow, /omarchy-overlay\/shell\/shell\.qml/,
@@ -403,6 +407,8 @@ assert.match(service, /function setAudioEndpointMuted\(kind, identifier, muted\)
   "per-endpoint audio control must cross one bounded helper boundary")
 assert.match(service, /function acceptAudioEndpoints\(kind, text\)[\s\S]*?rows\.slice\(0, 64\)/,
   "audio endpoint state must remain bounded before reaching the UI")
+assert.match(service, /id: audioEndpointListOutput[\s\S]*?audioEndpointListOutput\.text[\s\S]*?id: audioEndpointSetOutput[\s\S]*?audioEndpointSetOutput\.text/,
+  "audio endpoint collectors must read Quickshell's collected text property")
 assert.match(service, /function toggleControl\(kind\)[\s\S]*?if \(controlRequestStatus\(kind\) !== "ok"\) return false/,
   "control requests must reject disabled, unsupported, and pending devices")
 assert.match(service, /function controlRequestStatus\(kind\)[\s\S]*?Model\.controlRequestStatus\(/,

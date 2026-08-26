@@ -1176,13 +1176,13 @@ Item {
   Process {
     id: audioEndpointListProc
     onExited: function(exitCode) { if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoints could not be read." }
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: function(text) { root.acceptAudioEndpoints(root.audioEndpointKind, text) } }
+    stdout: StdioCollector { id: audioEndpointListOutput; waitForEnd: true; onStreamFinished: root.acceptAudioEndpoints(root.audioEndpointKind, audioEndpointListOutput.text) }
   }
 
   Process {
     id: audioEndpointSetProc
     onExited: function(exitCode) { if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoint state was not changed." }
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: function(text) { root.acceptAudioEndpoints(root.audioEndpointKind, text) } }
+    stdout: StdioCollector { id: audioEndpointSetOutput; waitForEnd: true; onStreamFinished: root.acceptAudioEndpoints(root.audioEndpointKind, audioEndpointSetOutput.text) }
   }
 
   Process {
