@@ -396,6 +396,10 @@ assert.match(service, /function handleSessionTransitions\(transition\)[\s\S]*?Mo
   "observer recovery must not announce uncertain sessions as new activity")
 assert.match(service, /function serviceControllable\(kind\)[\s\S]*?\["microphone", "audio-output", "camera", "screen-share", "location"\]/,
   "headless control must be limited to actions owned by the singleton service")
+assert.match(service, /function setAudioEndpointMuted\(kind, identifier, muted\)[\s\S]*?audioEndpointHelperPath\(\), "set", kind, String\(identifier\)/,
+  "per-endpoint audio control must cross one bounded helper boundary")
+assert.match(service, /function acceptAudioEndpoints\(kind, text\)[\s\S]*?rows\.slice\(0, 64\)/,
+  "audio endpoint state must remain bounded before reaching the UI")
 assert.match(service, /function toggleControl\(kind\)[\s\S]*?if \(controlRequestStatus\(kind\) !== "ok"\) return false/,
   "control requests must reject disabled, unsupported, and pending devices")
 assert.match(service, /function controlRequestStatus\(kind\)[\s\S]*?Model\.controlRequestStatus\(/,

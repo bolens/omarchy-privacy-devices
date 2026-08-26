@@ -74,6 +74,9 @@ normal operation poll-driven.
   activity.
 - Control commands are not successful until an observed state matches the
   requested state; verification has a bounded timeout.
+- Per-endpoint audio control re-enumerates PipeWire-Pulse sources or sinks,
+  allowlists the exact endpoint name, applies one mute state, and re-reads the
+  endpoint before publishing the result.
 - Service IPC owns only headless state controls; capture actions remain with
   the focused bar, and rejected requests return an explicit result.
 - A pending control retains its verification probe if monitoring settings
@@ -122,6 +125,8 @@ GeoClue discovery uses fixed `busctl` argument arrays, bounded output, and
 per-call timeouts rather than an inline shell pipeline.
 Trusted capture helpers and Omarchy commands launch as argument arrays; only
 the documented custom-command escape hatch crosses the shell-string boundary.
+Audio endpoint names are discovered locally and passed to `pactl` only after
+an exact match against a fresh, bounded source/sink inventory.
 Notification `--exec` callbacks contain a fixed helper path plus allowlisted
 tokens; application and device metadata never enters the callback command.
 

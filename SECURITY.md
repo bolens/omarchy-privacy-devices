@@ -54,6 +54,8 @@ command explicitly supplied by the user are not vulnerabilities in the plugin.
   selected or run.
 - Built-in capture helpers and Omarchy commands use argument arrays and never
   inherit the custom-command shell-string boundary.
+- Per-endpoint audio mutations accept only bounded Pulse endpoint identifiers
+  found in a fresh local inventory and verify the resulting mute state.
 - Notification and launcher actions enter through an allowlisted helper. Their
   commands never contain observed application, process, or device text.
 - The optional menu installer atomically edits only its marked block, preserves

@@ -126,8 +126,9 @@ assert.match(bar, /Model\.historySummary\([\s\S]*?historySummaryWindow/,
   "history insights must project existing retained rows without separate storage")
 assert.match(bar, /text: "Today"[\s\S]*?text: "7 days"[\s\S]*?historySummaryRows/,
   "history must offer bounded today and seven-day summaries")
-assert.match(bar, /Confirm lockdown[\s\S]*?requestPrivacyLockdown\(\)[\s\S]*?Undo lockdown[\s\S]*?restorePrivacyLockdown\(\)/,
-  "the activity surface must expose confirmed lockdown and bounded undo")
+assert.match(bar, /iconText: privacyService && privacyService\.privacyPresetUndoAvailable \? "󰌿" : "󰌾"[\s\S]*?tooltipText: privacyService && privacyService\.privacyPresetUndoAvailable[\s\S]*?restorePrivacyLockdown\(\)[\s\S]*?requestPrivacyLockdown\(\)/,
+  "one compact lock/unlock action must expose lockdown and observed-state undo")
+assert.doesNotMatch(bar, /text: "Undo lockdown"/, "lockdown undo must not consume a second text-button row")
 assert.match(activityCard, /text: !entry\.dependenciesReady \? "INSTALL" : \(entry\.kind === "screenshot" \? "CAPTURE" : controller\.itemStateLabel\(entry\)\)/,
   "every popup row must expose an explicit install, capture, or tested semantic state")
 assert.match(globalSettings, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")
@@ -164,6 +165,10 @@ assert.match(bar, /label: "Show status markers for this device"[\s\S]*?Global st
 for (const label of ["Bar preview", "Display label", "Device icon"])
   assert.match(bar, new RegExp(`text: "${label}"`), `${label} must remain visible without relying on input placeholders`)
 assert.match(bar, /Shared by microphone and audio output/, "shared audio backend scope must be explicit")
+assert.match(bar, /text: root\.editingKind === "microphone" \? "Microphone devices" : "Audio output devices"[\s\S]*?privacyService\.audioEndpoints\(root\.editingKind\)/,
+  "audio settings pages must enumerate their exact hardware endpoints")
+assert.match(bar, /text: modelData\.muted \? "Allow" : "Block"[\s\S]*?setAudioEndpointMuted\(root\.editingKind, modelData\.id, !modelData\.muted\)/,
+  "each audio endpoint must expose its own observed block control")
 assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceEditor\(dx\)/,
   "left and right keys must navigate device editors")
 assert.match(bar, /function moveDeviceEditor\(delta\)[\s\S]*?Model\.nextNavigationKind\(order, editingKind, delta\)/,
@@ -175,7 +180,7 @@ assert.match(bar, /confirmationState\.pending === "backend"[\s\S]*?Confirm share
   "shared audio resets must require an explicit second action")
 assert.match(bar, /function syncDeviceEditors\(\)[\s\S]*?labelEditor\.text = root\.labelFor\(editingKind\)[\s\S]*?customRecorderStopEditor\.text/,
   "changing devices must replace every editable field instead of retaining stale input")
-assert.match(bar, /onEditingKindChanged: Qt\.callLater\(syncDeviceEditors\)/,
+assert.match(bar, /onEditingKindChanged:\s*\{[\s\S]*?Qt\.callLater\(syncDeviceEditors\)/,
   "device-editor synchronization must run after every device transition")
 assert.match(confirmationController, /guardMilliseconds:\s*5000[\s\S]*?onTriggered: controller\.pending = ""/,
   "shared reset confirmations must expire")

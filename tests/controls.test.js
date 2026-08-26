@@ -8,6 +8,19 @@ const model = {}
 vm.createContext(model)
 vm.runInContext(source, model)
 
+assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification("microphone", false, true))), {
+  title: "Microphone muted", body: "Microphone access is now muted"
+})
+assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification("microphone", true, true))), {
+  title: "Microphone unmuted", body: "Microphone access is now unmuted"
+})
+assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification("camera", false, true))), {
+  title: "Camera blocked", body: "Camera access is now blocked"
+})
+assert.deepEqual(JSON.parse(JSON.stringify(model.controlResultNotification("location", true, false))), {
+  title: "Location could not be allowed", body: "The requested privacy-control state was not applied"
+})
+
 const applying = model.controlTransactionTransition(null, {type: "begin", expectedEnabled: false}, 1_000)
 assert.deepEqual(JSON.parse(JSON.stringify(applying)), {
   status: "applying", expectedEnabled: false, startedAt: 1_000,

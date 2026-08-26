@@ -229,6 +229,27 @@ function privacyStateLabel(entry) {
   return labels[privacyVisualState(entry)] || "IDLE"
 }
 
+function controlResultNotification(kind, expectedEnabled, succeeded) {
+  var names = {
+    microphone: "Microphone", "audio-output": "Audio output", camera: "Camera",
+    "screen-share": "Screen sharing", location: "Location",
+    "screen-recording": "Screen recording", screenshot: "Screenshot"
+  }
+  var enabledWords = {
+    microphone: "unmuted", "audio-output": "unmuted", camera: "allowed",
+    "screen-share": "allowed", location: "allowed", "screen-recording": "started", screenshot: "enabled"
+  }
+  var disabledWords = {
+    microphone: "muted", "audio-output": "muted", camera: "blocked",
+    "screen-share": "blocked", location: "blocked", "screen-recording": "stopped", screenshot: "disabled"
+  }
+  var name = names[kind] || label(kind)
+  var state = expectedEnabled === true ? (enabledWords[kind] || "enabled") : (disabledWords[kind] || "disabled")
+  return succeeded === true
+    ? {title: name + " " + state, body: name + " access is now " + state}
+    : {title: name + " could not be " + state, body: "The requested privacy-control state was not applied"}
+}
+
 function privacyStateMarker(entry, mode, visible, customMarkers) {
   if (visible === false || mode === "off") return ""
   var state = privacyVisualState(entry)

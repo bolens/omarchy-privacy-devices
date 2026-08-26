@@ -99,6 +99,9 @@ Item {
   property var dependencyReadyMap: ({})
   property var dependencyCheckedMap: ({})
   property var dependencyQueue: []
+  property var audioEndpointMap: ({microphone: [], "audio-output": []})
+  property string audioEndpointKind: ""
+  property string audioEndpointMessage: ""
   property string dependencyCheckKind: ""
   property bool dependencyRefreshPending: false
   readonly property bool microphoneMuted: fallbackMicrophoneMuted
@@ -456,6 +459,43 @@ Item {
     return String(Qt.resolvedUrl("privacy-history")).replace(/^file:\/\//, "")
   }
 
+  function audioEndpointHelperPath() {
+    return String(Qt.resolvedUrl("privacy-audio-devices")).replace(/^file:\/\//, "")
+  }
+
+  function audioEndpoints(kind) {
+    var rows = audioEndpointMap[kind]
+    return Array.isArray(rows) ? rows : []
+  }
+
+  function acceptAudioEndpoints(kind, text) {
+    try {
+      var rows = JSON.parse(String(text || "[]"))
+      if (!Array.isArray(rows)) throw new Error("invalid endpoint list")
+      var next = Object.assign({}, audioEndpointMap)
+      next[kind] = rows.slice(0, 64)
+      audioEndpointMap = next
+      audioEndpointMessage = rows.length ? "" : "No audio endpoints detected."
+    } catch (error) { audioEndpointMessage = "Audio endpoints could not be read." }
+  }
+
+  function refreshAudioEndpoints(kind) {
+    if (["microphone", "audio-output"].indexOf(kind) === -1 || audioEndpointListProc.running || audioEndpointSetProc.running) return
+    audioEndpointKind = kind
+    audioEndpointMessage = "Loading audio endpoints…"
+    audioEndpointListProc.command = [audioEndpointHelperPath(), "list", kind]
+    audioEndpointListProc.running = true
+  }
+
+  function setAudioEndpointMuted(kind, identifier, muted) {
+    if (["microphone", "audio-output"].indexOf(kind) === -1 || audioEndpointListProc.running || audioEndpointSetProc.running) return false
+    audioEndpointKind = kind
+    audioEndpointMessage = muted ? "Blocking selected endpoint…" : "Allowing selected endpoint…"
+    audioEndpointSetProc.command = [audioEndpointHelperPath(), "set", kind, String(identifier), muted === true ? "true" : "false"]
+    audioEndpointSetProc.running = true
+    return true
+  }
+
   function loadHistory() {
     if (historyLoaded || historyLoadProc.running || settings.historyEnabled !== true) return
     historyLoadGeneration = historyGeneration
@@ -564,7 +604,7 @@ Item {
     var current = next[kind]
     next[kind] = Model.controlTransactionTransition(current, {type: "command", exitCode: exitCode}, Date.now())
     controlTransactions = next
-    if (next[kind] && next[kind].status === "failed") notifyControlResult(kind, exitCode)
+    if (next[kind] && next[kind].status === "failed") notifyControlResult(kind, next[kind].expectedEnabled, false)
   }
 
   function transitionControlTransaction(kind, event, now) {
@@ -575,7 +615,7 @@ Item {
     next[kind] = updated
     controlTransactions = next
     if (updated && (updated.status === "succeeded" || updated.status === "failed"))
-      notifyControlResult(kind, updated.status === "succeeded" ? 0 : updated.exitCode)
+      notifyControlResult(kind, updated.expectedEnabled, updated.status === "succeeded")
   }
 
   function verifyControlTransaction(kind, observedEnabled, probeValid) {
@@ -879,10 +919,11 @@ Item {
       grouped.count === 1 ? "open-activity" : "open-history", grouped.kind)
   }
 
-  function notifyControlResult(kind, exitCode) {
+  function notifyControlResult(kind, expectedEnabled, succeeded) {
     if (settings.notifyOnControlChanges === false) return
-    if (Number(exitCode) === 0) notify("Privacy control updated", Model.label(kind) + " change applied", Model.notificationKindIcon(kind), "security-high-symbolic")
-    else notify("Privacy control failed", Model.label(kind) + " was not changed", Model.notificationKindIcon(kind), "security-high-symbolic", "open-diagnostics", "")
+    var result = Model.controlResultNotification(kind, expectedEnabled, succeeded)
+    notify(result.title, result.body, Model.notificationKindIcon(kind), "security-high-symbolic",
+      succeeded === true ? "open-activity" : "open-diagnostics", succeeded === true ? kind : "")
   }
 
   function requestPopupView(view, argument) {
@@ -1130,6 +1171,18 @@ Item {
     repeat: true
     running: root.enabledKindList.length > 0
     onTriggered: root.refreshDependencies()
+  }
+
+  Process {
+    id: audioEndpointListProc
+    onExited: function(exitCode) { if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoints could not be read." }
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: function(text) { root.acceptAudioEndpoints(root.audioEndpointKind, text) } }
+  }
+
+  Process {
+    id: audioEndpointSetProc
+    onExited: function(exitCode) { if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoint state was not changed." }
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: function(text) { root.acceptAudioEndpoints(root.audioEndpointKind, text) } }
   }
 
   Process {

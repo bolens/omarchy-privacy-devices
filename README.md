@@ -47,6 +47,8 @@ Activity notifications use the detected application icon when available:
 - Reactive PipeWire monitoring plus optional same-user direct-device coverage.
 - Verified mute, recording, camera, location, and screen-sharing controls, plus
   a confirmed privacy lockdown with observed-state undo.
+- Per-endpoint microphone and audio-output management on their device settings
+  pages, with exact hardware names and verified mute/unmute results.
 - Global and per-device appearance, ordering, visibility, backend, and status
   settings.
 - App- and device-aware visibility and notification policies, friendly hardware

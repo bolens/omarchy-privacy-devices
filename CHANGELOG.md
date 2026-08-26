@@ -23,11 +23,17 @@ maintainer guides that define release and validation procedures.
   checks, remediation guidance, notification delivery test, and redacted copy.
 - Add an optional idempotent Omarchy menu adapter for searchable privacy
   actions, with lockdown routed through the existing confirmation step.
+- Add verified per-endpoint block/allow controls for microphones and audio
+  outputs on their device settings pages.
 
 ### Changed
 
 - Reflow observer-health actions into a balanced responsive grid and present
   self-test output through the shared status surface.
+- Describe the requested device state in privacy-control success and failure
+  notifications instead of reporting a generic applied change.
+- Replace the activity-header lockdown text and separate undo button with one
+  compact, state-aware lock/unlock icon and tooltip.
 
 ## [0.6.0] - 2026-08-26
 
