@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+[[ $# == 8 ]] || { printf 'Usage: verify-capture-postconditions SETTINGS_SNAPSHOT SETTINGS_FILE HISTORY_SNAPSHOT MONITOR WORKSPACE INITIAL_PID CURRENT_PID DND\n' >&2; exit 2; }
+settings_snapshot=$1 settings_file=$2 history_snapshot=$3 monitor=$4 workspace=$5 initial_pid=$6 current_pid=$7 expected_dnd=$8
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+qs_command=${PRIVACY_QS_COMMAND:-qs}
+hyprctl_command=${PRIVACY_HYPRCTL_COMMAND:-hyprctl}
+history_command=${PRIVACY_HISTORY_COMMAND:-$root/privacy-history}
+
+cmp -s "$settings_snapshot" "$settings_file" || { printf 'Shell settings changed during capture.\n' >&2; exit 1; }
+cmp -s "$history_snapshot" <("$history_command" load) || { printf 'Privacy history changed during capture.\n' >&2; exit 1; }
+actual_dnd=$("$qs_command" ipc --pid "$current_pid" call notifications isDnd 2>/dev/null || true)
+[[ -z $expected_dnd || $actual_dnd == "$expected_dnd" ]] || { printf 'DND state was not restored.\n' >&2; exit 1; }
+monitor_json=$("$hyprctl_command" monitors -j)
+focused=$(jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused' <<<"$monitor_json")
+actual_workspace=$(jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .activeWorkspace.id' <<<"$monitor_json")
+[[ $focused == true && $actual_workspace == "$workspace" ]] || { printf 'Original workspace was not restored.\n' >&2; exit 1; }
+[[ $current_pid == "$initial_pid" ]] || { printf 'Shell PID changed during verification: %s -> %s.\n' "$initial_pid" "$current_pid" >&2; exit 1; }

@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
-trap 'printf "Capture failed at line %s.\n" "$LINENO" >&2' ERR
+set -Eeuo pipefail
+
+capture_failed=false
+failure_line=0
+current_checkpoint="preflight"
+capture_dir=""
+on_capture_error() {
+  failure_line=$1
+  capture_failed=true
+  printf 'Capture failed at line %s during %s.\n' "$failure_line" "$current_checkpoint" >&2
+}
+trap 'on_capture_error "$LINENO"' ERR
 
 plugin_id="io.github.bolens.privacy-devices"
 monitor=""
@@ -184,10 +194,16 @@ capture_panel() {
 
 wait_for_shell
 initial_shell_pid=$shell_pid
+capture_owner=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
+[[ $(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 protocol 2>/dev/null || true) == 2 ]] || {
+  printf 'Installed Privacy Devices capture protocol is unavailable or outdated.\n' >&2
+  exit 1
+}
 
 recovery_root="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy-privacy-devices/captures"
 mkdir -p "$recovery_root"
 chmod 0700 "$recovery_root"
+scripts/prune-capture-recovery "$recovery_root" 7
 capture_dir=$(mktemp -d "$recovery_root/capture.XXXXXX")
 publish_dir="$capture_dir/publish"
 mkdir -p "$publish_dir/docs"
@@ -210,19 +226,13 @@ dnd_restore_status="unchanged"
 workspace_restore_status="pending"
 shell_identity_status="unchanged"
 plugin_root="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins"
-plugin_fingerprint=$(find "$plugin_root" -type f -printf '%T@ %p\n' 2>/dev/null | sort | sha256sum | awk '{print $1}')
+plugin_fingerprint=$(scripts/capture-plugin-fingerprint "$plugin_root")
 check_capture_environment() {
-  local current_fingerprint
-  [[ $(qs ipc --pid "$initial_shell_pid" call shell ping 2>/dev/null || true) == ok ]] || {
-    printf 'Omarchy Shell changed during capture.\n' >&2; return 1;
-  }
-  current_fingerprint=$(find "$plugin_root" -type f -printf '%T@ %p\n' 2>/dev/null | sort | sha256sum | awk '{print $1}')
-  [[ $current_fingerprint == "$plugin_fingerprint" ]] || {
-    printf 'Plugin files changed during capture; aborting before publication.\n' >&2; return 1;
-  }
+  scripts/capture-environment-guard "$initial_shell_pid" "$capture_owner" "$plugin_root" "$plugin_fingerprint" "$preview_active"
 }
 capture_checkpoint() {
   local checkpoint=$1
+  current_checkpoint=$checkpoint
   check_capture_environment || return 1
   if [[ ${PRIVACY_CAPTURE_TESTING:-0} == 1 && ${PRIVACY_CAPTURE_FAIL_AT:-} == "$checkpoint" ]]; then
     printf 'Injected capture failure at %s.\n' "$checkpoint" >&2
@@ -238,7 +248,7 @@ close_capture_notification() {
 set_capture_preview() {
   local enabled=$1 payload reply settings
   settings=$(jq -cn --argjson enabled "$enabled" '{displayMode:"icons",showIdle:true,showBarActiveMarker:true,showBarDisabledMarker:true,statusMarkerMode:"symbols",historyEnabled:$enabled}')
-  payload=$(jq -cn --argjson settings "$settings" --argjson history "$history_samples" '{settings:$settings,history:$history}' | base64 -w 0)
+  payload=$(jq -cn --arg owner "$capture_owner" --argjson settings "$settings" --argjson history "$history_samples" '{owner:$owner,settings:$settings,history:$history}' | base64 -w 0)
   reply=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 beginCapture "$payload" 2>/dev/null || true)
   [[ $reply == ok ]] || { printf 'Could not activate in-memory capture preview.\n' >&2; return 1; }
   preview_active=true
@@ -246,7 +256,7 @@ set_capture_preview() {
 end_capture_preview() {
   local reply
   [[ $preview_active == true ]] || return 0
-  reply=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 endCapture 2>/dev/null || true)
+  reply=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 endCapture "$capture_owner" 2>/dev/null || true)
   [[ $reply == ok ]] || { printf 'Could not clear in-memory capture preview.\n' >&2; return 1; }
   preview_active=false
 }
@@ -285,11 +295,13 @@ restore_desktop() {
 }
 cleanup_capture() {
   local cleanup_failed=false
+  trap - ERR
   restore_desktop || cleanup_failed=true
-  if [[ $cleanup_failed == false ]]; then
-    rm -rf -- "$capture_dir"
-  else
+  if [[ $capture_failed == true || $cleanup_failed == true ]]; then
+    write_failure_report || true
     printf 'Preserved recovery snapshot at %s.\n' "$capture_dir" >&2
+  else
+    rm -rf -- "$capture_dir"
   fi
   [[ $cleanup_failed == false ]]
 }
@@ -399,18 +411,8 @@ pngquant --force --quality=82-95 --speed 1 --strip \
 restore_desktop
 
 verify_postconditions() {
-  local actual_dnd focused workspace
-  cmp -s "$settings_snapshot" "$settings_file" || return 1
-  cmp -s "$history_snapshot" <(./privacy-history load) || return 1
-  actual_dnd=$(qs ipc --pid "$shell_pid" call notifications isDnd 2>/dev/null || true)
-  [[ -z $original_dnd_state || $actual_dnd == "$original_dnd_state" ]] || return 1
-  focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
-  workspace=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .activeWorkspace.id')
-  [[ $focused == true && $workspace == "$original_workspace" ]] || return 1
-  [[ $shell_pid == "$initial_shell_pid" ]] || {
-    printf 'Shell PID changed during verification: %s -> %s.\n' "$initial_shell_pid" "$shell_pid" >&2
-    return 1
-  }
+  scripts/verify-capture-postconditions "$settings_snapshot" "$settings_file" "$history_snapshot" \
+    "$monitor" "$original_workspace" "$initial_shell_pid" "$shell_pid" "$original_dnd_state"
 }
 write_report() {
   local destination=${report_file:-$capture_dir/verification.json}
@@ -418,6 +420,20 @@ write_report() {
     --argjson pid "$initial_shell_pid" --arg monitor "$monitor" --argjson workspace "$original_workspace" \
     '{version:1,result:"passed",mode:$mode,shellPid:$pid,monitor:$monitor,restoredWorkspace:$workspace,settings:"untouched",history:"untouched",dnd:"preserved"}' >"$destination"
   if [[ -z $report_file ]]; then jq -c . "$destination"; else printf 'Verification report: %s\n' "$report_file"; fi
+}
+write_failure_report() {
+  local recovery_report destination
+  [[ -n $capture_dir && -d $capture_dir ]] || return 0
+  recovery_report="$capture_dir/verification.json"
+  jq -n --arg mode "$([[ $verify_only == true ]] && printf verify || printf publish)" \
+    --arg checkpoint "$current_checkpoint" --argjson line "$failure_line" \
+    --arg recoveryPath "$capture_dir" \
+    '{version:1,result:"failed",mode:$mode,checkpoint:$checkpoint,line:$line,recoveryPath:$recoveryPath}' >"$recovery_report"
+  if [[ -n $report_file ]]; then
+    destination=$report_file
+    cp -- "$recovery_report" "$destination"
+    printf 'Failure report: %s\n' "$destination" >&2
+  fi
 }
 
 if [[ $verify_only == true ]]; then

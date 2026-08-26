@@ -13,7 +13,24 @@ Item {
   property bool capturePreviewActive: false
   property var capturePreviewHistory: []
   property var capturePreviewSettings: ({})
+  property string capturePreviewOwner: ""
+  property double capturePreviewExpiresAt: 0
   readonly property var displayHistory: capturePreviewActive ? capturePreviewHistory : recentHistory
+
+  function clearCapturePreview() {
+    capturePreviewActive = false
+    capturePreviewHistory = []
+    capturePreviewSettings = ({})
+    capturePreviewOwner = ""
+    capturePreviewExpiresAt = 0
+  }
+
+  Timer {
+    interval: 1000
+    repeat: true
+    running: root.capturePreviewActive
+    onTriggered: if (Date.now() >= root.capturePreviewExpiresAt) root.clearCapturePreview()
+  }
   property string observerHelperOverride: ""
   property var locationApps: []
   property bool locationActive: false
@@ -1069,22 +1086,32 @@ Item {
 
   IpcHandler {
     target: "privacy-devices-capture-v2"
+    function protocol(): string { return "2" }
     function beginCapture(payloadB64: string): string {
       try {
         var payload = JSON.parse(Qt.atob(payloadB64 || ""))
+        var owner = String(payload.owner || "")
         var previewSettings = payload.settings
         var previewHistory = payload.history
-        if (!previewSettings || typeof previewSettings !== "object" || Array.isArray(previewSettings) || !Array.isArray(previewHistory)) return "invalid"
+        if (!/^[A-Za-z0-9_-]{24,128}$/.test(owner) || !previewSettings || typeof previewSettings !== "object" || Array.isArray(previewSettings) || !Array.isArray(previewHistory)) return "invalid"
+        if (root.capturePreviewActive && root.capturePreviewOwner !== owner) return "busy"
         root.capturePreviewHistory = previewHistory
         root.capturePreviewSettings = previewSettings
+        root.capturePreviewOwner = owner
+        root.capturePreviewExpiresAt = Date.now() + 180000
         root.capturePreviewActive = true
         return "ok"
       } catch (error) { return "invalid" }
     }
-    function endCapture(): string {
-      root.capturePreviewActive = false
-      root.capturePreviewHistory = []
-      root.capturePreviewSettings = ({})
+    function renew(owner: string): string {
+      if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
+      root.capturePreviewExpiresAt = Date.now() + 180000
+      return "ok"
+    }
+    function endCapture(owner: string): string {
+      if (!root.capturePreviewActive) return "ok"
+      if (root.capturePreviewOwner !== owner) return "denied"
+      root.clearCapturePreview()
       return "ok"
     }
   }

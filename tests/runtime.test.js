@@ -4,6 +4,8 @@ const path = require("node:path")
 
 const service = fs.readFileSync(path.join(__dirname, "..", "Service.qml"), "utf8")
 const screenshotWorkflow = fs.readFileSync(path.join(__dirname, "..", "scripts/capture-screenshots"), "utf8")
+const captureGuard = fs.readFileSync(path.join(__dirname, "..", "scripts/capture-environment-guard"), "utf8")
+const capturePostconditions = fs.readFileSync(path.join(__dirname, "..", "scripts/verify-capture-postconditions"), "utf8")
 const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
 const ci = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "ci.yml"), "utf8")
 const qmlRuntime = fs.readFileSync(path.join(__dirname, "run_qml_runtime.sh"), "utf8")
@@ -30,8 +32,16 @@ assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?lastSessionRefres
 assert.match(service, /requestedSettingsPage = Model\.settingsPage\(page\)/, "settings IPC pages must pass through the shared allowlist")
 assert.match(service, /!historyWasEnabled && settings\.historyEnabled === true\) historyLoaded = false[\s\S]*?loadHistory\(\)/,
   "re-enabling history must invalidate the disabled-state load sentinel")
-assert.match(service, /function beginCapture\(payloadB64: string\)[\s\S]*?Qt\.atob[\s\S]*?capturePreviewActive = true[\s\S]*?function endCapture\(\)[\s\S]*?capturePreviewActive = false/,
+assert.match(service, /function protocol\(\): string \{ return "2" \}[\s\S]*?function beginCapture\(payloadB64: string\)[\s\S]*?capturePreviewOwner[\s\S]*?function renew\(owner: string\)[\s\S]*?function endCapture\(owner: string\)/,
   "capture previews must be controlled through bounded in-memory IPC")
+assert.match(service, /capturePreviewExpiresAt = Date\.now\(\) \+ 180000/,
+  "capture preview leases must have a bounded duration")
+assert.match(service, /Date\.now\(\) >= root\.capturePreviewExpiresAt[\s\S]*?root\.clearCapturePreview\(\)/,
+  "abandoned capture previews must expire automatically")
+assert.match(screenshotWorkflow, /capture_owner=.*secrets\.token_urlsafe[\s\S]*?call privacy-devices-capture-v2 protocol/,
+  "capture must negotiate the owner-based protocol")
+assert.match(captureGuard, /privacy-devices-capture-v2 renew "\$owner"/,
+  "capture must maintain its owner lease")
 assert.match(service, /settings\.historyEnabled === true && !capturePreviewActive/,
   "capture-generated sessions must never enter the user's history")
 assert.match(bar, /effectiveSettings: privacyService && privacyService\.capturePreviewActive[\s\S]*?capturePreviewSettings/,
@@ -41,14 +51,18 @@ assert.match(bar, /filteredHistory: Model\.filterHistory\(privacyService \? priv
 assert.match(screenshotWorkflow, /trap cleanup_capture EXIT INT TERM/, "screenshot capture must restore user and repository state on failure")
 assert.match(screenshotWorkflow, /--verify\) verify_only=true/,
   "capture must expose a repository-safe live verification mode")
-assert.match(screenshotWorkflow, /plugin_fingerprint=.*find[\s\S]*?check_capture_environment\(\)[\s\S]*?Plugin files changed during capture/,
+assert.match(screenshotWorkflow, /plugin_fingerprint=.*capture-plugin-fingerprint[\s\S]*?check_capture_environment\(\)[\s\S]*?capture-environment-guard/,
   "capture must abort when another agent changes the live plugin tree")
 assert.match(screenshotWorkflow, /printf '\{\"pid\":%s,\"monitor\":\"%s\",\"workspace\":%s/,
   "the capture lock must identify its workspace owner")
 assert.match(screenshotWorkflow, /write_report\(\)[\s\S]*?result:\"passed\"[\s\S]*?settings:\"untouched\"[\s\S]*?history:\"untouched\"/,
   "successful captures must emit a machine-readable state report")
-assert.match(screenshotWorkflow, /trap 'printf .*Capture failed at line %s.*LINENO.*' ERR/,
-  "screenshot failures should identify their source line without tracing private state")
+assert.match(screenshotWorkflow, /on_capture_error\(\)[\s\S]*?failure_line[\s\S]*?current_checkpoint[\s\S]*?trap 'on_capture_error "\$LINENO"' ERR/,
+  "screenshot failures should identify their source line and checkpoint without tracing private state")
+assert.match(screenshotWorkflow, /write_failure_report\(\)[\s\S]*?result:"failed"[\s\S]*?checkpoint[\s\S]*?recoveryPath/,
+  "failed captures must leave a machine-readable recovery report")
+assert.match(screenshotWorkflow, /prune-capture-recovery "\$recovery_root" 7/,
+  "capture startup must prune only expired recovery transactions")
 assert.match(screenshotWorkflow, /flock -n 9/,
   "screenshot capture must prevent concurrent runs from racing over user state")
 assert.match(screenshotWorkflow, /set_capture_preview\(\) \{[\s\S]*?beginCapture[\s\S]*?history_samples/,
@@ -121,17 +135,17 @@ assert.match(screenshotWorkflow, /restore_desktop[\s\S]*?publish-screenshot-asse
   "repository assets must publish only after desktop restoration succeeds")
 assert.match(screenshotWorkflow, /optimize_png \"\$capture_dir\/activity\.png\" \"\$publish_dir\/preview\.png\"/,
   "optimized screenshots must remain staged until publication")
-assert.match(screenshotWorkflow, /verify_postconditions\(\) \{[\s\S]*?cmp -s[\s\S]*?actual_dnd[\s\S]*?workspace[\s\S]*?initial_shell_pid/,
+assert.match(screenshotWorkflow, /verify_postconditions\(\) \{[\s\S]*?verify-capture-postconditions[\s\S]*?initial_shell_pid[\s\S]*?original_dnd_state/,
   "verification mode must check untouched settings/history, DND, workspace, and shell identity")
 for (const checkpoint of ["preview-enabled", "history-disabled"])
   assert.match(screenshotWorkflow, new RegExp(`capture_checkpoint [\"']?${checkpoint.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
     `capture must expose the ${checkpoint} interruption checkpoint`)
-assert.match(screenshotWorkflow, /cmp -s "\$settings_snapshot" "\$settings_file"/,
+assert.match(capturePostconditions, /cmp -s "\$settings_snapshot" "\$settings_file"/,
   "successful capture must verify the original shell settings were restored byte-for-byte")
 assert.match(screenshotWorkflow, /restore_desktop\(\) \{[\s\S]*?end_capture_preview[\s\S]*?restore_original_workspace/,
   "cleanup must clear in-memory preview state before restoring workspace")
-assert.match(screenshotWorkflow, /cleanup_capture\(\) \{[\s\S]*?cleanup_failed == false[\s\S]*?rm -rf[\s\S]*?Preserved recovery snapshot/,
-  "failed cleanup must preserve its private recovery snapshot")
+assert.match(screenshotWorkflow, /cleanup_capture\(\) \{[\s\S]*?capture_failed == true \|\| \$cleanup_failed == true[\s\S]*?Preserved recovery snapshot[\s\S]*?rm -rf/,
+  "capture or cleanup failures must preserve their private recovery snapshot")
 assert.doesNotMatch(screenshotWorkflow, /omarchy restart shell|quickshell kill|omarchy-launch-shell/,
   "settings capture must not restart or replace the Quickshell process")
 assert.match(screenshotWorkflow, /omarchy notification send[\s\S]*--app-name[\s\S]*Privacy Devices[\s\S]*--icon[\s\S]*firefox/,
