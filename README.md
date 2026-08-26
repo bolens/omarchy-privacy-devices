@@ -13,30 +13,30 @@ screenshots, and screen recording.
 Contributors: [contributing guide](CONTRIBUTING.md) ·
 [architecture](ARCHITECTURE.md) · [security policy](SECURITY.md)
 
-![Privacy Devices activity panel showing live device state and controls](preview.png?v=f9d50318bb07)
+![Privacy Devices activity panel showing live device state and controls](preview.png?v=213462fdd02e)
 
 The widget occupies only its privacy-device indicators in the center bar:
 
-![Privacy Devices indicators in their exact bar footprint](docs/bar.png?v=17101b1467e6)
+![Privacy Devices indicators in their exact bar footprint](docs/bar.png?v=2adc6937c16b)
 
 Activity notifications use the detected application icon when available:
 
-![Privacy Devices notification with an application icon](docs/notification.png?v=319e2ced4104)
+![Privacy Devices notification with an application icon](docs/notification.png?v=6363988f8c51)
 
 <details>
 <summary>Settings pages</summary>
 
 | General | Appearance |
 | --- | --- |
-| <img src="docs/general.png?v=8d972d485af7" alt="General settings page" width="360"> | <img src="docs/appearance.png?v=68401dafb7fa" alt="Appearance settings page" width="360"> |
+| <img src="docs/general.png?v=74e5f64b984f" alt="General settings page" width="360"> | <img src="docs/appearance.png?v=29ec6fa59758" alt="Appearance settings page" width="360"> |
 | Alerts | Monitoring |
-| <img src="docs/alerts.png?v=4281fc1b9600" alt="Alerts settings page" width="360"> | <img src="docs/monitoring.png?v=da4f54f31adb" alt="Monitoring settings page" width="360"> |
+| <img src="docs/alerts.png?v=811842998a17" alt="Alerts settings page" width="360"> | <img src="docs/monitoring.png?v=04df6108a621" alt="Monitoring settings page" width="360"> |
 | Private data | Observer health |
-| <img src="docs/monitoring-private.png?v=126932075bc3" alt="Private history and settings transfer controls" width="360"> | <img src="docs/monitoring-health.png?v=463f15d6cb8f" alt="Monitoring status and observer health" width="360"> |
+| <img src="docs/monitoring-private.png?v=80cb29456013" alt="Private history and settings transfer controls" width="360"> | <img src="docs/monitoring-health.png?v=22cfdf315072" alt="Monitoring status and observer health" width="360"> |
 | Individual device settings | Activity history |
-| <img src="docs/device.png?v=9dd0f8c2f262" alt="Individual privacy-device settings page" width="360"> | <img src="docs/history.png?v=9f6198a88b22" alt="Completed privacy activity history view" width="360"> |
+| <img src="docs/device.png?v=026710afa0f1" alt="Individual privacy-device settings page" width="360"> | <img src="docs/history.png?v=fa9e94ba92c3" alt="Completed privacy activity history view" width="360"> |
 | History disabled | |
-| <img src="docs/history-disabled.png?v=779cd8c87c75" alt="Activity history disabled state" width="360"> | |
+| <img src="docs/history-disabled.png?v=1155cb013645" alt="Activity history disabled state" width="360"> | |
 
 </details>
 
@@ -58,6 +58,8 @@ Activity notifications use the detected application icon when available:
   alerts, and a guided redacted self-test with remediation guidance.
 - Allowlisted IPC quick actions for activity, history, diagnostics, lockdown,
   undo, and rescanning, suitable for thin launcher adapters.
+- Deep-linked IPC routes for the main activity view, a validated device detail,
+  a settings page, or a validated settings section.
 - Keyboard navigation throughout the popup and settings.
 - Persistent observers and bounded background work, with no network telemetry.
 
