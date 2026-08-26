@@ -61,7 +61,9 @@ diagnostics, monitoring configuration and appearance presentation wiring,
 reactive audio-endpoint replacement, guarded card activation, diagnostic
 recovery, reactive session summaries, responsive settings navigation, mutation
 feedback lifecycle, transfer request exclusion, multi-monitor deep-link routing,
-capture-preview cleanup, reactive policy eligibility, per-device reset isolation,
+capture-preview cleanup and automatic expiry, debounced observer-session
+reconciliation, validated notification callback routing, reactive policy
+eligibility, per-device reset isolation,
 endpoint feedback transitions, lockdown result states, destructive-history
 cancellation, rollback retry, external toggle updates, cross-device metadata
 coalescing, backend reset completeness, external payload validation and stale-state
