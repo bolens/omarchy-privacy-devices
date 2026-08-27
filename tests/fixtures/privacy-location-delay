@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+sleep 0.1
+printf '%s\n' '{"type":"location-snapshot","active":true,"applications":["Late Maps"]}'

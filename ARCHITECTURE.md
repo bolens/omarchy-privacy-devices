@@ -105,6 +105,8 @@ normal operation poll-driven.
 - The service also owns a FIFO for history mutations and retains one pending
   reload while a load is active, preserving the final requested state even
   though QML process lifecycle properties update asynchronously.
+- GeoClue snapshots carry the monitoring generation that requested them, so a
+  late probe cannot restore location activity after monitoring is disabled.
 - Session metadata is stripped of control characters and bounded before it is
   used for identity, rendering, IPC, notifications, or persistence.
 - Device visibility, alert suppression, and friendly labels use the same

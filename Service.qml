@@ -34,6 +34,10 @@ Item {
     return false
   }
 
+  function barPresentation(screenName) {
+    return barPresentations[String(screenName || "unknown")] || ({})
+  }
+
   function clearCapturePreview() {
     capturePreviewHistory = []
     capturePreviewSessions = []
@@ -54,8 +58,13 @@ Item {
   property string observerHelperOverride: ""
   property string audioEndpointHelperOverride: ""
   property string historyHelperOverride: ""
+  property string locationHelperOverride: ""
   property var locationApps: []
   property bool locationActive: false
+  property bool locationProbeBusy: false
+  property bool locationProbePending: false
+  property int locationGeneration: 0
+  property int locationProbeGeneration: 0
   property bool recordingActive: false
   property var recordingApps: []
   property bool screenshotActive: false
@@ -193,6 +202,7 @@ Item {
     var nextOperationalConfiguration = Model.operationalSignature(nextSettings)
     var monitoringChanged = nextOperationalConfiguration !== operationalConfiguration
     settings = nextSettings
+    if (monitoringChanged) locationGeneration++
     locationTimer.interval = boundedSeconds(settings.locationPollSeconds, 15, 5, 300) * 1000
     if (settings.historyEnabled !== true && (!historyConfigurationInitialized || historyWasEnabled)) clearHistory()
     else {
@@ -1197,17 +1207,23 @@ Item {
     lastFallbackRefreshAt = Date.now()
     refreshPreventativeControls()
     if (kindEnabled("location")) refreshLocation()
-    else { locationActive = false; locationApps = [] }
+    else { locationProbePending = false; locationActive = false; locationApps = [] }
     refreshFallbackObserver()
   }
 
   function refreshLocation() {
-    if (locationProc.running) return
-    locationProc.command = [String(Qt.resolvedUrl("privacy-location")).replace(/^file:\/\//, "")]
+    if (!kindEnabled("location")) return false
+    if (locationProbeBusy) { locationProbePending = true; return true }
+    locationProbePending = false
+    locationProbeBusy = true
+    locationProbeGeneration = locationGeneration
+    locationProc.command = [locationHelperOverride || String(Qt.resolvedUrl("privacy-location")).replace(/^file:\/\//, "")]
     locationProc.running = true
+    return true
   }
 
   function parseLocation(text) {
+    if (locationProbeGeneration !== locationGeneration || !kindEnabled("location")) return false
     try {
       var result = JSON.parse(String(text || "{}"))
       if (result.type !== "location-snapshot" || !Array.isArray(result.applications)) throw new Error("invalid location payload")
@@ -1217,6 +1233,7 @@ Item {
       locationActive = false
       locationApps = []
     }
+    return true
   }
 
   Timer {
@@ -1356,7 +1373,12 @@ Item {
 
   Process {
     id: locationProc
-    onExited: function(exitCode) { root.setResult("probe", "location", exitCode) }
+    onExited: function(exitCode) {
+      if (root.locationProbeGeneration === root.locationGeneration && root.kindEnabled("location"))
+        root.setResult("probe", "location", exitCode)
+      root.locationProbeBusy = false
+      if (root.locationProbePending && root.kindEnabled("location")) root.refreshLocation()
+    }
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: function(text) { root.parseLocation(text) } }
   }
 
@@ -1571,6 +1593,10 @@ Item {
     function state(owner: string): string {
       if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
       return JSON.stringify({settings: root.capturePreviewSettings, sessions: root.capturePreviewSessions, barSessions: root.capturePreviewBarSessions})
+    }
+    function presentation(owner: string, screenName: string): string {
+      if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
+      return JSON.stringify(root.barPresentation(screenName))
     }
     function openHistoryDisabled(owner: string): string {
       if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"

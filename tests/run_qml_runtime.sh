@@ -134,6 +134,7 @@ run_harness RuntimeBarSessionPolicyTest.qml PRIVACY_QML_BAR_SESSION_POLICY_OK
 run_harness RuntimeObserverSessionTeardownTest.qml PRIVACY_QML_OBSERVER_SESSION_TEARDOWN_OK
 run_harness RuntimeObserverWatchdogTest.qml PRIVACY_QML_OBSERVER_WATCHDOG_OK
 run_harness RuntimeObserverReconfigurationTest.qml PRIVACY_QML_OBSERVER_RECONFIGURATION_OK
+run_harness RuntimeLocationProbeSupersessionTest.qml PRIVACY_QML_LOCATION_PROBE_SUPERSESSION_OK
 run_harness RuntimeIpcDispatchTest.qml PRIVACY_QML_IPC_DISPATCH_OK
 
 if [[ -n $requested_harness && $ran_harness -eq 0 ]]; then

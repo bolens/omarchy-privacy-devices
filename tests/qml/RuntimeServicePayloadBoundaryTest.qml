@@ -7,12 +7,18 @@ ShellRoot {
   Component.onCompleted: {
     service.configure({enabledKinds:[], directDeviceMonitoring:false})
 
+    service.settings = {enabledKinds:["location"]}
+    service.locationProbeGeneration = service.locationGeneration
     service.parseLocation('{"type":"location-snapshot","active":true,"applications":["Maps","Maps","<unsafe>"]}')
     if (!service.locationActive || JSON.stringify(service.locationApps) !== JSON.stringify(["Maps", "＜unsafe＞"]))
       throw new Error("location payload was not normalized")
     service.parseLocation('{"type":"wrong","active":true,"applications":["Maps"]}')
     if (service.locationActive || service.locationApps.length)
       throw new Error("invalid location payload did not clear state")
+    service.settings = {enabledKinds:[]}
+    service.parseLocation('{"type":"location-snapshot","active":true,"applications":["Late Maps"]}')
+    if (service.locationActive || service.locationApps.length)
+      throw new Error("disabled location monitoring accepted a late payload")
 
     service.acceptAudioEndpoints("microphone", '[{"id":"source.1","label":"Desk mic","muted":false},{"id":"bad id","label":"Invalid","muted":true},{"id":"source.2","label":"","muted":true}]')
     var endpoints = service.audioEndpoints("microphone")
