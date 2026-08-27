@@ -35,7 +35,6 @@ Item {
   }
 
   function clearCapturePreview() {
-    capturePreviewActive = false
     capturePreviewHistory = []
     capturePreviewSessions = []
     capturePreviewBarSessions = []
@@ -43,6 +42,7 @@ Item {
     captureHistoryPresentationEnabled = true
     capturePreviewOwner = ""
     capturePreviewExpiresAt = 0
+    capturePreviewActive = false
   }
 
   Timer {
@@ -53,6 +53,7 @@ Item {
   }
   property string observerHelperOverride: ""
   property string audioEndpointHelperOverride: ""
+  property string historyHelperOverride: ""
   property var locationApps: []
   property bool locationActive: false
   property bool recordingActive: false
@@ -61,6 +62,10 @@ Item {
   property var activeSessions: []
   property var recentHistory: []
   property bool historyLoaded: false
+  property bool historyLoadBusy: false
+  property bool historyLoadPending: false
+  property bool historyMutationBusy: false
+  property var historyMutationQueue: []
   property bool historyConfigurationInitialized: false
   property int historyGeneration: 0
   property int historyLoadGeneration: 0
@@ -445,7 +450,7 @@ Item {
       if (settings.notifyOnStop === true && notificationKindList.indexOf(stopped.kind) !== -1 && Model.shouldNotifyForSession(stopped, policies()))
         enqueueActivityNotification("stopped", stopped)
     }
-    if (stoppedForHistory.length) Quickshell.execDetached([historyHelperPath(), "append", JSON.stringify(stoppedForHistory)])
+    if (stoppedForHistory.length) enqueueHistoryMutation(["append", JSON.stringify(stoppedForHistory)])
   }
 
   function healthFor(kind) {
@@ -514,13 +519,33 @@ Item {
 
   function clearHistory() {
     historyGeneration++
+    historyLoadPending = false
     recentHistory = []
     historyLoaded = settings.historyEnabled !== true
-    Quickshell.execDetached([historyHelperPath(), "clear"])
+    enqueueHistoryMutation(["clear"])
+  }
+
+  function enqueueHistoryMutation(arguments) {
+    var values = Array.isArray(arguments) ? arguments.slice() : []
+    if (!values.length || ["append", "clear"].indexOf(values[0]) < 0) return false
+    historyMutationQueue = historyMutationQueue.concat([values])
+    runNextHistoryMutation()
+    return true
+  }
+
+  function runNextHistoryMutation() {
+    if (historyMutationBusy || !historyMutationQueue.length) return false
+    var queue = historyMutationQueue.slice()
+    var arguments = queue.shift()
+    historyMutationQueue = queue
+    historyMutationBusy = true
+    historyMutationProc.command = [historyHelperPath()].concat(arguments)
+    historyMutationProc.running = true
+    return true
   }
 
   function historyHelperPath() {
-    return String(Qt.resolvedUrl("privacy-history")).replace(/^file:\/\//, "")
+    return historyHelperOverride || String(Qt.resolvedUrl("privacy-history")).replace(/^file:\/\//, "")
   }
 
   function audioEndpointHelperPath() {
@@ -584,10 +609,17 @@ Item {
   }
 
   function loadHistory() {
-    if (historyLoaded || historyLoadProc.running || settings.historyEnabled !== true) return
+    if (historyLoaded || settings.historyEnabled !== true) return false
+    if (historyLoadBusy) {
+      historyLoadPending = true
+      return true
+    }
+    historyLoadPending = false
+    historyLoadBusy = true
     historyLoadGeneration = historyGeneration
     historyLoadProc.command = [historyHelperPath(), "load"]
     historyLoadProc.running = true
+    return true
   }
 
   function refreshDirectDevices() {
@@ -1102,7 +1134,7 @@ Item {
   }
 
   function refreshPreventativeControls() {
-    var busy = privacyControlProc.running || privacyControlKind !== "" || privacyStateProc.running
+    var busy = privacyControlProc.running || privacyControlKind !== "" || privacyStateBusy
     var scheduled = Model.scheduleProbeRefresh(busy, preventativeProbeKinds)
     privacyStateQueue = scheduled.queue
     privacyStateRefreshPending = scheduled.refreshPending
@@ -1112,10 +1144,11 @@ Item {
 
   property var privacyStateQueue: []
   property string privacyStateKind: ""
+  property bool privacyStateBusy: false
   property bool privacyStateRefreshPending: false
 
   function runNextPrivacyState() {
-    var next = Model.nextProbeAction(privacyStateQueue, privacyStateRefreshPending, privacyStateProc.running)
+    var next = Model.nextProbeAction(privacyStateQueue, privacyStateRefreshPending, privacyStateBusy)
     if (next.action === "wait" || next.action === "idle") return
     if (next.action === "refresh") {
       refreshPreventativeControls()
@@ -1123,6 +1156,7 @@ Item {
     }
     privacyStateQueue = next.queue
     privacyStateKind = next.kind
+    privacyStateBusy = true
     privacyStateProc.command = [helperPath(), "status", privacyStateKind]
     privacyStateProc.running = true
   }
@@ -1354,6 +1388,7 @@ Item {
         root.setAllowed(root.privacyStateKind, Model.mutedFromExitCode(exitCode, root.controlEnabled(root.privacyStateKind)))
         root.verifyControlTransaction(root.privacyStateKind, root.controlEnabled(root.privacyStateKind), exitCode === 10 || exitCode === 11)
       }
+      root.privacyStateBusy = false
       root.runNextPrivacyState()
     }
   }
@@ -1434,8 +1469,10 @@ Item {
   Process {
     id: historyLoadProc
     onExited: function(exitCode) {
+      root.historyLoadBusy = false
       if (root.historyLoadGeneration === root.historyGeneration)
         root.historyLoaded = root.settings.historyEnabled !== true || exitCode === 0
+      if (root.historyLoadPending && root.settings.historyEnabled === true) root.loadHistory()
     }
     stdout: StdioCollector {
       id: historyLoadOutput
@@ -1452,6 +1489,14 @@ Item {
           root.recentHistory = []
         }
       }
+    }
+  }
+
+  Process {
+    id: historyMutationProc
+    onExited: function(_exitCode) {
+      root.historyMutationBusy = false
+      root.runNextHistoryMutation()
     }
   }
 

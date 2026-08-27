@@ -102,6 +102,9 @@ normal operation poll-driven.
   files, atomic replacement, bounded reads, and load-time sanitation.
 - History operations serialize read-modify-write transactions, and generation
   checks prevent asynchronous loads from crossing clear/disable boundaries.
+- The service also owns a FIFO for history mutations and retains one pending
+  reload while a load is active, preserving the final requested state even
+  though QML process lifecycle properties update asynchronously.
 - Session metadata is stripped of control characters and bounded before it is
   used for identity, rendering, IPC, notifications, or persistence.
 - Device visibility, alert suppression, and friendly labels use the same
