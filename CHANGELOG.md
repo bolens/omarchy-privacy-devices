@@ -39,6 +39,10 @@ maintainer guides that define release and validation procedures.
   transient payload has been cleared.
 - Replace fixed-delay settings, confirmation, preview-expiry, verification, and
   session-refresh runtime checks with observed completion signals.
+- Wait for the selected monitor's bar instance to acknowledge panel closure and
+  the fully rendered destination view before capturing screenshots.
+- Prevent superseded GeoClue probes from republishing location activity after
+  location monitoring is disabled or reconfigured.
 - Stop screenshot capture from switching the workspace on one monitor while
   recording another, and restore the selected monitor without overriding the
   user's original pointer/focus context.

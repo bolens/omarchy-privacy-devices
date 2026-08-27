@@ -150,7 +150,12 @@ only one capture at a time, discovers the shell through IPC, uses measured
 widget geometry, and swaps in bounded example history. It restores the original
 shell settings, real history, DND state, and workspace even on failure. Review
 images before committing them. Capture fails if restored settings or history do
-not exactly match their preserved snapshots. Settings swaps use the shell's
+not exactly match their preserved snapshots.
+Each panel capture waits for an owner-scoped acknowledgement from the bar on the
+selected monitor, including lazy settings-page and section readiness. It does
+not infer rendering completion from a successful deep-link reply or fixed wait.
+
+Settings swaps use the shell's
 live `reloadConfig` IPC and verify its effective configuration, so capture and
 restoration do not restart Quickshell or race a shutting-down process.
 

@@ -30,6 +30,8 @@ ShellRoot {
     {target:"privacy-devices-capture-v2", method:"beginCapture", args:[Qt.btoa(JSON.stringify({owner:otherOwner, settings:{}, history:[], sessions:[]}))], expected:"busy"},
     {target:"privacy-devices-capture-v2", method:"renew", args:[otherOwner], expected:"denied"},
     {target:"privacy-devices-capture-v2", method:"state", args:[owner], validator:"capture-state"},
+    {target:"privacy-devices-capture-v2", method:"presentation", args:[owner, "DP-1"], validator:"capture-presentation"},
+    {target:"privacy-devices-capture-v2", method:"presentation", args:[otherOwner, "DP-1"], expected:"denied"},
     {target:"privacy-devices-capture-v2", method:"renew", args:[owner], expected:"ok"},
     {target:"privacy-devices-capture-v2", method:"endCapture", args:[otherOwner], expected:"denied"},
     {target:"privacy-devices-capture-v2", method:"endCapture", args:[owner], expected:"ok"},
@@ -64,6 +66,13 @@ ShellRoot {
   }
 
   function responseAccepted(current, response) {
+    if (current.validator === "capture-presentation") {
+      try {
+        var presentation = JSON.parse(response)
+        return presentation.opened === true && presentation.view === "device"
+          && presentation.argument === "microphone" && presentation.ready === true
+      } catch (error) { return false }
+    }
     if (current.validator !== "capture-state") return response === current.expected
     try {
       var state = JSON.parse(response)
@@ -82,6 +91,8 @@ ShellRoot {
       var response = String(ipcOutput.text || "").trim()
       if (exitCode !== 0 || !root.responseAccepted(current, response))
         throw new Error("IPC " + current.target + "." + current.method + " failed: " + response + " " + String(ipcError.text || "").trim())
+      if (current.validator === "capture-state")
+        service.updateBarPresentation("DP-1", {opened:true, view:"device", argument:"microphone", ready:true})
       root.step++
       Qt.callLater(root.runNext)
     }

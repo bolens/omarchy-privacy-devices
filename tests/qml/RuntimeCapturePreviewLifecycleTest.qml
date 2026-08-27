@@ -9,8 +9,12 @@ ShellRoot {
     service.recentHistory = [{kind:"location",application:"Maps",startedAt:1,endedAt:2}]
     service.activeSessions = [{kind:"microphone",application:"Recorder",startedAt:10}]
     service.updateBarPresentation("DP-1", {opened:false})
-    service.updateBarPresentation("HDMI-A-1", {opened:true})
+    service.updateBarPresentation("HDMI-A-1", {opened:true, view:"settings", settingsPage:"monitoring", ready:true})
     if (!service.anyBarOpen()) throw new Error("multi-monitor bar presentation lost its open panel")
+    var presentation = service.barPresentation("HDMI-A-1")
+    if (presentation.view !== "settings" || presentation.settingsPage !== "monitoring" || !presentation.ready
+        || Object.keys(service.barPresentation("missing-output")).length !== 0)
+      throw new Error("monitor-scoped bar presentation was not preserved")
     service.capturePreviewHistory = [{kind:"camera",application:"Preview",startedAt:3,endedAt:4}]
     service.capturePreviewSessions = [{kind:"camera",application:"Preview",startedAt:20}]
     service.capturePreviewBarSessions = [{kind:"screen-share",application:"Preview",startedAt:30}]

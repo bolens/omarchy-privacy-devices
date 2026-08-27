@@ -133,6 +133,8 @@ Panel {
   readonly property var editingDevices: Model.unique(editingSessions.map(function(session) { return String(session.device || "") }).filter(Boolean))
   readonly property var editingApplications: Model.unique(editingSessions.map(function(session) { return String(session.application || "") }).filter(Boolean))
   readonly property real openPanelIndicatorWidth: button.labelWidth
+  readonly property var presentationScreen: root.QsWindow.window ? root.QsWindow.window.screen : null
+  readonly property string presentationScreenName: presentationScreen ? presentationScreen.name : "unknown"
 
   function setting(key, fallback) {
     return effectiveSettings && effectiveSettings[key] !== undefined ? effectiveSettings[key] : fallback
@@ -145,7 +147,16 @@ Panel {
 
   function publishCaptureBarPresentation() {
     if (!privacyService) return
-    privacyService.updateBarPresentation(bar && bar.screen ? bar.screen.name : "unknown", {opened: opened})
+    var view = showingGlobalSettings ? "settings" : (showingHistory ? "history" : (editingKind ? "device" : "activity"))
+    privacyService.updateBarPresentation(presentationScreenName, {
+      opened: opened,
+      view: view,
+      argument: view === "device" ? editingKind : "",
+      settingsPage: globalSettingsPage,
+      settingsSection: view === "settings" ? privacyService.requestedSettingsSection : "",
+      ready: opened && !contentFlick.moving && (view !== "settings" || (settingsPageLoaded && pendingSettingsSection === "")),
+      requestSerial: handledSettingsRequestSerial
+    })
   }
 
   function syncService() {
@@ -820,6 +831,7 @@ Panel {
   onSettingsChanged: Qt.callLater(syncService)
   onEditingKindChanged: {
     Qt.callLater(syncDeviceEditors)
+    Qt.callLater(publishCaptureBarPresentation)
     if (privacyService && isAudioControl({kind: editingKind})) privacyService.refreshAudioEndpoints(editingKind)
   }
   onPrivacyServiceChanged: Qt.callLater(function() { syncService(); publishCaptureBarPresentation() })
@@ -839,6 +851,12 @@ Panel {
       contentFlick.contentY = 0
     }
   }
+  onShowingGlobalSettingsChanged: Qt.callLater(publishCaptureBarPresentation)
+  onShowingHistoryChanged: Qt.callLater(publishCaptureBarPresentation)
+  onGlobalSettingsPageChanged: Qt.callLater(publishCaptureBarPresentation)
+  onPendingSettingsSectionChanged: Qt.callLater(publishCaptureBarPresentation)
+  onSettingsPageLoadedChanged: Qt.callLater(publishCaptureBarPresentation)
+  onHandledSettingsRequestSerialChanged: Qt.callLater(publishCaptureBarPresentation)
   Connections {
     target: root.privacyService
     function onCapturePreviewActiveChanged() {

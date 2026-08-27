@@ -19,8 +19,10 @@ assert.doesNotMatch(serviceEntryPoint, /\nShellRoot\s*\{/, "the service entry po
 assert.doesNotMatch(barEntryPoint, /\nShellRoot\s*\{/, "the bar entry point must not create a second shell root")
 assert.doesNotMatch(service, /Quickshell\.execDetached\(\s*["']/, "detached runtime commands must use argument arrays")
 assert.doesNotMatch(service, /locationProc\.command\s*=\s*\["sh",\s*"-c"/, "GeoClue probing must not cross an inline shell boundary")
-assert.match(service, /locationProc\.command = \[String\(Qt\.resolvedUrl\("privacy-location"\)\)/,
+assert.match(service, /locationProc\.command = \[locationHelperOverride \|\| String\(Qt\.resolvedUrl\("privacy-location"\)\)/,
   "GeoClue probing must resolve its helper relative to the installed plugin")
+assert.match(service, /property bool locationProbeBusy:[\s\S]*?property int locationGeneration:[\s\S]*?function refreshLocation\(\)[\s\S]*?locationProbeGeneration = locationGeneration[\s\S]*?function parseLocation\(text\)[\s\S]*?locationProbeGeneration !== locationGeneration/,
+  "location probes must reject results superseded by monitoring configuration")
 
 assert.doesNotMatch(qmlRuntime, /\/home\/[^/]+\//,
   "the QML runtime test must not contain a developer-specific executable path")
@@ -207,6 +209,10 @@ assert.match(screenshotWorkflow, /capture_panel history history/,
   "live capture must render fresh history evidence instead of reusing a stale asset")
 assert.match(screenshotWorkflow, /expect_ipc_reply\(\)[\s\S]*?\[\[ \$reply == "\$expected" \]\][\s\S]*?history\) expect_ipc_reply history[\s\S]*?device\)[\s\S]*?expect_ipc_reply activity/,
   "capture must verify that IPC opened the intended view before taking a screenshot")
+assert.match(screenshotWorkflow, /wait_for_panel_presentation\(\)[\s\S]*?privacy-devices-capture-v2 presentation[\s\S]*?\.ready == true[\s\S]*?wait_for_panel_presentation "\$mode"/,
+  "capture must wait for the selected monitor to render the requested view")
+assert.match(screenshotWorkflow, /wait_for_panel_closed\(\)[\s\S]*?\.opened != true[\s\S]*?shell hide "\$plugin_id"[\s\S]*?wait_for_panel_closed/,
+  "capture must observe panel closure before issuing the next deep link")
 assert.equal((screenshotWorkflow.match(/^set_capture_preview$/gm) || []).length, 1,
   "capture must install one immutable presentation preview for the full workflow")
 assert.match(screenshotWorkflow, /capture_panel history-disabled history-disabled/,
@@ -215,6 +221,10 @@ assert.match(service, /function openHistoryDisabled\(owner: string\)[\s\S]*?capt
   "history-disabled capture routing must be owner-scoped")
 assert.match(service, /function state\(owner: string\)[\s\S]*?capturePreviewOwner !== owner[\s\S]*?capturePreviewSettings[\s\S]*?capturePreviewSessions[\s\S]*?capturePreviewBarSessions/,
   "capture IPC must expose an owner-scoped immutable presentation snapshot")
+assert.match(service, /function presentation\(owner: string, screenName: string\)[\s\S]*?capturePreviewOwner !== owner[\s\S]*?barPresentation\(screenName\)/,
+  "capture IPC must expose owner- and monitor-scoped render acknowledgement")
+assert.match(bar, /presentationScreen:\s*root\.QsWindow\.window[\s\S]*?presentationScreenName[\s\S]*?updateBarPresentation\(presentationScreenName/,
+  "bar render acknowledgements must use the window's actual output")
 assert.match(service, /capturePreviewBarSessions = Model\.sanitizeCaptureSessions\(root\.activeSessions, Date\.now\(\)\)/,
   "capture must freeze the real pre-capture bar sessions")
 assert.match(service, /capturePreviewSettings = Object\.assign\(\{\}, Model\.sanitizeSettings\(root\.settings\), previewSettings\)/,
