@@ -28,6 +28,12 @@ maintainer guides that define release and validation procedures.
 
 ### Fixed
 
+- Preserve the latest audio-endpoint refresh while another endpoint operation
+  is active instead of depending on asynchronous `Process.running` updates.
+- Restart reconfigured observers only after confirmed teardown, allow stopped
+  observers to re-enable, and serialize dependency/shared-control ownership.
+- Replace timing-based QML debounce and observer assertions with event-driven
+  completion plus bounded failure deadlines.
 - Stop screenshot capture from switching the workspace on one monitor while
   recording another, and restore the selected monitor without overriding the
   user's original pointer/focus context.

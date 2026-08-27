@@ -52,6 +52,7 @@ Item {
     onTriggered: if (Date.now() >= root.capturePreviewExpiresAt) root.clearCapturePreview()
   }
   property string observerHelperOverride: ""
+  property string audioEndpointHelperOverride: ""
   property var locationApps: []
   property bool locationActive: false
   property bool recordingActive: false
@@ -65,10 +66,12 @@ Item {
   property int historyLoadGeneration: 0
   property var directObservations: []
   property bool directObserverRetiring: false
+  property bool directObserverRestartPending: false
   property double directObserverLastSeen: 0
   property double directObserverStartedAt: 0
   property int directObserverRetryMilliseconds: 1000
   property bool fallbackObserverRetiring: false
+  property bool fallbackObserverRestartPending: false
   property double fallbackObserverLastSeen: 0
   property double fallbackObserverStartedAt: 0
   property int fallbackObserverRetryMilliseconds: 1000
@@ -102,6 +105,8 @@ Item {
   readonly property bool fallbackObserverRetryRunning: fallbackObserverRetry.running
   readonly property bool directObserverRunning: directDeviceProc.running
   readonly property bool directObserverRetryRunning: directObserverRetry.running
+  readonly property var directObserverActiveCommand: directDeviceProc.command
+  readonly property var fallbackObserverActiveCommand: fallbackObserverProc.command
 
   readonly property var nodes: Pipewire.nodes ? Pipewire.nodes.values : []
   readonly property bool pipewireAvailable: Pipewire.nodes !== null && Pipewire.nodes !== undefined
@@ -123,10 +128,13 @@ Item {
   property var audioEndpointMap: ({microphone: [], "audio-output": []})
   property var audioEndpointInitialized: ({})
   property string audioEndpointKind: ""
+  property string audioEndpointOperation: ""
+  property string pendingAudioEndpointRefreshKind: ""
   property string audioEndpointMessage: ""
   property string inspectionMessage: ""
   property var recentDeviceChanges: []
   property string dependencyCheckKind: ""
+  property bool dependencyCheckBusy: false
   property bool dependencyRefreshPending: false
   readonly property bool microphoneMuted: fallbackMicrophoneMuted
   readonly property bool outputMuted: fallbackOutputMuted
@@ -262,7 +270,8 @@ Item {
   function refreshFallbackObserver() {
     var needed = kindEnabled("screen-recording") || kindEnabled("screenshot")
     if (!needed) {
-      fallbackObserverRetiring = true
+      fallbackObserverRestartPending = false
+      fallbackObserverRetiring = fallbackObserverProc.running
       fallbackObserverRetry.stop()
       fallbackObserverProc.running = false
       clearFallbackObserverState()
@@ -271,14 +280,19 @@ Item {
       setObserverHealth("fallback-observer", "healthy", "ok", "")
       return
     }
+    if (fallbackObserverRetiring) {
+      fallbackObserverRestartPending = true
+      return
+    }
     var desired = fallbackObserverCommand()
     if (fallbackObserverProc.running) {
       if (JSON.stringify(fallbackObserverProc.command) === JSON.stringify(desired)) return
+      fallbackObserverRestartPending = true
       fallbackObserverRetiring = true
       fallbackObserverProc.running = false
-      Qt.callLater(refreshFallbackObserver)
       return
     }
+    fallbackObserverRestartPending = false
     fallbackObserverRetiring = false
     fallbackObserverRetry.stop()
     fallbackObserverProc.command = desired
@@ -510,7 +524,7 @@ Item {
   }
 
   function audioEndpointHelperPath() {
-    return String(Qt.resolvedUrl("privacy-audio-devices")).replace(/^file:\/\//, "")
+    return audioEndpointHelperOverride || String(Qt.resolvedUrl("privacy-audio-devices")).replace(/^file:\/\//, "")
   }
 
   function audioEndpoints(kind) {
@@ -538,15 +552,30 @@ Item {
   }
 
   function refreshAudioEndpoints(kind) {
-    if (["microphone", "audio-output"].indexOf(kind) === -1 || audioEndpointListProc.running || audioEndpointSetProc.running) return
+    if (["microphone", "audio-output"].indexOf(kind) === -1) return false
+    if (audioEndpointOperation !== "") {
+      pendingAudioEndpointRefreshKind = kind
+      return true
+    }
+    pendingAudioEndpointRefreshKind = ""
+    audioEndpointOperation = "list"
     audioEndpointKind = kind
     audioEndpointMessage = "Loading audio endpoints…"
     audioEndpointListProc.command = [audioEndpointHelperPath(), "list", kind]
     audioEndpointListProc.running = true
+    return true
+  }
+
+  function runPendingAudioEndpointRefresh() {
+    var kind = pendingAudioEndpointRefreshKind
+    if (!kind || audioEndpointOperation !== "") return false
+    pendingAudioEndpointRefreshKind = ""
+    return refreshAudioEndpoints(kind)
   }
 
   function setAudioEndpointMuted(kind, identifier, muted) {
-    if (["microphone", "audio-output"].indexOf(kind) === -1 || audioEndpointListProc.running || audioEndpointSetProc.running) return false
+    if (["microphone", "audio-output"].indexOf(kind) === -1 || audioEndpointOperation !== "") return false
+    audioEndpointOperation = "set"
     audioEndpointKind = kind
     audioEndpointMessage = muted ? "Blocking selected endpoint…" : "Allowing selected endpoint…"
     audioEndpointSetProc.command = [audioEndpointHelperPath(), "set", kind, String(identifier), muted === true ? "true" : "false"]
@@ -563,7 +592,8 @@ Item {
 
   function refreshDirectDevices() {
     if (settings.directDeviceMonitoring !== true) {
-      directObserverRetiring = true
+      directObserverRestartPending = false
+      directObserverRetiring = directDeviceProc.running
       directObserverRetry.stop()
       directDeviceProc.running = false
       clearDirectObserverState()
@@ -572,7 +602,10 @@ Item {
       setObserverHealth("direct-device", "healthy", "ok", "")
       return
     }
-    directObserverRetiring = false
+    if (directObserverRetiring) {
+      directObserverRestartPending = true
+      return
+    }
     directObserverRetry.stop()
     var desiredCommand = [
       observerHelperPath(),
@@ -580,11 +613,13 @@ Item {
     ]
     if (directDeviceProc.running) {
       if (JSON.stringify(directDeviceProc.command) === JSON.stringify(desiredCommand)) return
+      directObserverRestartPending = true
       directObserverRetiring = true
       directDeviceProc.running = false
-      Qt.callLater(refreshDirectDevices)
       return
     }
+    directObserverRestartPending = false
+    directObserverRetiring = false
     directDeviceProc.command = desiredCommand
     directObserverStartedAt = Date.now()
     directDeviceProc.running = true
@@ -621,7 +656,7 @@ Item {
   function controlProcessBusy(kind) {
     if (kind === "microphone") return microphoneControlProc.running
     if (kind === "audio-output") return outputControlProc.running
-    return privacyControlProc.running
+    return privacyControlKind !== "" || privacyControlProc.running
   }
 
   function controlRequestStatus(kind) {
@@ -706,15 +741,15 @@ Item {
   }
 
   function refreshDependencies() {
-    var scheduled = Model.scheduleProbeRefresh(dependencyCheckProc.running, enabledKinds())
+    var scheduled = Model.scheduleProbeRefresh(dependencyCheckBusy, enabledKinds())
     dependencyQueue = scheduled.queue
     dependencyRefreshPending = scheduled.refreshPending
-    if (dependencyCheckProc.running) return
+    if (dependencyCheckBusy) return
     runNextDependencyCheck()
   }
 
   function runNextDependencyCheck() {
-    var next = Model.nextProbeAction(dependencyQueue, dependencyRefreshPending, dependencyCheckProc.running)
+    var next = Model.nextProbeAction(dependencyQueue, dependencyRefreshPending, dependencyCheckBusy)
     if (next.action === "wait" || next.action === "idle") return
     if (next.action === "refresh") {
       refreshDependencies()
@@ -722,6 +757,7 @@ Item {
     }
     dependencyQueue = next.queue
     dependencyCheckKind = next.kind
+    dependencyCheckBusy = true
     dependencyCheckProc.command = [dependencyHelperPath(), "check", dependencyCheckKind, recordingBackend(), audioControlBackend(), screenshotBackend()]
     dependencyCheckProc.running = true
   }
@@ -1266,13 +1302,21 @@ Item {
 
   Process {
     id: audioEndpointListProc
-    onExited: function(exitCode) { if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoints could not be read." }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoints could not be read."
+      root.audioEndpointOperation = ""
+      root.runPendingAudioEndpointRefresh()
+    }
     stdout: StdioCollector { id: audioEndpointListOutput; waitForEnd: true; onStreamFinished: root.acceptAudioEndpoints(root.audioEndpointKind, audioEndpointListOutput.text) }
   }
 
   Process {
     id: audioEndpointSetProc
-    onExited: function(exitCode) { if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoint state was not changed." }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoint state was not changed."
+      root.audioEndpointOperation = ""
+      root.runPendingAudioEndpointRefresh()
+    }
     stdout: StdioCollector { id: audioEndpointSetOutput; waitForEnd: true; onStreamFinished: root.acceptAudioEndpoints(root.audioEndpointKind, audioEndpointSetOutput.text) }
   }
 
@@ -1328,6 +1372,7 @@ Item {
   Process {
     id: dependencyCheckProc
     onExited: function(exitCode) {
+      root.dependencyCheckBusy = false
       if (!root.dependencyRefreshPending) {
         var ready = Object.assign({}, root.dependencyReadyMap)
         var checked = Object.assign({}, root.dependencyCheckedMap)
@@ -1343,7 +1388,12 @@ Item {
   Process {
     id: directDeviceProc
     onExited: function(exitCode) {
-      if (root.directObserverRetiring || root.settings.directDeviceMonitoring !== true) return
+      if (root.directObserverRetiring) {
+        root.directObserverRetiring = false
+        if (root.directObserverRestartPending && root.settings.directDeviceMonitoring === true) root.refreshDirectDevices()
+        return
+      }
+      if (root.settings.directDeviceMonitoring !== true) return
       root.clearDirectObserverState()
       root.setObserverHealth("direct-device", "degraded", "observer_exited", "observer exited with code " + exitCode)
       directObserverRetry.interval = root.directObserverRetryMilliseconds
@@ -1356,7 +1406,12 @@ Item {
   Process {
     id: fallbackObserverProc
     onExited: function(exitCode) {
-      if (root.fallbackObserverRetiring || (!root.kindEnabled("screen-recording") && !root.kindEnabled("screenshot"))) return
+      if (root.fallbackObserverRetiring) {
+        root.fallbackObserverRetiring = false
+        if (root.fallbackObserverRestartPending && (root.kindEnabled("screen-recording") || root.kindEnabled("screenshot"))) root.refreshFallbackObserver()
+        return
+      }
+      if (!root.kindEnabled("screen-recording") && !root.kindEnabled("screenshot")) return
       root.clearFallbackObserverState()
       root.setObserverHealth("fallback-observer", "degraded", "observer_exited", "observer exited with code " + exitCode)
       root.fallbackObserverRetryMilliseconds = Math.min(root.fallbackObserverRetryMilliseconds * 2, 60000)

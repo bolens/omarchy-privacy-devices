@@ -87,6 +87,10 @@ normal operation poll-driven.
   policy, so configuration churn cannot diverge their scheduling behavior.
 - Pending controls retain the last observed state rather than presenting an
   optimistic result.
+- Process concurrency uses synchronous service-owned operation tokens; QML
+  `Process.running` is lifecycle evidence, not an immediate lock.
+- Observer command changes retain one restart request and launch it only after
+  the retiring process confirms exit.
 - Lockdown and named privacy modes serialize existing per-device control
   transactions, record partial failures, and restore only from the observed
   pre-application snapshot.
