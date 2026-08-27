@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
 """Bounded atomic transfer for portable Privacy Devices settings."""
 
+import fcntl
 import json
 import os
 import sys
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 MAX_BYTES = 131072
 EXPORT_PATH = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "omarchy-privacy-devices/settings-export.json"
 UNDO_PATH = EXPORT_PATH.with_name("settings-undo.json")
+
+
+@contextmanager
+def locked(path: Path):
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    os.chmod(path.parent, 0o700)
+    flags = os.O_CREAT | os.O_RDWR | os.O_CLOEXEC | os.O_NOFOLLOW
+    descriptor = os.open(path.parent / ".settings.lock", flags, 0o600)
+    try:
+        os.fchmod(descriptor, 0o600)
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(descriptor)
 
 
 def reject_constant(value: str):
@@ -38,6 +54,11 @@ def atomic_write(value: dict, target: Path) -> Path:
             os.fsync(stream.fileno())
         os.chmod(temporary, 0o600)
         temporary.replace(target)
+        directory = os.open(target.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
     except BaseException:
         temporary.unlink(missing_ok=True)
         raise
@@ -45,29 +66,49 @@ def atomic_write(value: dict, target: Path) -> Path:
 
 
 def export_settings(raw: str, target: Path = EXPORT_PATH) -> Path:
-    return atomic_write(validated(raw), target)
+    value = validated(raw)
+    with locked(target):
+        return atomic_write(value, target)
 
 
 def import_settings(target: Path = EXPORT_PATH) -> dict:
+    if not target.exists():
+        raise FileNotFoundError(target)
+    with locked(target):
+        return import_settings_unlocked(target)
+
+
+def import_settings_unlocked(target: Path) -> dict:
     with target.open() as stream:
         return validated(stream.read(MAX_BYTES + 1))
 
 
 def import_with_undo(current_raw: str, source: Path = EXPORT_PATH, undo: Path = UNDO_PATH) -> dict:
     current = validated(current_raw)
-    incoming = import_settings(source)
-    atomic_write(current, undo)
-    return incoming
+    with locked(undo):
+        incoming = import_settings_unlocked(source)
+        atomic_write(current, undo)
+        return incoming
 
 
 def checkpoint_settings(current_raw: str, undo: Path = UNDO_PATH) -> Path:
-    return atomic_write(validated(current_raw), undo)
+    value = validated(current_raw)
+    with locked(undo):
+        return atomic_write(value, undo)
 
 
 def undo_settings(target: Path = UNDO_PATH) -> dict:
-    value = import_settings(target)
-    target.unlink()
-    return value
+    if not target.exists():
+        raise FileNotFoundError(target)
+    with locked(target):
+        value = import_settings_unlocked(target)
+        target.unlink()
+        directory = os.open(target.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+        return value
 
 
 def main() -> int:

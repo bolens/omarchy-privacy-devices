@@ -14,6 +14,7 @@ from pathlib import Path
 
 MAX_ENTRIES = 100
 MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+MAX_FUTURE_SKEW_MS = 5 * 60 * 1000
 MAX_FIELD_CHARS = 512
 MAX_FILE_BYTES = 1048576
 FIELDS = ("id", "kind", "application", "device", "source", "confidence", "detail", "startedAt", "endedAt", "durationMs")
@@ -77,7 +78,11 @@ def sanitize(entry: object) -> dict:
 
 def bounded(entries: list[dict], now_ms: int) -> list[dict]:
     cutoff = now_ms - MAX_AGE_MS
-    valid = [entry for entry in entries if isinstance(entry.get("endedAt"), (int, float)) and entry["endedAt"] >= cutoff]
+    future_cutoff = now_ms + MAX_FUTURE_SKEW_MS
+    valid = [
+        entry for entry in entries
+        if isinstance(entry.get("endedAt"), (int, float)) and cutoff <= entry["endedAt"] <= future_cutoff
+    ]
     valid.sort(key=lambda entry: entry["endedAt"], reverse=True)
     unique = []
     seen = set()

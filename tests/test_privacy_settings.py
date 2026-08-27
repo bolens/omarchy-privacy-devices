@@ -1,5 +1,6 @@
 import importlib.machinery
 import importlib.util
+import fcntl
 import json
 import os
 import subprocess
@@ -15,6 +16,23 @@ LOADER.exec_module(MODULE)
 
 
 class SettingsTransferTests(unittest.TestCase):
+    def test_transfer_lock_is_private_and_excludes_concurrent_transactions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            undo = Path(directory) / "settings-undo.json"
+            with MODULE.locked(undo):
+                lock_path = undo.parent / ".settings.lock"
+                self.assertEqual(lock_path.stat().st_mode & 0o777, 0o600)
+                with lock_path.open() as contender:
+                    with self.assertRaises(BlockingIOError):
+                        fcntl.flock(contender.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+    def test_missing_read_does_not_create_transfer_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "missing" / "settings.json"
+            with self.assertRaises(FileNotFoundError):
+                MODULE.import_settings(target)
+            self.assertFalse(target.parent.exists())
+
     def test_atomic_private_round_trip(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory) / "settings.json"
