@@ -8,7 +8,9 @@
 - Root `privacy-*` executables: narrowly scoped runtime helpers invoked by the
   QML service. Keeping them beside the entry points preserves relocatable
   `Qt.resolvedUrl(...)` lookup.
-- `tests/`: behavior, security, release-metadata, site, and helper tests.
+- `tests/`: behavior, security, release-metadata, site, and helper tests. Runtime
+  QML harnesses live under `tests/qml/` so test-only shell roots cannot be
+  mistaken for installed plugin components.
 - `scripts/`: maintainer-only build and validation tooling; nothing here is
   called by the installed widget.
 - `docs/`: static Pages source and public media.
@@ -85,8 +87,17 @@ normal operation poll-driven.
   policy, so configuration churn cannot diverge their scheduling behavior.
 - Pending controls retain the last observed state rather than presenting an
   optimistic result.
-- Privacy lockdown serializes existing per-device control transactions, records
-  partial failures, and restores only from the observed pre-lockdown snapshot.
+- Audio state probes retain one final per-device refresh while busy, ensuring a
+  post-control observation cannot be dropped behind an older poll.
+- Process concurrency uses synchronous service-owned operation tokens; QML
+  `Process.running` is lifecycle evidence, not an immediate lock.
+- Observer command changes retain one restart request and launch it only after
+  the retiring process confirms exit.
+- Observer ownership is claimed before launch, closing the same-turn window
+  before QML publishes the subprocess's lifecycle state.
+- Lockdown and named privacy modes serialize existing per-device control
+  transactions, record partial failures, and restore only from the observed
+  pre-application snapshot.
 - Settings are allowlisted, bounded, and versioned before reaching runtime;
   IPC pages and direct helper arguments are validated again at their ingress.
 - Rapid settings edits merge before one shell update; submission failures
@@ -95,12 +106,22 @@ normal operation poll-driven.
   files, atomic replacement, bounded reads, and load-time sanitation.
 - History operations serialize read-modify-write transactions, and generation
   checks prevent asynchronous loads from crossing clear/disable boundaries.
+- The service also owns a FIFO for history mutations and retains one pending
+  reload while a load is active, preserving the final requested state even
+  though QML process lifecycle properties update asynchronously.
+- GeoClue snapshots carry the monitoring generation that requested them, so a
+  late probe cannot restore location activity after monitoring is disabled.
 - Session metadata is stripped of control characters and bounded before it is
   used for identity, rendering, IPC, notifications, or persistence.
 - Device visibility, alert suppression, and friendly labels use the same
   normalized session identity policy as application rules.
 - History summaries are projections of the existing bounded retained rows;
   they neither extend retention nor create a second data store.
+- History trends, filters, and sorting are pure projections of that same store.
+- Audio endpoint inventory changes remain bounded in memory for the current
+  service session and are never promoted into retained activity history.
+- Inspection handoff copies only a bounded live application name. It does not
+  retain process identifiers or assume an undocumented cross-plugin IPC API.
 - Diagnostics are redacted by default and bounded before clipboard transfer.
 - Notification callbacks and launcher adapters share `privacy-action`, whose
   action names and optional device kind are allowlisted before shell IPC.
@@ -143,8 +164,8 @@ captures media, or sends telemetry over the network.
   equivalent.
 - Suspend periodic probes when no enabled device consumes their results, and
   retain one coalesced refresh when configuration changes during a probe.
-- Cancel stale retry timers when observers restart and reject buffered output
-  after an observer has been retired.
+- `PrivacyObserverWatchdog.qml` owns retry and heartbeat timers consistently;
+  observers reject buffered output after retirement.
 - Run animation timers only while their corresponding pending state exists.
 - Bound scans, retries, stored entries, payload sizes, and rendered history.
 

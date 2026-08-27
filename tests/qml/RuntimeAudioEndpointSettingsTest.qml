@@ -13,6 +13,7 @@ ShellRoot {
       {id:"alsa_input.usb-chat",label:"Chat microphone",muted:true}
     ]
     function audioEndpoints(kind) { return kind === "microphone" ? endpoints : [] }
+    function deviceChangesFor(kind) { return kind === "microphone" ? [{kind:kind,label:"USB microphone",change:"appeared",at:1}] : [] }
     function refreshAudioEndpoints(kind) { root.events = root.events.concat([{action:"refresh",kind:kind}]) }
     function setAudioEndpointMuted(kind, id, muted) { root.events = root.events.concat([{action:"mute",kind:kind,id:id,muted:muted}]) }
   }
@@ -45,8 +46,10 @@ ShellRoot {
     var blockedStatus = descendant(settings, "audioEndpointStatus-alsa_input.usb-chat")
     var allowedAction = descendant(settings, "audioEndpointAction-alsa_input.usb-desk")
     var blockedAction = descendant(settings, "audioEndpointAction-alsa_input.usb-chat")
-    if (!refresh || !allowedRow || !blockedRow || !allowedStatus || !blockedStatus || !allowedAction || !blockedAction)
+    var deviceChange = descendant(settings, "audioEndpointChange-0")
+    if (!refresh || !allowedRow || !blockedRow || !allowedStatus || !blockedStatus || !allowedAction || !blockedAction || !deviceChange)
       throw new Error("audio endpoint controls are not addressable")
+    if (deviceChange.text !== "USB microphone appeared during this session") throw new Error("device discovery feedback was not specific")
     if (allowedStatus.text !== "Allowed · unmuted" || allowedAction.text !== "Block"
         || blockedStatus.text !== "Blocked · muted" || blockedAction.text !== "Allow")
       throw new Error("audio endpoint controls did not reflect observed mute state")

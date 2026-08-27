@@ -157,4 +157,31 @@ if (context.sanitizeSettings({hiddenApps: [" Browser\u202e ", "\n"]}).hiddenApps
 if (!context.historyLoadAccepted(4, 4, true)) throw new Error("current enabled history load accepted")
 if (context.historyLoadAccepted(3, 4, true)) throw new Error("stale history load rejected")
 if (context.historyLoadAccepted(4, 4, false)) throw new Error("disabled history load rejected")
+const historyRows = [
+  {kind: "camera", application: "Calls", confidence: "confirmed", endedAt: 9000, durationMs: 500},
+  {kind: "microphone", application: "Browser", confidence: "inferred", endedAt: 8000, durationMs: 1500},
+  {kind: "camera", application: "Browser", confidence: "confirmed", endedAt: 7000, durationMs: 1000}
+]
+assert.deepEqual(Array.from(context.filterAndSortHistory(historyRows, {kind: "camera", sort: "duration"}), row => row.durationMs), [1000, 500])
+assert.deepEqual(Array.from(context.filterAndSortHistory(historyRows, {confidence: "inferred"}), row => row.kind), ["microphone"])
+assert.deepEqual(Array.from(context.filterAndSortHistory(historyRows, {query: "browser", sort: "application"}), row => row.kind), ["microphone", "camera"])
+const trend = context.historyTrend(historyRows, 10000, 4000, 4)
+assert.equal(trend.total, 3)
+assert.equal(trend.maximum, 1)
+assert.deepEqual(Array.from(trend.buckets, row => row.count), [0, 1, 1, 1])
+const modes = context.sanitizePrivacyModes([
+  {name: " Meeting ", controls: {microphone: true, camera: false, screenshot: true}},
+  {name: "meeting", controls: {camera: true}},
+  {name: "Travel\nmode", controls: {location: false, "audio-output": "no"}},
+  {name: "Empty", controls: {}}
+])
+assert.deepEqual(JSON.parse(JSON.stringify(modes)), [
+  {name: "Meeting", controls: {microphone: true, camera: false}},
+  {name: "Travelmode", controls: {location: false}}
+])
+const inventoryChanges = context.deviceInventoryChanges("microphone",
+  [{id:"old",label:"Old mic"},{id:"same",label:"Before"}],
+  [{id:"new",label:"New mic"},{id:"same",label:"After"}], 1234)
+assert.deepEqual(Array.from(inventoryChanges, row => row.change), ["appeared", "renamed", "disappeared"])
+assert.equal(inventoryChanges[0].at, 1234)
 console.log("model tests passed")

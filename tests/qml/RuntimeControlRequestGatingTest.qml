@@ -5,7 +5,7 @@ ShellRoot {
   Service { id: service }
 
   Component.onCompleted: {
-    service.settings = {enabledKinds:["camera", "screen-recording"], blockableKinds:["camera"], notifyOnControlChanges:false}
+    service.settings = {enabledKinds:["camera", "location", "screen-recording"], blockableKinds:["camera", "location"], notifyOnControlChanges:false}
     if (service.controlRequestStatus("not-a-kind") !== "unsupported")
       throw new Error("unknown control was not rejected")
     if (service.controlRequestStatus("microphone") !== "disabled")
@@ -22,6 +22,22 @@ ShellRoot {
     service.controlTransactions = ({})
     if (service.controlRequestStatus("camera") !== "ok")
       throw new Error("eligible camera control was not enabled")
+    service.privacyControlKind = "location"
+    if (service.controlRequestStatus("camera") !== "busy")
+      throw new Error("shared preventative-control ownership did not gate a concurrent kind")
+    service.privacyControlKind = ""
+
+    service.dependencyCheckBusy = true
+    service.refreshDependencies()
+    if (!service.dependencyRefreshPending || service.dependencyQueue.length !== 0)
+      throw new Error("busy dependency refresh did not coalesce into one pending pass")
+    service.dependencyCheckBusy = false
+
+    service.privacyStateBusy = true
+    service.refreshPreventativeControls()
+    if (!service.privacyStateRefreshPending || service.privacyStateQueue.length !== 0)
+      throw new Error("busy preventative-state refresh did not coalesce into one pending pass")
+    service.privacyStateBusy = false
 
     if (!service.controllable("screen-recording") || service.serviceControllable("screen-recording")
         || service.controlRequestStatus("screen-recording") !== "unsupported")

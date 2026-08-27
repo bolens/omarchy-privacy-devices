@@ -16,6 +16,7 @@ Item {
   property var capturePreviewBarSessions: []
   property var capturePreviewSettings: ({})
   property var barPresentations: ({})
+  property var barInstances: ({})
   property bool captureHistoryPresentationEnabled: true
   property string capturePreviewOwner: ""
   property double capturePreviewExpiresAt: 0
@@ -34,8 +35,56 @@ Item {
     return false
   }
 
+  function barPresentation(screenName) {
+    return barPresentations[String(screenName || "unknown")] || ({})
+  }
+
+  function registerBarInstance(screenName, instance) {
+    var key = String(screenName || "")
+    if (!key || key === "unknown" || !instance) return false
+    var next = Object.assign({}, barInstances)
+    next[key] = instance
+    barInstances = next
+    return true
+  }
+
+  function unregisterBarInstance(screenName, instance) {
+    var key = String(screenName || "")
+    if (!key || barInstances[key] !== instance) return false
+    var next = Object.assign({}, barInstances)
+    delete next[key]
+    barInstances = next
+    return true
+  }
+
+  function closeCapturePanel(owner, screenName) {
+    if (!capturePreviewActive || capturePreviewOwner !== owner) return "denied"
+    var target = barInstances[String(screenName || "")]
+    if (!target || typeof target.close !== "function") return "unavailable"
+    target.close()
+    return "ok"
+  }
+
+  function openCapturePanel(owner, screenName, mode, page, section) {
+    if (!capturePreviewActive || capturePreviewOwner !== owner) return "denied"
+    var target = barInstances[String(screenName || "")]
+    if (!target || typeof target.open !== "function") return "unavailable"
+    var selected = String(mode || "")
+    if (["settings", "settings-section", "device", "activity", "history", "history-disabled"].indexOf(selected) < 0) return "invalid"
+    target.open()
+    if (selected === "settings" || selected === "settings-section") target.showGlobalSettings(page, selected === "settings-section" ? section : "")
+    else if (selected === "device") { target.showActivity(); target.editingKind = Model.deviceDeepLink(page) }
+    else if (selected === "activity") target.showActivity()
+    else {
+      captureHistoryPresentationEnabled = selected !== "history-disabled"
+      target.showHistory()
+    }
+    return selected === "settings" ? String(page || "general")
+      : (selected === "settings-section" ? String(page || "general") + "#" + String(section || "")
+      : (selected === "history-disabled" ? "history-disabled" : (selected === "device" ? "activity" : selected)))
+  }
+
   function clearCapturePreview() {
-    capturePreviewActive = false
     capturePreviewHistory = []
     capturePreviewSessions = []
     capturePreviewBarSessions = []
@@ -43,6 +92,7 @@ Item {
     captureHistoryPresentationEnabled = true
     capturePreviewOwner = ""
     capturePreviewExpiresAt = 0
+    capturePreviewActive = false
   }
 
   Timer {
@@ -52,23 +102,39 @@ Item {
     onTriggered: if (Date.now() >= root.capturePreviewExpiresAt) root.clearCapturePreview()
   }
   property string observerHelperOverride: ""
+  property string audioEndpointHelperOverride: ""
+  property string historyHelperOverride: ""
+  property string locationHelperOverride: ""
+  property string audioStateHelperOverride: ""
   property var locationApps: []
   property bool locationActive: false
+  property bool locationProbeBusy: false
+  property bool locationProbePending: false
+  property int locationGeneration: 0
+  property int locationProbeGeneration: 0
   property bool recordingActive: false
   property var recordingApps: []
   property bool screenshotActive: false
   property var activeSessions: []
   property var recentHistory: []
   property bool historyLoaded: false
+  property bool historyLoadBusy: false
+  property bool historyLoadPending: false
+  property bool historyMutationBusy: false
+  property var historyMutationQueue: []
   property bool historyConfigurationInitialized: false
   property int historyGeneration: 0
   property int historyLoadGeneration: 0
   property var directObservations: []
   property bool directObserverRetiring: false
+  property bool directObserverOwned: false
+  property bool directObserverRestartPending: false
   property double directObserverLastSeen: 0
   property double directObserverStartedAt: 0
   property int directObserverRetryMilliseconds: 1000
   property bool fallbackObserverRetiring: false
+  property bool fallbackObserverOwned: false
+  property bool fallbackObserverRestartPending: false
   property double fallbackObserverLastSeen: 0
   property double fallbackObserverStartedAt: 0
   property int fallbackObserverRetryMilliseconds: 1000
@@ -87,6 +153,7 @@ Item {
   property var privacyPresetResults: []
   property bool privacyPresetUndoAvailable: false
   property bool privacyPresetRestoring: false
+  property string privacyPresetName: ""
   property var observerHealth: ({
     pipewire: {status: "healthy", source: "pipewire", code: "ok", reason: ""},
     "direct-device": {status: "healthy", source: "direct-device", code: "ok", reason: ""},
@@ -101,6 +168,8 @@ Item {
   readonly property bool fallbackObserverRetryRunning: fallbackObserverRetry.running
   readonly property bool directObserverRunning: directDeviceProc.running
   readonly property bool directObserverRetryRunning: directObserverRetry.running
+  readonly property var directObserverActiveCommand: directDeviceProc.command
+  readonly property var fallbackObserverActiveCommand: fallbackObserverProc.command
 
   readonly property var nodes: Pipewire.nodes ? Pipewire.nodes.values : []
   readonly property bool pipewireAvailable: Pipewire.nodes !== null && Pipewire.nodes !== undefined
@@ -108,6 +177,10 @@ Item {
   readonly property var defaultSink: Pipewire.defaultAudioSink
   property bool fallbackMicrophoneMuted: false
   property bool fallbackOutputMuted: false
+  property bool microphoneStateBusy: false
+  property bool microphoneStatePending: false
+  property bool outputStateBusy: false
+  property bool outputStatePending: false
   property bool cameraAllowed: true
   property bool locationAllowed: true
   property bool screenShareAllowed: true
@@ -120,9 +193,15 @@ Item {
   property var dependencyCheckedMap: ({})
   property var dependencyQueue: []
   property var audioEndpointMap: ({microphone: [], "audio-output": []})
+  property var audioEndpointInitialized: ({})
   property string audioEndpointKind: ""
+  property string audioEndpointOperation: ""
+  property string pendingAudioEndpointRefreshKind: ""
   property string audioEndpointMessage: ""
+  property string inspectionMessage: ""
+  property var recentDeviceChanges: []
   property string dependencyCheckKind: ""
+  property bool dependencyCheckBusy: false
   property bool dependencyRefreshPending: false
   readonly property bool microphoneMuted: fallbackMicrophoneMuted
   readonly property bool outputMuted: fallbackOutputMuted
@@ -176,6 +255,7 @@ Item {
     var nextOperationalConfiguration = Model.operationalSignature(nextSettings)
     var monitoringChanged = nextOperationalConfiguration !== operationalConfiguration
     settings = nextSettings
+    if (monitoringChanged) locationGeneration++
     locationTimer.interval = boundedSeconds(settings.locationPollSeconds, 15, 5, 300) * 1000
     if (settings.historyEnabled !== true && (!historyConfigurationInitialized || historyWasEnabled)) clearHistory()
     else {
@@ -258,27 +338,40 @@ Item {
   function refreshFallbackObserver() {
     var needed = kindEnabled("screen-recording") || kindEnabled("screenshot")
     if (!needed) {
-      fallbackObserverRetiring = true
+      fallbackObserverRestartPending = false
+      fallbackObserverRetiring = fallbackObserverOwned && fallbackObserverProc.running
       fallbackObserverRetry.stop()
       fallbackObserverProc.running = false
+      if (!fallbackObserverRetiring) fallbackObserverOwned = false
       clearFallbackObserverState()
       fallbackObserverStartedAt = 0
       fallbackObserverRetryMilliseconds = 1000
       setObserverHealth("fallback-observer", "healthy", "ok", "")
       return
     }
-    var desired = fallbackObserverCommand()
-    if (fallbackObserverProc.running) {
-      if (JSON.stringify(fallbackObserverProc.command) === JSON.stringify(desired)) return
-      fallbackObserverRetiring = true
-      fallbackObserverProc.running = false
-      Qt.callLater(refreshFallbackObserver)
+    if (fallbackObserverRetiring) {
+      fallbackObserverRestartPending = true
       return
     }
+    var desired = fallbackObserverCommand()
+    if (fallbackObserverOwned) {
+      if (!fallbackObserverProc.running) {
+        fallbackObserverProc.command = desired
+        fallbackObserverStartedAt = Date.now()
+        return
+      }
+      if (JSON.stringify(fallbackObserverProc.command) === JSON.stringify(desired)) return
+      fallbackObserverRestartPending = true
+      fallbackObserverRetiring = true
+      fallbackObserverProc.running = false
+      return
+    }
+    fallbackObserverRestartPending = false
     fallbackObserverRetiring = false
     fallbackObserverRetry.stop()
     fallbackObserverProc.command = desired
     fallbackObserverStartedAt = Date.now()
+    fallbackObserverOwned = true
     fallbackObserverProc.running = true
   }
 
@@ -427,7 +520,7 @@ Item {
       if (settings.notifyOnStop === true && notificationKindList.indexOf(stopped.kind) !== -1 && Model.shouldNotifyForSession(stopped, policies()))
         enqueueActivityNotification("stopped", stopped)
     }
-    if (stoppedForHistory.length) Quickshell.execDetached([historyHelperPath(), "append", JSON.stringify(stoppedForHistory)])
+    if (stoppedForHistory.length) enqueueHistoryMutation(["append", JSON.stringify(stoppedForHistory)])
   }
 
   function healthFor(kind) {
@@ -485,19 +578,48 @@ Item {
     Quickshell.execDetached([String(Qt.resolvedUrl("privacy-diagnostics")).replace(/^file:\/\//, ""), JSON.stringify(diagnostics(redact))])
   }
 
+  function copyInspectionTarget(application) {
+    var target = Model.boundedPlainText(application, 256)
+    if (!target) return false
+    Quickshell.execDetached([String(Qt.resolvedUrl("privacy-diagnostics")).replace(/^file:\/\//, ""), "--target", target])
+    inspectionMessage = "Copied “" + target + "” for X-Ray or another process inspector."
+    inspectionMessageTimer.restart()
+    return true
+  }
+
   function clearHistory() {
     historyGeneration++
+    historyLoadPending = false
     recentHistory = []
     historyLoaded = settings.historyEnabled !== true
-    Quickshell.execDetached([historyHelperPath(), "clear"])
+    enqueueHistoryMutation(["clear"])
+  }
+
+  function enqueueHistoryMutation(arguments) {
+    var values = Array.isArray(arguments) ? arguments.slice() : []
+    if (!values.length || ["append", "clear"].indexOf(values[0]) < 0) return false
+    historyMutationQueue = historyMutationQueue.concat([values])
+    runNextHistoryMutation()
+    return true
+  }
+
+  function runNextHistoryMutation() {
+    if (historyMutationBusy || !historyMutationQueue.length) return false
+    var queue = historyMutationQueue.slice()
+    var arguments = queue.shift()
+    historyMutationQueue = queue
+    historyMutationBusy = true
+    historyMutationProc.command = [historyHelperPath()].concat(arguments)
+    historyMutationProc.running = true
+    return true
   }
 
   function historyHelperPath() {
-    return String(Qt.resolvedUrl("privacy-history")).replace(/^file:\/\//, "")
+    return historyHelperOverride || String(Qt.resolvedUrl("privacy-history")).replace(/^file:\/\//, "")
   }
 
   function audioEndpointHelperPath() {
-    return String(Qt.resolvedUrl("privacy-audio-devices")).replace(/^file:\/\//, "")
+    return audioEndpointHelperOverride || String(Qt.resolvedUrl("privacy-audio-devices")).replace(/^file:\/\//, "")
   }
 
   function audioEndpoints(kind) {
@@ -505,11 +627,18 @@ Item {
     return Array.isArray(rows) ? rows : []
   }
 
+  function deviceChangesFor(kind) {
+    return recentDeviceChanges.filter(function(entry) { return entry.kind === kind }).slice(0, 3)
+  }
+
   function acceptAudioEndpoints(kind, text) {
     try {
       var rows = JSON.parse(String(text || "[]"))
       if (!Array.isArray(rows)) throw new Error("invalid endpoint list")
       rows = Model.sanitizeAudioEndpoints(rows, 64)
+      var changes = audioEndpointInitialized[kind] === true ? Model.deviceInventoryChanges(kind, audioEndpoints(kind), rows, Date.now()) : []
+      if (changes.length) recentDeviceChanges = changes.concat(recentDeviceChanges).slice(0, 24)
+      var initialized = Object.assign({}, audioEndpointInitialized); initialized[kind] = true; audioEndpointInitialized = initialized
       var next = Object.assign({}, audioEndpointMap)
       next[kind] = rows
       audioEndpointMap = next
@@ -518,15 +647,30 @@ Item {
   }
 
   function refreshAudioEndpoints(kind) {
-    if (["microphone", "audio-output"].indexOf(kind) === -1 || audioEndpointListProc.running || audioEndpointSetProc.running) return
+    if (["microphone", "audio-output"].indexOf(kind) === -1) return false
+    if (audioEndpointOperation !== "") {
+      pendingAudioEndpointRefreshKind = kind
+      return true
+    }
+    pendingAudioEndpointRefreshKind = ""
+    audioEndpointOperation = "list"
     audioEndpointKind = kind
     audioEndpointMessage = "Loading audio endpoints…"
     audioEndpointListProc.command = [audioEndpointHelperPath(), "list", kind]
     audioEndpointListProc.running = true
+    return true
+  }
+
+  function runPendingAudioEndpointRefresh() {
+    var kind = pendingAudioEndpointRefreshKind
+    if (!kind || audioEndpointOperation !== "") return false
+    pendingAudioEndpointRefreshKind = ""
+    return refreshAudioEndpoints(kind)
   }
 
   function setAudioEndpointMuted(kind, identifier, muted) {
-    if (["microphone", "audio-output"].indexOf(kind) === -1 || audioEndpointListProc.running || audioEndpointSetProc.running) return false
+    if (["microphone", "audio-output"].indexOf(kind) === -1 || audioEndpointOperation !== "") return false
+    audioEndpointOperation = "set"
     audioEndpointKind = kind
     audioEndpointMessage = muted ? "Blocking selected endpoint…" : "Allowing selected endpoint…"
     audioEndpointSetProc.command = [audioEndpointHelperPath(), "set", kind, String(identifier), muted === true ? "true" : "false"]
@@ -535,38 +679,58 @@ Item {
   }
 
   function loadHistory() {
-    if (historyLoaded || historyLoadProc.running || settings.historyEnabled !== true) return
+    if (historyLoaded || settings.historyEnabled !== true) return false
+    if (historyLoadBusy) {
+      historyLoadPending = true
+      return true
+    }
+    historyLoadPending = false
+    historyLoadBusy = true
     historyLoadGeneration = historyGeneration
     historyLoadProc.command = [historyHelperPath(), "load"]
     historyLoadProc.running = true
+    return true
   }
 
   function refreshDirectDevices() {
     if (settings.directDeviceMonitoring !== true) {
-      directObserverRetiring = true
+      directObserverRestartPending = false
+      directObserverRetiring = directObserverOwned && directDeviceProc.running
       directObserverRetry.stop()
       directDeviceProc.running = false
+      if (!directObserverRetiring) directObserverOwned = false
       clearDirectObserverState()
       directObserverStartedAt = 0
       directObserverRetryMilliseconds = 1000
       setObserverHealth("direct-device", "healthy", "ok", "")
       return
     }
-    directObserverRetiring = false
+    if (directObserverRetiring) {
+      directObserverRestartPending = true
+      return
+    }
     directObserverRetry.stop()
     var desiredCommand = [
       observerHelperPath(),
       "watch", "--heartbeat", String(boundedSeconds(settings.directDevicePollSeconds, 5, 2, 60))
     ]
-    if (directDeviceProc.running) {
+    if (directObserverOwned) {
+      if (!directDeviceProc.running) {
+        directDeviceProc.command = desiredCommand
+        directObserverStartedAt = Date.now()
+        return
+      }
       if (JSON.stringify(directDeviceProc.command) === JSON.stringify(desiredCommand)) return
+      directObserverRestartPending = true
       directObserverRetiring = true
       directDeviceProc.running = false
-      Qt.callLater(refreshDirectDevices)
       return
     }
+    directObserverRestartPending = false
+    directObserverRetiring = false
     directDeviceProc.command = desiredCommand
     directObserverStartedAt = Date.now()
+    directObserverOwned = true
     directDeviceProc.running = true
   }
 
@@ -601,7 +765,7 @@ Item {
   function controlProcessBusy(kind) {
     if (kind === "microphone") return microphoneControlProc.running
     if (kind === "audio-output") return outputControlProc.running
-    return privacyControlProc.running
+    return privacyControlKind !== "" || privacyControlProc.running
   }
 
   function controlRequestStatus(kind) {
@@ -686,15 +850,15 @@ Item {
   }
 
   function refreshDependencies() {
-    var scheduled = Model.scheduleProbeRefresh(dependencyCheckProc.running, enabledKinds())
+    var scheduled = Model.scheduleProbeRefresh(dependencyCheckBusy, enabledKinds())
     dependencyQueue = scheduled.queue
     dependencyRefreshPending = scheduled.refreshPending
-    if (dependencyCheckProc.running) return
+    if (dependencyCheckBusy) return
     runNextDependencyCheck()
   }
 
   function runNextDependencyCheck() {
-    var next = Model.nextProbeAction(dependencyQueue, dependencyRefreshPending, dependencyCheckProc.running)
+    var next = Model.nextProbeAction(dependencyQueue, dependencyRefreshPending, dependencyCheckBusy)
     if (next.action === "wait" || next.action === "idle") return
     if (next.action === "refresh") {
       refreshDependencies()
@@ -702,6 +866,7 @@ Item {
     }
     dependencyQueue = next.queue
     dependencyCheckKind = next.kind
+    dependencyCheckBusy = true
     dependencyCheckProc.command = [dependencyHelperPath(), "check", dependencyCheckKind, recordingBackend(), audioControlBackend(), screenshotBackend()]
     dependencyCheckProc.running = true
   }
@@ -736,6 +901,7 @@ Item {
   }
 
   function audioStateCommand(kind) {
+    if (audioStateHelperOverride) return [audioStateHelperOverride, kind]
     var pactlTarget = kind === "microphone" ? "source" : "sink"
     var pactlName = kind === "microphone" ? "@DEFAULT_SOURCE@" : "@DEFAULT_SINK@"
     var wpctlName = kind === "microphone" ? "@DEFAULT_AUDIO_SOURCE@" : "@DEFAULT_AUDIO_SINK@"
@@ -801,9 +967,24 @@ Item {
     for (var index = 0; index < entries.length; index++) previous[entries[index].kind] = entries[index].enabled === true
     var plan = Model.privacyPresetPlan(entries, false)
     privacyPresetPrevious = previous
+    privacyPresetName = "Lockdown"
     privacyPresetUndoAvailable = false
     privacyPresetUndoTimer.stop()
     return startPrivacyPreset(plan, false)
+  }
+
+  function requestPrivacyMode(mode) {
+    var clean = Model.sanitizePrivacyModes([mode])
+    if (!clean.length) return false
+    var entries = privacyPresetEntries()
+    var previous = {}
+    for (var index = 0; index < entries.length; index++) previous[entries[index].kind] = entries[index].enabled === true
+    privacyPresetPrevious = previous
+    privacyPresetName = clean[0].name
+    privacyPresetUndoAvailable = false
+    privacyPresetUndoTimer.stop()
+    entries = entries.filter(function(entry) { return Object.prototype.hasOwnProperty.call(clean[0].controls, entry.kind) })
+    return startPrivacyPreset(Model.privacyPresetPlan(entries, clean[0].controls), false)
   }
 
   function restorePrivacyLockdown() {
@@ -856,10 +1037,10 @@ Item {
   }
 
   function privacyPresetMessage() {
-    if (privacyPresetState === "applying") return "Applying privacy lockdown…"
+    if (privacyPresetState === "applying") return "Applying " + (privacyPresetName || "privacy mode") + "…"
     if (privacyPresetState === "restoring") return "Restoring previous privacy state…"
     if (privacyPresetState === "partial") return "Privacy preset finished with unavailable or failed controls."
-    if (privacyPresetState === "succeeded") return privacyPresetUndoAvailable ? "Privacy lockdown verified. Undo is available for 30 seconds." : "Privacy preset verified."
+    if (privacyPresetState === "succeeded") return privacyPresetUndoAvailable ? (privacyPresetName || "Privacy mode") + " verified. Undo is available for 30 seconds." : "Privacy mode verified."
     return ""
   }
 
@@ -1031,7 +1212,7 @@ Item {
   }
 
   function refreshPreventativeControls() {
-    var busy = privacyControlProc.running || privacyControlKind !== "" || privacyStateProc.running
+    var busy = privacyControlProc.running || privacyControlKind !== "" || privacyStateBusy
     var scheduled = Model.scheduleProbeRefresh(busy, preventativeProbeKinds)
     privacyStateQueue = scheduled.queue
     privacyStateRefreshPending = scheduled.refreshPending
@@ -1041,10 +1222,11 @@ Item {
 
   property var privacyStateQueue: []
   property string privacyStateKind: ""
+  property bool privacyStateBusy: false
   property bool privacyStateRefreshPending: false
 
   function runNextPrivacyState() {
-    var next = Model.nextProbeAction(privacyStateQueue, privacyStateRefreshPending, privacyStateProc.running)
+    var next = Model.nextProbeAction(privacyStateQueue, privacyStateRefreshPending, privacyStateBusy)
     if (next.action === "wait" || next.action === "idle") return
     if (next.action === "refresh") {
       refreshPreventativeControls()
@@ -1052,19 +1234,39 @@ Item {
     }
     privacyStateQueue = next.queue
     privacyStateKind = next.kind
+    privacyStateBusy = true
     privacyStateProc.command = [helperPath(), "status", privacyStateKind]
     privacyStateProc.running = true
   }
 
+  function refreshAudioState(kind) {
+    if (!kindEnabled(kind) && !controlPending(kind)) return false
+    if (kind === "microphone") {
+      if (microphoneStateBusy) { microphoneStatePending = true; return true }
+      else {
+        microphoneStatePending = false
+        microphoneStateBusy = true
+        microphoneStateProc.command = audioStateCommand("microphone")
+        microphoneStateProc.running = true
+        return true
+      }
+    }
+    if (kind === "audio-output") {
+      if (outputStateBusy) { outputStatePending = true; return true }
+      else {
+        outputStatePending = false
+        outputStateBusy = true
+        outputStateProc.command = audioStateCommand("audio-output")
+        outputStateProc.running = true
+        return true
+      }
+    }
+    return false
+  }
+
   function refreshMuteState() {
-    if ((kindEnabled("microphone") || controlPending("microphone")) && !microphoneStateProc.running) {
-      microphoneStateProc.command = audioStateCommand("microphone")
-      microphoneStateProc.running = true
-    }
-    if ((kindEnabled("audio-output") || controlPending("audio-output")) && !outputStateProc.running) {
-      outputStateProc.command = audioStateCommand("audio-output")
-      outputStateProc.running = true
-    }
+    refreshAudioState("microphone")
+    refreshAudioState("audio-output")
   }
 
   function snapshot() {
@@ -1092,17 +1294,23 @@ Item {
     lastFallbackRefreshAt = Date.now()
     refreshPreventativeControls()
     if (kindEnabled("location")) refreshLocation()
-    else { locationActive = false; locationApps = [] }
+    else { locationProbePending = false; locationActive = false; locationApps = [] }
     refreshFallbackObserver()
   }
 
   function refreshLocation() {
-    if (locationProc.running) return
-    locationProc.command = [String(Qt.resolvedUrl("privacy-location")).replace(/^file:\/\//, "")]
+    if (!kindEnabled("location")) return false
+    if (locationProbeBusy) { locationProbePending = true; return true }
+    locationProbePending = false
+    locationProbeBusy = true
+    locationProbeGeneration = locationGeneration
+    locationProc.command = [locationHelperOverride || String(Qt.resolvedUrl("privacy-location")).replace(/^file:\/\//, "")]
     locationProc.running = true
+    return true
   }
 
   function parseLocation(text) {
+    if (locationProbeGeneration !== locationGeneration || !kindEnabled("location")) return false
     try {
       var result = JSON.parse(String(text || "{}"))
       if (result.type !== "location-snapshot" || !Array.isArray(result.applications)) throw new Error("invalid location payload")
@@ -1112,6 +1320,7 @@ Item {
       locationActive = false
       locationApps = []
     }
+    return true
   }
 
   Timer {
@@ -1134,6 +1343,7 @@ Item {
     interval: 8000
     onTriggered: if (root.privacyPresetState !== "applying" && root.privacyPresetState !== "restoring") root.privacyPresetState = "idle"
   }
+  Timer { id: inspectionMessageTimer; interval: 5000; onTriggered: root.inspectionMessage = "" }
 
   Timer {
     id: preventativeControlTimer
@@ -1160,34 +1370,33 @@ Item {
     onTriggered: root.refreshSessions()
   }
 
-  Timer {
+  PrivacyObserverWatchdog {
     id: directObserverRetry
     interval: root.directObserverRetryMilliseconds
-    repeat: false
-    onTriggered: root.refreshDirectDevices()
-  }
-
-  Timer {
-    id: directObserverHeartbeat
-    interval: 5000
-    repeat: true
-    running: root.settings.directDeviceMonitoring === true
-    onTriggered: {
-      var heartbeat = root.boundedSeconds(root.settings.directDevicePollSeconds, 5, 2, 60)
-      if (!Model.observerHeartbeatState(root.directObserverLastSeen, root.directObserverStartedAt, Date.now(), heartbeat).stale) return
+    enabled: root.settings.directDeviceMonitoring === true
+    processRunning: directDeviceProc.running
+    retiring: root.directObserverRetiring
+    lastSeen: root.directObserverLastSeen
+    startedAt: root.directObserverStartedAt
+    heartbeatSeconds: root.boundedSeconds(root.settings.directDevicePollSeconds, 5, 2, 60)
+    onRetryRequested: root.refreshDirectDevices()
+    onHeartbeatStale: {
       root.clearDirectObserverState()
       root.setObserverHealth("direct-device", "degraded", "heartbeat_stale", "observer heartbeat is stale")
     }
   }
 
-  Timer {
-    id: fallbackObserverHeartbeat
-    interval: 5000
-    repeat: true
-    running: root.kindEnabled("screen-recording") || root.kindEnabled("screenshot")
-    onTriggered: {
-      var heartbeat = root.boundedSeconds(root.settings.recordingPollSeconds, 2, 1, 60)
-      if (!Model.observerHeartbeatState(root.fallbackObserverLastSeen, root.fallbackObserverStartedAt, Date.now(), heartbeat).stale) return
+  PrivacyObserverWatchdog {
+    id: fallbackObserverRetry
+    interval: root.fallbackObserverRetryMilliseconds
+    enabled: root.kindEnabled("screen-recording") || root.kindEnabled("screenshot")
+    processRunning: fallbackObserverProc.running
+    retiring: root.fallbackObserverRetiring
+    lastSeen: root.fallbackObserverLastSeen
+    startedAt: root.fallbackObserverStartedAt
+    heartbeatSeconds: root.boundedSeconds(root.settings.recordingPollSeconds, 2, 1, 60)
+    onRetryRequested: root.refreshFallbackObserver()
+    onHeartbeatStale: {
       root.clearFallbackObserverState()
       root.setObserverHealth("fallback-observer", "degraded", "heartbeat_stale", "fallback observer heartbeat is stale")
     }
@@ -1201,7 +1410,6 @@ Item {
     onTriggered: root.refreshMuteState()
   }
 
-  Timer { id: fallbackObserverRetry; interval: root.fallbackObserverRetryMilliseconds; onTriggered: root.refreshFallbackObserver() }
   Timer { id: notificationFlush; interval: 400; onTriggered: root.flushActivityNotifications() }
   Timer { id: activityBaseline; interval: 5000; running: true; onTriggered: root.activityInitialized = true }
 
@@ -1232,30 +1440,55 @@ Item {
 
   Process {
     id: audioEndpointListProc
-    onExited: function(exitCode) { if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoints could not be read." }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoints could not be read."
+      root.audioEndpointOperation = ""
+      root.runPendingAudioEndpointRefresh()
+    }
     stdout: StdioCollector { id: audioEndpointListOutput; waitForEnd: true; onStreamFinished: root.acceptAudioEndpoints(root.audioEndpointKind, audioEndpointListOutput.text) }
   }
 
   Process {
     id: audioEndpointSetProc
-    onExited: function(exitCode) { if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoint state was not changed." }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoint state was not changed."
+      root.audioEndpointOperation = ""
+      root.runPendingAudioEndpointRefresh()
+    }
     stdout: StdioCollector { id: audioEndpointSetOutput; waitForEnd: true; onStreamFinished: root.acceptAudioEndpoints(root.audioEndpointKind, audioEndpointSetOutput.text) }
   }
 
   Process {
     id: locationProc
-    onExited: function(exitCode) { root.setResult("probe", "location", exitCode) }
+    onExited: function(exitCode) {
+      if (root.locationProbeGeneration === root.locationGeneration && root.kindEnabled("location"))
+        root.setResult("probe", "location", exitCode)
+      root.locationProbeBusy = false
+      if (root.locationProbePending && root.kindEnabled("location")) root.refreshLocation()
+    }
     stdout: StdioCollector { waitForEnd: true; onStreamFinished: function(text) { root.parseLocation(text) } }
   }
 
   Process {
     id: microphoneStateProc
-    onExited: function(exitCode) { root.setResult("probe", "microphone", exitCode); root.fallbackMicrophoneMuted = Model.mutedFromExitCode(exitCode, root.fallbackMicrophoneMuted); root.verifyControlTransaction("microphone", !root.fallbackMicrophoneMuted, exitCode === 10 || exitCode === 11) }
+    onExited: function(exitCode) {
+      root.setResult("probe", "microphone", exitCode)
+      root.fallbackMicrophoneMuted = Model.mutedFromExitCode(exitCode, root.fallbackMicrophoneMuted)
+      root.verifyControlTransaction("microphone", !root.fallbackMicrophoneMuted, exitCode === 10 || exitCode === 11)
+      root.microphoneStateBusy = false
+      if (root.microphoneStatePending) root.refreshAudioState("microphone")
+    }
   }
 
   Process {
     id: outputStateProc
-    onExited: function(exitCode) { root.setResult("probe", "audio-output", exitCode); root.fallbackOutputMuted = Model.mutedFromExitCode(exitCode, root.fallbackOutputMuted); root.verifyControlTransaction("audio-output", !root.fallbackOutputMuted, exitCode === 10 || exitCode === 11) }
+    onExited: function(exitCode) {
+      root.setResult("probe", "audio-output", exitCode)
+      root.fallbackOutputMuted = Model.mutedFromExitCode(exitCode, root.fallbackOutputMuted)
+      root.verifyControlTransaction("audio-output", !root.fallbackOutputMuted, exitCode === 10 || exitCode === 11)
+      root.outputStateBusy = false
+      if (root.outputStatePending) root.refreshAudioState("audio-output")
+    }
   }
 
   Process {
@@ -1276,6 +1509,7 @@ Item {
         root.setAllowed(root.privacyStateKind, Model.mutedFromExitCode(exitCode, root.controlEnabled(root.privacyStateKind)))
         root.verifyControlTransaction(root.privacyStateKind, root.controlEnabled(root.privacyStateKind), exitCode === 10 || exitCode === 11)
       }
+      root.privacyStateBusy = false
       root.runNextPrivacyState()
     }
   }
@@ -1294,6 +1528,7 @@ Item {
   Process {
     id: dependencyCheckProc
     onExited: function(exitCode) {
+      root.dependencyCheckBusy = false
       if (!root.dependencyRefreshPending) {
         var ready = Object.assign({}, root.dependencyReadyMap)
         var checked = Object.assign({}, root.dependencyCheckedMap)
@@ -1309,7 +1544,13 @@ Item {
   Process {
     id: directDeviceProc
     onExited: function(exitCode) {
-      if (root.directObserverRetiring || root.settings.directDeviceMonitoring !== true) return
+      root.directObserverOwned = false
+      if (root.directObserverRetiring) {
+        root.directObserverRetiring = false
+        if (root.directObserverRestartPending && root.settings.directDeviceMonitoring === true) root.refreshDirectDevices()
+        return
+      }
+      if (root.settings.directDeviceMonitoring !== true) return
       root.clearDirectObserverState()
       root.setObserverHealth("direct-device", "degraded", "observer_exited", "observer exited with code " + exitCode)
       directObserverRetry.interval = root.directObserverRetryMilliseconds
@@ -1322,7 +1563,13 @@ Item {
   Process {
     id: fallbackObserverProc
     onExited: function(exitCode) {
-      if (root.fallbackObserverRetiring || (!root.kindEnabled("screen-recording") && !root.kindEnabled("screenshot"))) return
+      root.fallbackObserverOwned = false
+      if (root.fallbackObserverRetiring) {
+        root.fallbackObserverRetiring = false
+        if (root.fallbackObserverRestartPending && (root.kindEnabled("screen-recording") || root.kindEnabled("screenshot"))) root.refreshFallbackObserver()
+        return
+      }
+      if (!root.kindEnabled("screen-recording") && !root.kindEnabled("screenshot")) return
       root.clearFallbackObserverState()
       root.setObserverHealth("fallback-observer", "degraded", "observer_exited", "observer exited with code " + exitCode)
       root.fallbackObserverRetryMilliseconds = Math.min(root.fallbackObserverRetryMilliseconds * 2, 60000)
@@ -1345,8 +1592,10 @@ Item {
   Process {
     id: historyLoadProc
     onExited: function(exitCode) {
+      root.historyLoadBusy = false
       if (root.historyLoadGeneration === root.historyGeneration)
         root.historyLoaded = root.settings.historyEnabled !== true || exitCode === 0
+      if (root.historyLoadPending && root.settings.historyEnabled === true) root.loadHistory()
     }
     stdout: StdioCollector {
       id: historyLoadOutput
@@ -1363,6 +1612,14 @@ Item {
           root.recentHistory = []
         }
       }
+    }
+  }
+
+  Process {
+    id: historyMutationProc
+    onExited: function(_exitCode) {
+      root.historyMutationBusy = false
+      root.runNextHistoryMutation()
     }
   }
 
@@ -1437,6 +1694,14 @@ Item {
     function state(owner: string): string {
       if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
       return JSON.stringify({settings: root.capturePreviewSettings, sessions: root.capturePreviewSessions, barSessions: root.capturePreviewBarSessions})
+    }
+    function presentation(owner: string, screenName: string): string {
+      if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
+      return JSON.stringify(root.barPresentation(screenName))
+    }
+    function closePanel(owner: string, screenName: string): string { return root.closeCapturePanel(owner, screenName) }
+    function openPanel(owner: string, screenName: string, mode: string, page: string, section: string): string {
+      return root.openCapturePanel(owner, screenName, mode, page, section)
     }
     function openHistoryDisabled(owner: string): string {
       if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"

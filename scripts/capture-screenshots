@@ -21,7 +21,6 @@ monitor=""
 capture_workspace=""
 verify_only=false
 report_file=""
-settle_seconds=1
 panel_width=500
 panel_side_padding=16
 
@@ -30,8 +29,8 @@ usage() {
 Usage: scripts/capture-screenshots [--monitor NAME] [--workspace ID] [--verify] [--report FILE]
 
 Capture the live plugin on an empty workspace, update repository screenshots,
-and restore the monitor's original workspace. Defaults to the focused monitor
-and the highest-numbered empty workspace already assigned to it.
+and restore the monitor's original workspace. By default, the monitor containing
+the launching focused window is selected; --monitor overrides that choice.
 
 --verify performs the complete capture and restoration flow without publishing
 repository assets, then fails if any protected state or the shell PID changed.
@@ -62,8 +61,14 @@ flock -n 9 || { printf 'Another screenshot capture is already running.\n' >&2; e
 
 monitor_json=$(hyprctl monitors -j)
 cursor_json=$(hyprctl cursorpos -j)
+active_window_json=$(hyprctl activewindow -j)
 if [[ -z $monitor ]]; then
-  monitor=$(jq -r '.[] | select(.focused) | .name' <<<"$monitor_json" | head -n 1)
+  monitor_state=$(jq -cn --argjson active "$active_window_json" --argjson monitors "$monitor_json" --argjson cursor "$cursor_json" \
+    '{active:$active,monitors:$monitors,cursor:$cursor}')
+  monitor=$(scripts/select-capture-monitor "$monitor_state") || {
+    printf 'Could not determine the launch monitor; pass --monitor NAME.\n' >&2
+    exit 2
+  }
 fi
 [[ $monitor =~ ^[A-Za-z0-9_.-]+$ ]] || { printf 'Invalid monitor name: %s\n' "$monitor" >&2; exit 2; }
 
@@ -119,7 +124,19 @@ wait_for_shell() {
 
 focus_capture_workspace() {
   local attempt focused workspace
-  hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null
+  # Moving the pointer is the only monitor-selection path that is independent
+  # of optional workspace-routing plugins. Do not switch workspaces until the
+  # compositor confirms that the requested output owns focus.
+  hyprctl eval "hl.dispatch(hl.dsp.cursor.move({ x = $((monitor_x + monitor_width / 2)), y = $((monitor_y + monitor_height / 2)) }))" >/dev/null
+  for attempt in {1..20}; do
+    focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
+    [[ $focused == true ]] && break
+    sleep 0.1
+  done
+  [[ $focused == true ]] || {
+    printf 'Could not focus capture monitor %s.\n' "$monitor" >&2
+    return 1
+  }
   hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$capture_workspace\" }))" >/dev/null
   for attempt in {1..20}; do
     focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
@@ -141,7 +158,13 @@ restore_cursor() {
 
 restore_original_workspace() {
   local attempt focused workspace
-  hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null 2>&1 || return 1
+  hyprctl eval "hl.dispatch(hl.dsp.cursor.move({ x = $((monitor_x + monitor_width / 2)), y = $((monitor_y + monitor_height / 2)) }))" >/dev/null 2>&1 || return 1
+  for attempt in {1..20}; do
+    focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
+    [[ $focused == true ]] && break
+    sleep 0.1
+  done
+  [[ $focused == true ]] || return 1
   hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$original_workspace\" }))" >/dev/null 2>&1 || return 1
   for attempt in {1..20}; do
     focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
@@ -185,7 +208,7 @@ capture_has_panel() {
   local image=$1 light_fraction
   capture_has_content "$image" || return 1
   light_fraction=$(magick "$image" -crop '400x80+66+30' +repage -colorspace gray -threshold 35% -format '%[fx:mean]' info: 2>/dev/null || true)
-  [[ $light_fraction =~ ^[0-9]+([.][0-9]+)?$ ]] && awk -v value="$light_fraction" 'BEGIN { exit !(value < 0.70) }'
+  [[ $light_fraction =~ ^[0-9]+([.][0-9]+)?$ ]] && awk -v value="$light_fraction" 'BEGIN { exit !(value > 0.01 && value < 0.70) }'
 }
 
 capture_monitor_frame() {
@@ -209,23 +232,63 @@ expect_ipc_reply() {
   }
 }
 
+wait_for_panel_presentation() {
+  local mode=$1 page=${2:-} section=${3:-} attempt state expected_view
+  case "$mode" in
+    settings|settings-section) expected_view=settings ;;
+    device) expected_view=device ;;
+    history|history-disabled) expected_view=history ;;
+    activity) expected_view=activity ;;
+    *) return 1 ;;
+  esac
+  for attempt in {1..40}; do
+    check_capture_environment || return 1
+    state=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 presentation "$capture_owner" "$monitor" 2>/dev/null || true)
+    if jq -e --arg view "$expected_view" --arg page "$page" --arg section "$section" '
+      .opened == true and .ready == true and .view == $view
+      and ($view != "device" or .argument == $page)
+      and ($view != "settings" or (.settingsPage == $page and .settingsSection == $section))
+    ' <<<"${state:-null}" >/dev/null 2>&1; then return 0; fi
+    sleep 0.1
+  done
+  printf 'Panel did not acknowledge %s view on %s.\n' "$expected_view" "$monitor" >&2
+  return 1
+}
+
+wait_for_panel_closed() {
+  local attempt state
+  for attempt in {1..30}; do
+    state=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 presentation "$capture_owner" "$monitor" 2>/dev/null || true)
+    if jq -e '.opened != true' <<<"${state:-null}" >/dev/null 2>&1; then return 0; fi
+    sleep 0.1
+  done
+  printf 'Panel on %s did not acknowledge closing.\n' "$monitor" >&2
+  return 1
+}
+
 capture_panel() {
   local name=$1 mode=$2 page=${3:-} height=${4:-660} section=${5:-} crop_top=${6:-20} attempt
   for attempt in {1..4}; do
     : "$attempt"
     check_capture_environment || return 1
     focus_capture_workspace || return 1
+    # The bar routes a summon to an already-open copy before considering the
+    # focused monitor. Close that copy first so every capture opens on the
+    # monitor and workspace selected above instead of following stale UI state.
+    expect_ipc_reply ok privacy-devices-capture-v2 closePanel "$capture_owner" "$monitor" || continue
+    wait_for_panel_closed || continue
     case "$mode" in
-      history) expect_ipc_reply history privacy-devices-settings openHistory ;;
-      history-disabled) expect_ipc_reply history-disabled privacy-devices-capture-v2 openHistoryDisabled "$capture_owner" ;;
-      settings) expect_ipc_reply "$page" privacy-devices-settings open "$page" ;;
-      settings-section) expect_ipc_reply "$page#$section" privacy-devices-settings openSection "$page" "$section" ;;
-      activity) qs ipc --pid "$shell_pid" call shell summon "$plugin_id" "" >/dev/null ;;
-      device)
-        expect_ipc_reply activity privacy-devices openActivity "${page:-microphone}"
+      history) expect_ipc_reply history privacy-devices-capture-v2 openPanel "$capture_owner" "$monitor" "$mode" "$page" "$section" ;;
+      history-disabled)
+        expect_ipc_reply history-disabled privacy-devices-capture-v2 openPanel "$capture_owner" "$monitor" "$mode" "$page" "$section"
+        capture_preview_state=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 state "$capture_owner" 2>/dev/null || true)
         ;;
+      settings) expect_ipc_reply "$page" privacy-devices-capture-v2 openPanel "$capture_owner" "$monitor" "$mode" "$page" "$section" ;;
+      settings-section) expect_ipc_reply "$page#$section" privacy-devices-capture-v2 openPanel "$capture_owner" "$monitor" "$mode" "$page" "$section" ;;
+      activity) expect_ipc_reply activity privacy-devices-capture-v2 openPanel "$capture_owner" "$monitor" "$mode" "$page" "$section" ;;
+      device) expect_ipc_reply activity privacy-devices-capture-v2 openPanel "$capture_owner" "$monitor" "$mode" "${page:-microphone}" "$section" ;;
     esac
-    sleep "$settle_seconds"
+    wait_for_panel_presentation "$mode" "$page" "$section" || continue
     resolve_geometry || return 1
     capture_monitor_frame "$capture_dir/$name-full.png"
     magick "$capture_dir/$name-full.png" \
@@ -319,7 +382,10 @@ close_capture_notification() {
 }
 set_capture_preview() {
   local payload reply settings
-  settings=$(jq -cn '{}')
+  settings=$(jq -cn '{privacyModes:[
+    {name:"Meeting",controls:{microphone:true,"audio-output":true,camera:true,"screen-share":false,location:false}},
+    {name:"Travel",controls:{microphone:false,"audio-output":true,camera:false,"screen-share":false,location:false}}
+  ]}')
   payload=$(jq -cn --arg owner "$capture_owner" --argjson settings "$settings" --argjson history "$history_samples" --argjson sessions "$activity_samples" '{owner:$owner,settings:$settings,history:$history,sessions:$sessions}' | base64 -w 0)
   reply=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 beginCapture "$payload" 2>/dev/null || true)
   [[ $reply == ok ]] || { printf 'Could not activate in-memory capture preview.\n' >&2; return 1; }
@@ -422,9 +488,11 @@ capture_panel monitoring-health settings-section monitoring 290 observer-health 
 capture_panel device device microphone 660
 capture_panel activity activity "" 500
 capture_panel appearance settings appearance 660
+capture_panel history history "" 660
+capture_panel history-disabled history-disabled "" 240
 
-qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null
-sleep "$settle_seconds"
+expect_ipc_reply ok privacy-devices-capture-v2 closePanel "$capture_owner" "$monitor"
+wait_for_panel_closed
 resolve_geometry
 capture_monitor_frame "$capture_dir/bar-full.png"
 
@@ -436,18 +504,24 @@ if [[ $dnd_state == on ]]; then
 fi
 notification_x=$((monitor_width - 428))
 ((notification_x >= 0)) || { printf 'Monitor is too narrow for notification capture.\n' >&2; exit 1; }
-for attempt in {1..4}; do
-  omarchy notification send --app-name "Privacy Devices" \
-    --icon firefox --urgency normal --expire-time 15000 \
-    "$notification_summary" "Firefox: Microphone"
-  notification_visible=true
-  sleep "$settle_seconds"
+capture_monitor_frame "$capture_dir/notification-baseline-full.png"
+magick "$capture_dir/notification-baseline-full.png" -crop "420x160+${notification_x}+30" \
+  +repage "$capture_dir/notification-baseline.png"
+omarchy notification send --app-name "Privacy Devices" \
+  --icon firefox --urgency normal --expire-time 15000 \
+  "$notification_summary" "Firefox: Microphone"
+notification_visible=true
+notification_changed=false
+for attempt in {1..40}; do
   grim -o "$monitor" "$capture_dir/notification-full.png"
   magick "$capture_dir/notification-full.png" -crop "420x160+${notification_x}+30" \
     +repage "$capture_dir/notification.png"
-  capture_has_content "$capture_dir/notification.png" && break
-  close_capture_notification
+  changed_pixels=$(magick compare -metric AE -fuzz 3% "$capture_dir/notification-baseline.png" \
+    "$capture_dir/notification.png" null: 2>&1 || true)
+  if [[ $changed_pixels =~ ^[0-9]+$ ]] && ((changed_pixels >= 500)); then notification_changed=true; break; fi
+  sleep 0.1
 done
+[[ $notification_changed == true ]] || { printf 'Notification did not become visibly ready on %s.\n' "$monitor" >&2; exit 1; }
 dismiss_result=$(qs ipc --pid "$shell_pid" call notifications dismiss "$notification_summary")
 if [[ $dismiss_result != ok ]]; then
   printf 'Capture notification dismissal was unavailable; it will expire automatically.\n' >&2
@@ -496,8 +570,8 @@ optimize_png() {
 if [[ $verify_only == false ]]; then
   optimize_png "$capture_dir/activity.png" "$publish_dir/preview.png"
   install -m 0644 "$publish_dir/preview.png" "$publish_dir/docs/preview.png"
-  install -m 0644 docs/history.png "$publish_dir/docs/history.png"
-  install -m 0644 docs/history-disabled.png "$publish_dir/docs/history-disabled.png"
+  optimize_png "$capture_dir/history.png" "$publish_dir/docs/history.png"
+  optimize_png "$capture_dir/history-disabled.png" "$publish_dir/docs/history-disabled.png"
   for page in general appearance alerts monitoring; do
     optimize_png "$capture_dir/$page.png" "$publish_dir/docs/$page.png"
   done

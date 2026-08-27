@@ -7,6 +7,56 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Added
+
+- Add locally stored named privacy modes that reapply available device controls
+  through the existing verified serial transaction and undo path.
+- Add bounded history trends, device/evidence filters, and stable sort modes.
+- Add session-only audio-endpoint discovery feedback and a privacy-safe live
+  application inspection target for diagnostics and X-Ray-style workflows.
+
+### Changed
+
+- Share retry and heartbeat ownership through a tested observer watchdog.
+- Move QML runtime harnesses under `tests/qml/` while preserving installed-root
+  import semantics in the live runner.
+- Make screenshot capture monitor-specific, fresh for every documented view,
+  resistant to blank/duplicate evidence, and independent of optional workspace
+  routing plugins.
+- Compact history filters into one responsive row and hide idle bar icons by
+  default for new installations and global resets.
+
+### Fixed
+
+- Preserve the latest audio-endpoint refresh while another endpoint operation
+  is active instead of depending on asynchronous `Process.running` updates.
+- Restart reconfigured observers only after confirmed teardown, allow stopped
+  observers to re-enable, and serialize dependency/shared-control ownership.
+- Replace timing-based QML debounce and observer assertions with event-driven
+  completion plus bounded failure deadlines.
+- Serialize history writes in request order, retain the newest history reload
+  across in-flight work, and publish capture-preview expiry only after its
+  transient payload has been cleared.
+- Replace fixed-delay settings, confirmation, preview-expiry, verification, and
+  session-refresh runtime checks with observed completion signals.
+- Wait for the selected monitor's bar instance to acknowledge panel closure and
+  the fully rendered destination view before capturing screenshots.
+- Prevent superseded GeoClue probes from republishing location activity after
+  location monitoring is disabled or reconfigured.
+- Claim observer startup ownership synchronously so same-turn configuration
+  changes cannot launch or overwrite competing observer processes.
+- Retain one final microphone and output-state probe independently while their
+  respective subprocess is busy, including post-control verification refreshes.
+- Capture a single documentation notification after its pixels differ from a
+  fresh monitor baseline instead of sleeping and potentially sending duplicates.
+- Select the capture monitor from the launching focused window, with pointer and
+  focused-output fallbacks plus an explicit override, then route capture-only
+  panel actions to that output's registered bar instance.
+- Stop screenshot capture from switching the workspace on one monitor while
+  recording another, and restore the selected monitor without overriding the
+  user's original pointer/focus context.
+- Avoid accepting wallpaper-only crops as populated plugin screenshots.
+
 ## [0.7.0] - 2026-08-26
 
 ### Added
@@ -32,8 +82,8 @@ maintainer guides that define release and validation procedures.
 
 ### Changed
 
-- Match new installations to the standard bar presentation with idle device
-  icons visible and activity status markers disabled.
+- Match new installations to the compact bar presentation with idle device
+  icons and activity status markers disabled.
 - Keep screenshot capture presentation-neutral while freezing only its sample
   activity and documentation history.
 - Use accent for allowed in-use devices, foreground for enabled idle devices,

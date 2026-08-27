@@ -38,6 +38,7 @@ trap cleanup_runtime EXIT INT TERM
 }
 find "$plugin_dir" -maxdepth 1 -type f -exec ln -s -- '{}' "$runtime_dir/" \;
 ln -s -- "$plugin_dir/tests" "$runtime_dir/tests"
+find "$plugin_dir/tests/qml" -maxdepth 1 -type f -name 'Runtime*Test.qml' -exec ln -s -- '{}' "$runtime_dir/" \;
 ln -s -- "$shell_root/Commons" "$runtime_dir/Commons"
 ln -s -- "$shell_root/Ui" "$runtime_dir/Ui"
 
@@ -83,6 +84,8 @@ run_harness RuntimeSettingsTransferResultTest.qml PRIVACY_QML_SETTINGS_TRANSFER_
 run_harness RuntimeAppearanceSettingsTest.qml PRIVACY_QML_APPEARANCE_SETTINGS_OK
 run_harness RuntimeDeepLinkTest.qml PRIVACY_QML_DEEP_LINK_OK
 run_harness RuntimeAudioEndpointSettingsTest.qml PRIVACY_QML_AUDIO_ENDPOINT_SETTINGS_OK
+run_harness RuntimeAudioEndpointQueueTest.qml PRIVACY_QML_AUDIO_ENDPOINT_QUEUE_OK
+run_harness RuntimeMuteProbeQueueTest.qml PRIVACY_QML_MUTE_PROBE_QUEUE_OK
 run_harness RuntimeBarSemanticColorTest.qml PRIVACY_QML_BAR_SEMANTIC_COLOR_OK
 run_harness RuntimeActivityCardStateTest.qml PRIVACY_QML_ACTIVITY_CARD_STATE_OK
 run_harness RuntimeLockdownButtonTest.qml PRIVACY_QML_LOCKDOWN_BUTTON_OK
@@ -93,6 +96,8 @@ run_harness RuntimeMonitoringActionsTest.qml PRIVACY_QML_MONITORING_ACTIONS_OK
 run_harness RuntimeActivityPolicyActionsTest.qml PRIVACY_QML_ACTIVITY_POLICY_ACTIONS_OK
 run_harness RuntimePrivateDataActionsTest.qml PRIVACY_QML_PRIVATE_DATA_ACTIONS_OK
 run_harness RuntimeHistoryViewTest.qml PRIVACY_QML_HISTORY_VIEW_OK
+run_harness RuntimeHistoryLoadSupersessionTest.qml PRIVACY_QML_HISTORY_LOAD_SUPERSESSION_OK
+run_harness RuntimeHistoryMutationQueueTest.qml PRIVACY_QML_HISTORY_MUTATION_QUEUE_OK
 run_harness RuntimeDeviceAppearanceMutationTest.qml PRIVACY_QML_DEVICE_APPEARANCE_MUTATION_OK
 run_harness RuntimeGeneralSettingsTest.qml PRIVACY_QML_GENERAL_SETTINGS_OK
 run_harness RuntimeAlertsSettingsTest.qml PRIVACY_QML_ALERTS_SETTINGS_OK
@@ -128,6 +133,10 @@ run_harness RuntimeHelperCommandBoundaryTest.qml PRIVACY_QML_HELPER_COMMAND_BOUN
 run_harness RuntimeServiceStateMutationTest.qml PRIVACY_QML_SERVICE_STATE_MUTATION_OK
 run_harness RuntimeBarSessionPolicyTest.qml PRIVACY_QML_BAR_SESSION_POLICY_OK
 run_harness RuntimeObserverSessionTeardownTest.qml PRIVACY_QML_OBSERVER_SESSION_TEARDOWN_OK
+run_harness RuntimeObserverWatchdogTest.qml PRIVACY_QML_OBSERVER_WATCHDOG_OK
+run_harness RuntimeObserverReconfigurationTest.qml PRIVACY_QML_OBSERVER_RECONFIGURATION_OK
+run_harness RuntimeObserverStartupOwnershipTest.qml PRIVACY_QML_OBSERVER_STARTUP_OWNERSHIP_OK
+run_harness RuntimeLocationProbeSupersessionTest.qml PRIVACY_QML_LOCATION_PROBE_SUPERSESSION_OK
 run_harness RuntimeIpcDispatchTest.qml PRIVACY_QML_IPC_DISPATCH_OK
 
 if [[ -n $requested_harness && $ran_harness -eq 0 ]]; then

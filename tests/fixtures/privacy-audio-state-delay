@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+sleep 0.05
+case "${1:-}" in
+  microphone) exit 10 ;;
+  audio-output) exit 11 ;;
+  *) exit 12 ;;
+esac

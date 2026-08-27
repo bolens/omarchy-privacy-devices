@@ -40,7 +40,7 @@ qmllint -I "$OMARCHY_PATH/shell" \
   AudioEndpointSettings.qml \
   Privacy*Settings.qml PrivacySettingsNavigation.qml \
   PrivacyConfirmationController.qml PrivacySettingsTransferController.qml \
-  Runtime*.qml
+  tests/qml/Runtime*.qml
 ```
 
 In a graphical session, exercise shared JavaScript in the real Quickshell
@@ -70,10 +70,20 @@ The fast suite verifies that every `Runtime*Test.qml` harness is registered
 exactly once and owns one unique success marker, so adding a harness cannot
 silently leave it out of the real-engine suite.
 
-The runtime runner also rejects QML scene warnings and fatal/critical engine
+Runtime harness sources live under `tests/qml/`; the runner stages them beside
+the plugin runtime files so Quickshell exercises the same sibling-import rules
+as an installed root plugin. The runner also rejects QML scene warnings and fatal/critical engine
 output even when a success marker was emitted, and requires the marker exactly
 once at runtime. This prevents late binding errors or repeating completion
 timers from being hidden by an otherwise successful assertion path.
+
+Concurrency harnesses advance from observed process, heartbeat, health, and
+commit signals. Timers in those harnesses are failure deadlines only; they do
+not decide when an asynchronous operation should have completed.
+Settings transfer, rollback, confirmation expiry, capture-preview expiry,
+verification timeout, and reactive refresh harnesses follow the same rule;
+one event-loop deferral is used only when an assertion must run outside the
+QML binding stack that emitted its completion signal.
 
 This runs shared policy, the assembled plugin, semantic appearance bindings,
 rendered bar and activity-card states, per-endpoint audio controls, validated
@@ -127,8 +137,8 @@ at least 0.95.
 
 ## Refreshing screenshots
 
-Capture the activity and both history states, exact bar footprint, global
-settings, and a device settings page from the live plugin on an otherwise
+Capture the activity and both history states, exact bar footprint, global and
+privacy-mode settings, and a device settings page from the live plugin on an otherwise
 empty workspace:
 
 ```sh
@@ -140,7 +150,20 @@ only one capture at a time, discovers the shell through IPC, uses measured
 widget geometry, and swaps in bounded example history. It restores the original
 shell settings, real history, DND state, and workspace even on failure. Review
 images before committing them. Capture fails if restored settings or history do
-not exactly match their preserved snapshots. Settings swaps use the shell's
+not exactly match their preserved snapshots.
+Each panel capture waits for an owner-scoped acknowledgement from the bar on the
+selected monitor, including lazy settings-page and section readiness. It does
+not infer rendering completion from a successful deep-link reply or fixed wait.
+Capture snapshots the focused launching window's monitor at startup, falling
+back to the pointer's containing output and then compositor focus when no active
+window exists. `--monitor` remains an explicit override. Panel actions then use
+the bar instance registered for that exact output.
+Hyprland connector names are treated generically; DisplayPort (`DP-*`), HDMI
+(`HDMI-*`), embedded panels (`eDP-*`), DVI, and other safe output names work.
+Notification capture similarly sends one toast and polls its crop against a
+fresh visual baseline, preventing retry attempts from stacking duplicate toasts.
+
+Settings swaps use the shell's
 live `reloadConfig` IPC and verify its effective configuration, so capture and
 restoration do not restart Quickshell or race a shutting-down process.
 

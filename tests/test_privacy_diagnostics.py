@@ -40,6 +40,21 @@ class DiagnosticCopyTests(unittest.TestCase):
             self.assertEqual(MODULE.main(), 1)
         run.assert_not_called()
 
+    def test_copies_only_a_bounded_plain_inspection_target(self):
+        with patch.object(sys, "argv", ["privacy-diagnostics", "--target", "  Browser\nName  "]), \
+             patch.object(MODULE.shutil, "which", return_value="/usr/bin/wl-copy"), \
+             patch.object(MODULE.os.path, "realpath", return_value="/usr/bin/wl-copy"), \
+             patch.object(MODULE.subprocess, "run") as run:
+            run.return_value.returncode = 0
+            self.assertEqual(MODULE.main(), 0)
+        self.assertEqual(run.call_args.kwargs["input"], "BrowserName")
+
+    def test_rejects_an_empty_inspection_target(self):
+        with patch.object(sys, "argv", ["privacy-diagnostics", "--target", "\n\t"]), \
+             patch.object(MODULE.subprocess, "run") as run:
+            self.assertEqual(MODULE.main(), 2)
+        run.assert_not_called()
+
     def test_times_out_a_stuck_clipboard_process(self):
         payload = {"version": 1, "redacted": True}
         with patch.object(sys, "argv", ["privacy-diagnostics", json.dumps(payload)]), \

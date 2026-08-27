@@ -21,7 +21,7 @@
     "defaults": {
       "enabledKinds": ["microphone", "audio-output", "camera", "screen-share", "screenshot", "screen-recording", "location"],
       "order": ["screen-recording", "screenshot", "screen-share", "camera", "microphone", "audio-output", "location"],
-      "showIdle": true,
+      "showIdle": false,
       "displayMode": "icons",
       "barIconScale": 1,
       "barItemSpacing": 0,
@@ -75,6 +75,7 @@
       "hiddenDevices": [],
       "notificationSuppressedDevices": [],
       "deviceLabels": {},
+      "privacyModes": [],
       "historyEnabled": false,
       "directDeviceMonitoring": false,
       "showInferredAttribution": true,
@@ -124,7 +125,7 @@
         "type": "boolean",
         "label": "Show idle activity icons",
         "description": "Keep enabled activity icons visible when they are not in use.",
-        "defaultValue": true
+        "defaultValue": false
       },
       {
         "key": "displayMode",
@@ -489,6 +490,13 @@
         "type": "string-list",
         "label": "Applications without alerts",
         "description": "Suppress start and stop notifications for exact application names without hiding their activity.",
+        "defaultValue": []
+      },
+      {
+        "key": "privacyModes",
+        "type": "object",
+        "label": "Privacy modes",
+        "description": "Named, locally stored snapshots of privacy-control states managed inside the widget.",
         "defaultValue": []
       },
       {

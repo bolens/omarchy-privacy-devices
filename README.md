@@ -13,30 +13,30 @@ screenshots, and screen recording.
 Contributors: [contributing guide](CONTRIBUTING.md) ·
 [architecture](ARCHITECTURE.md) · [security policy](SECURITY.md)
 
-![Privacy Devices activity panel showing live device state and controls](preview.png?v=213462fdd02e)
+![Privacy Devices activity panel showing live device state and controls](preview.png?v=23ad50cdd820)
 
 The widget occupies only its privacy-device indicators in the center bar:
 
-![Privacy Devices indicators in their exact bar footprint](docs/bar.png?v=2adc6937c16b)
+![Privacy Devices indicators in their exact bar footprint](docs/bar.png?v=47031e6cd0af)
 
 Activity notifications use the detected application icon when available:
 
-![Privacy Devices notification with an application icon](docs/notification.png?v=6363988f8c51)
+![Privacy Devices notification with an application icon](docs/notification.png?v=e0a84621381b)
 
 <details>
 <summary>Settings pages</summary>
 
 | General | Appearance |
 | --- | --- |
-| <img src="docs/general.png?v=74e5f64b984f" alt="General settings page" width="360"> | <img src="docs/appearance.png?v=29ec6fa59758" alt="Appearance settings page" width="360"> |
+| <img src="docs/general.png?v=319d5e535988" alt="General settings page" width="360"> | <img src="docs/appearance.png?v=7b60552c016e" alt="Appearance settings page" width="360"> |
 | Alerts | Monitoring |
-| <img src="docs/alerts.png?v=811842998a17" alt="Alerts settings page" width="360"> | <img src="docs/monitoring.png?v=04df6108a621" alt="Monitoring settings page" width="360"> |
+| <img src="docs/alerts.png?v=edc42a84bc6a" alt="Alerts settings page" width="360"> | <img src="docs/monitoring.png?v=ae272606ebef" alt="Monitoring settings page" width="360"> |
 | Private data | Observer health |
-| <img src="docs/monitoring-private.png?v=80cb29456013" alt="Private history and settings transfer controls" width="360"> | <img src="docs/monitoring-health.png?v=22cfdf315072" alt="Monitoring status and observer health" width="360"> |
+| <img src="docs/monitoring-private.png?v=a5054446fed1" alt="Private history and settings transfer controls" width="360"> | <img src="docs/monitoring-health.png?v=3f3dd672a878" alt="Monitoring status and observer health" width="360"> |
 | Individual device settings | Activity history |
-| <img src="docs/device.png?v=026710afa0f1" alt="Individual privacy-device settings page" width="360"> | <img src="docs/history.png?v=fa9e94ba92c3" alt="Completed privacy activity history view" width="360"> |
+| <img src="docs/device.png?v=82c90d88b925" alt="Individual privacy-device settings page" width="360"> | <img src="docs/history.png?v=ceeb81446960" alt="Completed privacy activity history view" width="360"> |
 | History disabled | |
-| <img src="docs/history-disabled.png?v=1155cb013645" alt="Activity history disabled state" width="360"> | |
+| <img src="docs/history-disabled.png?v=928cf442c462" alt="Activity history disabled state" width="360"> | |
 
 </details>
 
@@ -46,14 +46,15 @@ Activity notifications use the detected application icon when available:
   privacy-device classes.
 - Reactive PipeWire monitoring plus optional same-user direct-device coverage.
 - Verified mute, recording, camera, location, and screen-sharing controls, plus
-  a confirmed privacy lockdown with observed-state undo.
+  named privacy modes and a confirmed privacy lockdown with observed-state undo.
 - Per-endpoint microphone and audio-output management on their device settings
   pages, with exact hardware names and verified mute/unmute results.
 - Global and per-device appearance, ordering, visibility, backend, and status
   settings.
 - App- and device-aware visibility and notification policies, friendly hardware
-  labels, private diagnostics, and searchable optional bounded history with
-  local today/seven-day summaries.
+  labels, session-only device-change feedback, and live inspection-target copy.
+- Private diagnostics and searchable optional bounded history with trend bars,
+  device/evidence filters, stable sorting, and today/seven-day summaries.
 - Click-through activity notifications, optional rate-limited observer-health
   alerts, and a guided redacted self-test with remediation guidance.
 - Allowlisted IPC quick actions for activity, history, diagnostics, lockdown,

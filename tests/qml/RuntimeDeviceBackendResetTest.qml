@@ -8,7 +8,19 @@ ShellRoot {
   QtObject {
     id: shellMock
     function serviceFor(id) { return id === "io.github.bolens.privacy-devices" ? service : null }
-    function updateEntryInline(_id, settings) { root.commits = root.commits.concat([settings]) }
+    function updateEntryInline(_id, settings) {
+      root.commits = root.commits.concat([settings])
+      if (root.commits.length !== 1) throw new Error("backend resets were not coalesced")
+      if (settings.screenshotBackend !== "omarchy" || settings.screenshotCustomCommand !== "" || settings.screenshotProcessName !== ""
+          || settings.recordingBackend !== "omarchy" || settings.recordingProcessName !== ""
+          || settings.recordingCustomStartCommand !== "" || settings.recordingCustomStopCommand !== ""
+          || settings.audioControlBackend !== "auto")
+        throw new Error("device backend reset did not restore complete defaults")
+      if (Object.keys(widget.deviceBackendDefaults("camera")).length !== 0)
+        throw new Error("unsupported device unexpectedly received backend defaults")
+      console.log("PRIVACY_QML_DEVICE_BACKEND_RESET_OK")
+      Qt.quit()
+    }
   }
   QtObject {
     id: barMock
@@ -45,21 +57,5 @@ ShellRoot {
     widget.resetDeviceBackend("microphone")
   }
 
-  Timer {
-    interval: 180
-    running: true
-    onTriggered: {
-      if (root.commits.length !== 1) throw new Error("backend resets were not coalesced")
-      var settings = root.commits[0]
-      if (settings.screenshotBackend !== "omarchy" || settings.screenshotCustomCommand !== "" || settings.screenshotProcessName !== ""
-          || settings.recordingBackend !== "omarchy" || settings.recordingProcessName !== ""
-          || settings.recordingCustomStartCommand !== "" || settings.recordingCustomStopCommand !== ""
-          || settings.audioControlBackend !== "auto")
-        throw new Error("device backend reset did not restore complete defaults")
-      if (Object.keys(widget.deviceBackendDefaults("camera")).length !== 0)
-        throw new Error("unsupported device unexpectedly received backend defaults")
-      console.log("PRIVACY_QML_DEVICE_BACKEND_RESET_OK")
-      Qt.quit()
-    }
-  }
+  Timer { interval: 1500; running: true; onTriggered: { throw new Error("backend reset commit did not complete") } }
 }
