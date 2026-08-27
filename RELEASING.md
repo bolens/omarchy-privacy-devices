@@ -55,11 +55,12 @@ conversations, and both strict CI checks:
 - `Repository`: issue forms, documentation, links, site behavior, and
   accessibility.
 
-Only squash merges are enabled. After all checks pass and conversations are
-resolved, merge and delete the release branch:
+Only rebase merges are enabled. After all checks pass and conversations are
+resolved, rebase the focused commits onto protected `main` and delete the
+release branch:
 
 ```sh
-gh pr merge "$pr" --squash --delete-branch
+gh pr merge "$pr" --rebase --delete-branch
 ```
 
 If CI fails, fix forward on the same release branch and rerun the full matrix.
@@ -67,15 +68,18 @@ Do not bypass protection or push the release commits directly to `main`.
 
 ## 4. Validate the merged candidate
 
-The squash merge creates the release candidate SHA. Fetch it from protected
-`main`, confirm the pull request merged there, and wait for the push-triggered
-CI runs on that exact commit:
+The rebase merge creates new commit SHAs on protected `main` while preserving
+the focused commit sequence. Fetch the resulting release candidate, confirm the
+pull request's final commit is at the tip of `main`, fast-forward the clean local
+branch, and wait for the push-triggered CI runs on that exact commit:
 
 ```sh
 git fetch origin main
 release_sha=$(git rev-parse origin/main)
 merged_sha=$(gh pr view "$pr" --json mergeCommit --jq .mergeCommit.oid)
 test "$release_sha" = "$merged_sha"
+git switch main
+git merge --ff-only origin/main
 run_id=""
 for _attempt in {1..24}; do
   run_id=$(gh run list --workflow CI --commit "$release_sha" --limit 1 \
@@ -93,8 +97,8 @@ pull request and use its merged SHA as the new candidate.
 
 ## 5. Tag and publish
 
-Create an annotated tag on the validated remote candidate. Do not tag the
-pre-squash release-branch commit:
+Create an annotated tag on the validated remote candidate. Do not tag a
+pre-rebase release-branch commit, whose SHA is replaced during the merge:
 
 ```sh
 version=$(git show "$release_sha:manifest.json" | jq -r .version)
