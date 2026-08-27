@@ -438,10 +438,12 @@ assert.match(service, /id:\s*sessionSafetyTimer[\s\S]*?running:\s*root\.enabledK
   "safety reconciliation must sleep when monitoring is disabled")
 assert.match(service, /id:\s*dependencyRefreshTimer[\s\S]*?running:\s*root\.enabledKindList\.length > 0/,
   "dependency polling must sleep when no devices are enabled")
-assert.match(service, /function refreshDependencies\(\)[\s\S]*?Model\.scheduleProbeRefresh\(dependencyCheckProc\.running, enabledKinds\(\)\)/,
-  "dependency refreshes must use the behavior-tested supersession policy")
-assert.match(service, /function runNextDependencyCheck\(\)[\s\S]*?Model\.nextProbeAction\(dependencyQueue, dependencyRefreshPending, dependencyCheckProc\.running\)/,
-  "dependency workers must use the behavior-tested FIFO policy")
+assert.match(service, /function refreshDependencies\(\)[\s\S]*?Model\.scheduleProbeRefresh\(dependencyCheckBusy, enabledKinds\(\)\)/,
+  "dependency refreshes must use explicit synchronous ownership and the behavior-tested supersession policy")
+assert.match(service, /function runNextDependencyCheck\(\)[\s\S]*?Model\.nextProbeAction\(dependencyQueue, dependencyRefreshPending, dependencyCheckBusy\)/,
+  "dependency workers must use explicit synchronous ownership and the behavior-tested FIFO policy")
+assert.doesNotMatch(service, /directDeviceProc\.running = false\s*\n\s*Qt\.callLater\(refreshDirectDevices\)|fallbackObserverProc\.running = false\s*\n\s*Qt\.callLater\(refreshFallbackObserver\)/,
+  "observer reconfiguration must restart from confirmed process exit instead of event-loop timing")
 
 for (const signal of [
   "onObservedPipewireSessionsChanged", "onLocationAppsChanged", "onLocationActiveChanged",
@@ -526,6 +528,10 @@ assert.match(service, /function serviceControllable\(kind\)[\s\S]*?\["microphone
   "headless control must be limited to actions owned by the singleton service")
 assert.match(service, /function setAudioEndpointMuted\(kind, identifier, muted\)[\s\S]*?audioEndpointHelperPath\(\), "set", kind, String\(identifier\)/,
   "per-endpoint audio control must cross one bounded helper boundary")
+assert.match(service, /property string audioEndpointOperation:[\s\S]*?function refreshAudioEndpoints\(kind\)[\s\S]*?audioEndpointOperation !== ""[\s\S]*?pendingAudioEndpointRefreshKind = kind/,
+  "audio endpoint requests must use synchronous ownership and retain the latest busy refresh")
+assert.match(service, /function runPendingAudioEndpointRefresh\(\)[\s\S]*?pendingAudioEndpointRefreshKind[\s\S]*?refreshAudioEndpoints\(kind\)/,
+  "audio endpoint completion must drain the retained refresh")
 assert.match(service, /function acceptAudioEndpoints\(kind, text\)[\s\S]*?sanitizeAudioEndpoints\(rows, 64\)/,
   "audio endpoint state must remain bounded before reaching the UI")
 assert.match(service, /function acceptAudioEndpoints\(kind, text\)[\s\S]*?Model\.sanitizeAudioEndpoints\(rows, 64\)/,

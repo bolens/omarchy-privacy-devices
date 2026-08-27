@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+[[ ${1:-} == list && ${2:-} =~ ^(microphone|audio-output)$ ]] || exit 2
+sleep 0.1
+printf '[{"id":"%s-device","label":"%s device","muted":false}]\n' "$2" "$2"

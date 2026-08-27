@@ -77,6 +77,10 @@ output even when a success marker was emitted, and requires the marker exactly
 once at runtime. This prevents late binding errors or repeating completion
 timers from being hidden by an otherwise successful assertion path.
 
+Concurrency harnesses advance from observed process, heartbeat, health, and
+commit signals. Timers in those harnesses are failure deadlines only; they do
+not decide when an asynchronous operation should have completed.
+
 This runs shared policy, the assembled plugin, semantic appearance bindings,
 rendered bar and activity-card states, per-endpoint audio controls, validated
 device/settings deep links, two-step lockdown and undo presentation, user
