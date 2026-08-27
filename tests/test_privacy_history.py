@@ -96,6 +96,16 @@ class HistoryTests(unittest.TestCase):
 
         self.assertEqual([entry["application"] for entry in result], ["App 3", "App 2", "App 1"])
 
+    def test_rejects_history_beyond_bounded_clock_skew(self):
+        now = 1_000_000_000
+        current = MODULE.sanitize(self.entry(1, now))
+        boundary = MODULE.sanitize(self.entry(2, now + MODULE.MAX_FUTURE_SKEW_MS))
+        future = MODULE.sanitize(self.entry(3, now + MODULE.MAX_FUTURE_SKEW_MS + 1))
+
+        result = MODULE.bounded([future, current, boundary], now)
+
+        self.assertEqual([entry["id"] for entry in result], ["2", "1"])
+
     def test_replayed_entries_are_deduplicated_by_identity_and_end_time(self):
         now = 1_000_000_000
         entry = MODULE.sanitize(self.entry(1, now))

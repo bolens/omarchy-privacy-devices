@@ -104,6 +104,8 @@ normal operation poll-driven.
   restore the previous in-memory settings and remain visible to the user.
 - History and exported settings use private directories, exclusive temporary
   files, atomic replacement, bounded reads, and load-time sanitation.
+- Settings transfer and one-step undo share a private filesystem lock and sync
+  their containing directory before reporting a durable replacement or removal.
 - History operations serialize read-modify-write transactions, and generation
   checks prevent asynchronous loads from crossing clear/disable boundaries.
 - The service also owns a FIFO for history mutations and retains one pending
@@ -118,6 +120,8 @@ normal operation poll-driven.
 - History summaries are projections of the existing bounded retained rows;
   they neither extend retention nor create a second data store.
 - History trends, filters, and sorting are pure projections of that same store.
+- Retained history accepts only bounded past timestamps plus a small clock-skew
+  allowance, preventing malformed future records from dominating retention.
 - Audio endpoint inventory changes remain bounded in memory for the current
   service session and are never promoted into retained activity history.
 - Inspection handoff copies only a bounded live application name. It does not
