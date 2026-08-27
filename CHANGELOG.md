@@ -7,6 +7,32 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Added
+
+- Add locally stored named privacy modes that reapply available device controls
+  through the existing verified serial transaction and undo path.
+- Add bounded history trends, device/evidence filters, and stable sort modes.
+- Add session-only audio-endpoint discovery feedback and a privacy-safe live
+  application inspection target for diagnostics and X-Ray-style workflows.
+
+### Changed
+
+- Share retry and heartbeat ownership through a tested observer watchdog.
+- Move QML runtime harnesses under `tests/qml/` while preserving installed-root
+  import semantics in the live runner.
+- Make screenshot capture monitor-specific, fresh for every documented view,
+  resistant to blank/duplicate evidence, and independent of optional workspace
+  routing plugins.
+- Compact history filters into one responsive row and hide idle bar icons by
+  default for new installations and global resets.
+
+### Fixed
+
+- Stop screenshot capture from switching the workspace on one monitor while
+  recording another, and restore the selected monitor without overriding the
+  user's original pointer/focus context.
+- Avoid accepting wallpaper-only crops as populated plugin screenshots.
+
 ## [0.7.0] - 2026-08-26
 
 ### Added
@@ -32,8 +58,8 @@ maintainer guides that define release and validation procedures.
 
 ### Changed
 
-- Match new installations to the standard bar presentation with idle device
-  icons visible and activity status markers disabled.
+- Match new installations to the compact bar presentation with idle device
+  icons and activity status markers disabled.
 - Keep screenshot capture presentation-neutral while freezing only its sample
   activity and documentation history.
 - Use accent for allowed in-use devices, foreground for enabled idle devices,

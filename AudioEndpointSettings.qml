@@ -19,6 +19,21 @@ SettingsSurface {
   }
   Text { Layout.fillWidth: true; text: "Mute or unmute one hardware endpoint without changing the other devices."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
   Repeater {
+    model: surface.service ? surface.service.deviceChangesFor(surface.kind) : []
+    delegate: Text {
+      required property var modelData
+      required property int index
+      objectName: "audioEndpointChange-" + index
+      Layout.fillWidth: true
+      text: modelData.label + " " + modelData.change + " during this session"
+      textFormat: Text.PlainText
+      color: modelData.change === "disappeared" ? Color.urgent : Color.muted
+      font.family: Style.font.family
+      font.pixelSize: Style.font.caption
+      elide: Text.ElideRight
+    }
+  }
+  Repeater {
     model: surface.service ? surface.service.audioEndpoints(surface.kind) : []
     delegate: Rectangle {
       required property var modelData

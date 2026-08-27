@@ -87,6 +87,7 @@ Item {
   property var privacyPresetResults: []
   property bool privacyPresetUndoAvailable: false
   property bool privacyPresetRestoring: false
+  property string privacyPresetName: ""
   property var observerHealth: ({
     pipewire: {status: "healthy", source: "pipewire", code: "ok", reason: ""},
     "direct-device": {status: "healthy", source: "direct-device", code: "ok", reason: ""},
@@ -120,8 +121,11 @@ Item {
   property var dependencyCheckedMap: ({})
   property var dependencyQueue: []
   property var audioEndpointMap: ({microphone: [], "audio-output": []})
+  property var audioEndpointInitialized: ({})
   property string audioEndpointKind: ""
   property string audioEndpointMessage: ""
+  property string inspectionMessage: ""
+  property var recentDeviceChanges: []
   property string dependencyCheckKind: ""
   property bool dependencyRefreshPending: false
   readonly property bool microphoneMuted: fallbackMicrophoneMuted
@@ -485,6 +489,15 @@ Item {
     Quickshell.execDetached([String(Qt.resolvedUrl("privacy-diagnostics")).replace(/^file:\/\//, ""), JSON.stringify(diagnostics(redact))])
   }
 
+  function copyInspectionTarget(application) {
+    var target = Model.boundedPlainText(application, 256)
+    if (!target) return false
+    Quickshell.execDetached([String(Qt.resolvedUrl("privacy-diagnostics")).replace(/^file:\/\//, ""), "--target", target])
+    inspectionMessage = "Copied “" + target + "” for X-Ray or another process inspector."
+    inspectionMessageTimer.restart()
+    return true
+  }
+
   function clearHistory() {
     historyGeneration++
     recentHistory = []
@@ -505,11 +518,18 @@ Item {
     return Array.isArray(rows) ? rows : []
   }
 
+  function deviceChangesFor(kind) {
+    return recentDeviceChanges.filter(function(entry) { return entry.kind === kind }).slice(0, 3)
+  }
+
   function acceptAudioEndpoints(kind, text) {
     try {
       var rows = JSON.parse(String(text || "[]"))
       if (!Array.isArray(rows)) throw new Error("invalid endpoint list")
       rows = Model.sanitizeAudioEndpoints(rows, 64)
+      var changes = audioEndpointInitialized[kind] === true ? Model.deviceInventoryChanges(kind, audioEndpoints(kind), rows, Date.now()) : []
+      if (changes.length) recentDeviceChanges = changes.concat(recentDeviceChanges).slice(0, 24)
+      var initialized = Object.assign({}, audioEndpointInitialized); initialized[kind] = true; audioEndpointInitialized = initialized
       var next = Object.assign({}, audioEndpointMap)
       next[kind] = rows
       audioEndpointMap = next
@@ -801,9 +821,24 @@ Item {
     for (var index = 0; index < entries.length; index++) previous[entries[index].kind] = entries[index].enabled === true
     var plan = Model.privacyPresetPlan(entries, false)
     privacyPresetPrevious = previous
+    privacyPresetName = "Lockdown"
     privacyPresetUndoAvailable = false
     privacyPresetUndoTimer.stop()
     return startPrivacyPreset(plan, false)
+  }
+
+  function requestPrivacyMode(mode) {
+    var clean = Model.sanitizePrivacyModes([mode])
+    if (!clean.length) return false
+    var entries = privacyPresetEntries()
+    var previous = {}
+    for (var index = 0; index < entries.length; index++) previous[entries[index].kind] = entries[index].enabled === true
+    privacyPresetPrevious = previous
+    privacyPresetName = clean[0].name
+    privacyPresetUndoAvailable = false
+    privacyPresetUndoTimer.stop()
+    entries = entries.filter(function(entry) { return Object.prototype.hasOwnProperty.call(clean[0].controls, entry.kind) })
+    return startPrivacyPreset(Model.privacyPresetPlan(entries, clean[0].controls), false)
   }
 
   function restorePrivacyLockdown() {
@@ -856,10 +891,10 @@ Item {
   }
 
   function privacyPresetMessage() {
-    if (privacyPresetState === "applying") return "Applying privacy lockdown…"
+    if (privacyPresetState === "applying") return "Applying " + (privacyPresetName || "privacy mode") + "…"
     if (privacyPresetState === "restoring") return "Restoring previous privacy state…"
     if (privacyPresetState === "partial") return "Privacy preset finished with unavailable or failed controls."
-    if (privacyPresetState === "succeeded") return privacyPresetUndoAvailable ? "Privacy lockdown verified. Undo is available for 30 seconds." : "Privacy preset verified."
+    if (privacyPresetState === "succeeded") return privacyPresetUndoAvailable ? (privacyPresetName || "Privacy mode") + " verified. Undo is available for 30 seconds." : "Privacy mode verified."
     return ""
   }
 
@@ -1134,6 +1169,7 @@ Item {
     interval: 8000
     onTriggered: if (root.privacyPresetState !== "applying" && root.privacyPresetState !== "restoring") root.privacyPresetState = "idle"
   }
+  Timer { id: inspectionMessageTimer; interval: 5000; onTriggered: root.inspectionMessage = "" }
 
   Timer {
     id: preventativeControlTimer
@@ -1160,34 +1196,33 @@ Item {
     onTriggered: root.refreshSessions()
   }
 
-  Timer {
+  PrivacyObserverWatchdog {
     id: directObserverRetry
     interval: root.directObserverRetryMilliseconds
-    repeat: false
-    onTriggered: root.refreshDirectDevices()
-  }
-
-  Timer {
-    id: directObserverHeartbeat
-    interval: 5000
-    repeat: true
-    running: root.settings.directDeviceMonitoring === true
-    onTriggered: {
-      var heartbeat = root.boundedSeconds(root.settings.directDevicePollSeconds, 5, 2, 60)
-      if (!Model.observerHeartbeatState(root.directObserverLastSeen, root.directObserverStartedAt, Date.now(), heartbeat).stale) return
+    enabled: root.settings.directDeviceMonitoring === true
+    processRunning: directDeviceProc.running
+    retiring: root.directObserverRetiring
+    lastSeen: root.directObserverLastSeen
+    startedAt: root.directObserverStartedAt
+    heartbeatSeconds: root.boundedSeconds(root.settings.directDevicePollSeconds, 5, 2, 60)
+    onRetryRequested: root.refreshDirectDevices()
+    onHeartbeatStale: {
       root.clearDirectObserverState()
       root.setObserverHealth("direct-device", "degraded", "heartbeat_stale", "observer heartbeat is stale")
     }
   }
 
-  Timer {
-    id: fallbackObserverHeartbeat
-    interval: 5000
-    repeat: true
-    running: root.kindEnabled("screen-recording") || root.kindEnabled("screenshot")
-    onTriggered: {
-      var heartbeat = root.boundedSeconds(root.settings.recordingPollSeconds, 2, 1, 60)
-      if (!Model.observerHeartbeatState(root.fallbackObserverLastSeen, root.fallbackObserverStartedAt, Date.now(), heartbeat).stale) return
+  PrivacyObserverWatchdog {
+    id: fallbackObserverRetry
+    interval: root.fallbackObserverRetryMilliseconds
+    enabled: root.kindEnabled("screen-recording") || root.kindEnabled("screenshot")
+    processRunning: fallbackObserverProc.running
+    retiring: root.fallbackObserverRetiring
+    lastSeen: root.fallbackObserverLastSeen
+    startedAt: root.fallbackObserverStartedAt
+    heartbeatSeconds: root.boundedSeconds(root.settings.recordingPollSeconds, 2, 1, 60)
+    onRetryRequested: root.refreshFallbackObserver()
+    onHeartbeatStale: {
       root.clearFallbackObserverState()
       root.setObserverHealth("fallback-observer", "degraded", "heartbeat_stale", "fallback observer heartbeat is stale")
     }
@@ -1201,7 +1236,6 @@ Item {
     onTriggered: root.refreshMuteState()
   }
 
-  Timer { id: fallbackObserverRetry; interval: root.fallbackObserverRetryMilliseconds; onTriggered: root.refreshFallbackObserver() }
   Timer { id: notificationFlush; interval: 400; onTriggered: root.flushActivityNotifications() }
   Timer { id: activityBaseline; interval: 5000; running: true; onTriggered: root.activityInitialized = true }
 

@@ -16,7 +16,7 @@ Panel {
   readonly property var effectiveSettings: privacyService && privacyService.capturePreviewActive
     ? Object.assign({}, settings || {}, privacyService.capturePreviewSettings || {}) : settings
   readonly property var configuredOrder: Model.arraySetting(setting("order", []), Model.KINDS)
-  readonly property bool showIdle: setting("showIdle", true) === true
+  readonly property bool showIdle: setting("showIdle", false) === true
   readonly property string displayMode: String(setting("displayMode", "icons"))
   readonly property bool showControls: setting("showControls", true) === true
   readonly property real idleOpacity: Math.max(0.1, Math.min(1, Number(setting("idleOpacity", 0.45))))
@@ -96,6 +96,9 @@ Panel {
   property bool showingGlobalSettings: false
   property bool showingHistory: false
   property string historyQuery: ""
+  property string historyKindFilter: "all"
+  property string historyConfidenceFilter: "all"
+  property string historySortMode: "recent"
   property int historySummaryWindow: 24 * 60 * 60 * 1000
   property bool settingsMutationPending: false
   property string globalSettingsPage: "general"
@@ -118,12 +121,17 @@ Panel {
   readonly property var historySearchControl: historySearch
   readonly property var historyCountLabel: historyCountText
   readonly property var historyDisabledSettingsControl: historyDisabledSettingsButton
-  readonly property var filteredHistory: Model.filterHistory(privacyService ? privacyService.displayHistory : [], historyQuery)
+  readonly property var historyFilterControls: [historyKindFilterButton, historyConfidenceFilterButton, historySortButton]
+  readonly property var filteredHistory: Model.filterAndSortHistory(privacyService ? privacyService.displayHistory : [], {
+    query: historyQuery, kind: historyKindFilter, confidence: historyConfidenceFilter, sort: historySortMode
+  })
   readonly property var historySummaryRows: Model.historySummary(privacyService ? privacyService.displayHistory : [], durationNow, historySummaryWindow)
+  readonly property var historyTrend: Model.historyTrend(privacyService ? privacyService.displayHistory : [], durationNow, historySummaryWindow, 12)
   readonly property bool historyPresentationEnabled: privacyService && privacyService.capturePreviewActive && privacyService.requestedView === "history"
     ? privacyService.captureHistoryPresentationEnabled !== false : setting("historyEnabled", false) === true
   readonly property var editingSessions: editingKind && privacyService ? privacyService.attributedSessionsFor(editingKind) : []
   readonly property var editingDevices: Model.unique(editingSessions.map(function(session) { return String(session.device || "") }).filter(Boolean))
+  readonly property var editingApplications: Model.unique(editingSessions.map(function(session) { return String(session.application || "") }).filter(Boolean))
   readonly property real openPanelIndicatorWidth: button.labelWidth
 
   function setting(key, fallback) {
@@ -296,6 +304,27 @@ Panel {
     persistSettings({deviceLabels: labels})
   }
 
+  function currentPrivacyMode(name) {
+    var controls = {}
+    if (privacyService) ["microphone", "audio-output", "camera", "screen-share", "location"].forEach(function(kind) {
+      if (privacyService.serviceControllable(kind)) controls[kind] = privacyService.controlEnabled(kind) === true
+    })
+    return {name: String(name || ""), controls: controls}
+  }
+
+  function savePrivacyMode(name) {
+    var saved = setting("privacyModes", [])
+    var modes = Model.sanitizePrivacyModes((Array.isArray(saved) ? saved : []).concat([currentPrivacyMode(name)]))
+    persistSettings({privacyModes: modes})
+  }
+
+  function removePrivacyMode(index) {
+    var modes = Model.sanitizePrivacyModes(setting("privacyModes", []))
+    if (index < 0 || index >= modes.length) return
+    modes.splice(index, 1)
+    persistSettings({privacyModes: modes})
+  }
+
   function item(kind) {
     var apps = privacyService ? privacyService.appsFor(kind) : []
     return {
@@ -459,7 +488,7 @@ Panel {
       enabledKinds: Model.KINDS.slice(),
       notificationKinds: ["microphone", "camera", "screen-share", "screen-recording", "location"],
       blockableKinds: ["camera", "screen-share", "location"],
-      showIdle: true,
+      showIdle: false,
       displayMode: "icons",
       barIconScale: 1,
       barItemSpacing: 0,
@@ -1027,6 +1056,27 @@ Panel {
               Button { text: "7 days"; bordered: true; selected: root.historySummaryWindow === 7 * 24 * 60 * 60 * 1000; onClicked: root.historySummaryWindow = 7 * 24 * 60 * 60 * 1000 }
               Item { Layout.fillWidth: true }
             }
+            RowLayout {
+              Layout.fillWidth: true
+              Layout.preferredHeight: 52
+              spacing: Style.spacing.xs
+              Repeater {
+                model: root.historyTrend.buckets
+                delegate: Rectangle {
+                  required property var modelData
+                  Layout.fillWidth: true
+                  Layout.alignment: Qt.AlignBottom
+                  implicitHeight: Math.max(3, 46 * (root.historyTrend.maximum > 0 ? modelData.count / root.historyTrend.maximum : 0))
+                  radius: Math.min(width / 2, Style.cornerRadius)
+                  color: modelData.count > 0 ? root.activeThemeColor : Util.alpha(Color.muted, 0.18)
+                  opacity: modelData.count > 0 ? 0.78 : 1
+                  ToolTip.text: modelData.count + (modelData.count === 1 ? " completed session" : " completed sessions")
+                  ToolTip.visible: trendHover.hovered
+                  HoverHandler { id: trendHover }
+                }
+              }
+            }
+            Text { Layout.fillWidth: true; text: root.historyTrend.total + (root.historyTrend.total === 1 ? " completed session across this period" : " completed sessions across this period"); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; horizontalAlignment: Text.AlignHCenter }
             Repeater {
               model: root.historySummaryRows
               delegate: Rectangle {
@@ -1084,6 +1134,48 @@ Panel {
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
                 font.weight: Font.DemiBold
+              }
+            }
+          }
+
+          GridLayout {
+            id: historyFilterRow
+            objectName: "historyFilterRow"
+            visible: root.historyPresentationEnabled && privacyService && privacyService.displayHistory.length > 0
+            Layout.fillWidth: true
+            columns: 3
+            columnSpacing: Style.spacing.sm
+            Button {
+              id: historyKindFilterButton
+              objectName: "historyKindFilterButton"
+              Layout.fillWidth: true
+              text: root.historyKindFilter === "all" ? "All devices" : Model.label(root.historyKindFilter)
+              tooltipText: "Device filter · click to cycle"
+              onClicked: {
+                var choices = ["all"].concat(Model.KINDS)
+                root.historyKindFilter = choices[(choices.indexOf(root.historyKindFilter) + 1) % choices.length]
+              }
+            }
+            Button {
+              id: historyConfidenceFilterButton
+              objectName: "historyConfidenceFilterButton"
+              Layout.fillWidth: true
+              text: root.historyConfidenceFilter === "all" ? "All evidence" : (root.historyConfidenceFilter === "confirmed" ? "Confirmed" : "Inferred")
+              tooltipText: "Evidence confidence · click to cycle"
+              onClicked: {
+                var choices = ["all", "confirmed", "inferred"]
+                root.historyConfidenceFilter = choices[(choices.indexOf(root.historyConfidenceFilter) + 1) % choices.length]
+              }
+            }
+            Button {
+              id: historySortButton
+              objectName: "historySortButton"
+              Layout.fillWidth: true
+              text: root.historySortMode === "recent" ? "Recent first" : (root.historySortMode === "duration" ? "Longest first" : "By application")
+              tooltipText: "Sort order · click to cycle"
+              onClicked: {
+                var choices = ["recent", "duration", "application"]
+                root.historySortMode = choices[(choices.indexOf(root.historySortMode) + 1) % choices.length]
               }
             }
           }
@@ -1373,6 +1465,25 @@ Panel {
                 }
               }
             }
+          }
+
+          SettingsSurface {
+            visible: root.editingApplications.length > 0
+            Layout.fillWidth: true
+            accent: root.activeThemeColor
+            PanelSectionHeader { Layout.fillWidth: true; text: "Live inspection" }
+            Text { Layout.fillWidth: true; text: "Copy a live application target into X-Ray or another process inspector. Process IDs are never added to retained history."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+            Repeater {
+              model: root.editingApplications
+              delegate: RowLayout {
+                required property string modelData
+                required property int index
+                Layout.fillWidth: true
+                Text { Layout.fillWidth: true; text: modelData; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; elide: Text.ElideRight }
+                Button { objectName: "inspectionTargetCopy-" + index; iconText: "󰆏"; tooltipText: "Copy inspection target"; horizontalPadding: Style.spacing.controlGap; onClicked: root.privacyService.copyInspectionTarget(modelData) }
+              }
+            }
+            PrivacyMessageSurface { visible: root.privacyService && root.privacyService.inspectionMessage !== ""; message: root.privacyService ? root.privacyService.inspectionMessage : ""; kind: "success" }
           }
 
           SettingsSurface {

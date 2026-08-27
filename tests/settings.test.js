@@ -46,7 +46,7 @@ assert.deepEqual(
   Object.assign({}, defaults, {_privacySettingsVersion: 1}),
   "every manifest default must survive the shared settings sanitizer"
 )
-assert.equal(defaults.showIdle, true, "idle activity icons must match the standard bar presentation")
+assert.equal(defaults.showIdle, false, "idle activity icons must be hidden by default")
 assert.equal(defaults.statusMarkerMode, "off", "bar activity markers must be off for new installations")
 
 for (const key of globalKeys) {

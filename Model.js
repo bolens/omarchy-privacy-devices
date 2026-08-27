@@ -4,7 +4,7 @@ var KINDS = ["microphone", "audio-output", "camera", "screen-share", "screenshot
 var SETTINGS_VERSION = 1
 var SETTINGS_PAGES = ["general", "appearance", "alerts", "monitoring"]
 var SETTINGS_SECTIONS = {
-  general: ["behavior"],
+  general: ["behavior", "privacy-modes"],
   appearance: ["bar-layout", "theme-colors", "status-presentation"],
   alerts: ["notifications"],
   monitoring: ["enhanced-coverage", "fallback-polling", "private-data", "status-legend", "observer-health"]
@@ -186,8 +186,32 @@ function sanitizeSettings(data) {
     }
     clean[mapName] = map
   }
+  if (Array.isArray(source.privacyModes)) clean.privacyModes = sanitizePrivacyModes(source.privacyModes)
   clean._privacySettingsVersion = SETTINGS_VERSION
   return clean
+}
+
+function sanitizePrivacyModes(modes) {
+  var rows = Array.isArray(modes) ? modes : []
+  var result = [], names = {}
+  for (var index = 0; index < rows.length && result.length < 8; index++) {
+    var row = rows[index]
+    if (!row || typeof row !== "object" || Array.isArray(row)) continue
+    var name = boundedPlainText(row.name, 32)
+    var normalizedName = normalizedKey(name)
+    if (!name || names[normalizedName]) continue
+    var controls = {}, source = row.controls
+    if (!source || typeof source !== "object" || Array.isArray(source)) continue
+    for (var kindIndex = 0; kindIndex < KINDS.length; kindIndex++) {
+      var kind = KINDS[kindIndex]
+      if (["microphone", "audio-output", "camera", "screen-share", "location"].indexOf(kind) >= 0
+          && typeof source[kind] === "boolean") controls[kind] = source[kind]
+    }
+    if (!Object.keys(controls).length) continue
+    names[normalizedName] = true
+    result.push({name: name, controls: controls})
+  }
+  return result
 }
 
 function arraySetting(value, fallback) {
@@ -901,6 +925,67 @@ function filterHistory(history, query) {
       .map(function(value) { return String(value || "").toLowerCase() })
       .join("\n").indexOf(needle) !== -1
   })
+}
+
+function filterAndSortHistory(history, options) {
+  var value = options || {}
+  var rows = filterHistory(history, value.query)
+  var kind = String(value.kind || "all")
+  var confidence = String(value.confidence || "all").toLowerCase()
+  if (kind !== "all") rows = rows.filter(function(entry) { return String(entry.kind || "") === kind })
+  if (confidence !== "all") rows = rows.filter(function(entry) {
+    var current = String(entry.confidence || "confirmed").toLowerCase()
+    return confidence === "inferred" ? current !== "confirmed" : current === confidence
+  })
+  var mode = String(value.sort || "recent")
+  return rows.slice().sort(function(left, right) {
+    if (mode === "duration") return Number(right.durationMs || 0) - Number(left.durationMs || 0)
+    if (mode === "application") return String(left.application || "").localeCompare(String(right.application || ""))
+    return Number(right.endedAt || right.startedAt || 0) - Number(left.endedAt || left.startedAt || 0)
+  })
+}
+
+function historyTrend(history, now, windowMilliseconds, bucketCount) {
+  var current = Number(now)
+  var windowMs = Math.max(1, Number(windowMilliseconds) || 24 * 60 * 60 * 1000)
+  var count = Math.max(2, Math.min(24, Math.floor(Number(bucketCount) || 12)))
+  var start = current - windowMs
+  var width = windowMs / count
+  var buckets = []
+  for (var index = 0; index < count; index++) buckets.push({index: index, count: 0, durationMs: 0})
+  var rows = Array.isArray(history) ? history : []
+  for (index = 0; index < rows.length; index++) {
+    var entry = rows[index] || {}
+    var endedAt = Number(entry.endedAt || entry.startedAt || 0)
+    if (!isFinite(endedAt) || endedAt < start || endedAt > current) continue
+    var bucket = Math.min(count - 1, Math.floor((endedAt - start) / width))
+    buckets[bucket].count++
+    buckets[bucket].durationMs += Math.max(0, Number(entry.durationMs || 0))
+  }
+  var maximum = buckets.reduce(function(result, entry) { return Math.max(result, entry.count) }, 0)
+  return {buckets: buckets, maximum: maximum, total: buckets.reduce(function(result, entry) { return result + entry.count }, 0)}
+}
+
+function deviceInventoryChanges(kind, previous, current, now) {
+  var before = {}, after = {}, result = []
+  var oldRows = Array.isArray(previous) ? previous : []
+  var newRows = Array.isArray(current) ? current : []
+  var index, row, id
+  for (index = 0; index < oldRows.length; index++) {
+    row = oldRows[index] || {}; id = boundedPlainText(row.id, 512); if (id) before[id] = row
+  }
+  for (index = 0; index < newRows.length; index++) {
+    row = newRows[index] || {}; id = boundedPlainText(row.id, 512); if (id) after[id] = row
+  }
+  Object.keys(after).sort().forEach(function(identifier) {
+    var entry = after[identifier], old = before[identifier]
+    if (!old) result.push({kind: kind, device: identifier, label: boundedPlainText(entry.label || identifier, 128), change: "appeared", at: Number(now)})
+    else if (String(old.label || "") !== String(entry.label || "")) result.push({kind: kind, device: identifier, label: boundedPlainText(entry.label || identifier, 128), change: "renamed", at: Number(now)})
+  })
+  Object.keys(before).sort().forEach(function(identifier) {
+    if (!after[identifier]) result.push({kind: kind, device: identifier, label: boundedPlainText(before[identifier].label || identifier, 128), change: "disappeared", at: Number(now)})
+  })
+  return result.slice(0, 16)
 }
 
 function historyPeriodLabel(endedAt, now) {
