@@ -16,6 +16,7 @@ Item {
   property var capturePreviewBarSessions: []
   property var capturePreviewSettings: ({})
   property var barPresentations: ({})
+  property var barInstances: ({})
   property bool captureHistoryPresentationEnabled: true
   property string capturePreviewOwner: ""
   property double capturePreviewExpiresAt: 0
@@ -36,6 +37,51 @@ Item {
 
   function barPresentation(screenName) {
     return barPresentations[String(screenName || "unknown")] || ({})
+  }
+
+  function registerBarInstance(screenName, instance) {
+    var key = String(screenName || "")
+    if (!key || key === "unknown" || !instance) return false
+    var next = Object.assign({}, barInstances)
+    next[key] = instance
+    barInstances = next
+    return true
+  }
+
+  function unregisterBarInstance(screenName, instance) {
+    var key = String(screenName || "")
+    if (!key || barInstances[key] !== instance) return false
+    var next = Object.assign({}, barInstances)
+    delete next[key]
+    barInstances = next
+    return true
+  }
+
+  function closeCapturePanel(owner, screenName) {
+    if (!capturePreviewActive || capturePreviewOwner !== owner) return "denied"
+    var target = barInstances[String(screenName || "")]
+    if (!target || typeof target.close !== "function") return "unavailable"
+    target.close()
+    return "ok"
+  }
+
+  function openCapturePanel(owner, screenName, mode, page, section) {
+    if (!capturePreviewActive || capturePreviewOwner !== owner) return "denied"
+    var target = barInstances[String(screenName || "")]
+    if (!target || typeof target.open !== "function") return "unavailable"
+    var selected = String(mode || "")
+    if (["settings", "settings-section", "device", "activity", "history", "history-disabled"].indexOf(selected) < 0) return "invalid"
+    target.open()
+    if (selected === "settings" || selected === "settings-section") target.showGlobalSettings(page, selected === "settings-section" ? section : "")
+    else if (selected === "device") { target.showActivity(); target.editingKind = Model.deviceDeepLink(page) }
+    else if (selected === "activity") target.showActivity()
+    else {
+      captureHistoryPresentationEnabled = selected !== "history-disabled"
+      target.showHistory()
+    }
+    return selected === "settings" ? String(page || "general")
+      : (selected === "settings-section" ? String(page || "general") + "#" + String(section || "")
+      : (selected === "history-disabled" ? "history-disabled" : (selected === "device" ? "activity" : selected)))
   }
 
   function clearCapturePreview() {
@@ -59,6 +105,7 @@ Item {
   property string audioEndpointHelperOverride: ""
   property string historyHelperOverride: ""
   property string locationHelperOverride: ""
+  property string audioStateHelperOverride: ""
   property var locationApps: []
   property bool locationActive: false
   property bool locationProbeBusy: false
@@ -80,11 +127,13 @@ Item {
   property int historyLoadGeneration: 0
   property var directObservations: []
   property bool directObserverRetiring: false
+  property bool directObserverOwned: false
   property bool directObserverRestartPending: false
   property double directObserverLastSeen: 0
   property double directObserverStartedAt: 0
   property int directObserverRetryMilliseconds: 1000
   property bool fallbackObserverRetiring: false
+  property bool fallbackObserverOwned: false
   property bool fallbackObserverRestartPending: false
   property double fallbackObserverLastSeen: 0
   property double fallbackObserverStartedAt: 0
@@ -128,6 +177,10 @@ Item {
   readonly property var defaultSink: Pipewire.defaultAudioSink
   property bool fallbackMicrophoneMuted: false
   property bool fallbackOutputMuted: false
+  property bool microphoneStateBusy: false
+  property bool microphoneStatePending: false
+  property bool outputStateBusy: false
+  property bool outputStatePending: false
   property bool cameraAllowed: true
   property bool locationAllowed: true
   property bool screenShareAllowed: true
@@ -286,9 +339,10 @@ Item {
     var needed = kindEnabled("screen-recording") || kindEnabled("screenshot")
     if (!needed) {
       fallbackObserverRestartPending = false
-      fallbackObserverRetiring = fallbackObserverProc.running
+      fallbackObserverRetiring = fallbackObserverOwned && fallbackObserverProc.running
       fallbackObserverRetry.stop()
       fallbackObserverProc.running = false
+      if (!fallbackObserverRetiring) fallbackObserverOwned = false
       clearFallbackObserverState()
       fallbackObserverStartedAt = 0
       fallbackObserverRetryMilliseconds = 1000
@@ -300,7 +354,12 @@ Item {
       return
     }
     var desired = fallbackObserverCommand()
-    if (fallbackObserverProc.running) {
+    if (fallbackObserverOwned) {
+      if (!fallbackObserverProc.running) {
+        fallbackObserverProc.command = desired
+        fallbackObserverStartedAt = Date.now()
+        return
+      }
       if (JSON.stringify(fallbackObserverProc.command) === JSON.stringify(desired)) return
       fallbackObserverRestartPending = true
       fallbackObserverRetiring = true
@@ -312,6 +371,7 @@ Item {
     fallbackObserverRetry.stop()
     fallbackObserverProc.command = desired
     fallbackObserverStartedAt = Date.now()
+    fallbackObserverOwned = true
     fallbackObserverProc.running = true
   }
 
@@ -635,9 +695,10 @@ Item {
   function refreshDirectDevices() {
     if (settings.directDeviceMonitoring !== true) {
       directObserverRestartPending = false
-      directObserverRetiring = directDeviceProc.running
+      directObserverRetiring = directObserverOwned && directDeviceProc.running
       directObserverRetry.stop()
       directDeviceProc.running = false
+      if (!directObserverRetiring) directObserverOwned = false
       clearDirectObserverState()
       directObserverStartedAt = 0
       directObserverRetryMilliseconds = 1000
@@ -653,7 +714,12 @@ Item {
       observerHelperPath(),
       "watch", "--heartbeat", String(boundedSeconds(settings.directDevicePollSeconds, 5, 2, 60))
     ]
-    if (directDeviceProc.running) {
+    if (directObserverOwned) {
+      if (!directDeviceProc.running) {
+        directDeviceProc.command = desiredCommand
+        directObserverStartedAt = Date.now()
+        return
+      }
       if (JSON.stringify(directDeviceProc.command) === JSON.stringify(desiredCommand)) return
       directObserverRestartPending = true
       directObserverRetiring = true
@@ -664,6 +730,7 @@ Item {
     directObserverRetiring = false
     directDeviceProc.command = desiredCommand
     directObserverStartedAt = Date.now()
+    directObserverOwned = true
     directDeviceProc.running = true
   }
 
@@ -834,6 +901,7 @@ Item {
   }
 
   function audioStateCommand(kind) {
+    if (audioStateHelperOverride) return [audioStateHelperOverride, kind]
     var pactlTarget = kind === "microphone" ? "source" : "sink"
     var pactlName = kind === "microphone" ? "@DEFAULT_SOURCE@" : "@DEFAULT_SINK@"
     var wpctlName = kind === "microphone" ? "@DEFAULT_AUDIO_SOURCE@" : "@DEFAULT_AUDIO_SINK@"
@@ -1171,15 +1239,34 @@ Item {
     privacyStateProc.running = true
   }
 
+  function refreshAudioState(kind) {
+    if (!kindEnabled(kind) && !controlPending(kind)) return false
+    if (kind === "microphone") {
+      if (microphoneStateBusy) { microphoneStatePending = true; return true }
+      else {
+        microphoneStatePending = false
+        microphoneStateBusy = true
+        microphoneStateProc.command = audioStateCommand("microphone")
+        microphoneStateProc.running = true
+        return true
+      }
+    }
+    if (kind === "audio-output") {
+      if (outputStateBusy) { outputStatePending = true; return true }
+      else {
+        outputStatePending = false
+        outputStateBusy = true
+        outputStateProc.command = audioStateCommand("audio-output")
+        outputStateProc.running = true
+        return true
+      }
+    }
+    return false
+  }
+
   function refreshMuteState() {
-    if ((kindEnabled("microphone") || controlPending("microphone")) && !microphoneStateProc.running) {
-      microphoneStateProc.command = audioStateCommand("microphone")
-      microphoneStateProc.running = true
-    }
-    if ((kindEnabled("audio-output") || controlPending("audio-output")) && !outputStateProc.running) {
-      outputStateProc.command = audioStateCommand("audio-output")
-      outputStateProc.running = true
-    }
+    refreshAudioState("microphone")
+    refreshAudioState("audio-output")
   }
 
   function snapshot() {
@@ -1384,12 +1471,24 @@ Item {
 
   Process {
     id: microphoneStateProc
-    onExited: function(exitCode) { root.setResult("probe", "microphone", exitCode); root.fallbackMicrophoneMuted = Model.mutedFromExitCode(exitCode, root.fallbackMicrophoneMuted); root.verifyControlTransaction("microphone", !root.fallbackMicrophoneMuted, exitCode === 10 || exitCode === 11) }
+    onExited: function(exitCode) {
+      root.setResult("probe", "microphone", exitCode)
+      root.fallbackMicrophoneMuted = Model.mutedFromExitCode(exitCode, root.fallbackMicrophoneMuted)
+      root.verifyControlTransaction("microphone", !root.fallbackMicrophoneMuted, exitCode === 10 || exitCode === 11)
+      root.microphoneStateBusy = false
+      if (root.microphoneStatePending) root.refreshAudioState("microphone")
+    }
   }
 
   Process {
     id: outputStateProc
-    onExited: function(exitCode) { root.setResult("probe", "audio-output", exitCode); root.fallbackOutputMuted = Model.mutedFromExitCode(exitCode, root.fallbackOutputMuted); root.verifyControlTransaction("audio-output", !root.fallbackOutputMuted, exitCode === 10 || exitCode === 11) }
+    onExited: function(exitCode) {
+      root.setResult("probe", "audio-output", exitCode)
+      root.fallbackOutputMuted = Model.mutedFromExitCode(exitCode, root.fallbackOutputMuted)
+      root.verifyControlTransaction("audio-output", !root.fallbackOutputMuted, exitCode === 10 || exitCode === 11)
+      root.outputStateBusy = false
+      if (root.outputStatePending) root.refreshAudioState("audio-output")
+    }
   }
 
   Process {
@@ -1445,6 +1544,7 @@ Item {
   Process {
     id: directDeviceProc
     onExited: function(exitCode) {
+      root.directObserverOwned = false
       if (root.directObserverRetiring) {
         root.directObserverRetiring = false
         if (root.directObserverRestartPending && root.settings.directDeviceMonitoring === true) root.refreshDirectDevices()
@@ -1463,6 +1563,7 @@ Item {
   Process {
     id: fallbackObserverProc
     onExited: function(exitCode) {
+      root.fallbackObserverOwned = false
       if (root.fallbackObserverRetiring) {
         root.fallbackObserverRetiring = false
         if (root.fallbackObserverRestartPending && (root.kindEnabled("screen-recording") || root.kindEnabled("screenshot"))) root.refreshFallbackObserver()
@@ -1597,6 +1698,10 @@ Item {
     function presentation(owner: string, screenName: string): string {
       if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"
       return JSON.stringify(root.barPresentation(screenName))
+    }
+    function closePanel(owner: string, screenName: string): string { return root.closeCapturePanel(owner, screenName) }
+    function openPanel(owner: string, screenName: string, mode: string, page: string, section: string): string {
+      return root.openCapturePanel(owner, screenName, mode, page, section)
     }
     function openHistoryDisabled(owner: string): string {
       if (!root.capturePreviewActive || root.capturePreviewOwner !== owner) return "denied"

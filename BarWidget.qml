@@ -135,6 +135,7 @@ Panel {
   readonly property real openPanelIndicatorWidth: button.labelWidth
   readonly property var presentationScreen: root.QsWindow.window ? root.QsWindow.window.screen : null
   readonly property string presentationScreenName: presentationScreen ? presentationScreen.name : "unknown"
+  property string registeredPresentationScreen: ""
 
   function setting(key, fallback) {
     return effectiveSettings && effectiveSettings[key] !== undefined ? effectiveSettings[key] : fallback
@@ -147,6 +148,11 @@ Panel {
 
   function publishCaptureBarPresentation() {
     if (!privacyService) return
+    if (registeredPresentationScreen !== presentationScreenName) {
+      if (registeredPresentationScreen) privacyService.unregisterBarInstance(registeredPresentationScreen, root)
+      registeredPresentationScreen = presentationScreenName
+    }
+    privacyService.registerBarInstance(presentationScreenName, root)
     var view = showingGlobalSettings ? "settings" : (showingHistory ? "history" : (editingKind ? "device" : "activity"))
     privacyService.updateBarPresentation(presentationScreenName, {
       opened: opened,
@@ -857,6 +863,7 @@ Panel {
   onPendingSettingsSectionChanged: Qt.callLater(publishCaptureBarPresentation)
   onSettingsPageLoadedChanged: Qt.callLater(publishCaptureBarPresentation)
   onHandledSettingsRequestSerialChanged: Qt.callLater(publishCaptureBarPresentation)
+  onPresentationScreenNameChanged: Qt.callLater(publishCaptureBarPresentation)
   Connections {
     target: root.privacyService
     function onCapturePreviewActiveChanged() {
@@ -869,6 +876,7 @@ Panel {
     function onSettingsRequestSerialChanged() { root.handleSettingsRequest() }
   }
   Component.onCompleted: { syncDisplayedItems(); Qt.callLater(syncService) }
+  Component.onDestruction: if (privacyService) privacyService.unregisterBarInstance(registeredPresentationScreen, root)
 
   Timer {
     id: settingsMutationGuard
