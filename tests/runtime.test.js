@@ -103,6 +103,8 @@ assert.doesNotMatch(screenshotWorkflow, /privacy-history (clear|append)|reloadCo
 assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must reject workspaces containing user windows")
 assert.match(screenshotWorkflow, /active_window_json=\$\(hyprctl activewindow -j\)[\s\S]*?scripts\/select-capture-monitor[\s\S]*?focus_capture_workspace\(\)[\s\S]*?cursor\.move[\s\S]*?\[\[ \$focused == true \]\][\s\S]*?workspace = \\"\$capture_workspace\\"/,
   "capture must focus and verify the selected monitor before switching its workspace")
+assert.match(screenshotWorkflow, /client_json=\$\(hyprctl clients -j\)[\s\S]*?launcher_pid=\$PPID[\s\S]*?ps -o ppid=[\s\S]*?launcher_monitor=/,
+  "automatic capture selection must trace the launcher process ancestry to its Hyprland client")
 assert.match(screenshotWorkflow, /restore_original_workspace\(\) \{[\s\S]*?for attempt in \{1\.\.20\}[\s\S]*?workspace == \"\$original_workspace\"/,
   "workspace restoration must wait until the compositor confirms the original workspace")
 assert.match(screenshotWorkflow, /cursor_json=\$\(hyprctl cursorpos -j\)[\s\S]*?park_capture_cursor\(\)[\s\S]*?restore_cursor\(\)[\s\S]*?hl\.dsp\.cursor\.move/,
@@ -307,6 +309,12 @@ assert.match(screenshotWorkflow, /function validate_capture|validate_capture\(\)
 assert.match(screenshotWorkflow, /colors >= 8/, "capture validation must reject low-content images")
 assert.match(screenshotWorkflow, /Capture dimensions do not match its view[\s\S]*?Duplicate captures:/,
   "capture publication must reject wrong-sized or repeated view assets")
+for (const [name, height] of [["history", 660], ["history-disabled", 240]]) {
+  assert.match(screenshotWorkflow, new RegExp(`validate_capture "\\$capture_dir/${name}\\.png" 532 ${height}`),
+    `${name} capture must be dimension-checked before publication`)
+  assert.match(screenshotWorkflow.match(/for image in[^\n]+; do\n  digest=/)[0], new RegExp(`\\b${name}\\b`),
+    `${name} capture must participate in pre-publication duplicate detection`)
+}
 assert.equal((screenshotWorkflow.match(/optimize_png "\$capture_dir\/\$page\.png"/g) || []).length, 1,
   "each settings screenshot must be optimized exactly once")
 assert.match(screenshotWorkflow, /wait_for_shell\(\)[\s\S]*?for attempt in \{1\.\.40\}/,

@@ -4,8 +4,10 @@ set -euo pipefail
 [[ $# -eq 1 && -n $1 ]] || { printf 'Expected one monitor-state JSON argument.\n' >&2; exit 2; }
 jq -er '
   . as $input
+  | ($input.launcher.monitor // -1) as $launcher_id
   | ($input.active.monitor // -1) as $active_id
-  | ([ $input.monitors[] | select(.id == $active_id) | .name ][0]
+  | ([ $input.monitors[] | select(.id == $launcher_id) | .name ][0]
+    // [ $input.monitors[] | select(.id == $active_id) | .name ][0]
     // [ $input.monitors[]
       | select(($input.cursor.x // null) != null and ($input.cursor.y // null) != null)
       | select($input.cursor.x >= .x and $input.cursor.x < (.x + .width)

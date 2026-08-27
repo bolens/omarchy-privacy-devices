@@ -8,13 +8,17 @@ const monitors = [
   {id: 1, name: "DP-1", focused: true, x: -3440, y: 0, width: 3440, height: 1440}
 ]
 
-function select(active, cursor, rows = monitors) {
-  return spawnSync(helper, [JSON.stringify({active, monitors: rows, cursor})], {encoding: "utf8"})
+function select(active, cursor, rows = monitors, launcher = {}) {
+  return spawnSync(helper, [JSON.stringify({launcher, active, monitors: rows, cursor})], {encoding: "utf8"})
 }
 
-let result = select({monitor: 0}, {x: -1000, y: 700})
+let result = select({monitor: 0}, {x: -1000, y: 700}, monitors, {monitor: 1})
 assert.equal(result.status, 0)
-assert.equal(result.stdout.trim(), "DP-3", "launching window must take precedence over the pointer")
+assert.equal(result.stdout.trim(), "DP-1", "launcher process ancestry must take precedence over the active window and pointer")
+
+result = select({monitor: 0}, {x: -1000, y: 700})
+assert.equal(result.status, 0)
+assert.equal(result.stdout.trim(), "DP-3", "active window must take precedence when launcher ancestry is unavailable")
 
 result = select({}, {x: -1000, y: 700})
 assert.equal(result.status, 0)
