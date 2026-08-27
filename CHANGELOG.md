@@ -34,6 +34,11 @@ maintainer guides that define release and validation procedures.
   observers to re-enable, and serialize dependency/shared-control ownership.
 - Replace timing-based QML debounce and observer assertions with event-driven
   completion plus bounded failure deadlines.
+- Serialize history writes in request order, retain the newest history reload
+  across in-flight work, and publish capture-preview expiry only after its
+  transient payload has been cleared.
+- Replace fixed-delay settings, confirmation, preview-expiry, verification, and
+  session-refresh runtime checks with observed completion signals.
 - Stop screenshot capture from switching the workspace on one monitor while
   recording another, and restore the selected monitor without overriding the
   user's original pointer/focus context.

@@ -18,12 +18,7 @@ ShellRoot {
     service.directObservations = [{kind:"camera", application:"Browser", device:"Camera 1", source:"direct-device", confidence:"confirmed"}]
   }
 
-  Timer {
-    id: reconciliationPoll
-    interval: 100
-    running: true
-    repeat: true
-    onTriggered: {
+  function verifyReconciliation() {
       var fixtureSessions = service.activeSessions.filter(function(session) {
         return session.application === "Browser" && session.device === "Camera 1"
       })
@@ -36,9 +31,10 @@ ShellRoot {
       if (fixtureSessions.length) return
       if (service.recentHistory.length || service.notificationQueue.length)
         throw new Error("removed observation reconciled with side effects")
-      reconciliationPoll.stop()
       console.log("PRIVACY_QML_SESSION_REFRESH_REACTIVITY_OK")
       Qt.quit()
-    }
   }
+
+  Connections { target: service; function onLastSessionRefreshAtChanged() { root.verifyReconciliation() } }
+  Timer { interval: 1500; running: true; onTriggered: { throw new Error("reactive session reconciliation did not complete") } }
 }

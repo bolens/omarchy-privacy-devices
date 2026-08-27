@@ -33,6 +33,12 @@ ShellRoot {
       throw new Error("busy dependency refresh did not coalesce into one pending pass")
     service.dependencyCheckBusy = false
 
+    service.privacyStateBusy = true
+    service.refreshPreventativeControls()
+    if (!service.privacyStateRefreshPending || service.privacyStateQueue.length !== 0)
+      throw new Error("busy preventative-state refresh did not coalesce into one pending pass")
+    service.privacyStateBusy = false
+
     if (!service.controllable("screen-recording") || service.serviceControllable("screen-recording")
         || service.controlRequestStatus("screen-recording") !== "unsupported")
       throw new Error("externally observed recording control crossed the service-owned boundary")

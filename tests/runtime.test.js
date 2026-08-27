@@ -553,8 +553,8 @@ assert.match(bar, /if \(!privacyService\.beginExternalControl\("screen-recording
   "recording commands must not run unless their transaction is accepted")
 assert.match(service, /function refreshPreventativeControls\(\)[\s\S]*?Model\.scheduleProbeRefresh\(busy, preventativeProbeKinds\)/,
   "preventative refreshes must use the behavior-tested supersession policy")
-assert.match(service, /function runNextPrivacyState\(\)[\s\S]*?Model\.nextProbeAction\(privacyStateQueue, privacyStateRefreshPending, privacyStateProc\.running\)/,
-  "preventative workers must use the behavior-tested FIFO policy")
+assert.match(service, /function runNextPrivacyState\(\)[\s\S]*?Model\.nextProbeAction\(privacyStateQueue, privacyStateRefreshPending, privacyStateBusy\)/,
+  "preventative workers must use explicit synchronous ownership and the behavior-tested FIFO policy")
 assert.match(service, /readonly property bool audioMonitoringEnabled:[\s\S]*?controlPending\("microphone"\)[\s\S]*?controlPending\("audio-output"\)/,
   "audio verification probes must survive device monitoring changes")
 assert.match(service, /readonly property var preventativeProbeKinds:[\s\S]*?controlPending\(kind\)/,
@@ -565,6 +565,10 @@ assert.match(service, /property int historyGeneration:\s*0[\s\S]*?property int h
   "history loads must be tied to the privacy configuration that requested them")
 assert.match(service, /function clearHistory\(\)[\s\S]*?historyGeneration\+\+/,
   "clearing history must invalidate an in-flight load")
+assert.match(service, /property bool historyLoadBusy:[\s\S]*?function loadHistory\(\)[\s\S]*?historyLoadPending = true[\s\S]*?historyLoadBusy = true/,
+  "history loading must use synchronous ownership and retain a superseding reload")
+assert.match(service, /function enqueueHistoryMutation\(arguments\)[\s\S]*?historyMutationQueue = historyMutationQueue\.concat[\s\S]*?function runNextHistoryMutation\(\)[\s\S]*?historyMutationBusy = true/,
+  "history mutations must preserve request order through a service-owned FIFO")
 assert.match(service, /id:\s*historyLoadProc[\s\S]*?Model\.historyLoadAccepted\(root\.historyLoadGeneration, root\.historyGeneration, root\.settings\.historyEnabled\)[\s\S]*?recentHistory = \[\]/,
   "stale history output must not repopulate private data after history is disabled or cleared")
 assert.match(service, /id:\s*historyLoadOutput[\s\S]*?onStreamFinished:\s*\{[\s\S]*?JSON\.parse\(String\(historyLoadOutput\.text \|\| "\[\]"\)\)/,

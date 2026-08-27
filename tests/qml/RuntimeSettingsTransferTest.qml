@@ -2,8 +2,19 @@ import Quickshell
 import QtQuick
 
 ShellRoot {
+  id: root
   readonly property string fixtureHelper: String(Qt.resolvedUrl("tests/fixtures/settings-transfer-helper")).replace(/^file:\/\//, "")
   property var completed: []
+  property bool started: false
+
+  function startWhenReady() {
+    if (started || transfer.running) return
+    started = true
+    if (transfer.request("invalid", {}) || transfer.running) throw new Error("invalid transfer mode was accepted")
+    if (!transfer.request("export", {_privacySettingsVersion:1})) throw new Error("export request rejected")
+    if (transfer.request("checkpoint", {}) || transfer.refreshUndoAvailability())
+      throw new Error("overlapping transfer request was accepted")
+  }
   PrivacySettingsTransferController {
     id: transfer
     helper: fixtureHelper
@@ -26,16 +37,6 @@ ShellRoot {
     }
     onFailed: function(mode, detail) { throw new Error("transfer failed: " + mode + " " + detail) }
   }
-  Timer {
-    interval: 100
-    running: true
-    onTriggered: {
-      if (transfer.running) return
-      if (transfer.request("invalid", {}) || transfer.running) throw new Error("invalid transfer mode was accepted")
-      if (!transfer.request("export", {_privacySettingsVersion:1})) throw new Error("export request rejected")
-      if (transfer.request("checkpoint", {}) || transfer.refreshUndoAvailability())
-        throw new Error("overlapping transfer request was accepted")
-      stop()
-    }
-  }
+  Connections { target: transfer; function onRunningChanged() { Qt.callLater(root.startWhenReady) } }
+  Component.onCompleted: Qt.callLater(root.startWhenReady)
 }

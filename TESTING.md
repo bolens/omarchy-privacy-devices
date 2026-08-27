@@ -80,6 +80,10 @@ timers from being hidden by an otherwise successful assertion path.
 Concurrency harnesses advance from observed process, heartbeat, health, and
 commit signals. Timers in those harnesses are failure deadlines only; they do
 not decide when an asynchronous operation should have completed.
+Settings transfer, rollback, confirmation expiry, capture-preview expiry,
+verification timeout, and reactive refresh harnesses follow the same rule;
+one event-loop deferral is used only when an assertion must run outside the
+QML binding stack that emitted its completion signal.
 
 This runs shared policy, the assembled plugin, semantic appearance bindings,
 rendered bar and activity-card states, per-endpoint audio controls, validated

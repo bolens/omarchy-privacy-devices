@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+[[ ${1:-} == load ]] || exit 2
+sleep 0.1
+printf '[{"kind":"camera","application":"Delayed history","startedAt":1,"endedAt":2,"durationMs":1}]\n'
