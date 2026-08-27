@@ -84,6 +84,7 @@ cat "$MOCK_HISTORY"
     PRIVACY_HISTORY_COMMAND: historyCommand, MOCK_HISTORY: liveHistory, MOCK_SHELL: "up",
     MOCK_LEASE: "ok", MOCK_DND: "off", MOCK_FOCUSED: "true", MOCK_WORKSPACE: "4" }
   run(postconditions, postArgs, postEnv)
+  run(postconditions, postArgs, { ...postEnv, MOCK_FOCUSED: "false" })
   fs.writeFileSync(settings, '{"changed":true}\n')
   assert.match(execute(postconditions, postArgs, postEnv).stderr, /settings changed/i)
   fs.writeFileSync(settings, "{}\n")

@@ -3,13 +3,14 @@ const fs = require("node:fs")
 const path = require("node:path")
 
 const service = fs.readFileSync(path.join(__dirname, "..", "Service.qml"), "utf8")
+const observerWatchdog = fs.readFileSync(path.join(__dirname, "..", "PrivacyObserverWatchdog.qml"), "utf8")
 const screenshotWorkflow = fs.readFileSync(path.join(__dirname, "..", "scripts/capture-screenshots"), "utf8")
 const captureGuard = fs.readFileSync(path.join(__dirname, "..", "scripts/capture-environment-guard"), "utf8")
 const capturePostconditions = fs.readFileSync(path.join(__dirname, "..", "scripts/verify-capture-postconditions"), "utf8")
 const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
 const ci = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "ci.yml"), "utf8")
 const qmlRuntime = fs.readFileSync(path.join(__dirname, "run_qml_runtime.sh"), "utf8")
-const runtimeSmoke = fs.readFileSync(path.join(__dirname, "..", "RuntimePluginSmokeTest.qml"), "utf8")
+const runtimeSmoke = fs.readFileSync(path.join(__dirname, "qml", "RuntimePluginSmokeTest.qml"), "utf8")
 const serviceEntryPoint = service.trimStart()
 const barEntryPoint = bar.trimStart()
 
@@ -64,7 +65,7 @@ assert.match(service, /settings\.historyEnabled === true && !capturePreviewActiv
   "capture-generated sessions must never enter the user's history")
 assert.match(bar, /effectiveSettings: privacyService && privacyService\.capturePreviewActive[\s\S]*?capturePreviewSettings/,
   "capture preview settings must override presentation without replacing persisted settings")
-assert.match(bar, /filteredHistory: Model\.filterHistory\(privacyService \? privacyService\.displayHistory/,
+assert.match(bar, /filteredHistory: Model\.filterAndSortHistory\(privacyService \? privacyService\.displayHistory/,
   "capture preview history must feed the visible history model")
 assert.match(screenshotWorkflow, /trap cleanup_capture EXIT INT TERM/, "screenshot capture must restore user and repository state on failure")
 assert.match(screenshotWorkflow, /--verify\) verify_only=true/,
@@ -98,8 +99,8 @@ assert.match(screenshotWorkflow, /set_capture_preview\(\) \{[\s\S]*?beginCapture
 assert.doesNotMatch(screenshotWorkflow, /privacy-history (clear|append)|reloadConfig|mv -- .*settings_file/,
   "capture must never mutate user history, replace settings, or reload shell config")
 assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must reject workspaces containing user windows")
-assert.match(screenshotWorkflow, /select\(\.focused\) \| \.name[\s\S]*?focus_capture_workspace\(\)[\s\S]*?monitor = \\"\$monitor\\"[\s\S]*?workspace = \\"\$capture_workspace\\"/,
-  "capture must select and verify the focused monitor before switching its workspace")
+assert.match(screenshotWorkflow, /select\(\.focused\) \| \.name[\s\S]*?focus_capture_workspace\(\)[\s\S]*?cursor\.move[\s\S]*?\[\[ \$focused == true \]\][\s\S]*?workspace = \\"\$capture_workspace\\"/,
+  "capture must focus and verify the selected monitor before switching its workspace")
 assert.match(screenshotWorkflow, /restore_original_workspace\(\) \{[\s\S]*?for attempt in \{1\.\.20\}[\s\S]*?workspace == \"\$original_workspace\"/,
   "workspace restoration must wait until the compositor confirms the original workspace")
 assert.match(screenshotWorkflow, /cursor_json=\$\(hyprctl cursorpos -j\)[\s\S]*?park_capture_cursor\(\)[\s\S]*?restore_cursor\(\)[\s\S]*?hl\.dsp\.cursor\.move/,
@@ -185,14 +186,14 @@ for (const [harness, marker] of [
   assert.match(qmlRuntime, new RegExp(`run_harness ${harness} ${marker}`), `${harness} must run in the real QML suite`)
 const runtimeRegistrations = [...qmlRuntime.matchAll(/^run_harness (Runtime\S+Test\.qml) (\S+)$/gm)]
   .map((match) => ({harness: match[1], marker: match[2]}))
-const runtimeHarnesses = fs.readdirSync(path.join(__dirname, ".."))
+const runtimeHarnesses = fs.readdirSync(path.join(__dirname, "qml"))
   .filter((name) => /^Runtime.*Test\.qml$/.test(name)).sort()
 assert.deepEqual(runtimeRegistrations.map(({harness}) => harness).sort(), runtimeHarnesses,
   "every QML runtime harness must be registered exactly once")
 assert.equal(new Set(runtimeRegistrations.map(({marker}) => marker)).size, runtimeRegistrations.length,
   "QML runtime success markers must be unique")
 for (const {harness, marker} of runtimeRegistrations) {
-  const source = fs.readFileSync(path.join(__dirname, "..", harness), "utf8")
+  const source = fs.readFileSync(path.join(__dirname, "qml", harness), "utf8")
   assert.equal((source.match(new RegExp(marker, "g")) || []).length, 1,
     `${harness} must emit its registered marker exactly once`)
 }
@@ -202,14 +203,14 @@ assert.ok(screenshotWorkflow.indexOf("capture_panel device device microphone") <
 assert.match(screenshotWorkflow, /privacy-devices openActivity "\$\{page:-microphone\}"[\s\S]*?capture_panel device device microphone/,
   "device documentation must show the endpoint-aware microphone settings page")
 assert.match(screenshotWorkflow, /docs\/device\.png/, "screenshot workflow must publish the device settings capture")
-assert.doesNotMatch(screenshotWorkflow, /capture_panel history history/,
-  "live capture must retain history evidence without entering its bar-relayouting surface")
+assert.match(screenshotWorkflow, /capture_panel history history/,
+  "live capture must render fresh history evidence instead of reusing a stale asset")
 assert.match(screenshotWorkflow, /expect_ipc_reply\(\)[\s\S]*?\[\[ \$reply == "\$expected" \]\][\s\S]*?history\) expect_ipc_reply history[\s\S]*?device\)[\s\S]*?expect_ipc_reply activity/,
   "capture must verify that IPC opened the intended view before taking a screenshot")
 assert.equal((screenshotWorkflow.match(/^set_capture_preview$/gm) || []).length, 1,
   "capture must install one immutable presentation preview for the full workflow")
-assert.doesNotMatch(screenshotWorkflow, /capture_panel history-disabled/,
-  "live capture must not render the compact history state that relayouts the shell bar")
+assert.match(screenshotWorkflow, /capture_panel history-disabled history-disabled/,
+  "live capture must render the disabled-history state through its in-memory preview")
 assert.match(service, /function openHistoryDisabled\(owner: string\)[\s\S]*?capturePreviewOwner !== owner[\s\S]*?captureHistoryPresentationEnabled = false[\s\S]*?requestPopupView\("history"/,
   "history-disabled capture routing must be owner-scoped")
 assert.match(service, /function state\(owner: string\)[\s\S]*?capturePreviewOwner !== owner[\s\S]*?capturePreviewSettings[\s\S]*?capturePreviewSessions[\s\S]*?capturePreviewBarSessions/,
@@ -232,8 +233,8 @@ assert.match(screenshotWorkflow, /capture_bar_signature\(\)[\s\S]*?debugBarGeome
   "bar invariants must follow live widget geometry instead of stale crop coordinates")
 assert.match(screenshotWorkflow, /capture_bar_signature baseline >\/dev\/null/,
   "capture must retain a baseline bar artifact for visual regression evidence")
-assert.match(screenshotWorkflow, /set_capture_preview\(\)[\s\S]*settings=\$\(jq -cn '\{\}'\)/,
-  "capture must preserve the user's complete bar presentation")
+assert.match(screenshotWorkflow, /set_capture_preview\(\)[\s\S]*settings=\$\(jq -cn '\{privacyModes:/,
+  "capture may add presentation-only privacy modes without replacing bar settings")
 assert.doesNotMatch(screenshotWorkflow.match(/set_capture_preview\(\) \{[\s\S]*?^\}/m)[0],
   /showIdle|displayMode|statusMarkerMode|showBarActiveMarker|showBarDisabledMarker/,
   "capture preview must not override any bar setting")
@@ -285,8 +286,8 @@ assert.match(screenshotWorkflow, /docs\/notification\.png/,
 assert.doesNotMatch(screenshotWorkflow, /device\)[\s\S]{0,240}?wtype/,
   "device capture must use deterministic IPC instead of keyboard selection")
 assert.match(screenshotWorkflow, /call shell summon "\$plugin_id" ""/, "activity capture must explicitly summon the main widget view")
-assert.doesNotMatch(screenshotWorkflow.match(/capture_panel\(\) \{[\s\S]*?^\}/m)[0], /call shell hide/,
-  "panel capture must switch views without repeatedly hiding and reopening the bar popup")
+assert.match(screenshotWorkflow.match(/capture_panel\(\) \{[\s\S]*?^\}/m)[0], /focus_capture_workspace[\s\S]*?call shell hide[\s\S]*?case "\$mode"/,
+  "panel capture must close any cross-monitor open copy before opening the requested view")
 assert.match(screenshotWorkflow, /function validate_capture|validate_capture\(\)/, "screenshot workflow must reject blank captures")
 assert.match(screenshotWorkflow, /colors >= 8/, "capture validation must reject low-content images")
 assert.match(screenshotWorkflow, /Capture dimensions do not match its view[\s\S]*?Duplicate captures:/,
@@ -381,7 +382,7 @@ assert.match(bar, /function showHistory\(\)[\s\S]*?privacyService\.loadHistory\(
   "opening history must request persisted entries without polling")
 assert.match(bar, /id:\s*historyView[\s\S]*?History is off[\s\S]*?Loading history[\s\S]*?No completed activity yet/,
   "history view must distinguish disabled, loading, and empty states")
-assert.match(bar, /filteredHistory:\s*Model\.filterHistory\(privacyService \? privacyService\.displayHistory : \[\], historyQuery\)/,
+assert.match(bar, /filteredHistory:\s*Model\.filterAndSortHistory\(privacyService \? privacyService\.displayHistory : \[\]/,
   "history view must derive from the full service-bounded history")
 assert.equal((bar.match(/"Clear history"/g) || []).length, 1,
   "history clearing must have one explicit home")
@@ -389,7 +390,7 @@ assert.match(bar, /id:\s*historySearch[\s\S]*?placeholderText:\s*"Search history
   "history view must expose a local search field")
 assert.match(bar, /id:\s*historyCountPill[\s\S]*?radius:\s*implicitHeight \/ 2[\s\S]*?Model\.historyCountLabel\(/,
   "history result counts must render as a labeled status pill")
-assert.match(bar, /readonly property var filteredHistory:\s*Model\.filterHistory\(/,
+assert.match(bar, /readonly property var filteredHistory:\s*Model\.filterAndSortHistory\(/,
   "history filtering must use the behavior-tested bounded model policy")
 assert.match(bar, /model:\s*root\.filteredHistory/,
   "history delegates must render only filtered entries")
@@ -486,9 +487,9 @@ assert.match(service, /props\["application\.icon-name"\]/,
 assert.match(service, /"watch",\s*"--heartbeat"/, "direct-device monitoring must use one persistent observer")
 assert.match(service, /directObserverRetryMilliseconds[\s\S]*?Math\.min\([^\n]*60000\)/,
   "observer restart backoff must be bounded at 60 seconds")
-assert.match(service, /Model\.observerHeartbeatState\(root\.directObserverLastSeen, root\.directObserverStartedAt, Date\.now\(\), heartbeat\)\.stale/,
+assert.match(observerWatchdog, /Model\.observerHeartbeatState\(watchdog\.lastSeen, watchdog\.startedAt, Date\.now\(\), watchdog\.heartbeatSeconds\)\.stale/,
   "direct observation must apply startup grace and last-seen state through the tested heartbeat policy")
-assert.match(service, /Model\.observerHeartbeatState\(root\.fallbackObserverLastSeen, root\.fallbackObserverStartedAt, Date\.now\(\), heartbeat\)\.stale/,
+assert.match(service, /PrivacyObserverWatchdog\s*\{[\s\S]*?id:\s*fallbackObserverRetry/,
   "fallback observation must apply startup grace and last-seen state through the tested heartbeat policy")
 assert.match(service, /function setObserverHealth\(source, status, code, reason\)[\s\S]*?Model\.updateObserverHealth\(/,
   "observer health mutation must use the behavior-tested idempotent policy")
@@ -505,7 +506,7 @@ assert.match(service, /function clearFallbackObserverState\(\)[\s\S]*?discardObs
   "fallback observer loss must invalidate sessions outside normal stop transitions")
 assert.match(service, /function clearFallbackObserverState\(\)[\s\S]*?if \(recordingApps\.length\) recordingApps = \[\]/,
   "repeated fallback degradation must not emit empty-array churn")
-assert.match(service, /id:\s*fallbackObserverHeartbeat[\s\S]*?fallback observer heartbeat is stale/,
+assert.match(service, /id:\s*fallbackObserverRetry[\s\S]*?onHeartbeatStale:[\s\S]*?fallback observer heartbeat is stale/,
   "fallback process observation must have heartbeat health coverage")
 assert.match(service, /payload\.type !== "fallback-snapshot"[\s\S]*?throw new Error/,
   "structurally invalid fallback payloads must degrade observer health")

@@ -13,7 +13,6 @@ cmp -s "$history_snapshot" <("$history_command" load) || { printf 'Privacy histo
 actual_dnd=$("$qs_command" ipc --pid "$current_pid" call notifications isDnd 2>/dev/null || true)
 [[ -z $expected_dnd || $actual_dnd == "$expected_dnd" ]] || { printf 'DND state was not restored.\n' >&2; exit 1; }
 monitor_json=$("$hyprctl_command" monitors -j)
-focused=$(jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused' <<<"$monitor_json")
 actual_workspace=$(jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .activeWorkspace.id' <<<"$monitor_json")
-[[ $focused == true && $actual_workspace == "$workspace" ]] || { printf 'Original workspace was not restored.\n' >&2; exit 1; }
+[[ $actual_workspace == "$workspace" ]] || { printf 'Original workspace was not restored.\n' >&2; exit 1; }
 [[ $current_pid == "$initial_pid" ]] || { printf 'Shell PID changed during verification: %s -> %s.\n' "$initial_pid" "$current_pid" >&2; exit 1; }

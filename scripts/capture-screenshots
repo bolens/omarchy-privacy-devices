@@ -119,7 +119,19 @@ wait_for_shell() {
 
 focus_capture_workspace() {
   local attempt focused workspace
-  hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null
+  # Moving the pointer is the only monitor-selection path that is independent
+  # of optional workspace-routing plugins. Do not switch workspaces until the
+  # compositor confirms that the requested output owns focus.
+  hyprctl eval "hl.dispatch(hl.dsp.cursor.move({ x = $((monitor_x + monitor_width / 2)), y = $((monitor_y + monitor_height / 2)) }))" >/dev/null
+  for attempt in {1..20}; do
+    focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
+    [[ $focused == true ]] && break
+    sleep 0.1
+  done
+  [[ $focused == true ]] || {
+    printf 'Could not focus capture monitor %s.\n' "$monitor" >&2
+    return 1
+  }
   hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$capture_workspace\" }))" >/dev/null
   for attempt in {1..20}; do
     focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
@@ -141,7 +153,13 @@ restore_cursor() {
 
 restore_original_workspace() {
   local attempt focused workspace
-  hyprctl eval "hl.dispatch(hl.dsp.focus({ monitor = \"$monitor\" }))" >/dev/null 2>&1 || return 1
+  hyprctl eval "hl.dispatch(hl.dsp.cursor.move({ x = $((monitor_x + monitor_width / 2)), y = $((monitor_y + monitor_height / 2)) }))" >/dev/null 2>&1 || return 1
+  for attempt in {1..20}; do
+    focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
+    [[ $focused == true ]] && break
+    sleep 0.1
+  done
+  [[ $focused == true ]] || return 1
   hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$original_workspace\" }))" >/dev/null 2>&1 || return 1
   for attempt in {1..20}; do
     focused=$(hyprctl monitors -j | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .focused')
@@ -185,7 +203,7 @@ capture_has_panel() {
   local image=$1 light_fraction
   capture_has_content "$image" || return 1
   light_fraction=$(magick "$image" -crop '400x80+66+30' +repage -colorspace gray -threshold 35% -format '%[fx:mean]' info: 2>/dev/null || true)
-  [[ $light_fraction =~ ^[0-9]+([.][0-9]+)?$ ]] && awk -v value="$light_fraction" 'BEGIN { exit !(value < 0.70) }'
+  [[ $light_fraction =~ ^[0-9]+([.][0-9]+)?$ ]] && awk -v value="$light_fraction" 'BEGIN { exit !(value > 0.01 && value < 0.70) }'
 }
 
 capture_monitor_frame() {
@@ -215,9 +233,17 @@ capture_panel() {
     : "$attempt"
     check_capture_environment || return 1
     focus_capture_workspace || return 1
+    # The bar routes a summon to an already-open copy before considering the
+    # focused monitor. Close that copy first so every capture opens on the
+    # monitor and workspace selected above instead of following stale UI state.
+    qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null 2>&1 || true
+    sleep 0.15
     case "$mode" in
       history) expect_ipc_reply history privacy-devices-settings openHistory ;;
-      history-disabled) expect_ipc_reply history-disabled privacy-devices-capture-v2 openHistoryDisabled "$capture_owner" ;;
+      history-disabled)
+        expect_ipc_reply history-disabled privacy-devices-capture-v2 openHistoryDisabled "$capture_owner"
+        capture_preview_state=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 state "$capture_owner" 2>/dev/null || true)
+        ;;
       settings) expect_ipc_reply "$page" privacy-devices-settings open "$page" ;;
       settings-section) expect_ipc_reply "$page#$section" privacy-devices-settings openSection "$page" "$section" ;;
       activity) qs ipc --pid "$shell_pid" call shell summon "$plugin_id" "" >/dev/null ;;
@@ -319,7 +345,10 @@ close_capture_notification() {
 }
 set_capture_preview() {
   local payload reply settings
-  settings=$(jq -cn '{}')
+  settings=$(jq -cn '{privacyModes:[
+    {name:"Meeting",controls:{microphone:true,"audio-output":true,camera:true,"screen-share":false,location:false}},
+    {name:"Travel",controls:{microphone:false,"audio-output":true,camera:false,"screen-share":false,location:false}}
+  ]}')
   payload=$(jq -cn --arg owner "$capture_owner" --argjson settings "$settings" --argjson history "$history_samples" --argjson sessions "$activity_samples" '{owner:$owner,settings:$settings,history:$history,sessions:$sessions}' | base64 -w 0)
   reply=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 beginCapture "$payload" 2>/dev/null || true)
   [[ $reply == ok ]] || { printf 'Could not activate in-memory capture preview.\n' >&2; return 1; }
@@ -422,6 +451,8 @@ capture_panel monitoring-health settings-section monitoring 290 observer-health 
 capture_panel device device microphone 660
 capture_panel activity activity "" 500
 capture_panel appearance settings appearance 660
+capture_panel history history "" 660
+capture_panel history-disabled history-disabled "" 240
 
 qs ipc --pid "$shell_pid" call shell hide "$plugin_id" >/dev/null
 sleep "$settle_seconds"
@@ -496,8 +527,8 @@ optimize_png() {
 if [[ $verify_only == false ]]; then
   optimize_png "$capture_dir/activity.png" "$publish_dir/preview.png"
   install -m 0644 "$publish_dir/preview.png" "$publish_dir/docs/preview.png"
-  install -m 0644 docs/history.png "$publish_dir/docs/history.png"
-  install -m 0644 docs/history-disabled.png "$publish_dir/docs/history-disabled.png"
+  optimize_png "$capture_dir/history.png" "$publish_dir/docs/history.png"
+  optimize_png "$capture_dir/history-disabled.png" "$publish_dir/docs/history-disabled.png"
   for page in general appearance alerts monitoring; do
     optimize_png "$capture_dir/$page.png" "$publish_dir/docs/$page.png"
   done
