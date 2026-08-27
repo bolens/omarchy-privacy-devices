@@ -48,7 +48,7 @@ while (($#)); do
   esac
 done
 
-for command in qs hyprctl jq grim magick wtype omarchy python3 flock base64 find sha256sum; do
+for command in qs hyprctl jq grim magick wtype omarchy python3 flock base64 find sha256sum ps; do
   command -v "$command" >/dev/null || { printf 'Missing required command: %s\n' "$command" >&2; exit 1; }
 done
 if [[ $verify_only == false ]]; then
@@ -63,8 +63,19 @@ monitor_json=$(hyprctl monitors -j)
 cursor_json=$(hyprctl cursorpos -j)
 active_window_json=$(hyprctl activewindow -j)
 if [[ -z $monitor ]]; then
+  client_json=$(hyprctl clients -j)
+  launcher_pids=()
+  launcher_pid=$PPID
+  while [[ $launcher_pid =~ ^[1-9][0-9]*$ ]] && ((launcher_pid > 1)); do
+    launcher_pids+=("$launcher_pid")
+    launcher_pid=$(ps -o ppid= -p "$launcher_pid" 2>/dev/null | tr -d ' ' || true)
+  done
+  launcher_pid_json=$(printf '%s\n' "${launcher_pids[@]}" | jq -s 'map(select(length > 0) | tonumber)')
+  launcher_monitor=$(jq -r --argjson pids "$launcher_pid_json" \
+    '[ $pids[] as $pid | .[] | select(.pid == $pid) | .monitor ][0] // -1' <<<"$client_json")
   monitor_state=$(jq -cn --argjson active "$active_window_json" --argjson monitors "$monitor_json" --argjson cursor "$cursor_json" \
-    '{active:$active,monitors:$monitors,cursor:$cursor}')
+    --argjson launcher "$launcher_monitor" \
+    '{launcher:{monitor:$launcher},active:$active,monitors:$monitors,cursor:$cursor}')
   monitor=$(scripts/select-capture-monitor "$monitor_state") || {
     printf 'Could not determine the launch monitor; pass --monitor NAME.\n' >&2
     exit 2
@@ -547,12 +558,14 @@ validate_capture "$capture_dir/activity.png" 532 500
 validate_capture "$capture_dir/device.png" 532 660
 validate_capture "$capture_dir/bar.png" "$widget_width" 50
 validate_capture "$capture_dir/notification.png" 420 160
+validate_capture "$capture_dir/history.png" 532 660
+validate_capture "$capture_dir/history-disabled.png" 532 240
 for page in general appearance alerts monitoring; do validate_capture "$capture_dir/$page.png" 532 660; done
 validate_capture "$capture_dir/monitoring-private.png" 532 395
 validate_capture "$capture_dir/monitoring-health.png" 532 290
 
 declare -A capture_digests=()
-for image in activity device bar notification general appearance alerts monitoring monitoring-private monitoring-health; do
+for image in activity device bar notification history history-disabled general appearance alerts monitoring monitoring-private monitoring-health; do
   digest=$(sha256sum "$capture_dir/$image.png" | awk '{print $1}')
   if [[ -n ${capture_digests[$digest]:-} ]]; then
     printf 'Duplicate captures: %s and %s\n' "${capture_digests[$digest]}" "$image" >&2

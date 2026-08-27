@@ -154,14 +154,17 @@ not exactly match their preserved snapshots.
 Each panel capture waits for an owner-scoped acknowledgement from the bar on the
 selected monitor, including lazy settings-page and section readiness. It does
 not infer rendering completion from a successful deep-link reply or fixed wait.
-Capture snapshots the focused launching window's monitor at startup, falling
-back to the pointer's containing output and then compositor focus when no active
-window exists. `--monitor` remains an explicit override. Panel actions then use
-the bar instance registered for that exact output.
+Capture traces its parent process chain to the Hyprland client that launched it,
+then falls back to the active window, pointer's containing output, and compositor
+focus. `--monitor` remains an explicit override. Panel actions then use the bar
+instance registered for that exact output.
 Hyprland connector names are treated generically; DisplayPort (`DP-*`), HDMI
 (`HDMI-*`), embedded panels (`eDP-*`), DVI, and other safe output names work.
 Notification capture similarly sends one toast and polls its crop against a
 fresh visual baseline, preventing retry attempts from stacking duplicate toasts.
+Every staged view is checked for its expected dimensions and uniqueness before
+transactional publication; a partial failure restores replaced assets and
+removes assets that did not exist before the run.
 
 Settings swaps use the shell's
 live `reloadConfig` IPC and verify its effective configuration, so capture and

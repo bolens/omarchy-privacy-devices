@@ -20,8 +20,11 @@ rollback() {
   local status=$? relative
   if [[ $complete == false ]]; then
     for relative in "$@"; do
-      [[ -f $backup/$relative ]] || continue
-      install -m "$(stat -c '%a' "$backup/$relative")" "$backup/$relative" "$relative"
+      if [[ -f $backup/$relative ]]; then
+        install -m "$(stat -c '%a' "$backup/$relative")" "$backup/$relative" "$relative"
+      elif [[ -f $backup/.absent/$relative ]]; then
+        rm -f -- "$relative"
+      fi
     done
     ((status == 0)) || printf 'Rolled back incomplete screenshot publication.\n' >&2
   fi
@@ -31,16 +34,24 @@ rollback() {
 trap 'rollback "$@"' EXIT INT TERM
 
 for relative in "$@"; do
-  [[ -f $relative && -f $stage/$relative ]] || {
+  [[ -f $stage/$relative ]] || {
     printf 'Missing screenshot publication file: %s\n' "$relative" >&2
     exit 1
   }
-  mkdir -p "$backup/$(dirname "$relative")"
-  cp -- "$relative" "$backup/$relative"
+  if [[ -f $relative ]]; then
+    mkdir -p "$backup/$(dirname "$relative")"
+    cp -- "$relative" "$backup/$relative"
+  else
+    mkdir -p "$backup/.absent/$(dirname "$relative")"
+    touch "$backup/.absent/$relative"
+  fi
 done
 
 for relative in "$@"; do
-  install -m "$(stat -c '%a' "$relative")" "$stage/$relative" "$relative"
+  mkdir -p "$(dirname "$relative")"
+  mode=0644
+  [[ ! -f $relative ]] || mode=$(stat -c '%a' "$relative")
+  install -m "$mode" "$stage/$relative" "$relative"
   if [[ ${PRIVACY_CAPTURE_TESTING:-0} == 1 && ${PRIVACY_CAPTURE_FAIL_AT:-} == "published:$relative" ]]; then
     printf 'Injected capture failure at published:%s.\n' "$relative" >&2
     exit 1
