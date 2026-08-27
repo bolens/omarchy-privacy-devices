@@ -29,8 +29,8 @@ usage() {
 Usage: scripts/capture-screenshots [--monitor NAME] [--workspace ID] [--verify] [--report FILE]
 
 Capture the live plugin on an empty workspace, update repository screenshots,
-and restore the monitor's original workspace. The monitor must be explicit;
-workspace defaults to its highest-numbered assigned empty workspace.
+and restore the monitor's original workspace. By default, the monitor containing
+the launching focused window is selected; --monitor overrides that choice.
 
 --verify performs the complete capture and restoration flow without publishing
 repository assets, then fails if any protected state or the shell PID changed.
@@ -61,7 +61,15 @@ flock -n 9 || { printf 'Another screenshot capture is already running.\n' >&2; e
 
 monitor_json=$(hyprctl monitors -j)
 cursor_json=$(hyprctl cursorpos -j)
-[[ -n $monitor ]] || { printf 'Capture monitor is required; pass --monitor NAME.\n' >&2; exit 2; }
+active_window_json=$(hyprctl activewindow -j)
+if [[ -z $monitor ]]; then
+  monitor_state=$(jq -cn --argjson active "$active_window_json" --argjson monitors "$monitor_json" --argjson cursor "$cursor_json" \
+    '{active:$active,monitors:$monitors,cursor:$cursor}')
+  monitor=$(scripts/select-capture-monitor "$monitor_state") || {
+    printf 'Could not determine the launch monitor; pass --monitor NAME.\n' >&2
+    exit 2
+  }
+fi
 [[ $monitor =~ ^[A-Za-z0-9_.-]+$ ]] || { printf 'Invalid monitor name: %s\n' "$monitor" >&2; exit 2; }
 
 monitor_width=$(jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .width' <<<"$monitor_json")

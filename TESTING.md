@@ -154,8 +154,12 @@ not exactly match their preserved snapshots.
 Each panel capture waits for an owner-scoped acknowledgement from the bar on the
 selected monitor, including lazy settings-page and section readiness. It does
 not infer rendering completion from a successful deep-link reply or fixed wait.
-The monitor argument is mandatory, and capture opens the bar instance registered
-for that exact output rather than relying on asynchronous compositor focus.
+Capture snapshots the focused launching window's monitor at startup, falling
+back to the pointer's containing output and then compositor focus when no active
+window exists. `--monitor` remains an explicit override. Panel actions then use
+the bar instance registered for that exact output.
+Hyprland connector names are treated generically; DisplayPort (`DP-*`), HDMI
+(`HDMI-*`), embedded panels (`eDP-*`), DVI, and other safe output names work.
 Notification capture similarly sends one toast and polls its crop against a
 fresh visual baseline, preventing retry attempts from stacking duplicate toasts.
 

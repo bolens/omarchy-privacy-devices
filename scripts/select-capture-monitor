@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+[[ $# -eq 1 && -n $1 ]] || { printf 'Expected one monitor-state JSON argument.\n' >&2; exit 2; }
+jq -er '
+  . as $input
+  | ($input.active.monitor // -1) as $active_id
+  | ([ $input.monitors[] | select(.id == $active_id) | .name ][0]
+    // [ $input.monitors[]
+      | select(($input.cursor.x // null) != null and ($input.cursor.y // null) != null)
+      | select($input.cursor.x >= .x and $input.cursor.x < (.x + .width)
+          and $input.cursor.y >= .y and $input.cursor.y < (.y + .height))
+      | .name ][0]
+    // [ $input.monitors[] | select(.focused == true) | .name ][0]
+    // empty)
+  | select(type == "string" and test("^[A-Za-z0-9_.-]+$"))
+' <<<"$1"

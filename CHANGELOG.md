@@ -49,8 +49,9 @@ maintainer guides that define release and validation procedures.
   respective subprocess is busy, including post-control verification refreshes.
 - Capture a single documentation notification after its pixels differ from a
   fresh monitor baseline instead of sleeping and potentially sending duplicates.
-- Require an explicit capture monitor and route capture-only panel actions to
-  that output's registered bar instance instead of compositor focus state.
+- Select the capture monitor from the launching focused window, with pointer and
+  focused-output fallbacks plus an explicit override, then route capture-only
+  panel actions to that output's registered bar instance.
 - Stop screenshot capture from switching the workspace on one monitor while
   recording another, and restore the selected monitor without overriding the
   user's original pointer/focus context.
