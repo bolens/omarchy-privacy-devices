@@ -7,6 +7,17 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Fixed
+
+- Prefer the monitor containing the terminal or launcher process that started a
+  screenshot run before active-window, pointer, and focused-output fallbacks.
+- Serialize settings export, import, reset checkpoints, and one-step undo with
+  private durable transactions while keeping missing read-only loads inert.
+- Reject retained-history timestamps beyond a bounded clock-skew allowance.
+- Roll back newly introduced screenshot assets after partial publication,
+  validate every published view's dimensions and uniqueness, and reject
+  duplicate dimensioned screenshot markup.
+
 ## [0.8.0] - 2026-08-27
 
 ### Added
