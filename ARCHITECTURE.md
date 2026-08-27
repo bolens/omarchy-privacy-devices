@@ -8,7 +8,9 @@
 - Root `privacy-*` executables: narrowly scoped runtime helpers invoked by the
   QML service. Keeping them beside the entry points preserves relocatable
   `Qt.resolvedUrl(...)` lookup.
-- `tests/`: behavior, security, release-metadata, site, and helper tests.
+- `tests/`: behavior, security, release-metadata, site, and helper tests. Runtime
+  QML harnesses live under `tests/qml/` so test-only shell roots cannot be
+  mistaken for installed plugin components.
 - `scripts/`: maintainer-only build and validation tooling; nothing here is
   called by the installed widget.
 - `docs/`: static Pages source and public media.
@@ -85,8 +87,9 @@ normal operation poll-driven.
   policy, so configuration churn cannot diverge their scheduling behavior.
 - Pending controls retain the last observed state rather than presenting an
   optimistic result.
-- Privacy lockdown serializes existing per-device control transactions, records
-  partial failures, and restores only from the observed pre-lockdown snapshot.
+- Lockdown and named privacy modes serialize existing per-device control
+  transactions, record partial failures, and restore only from the observed
+  pre-application snapshot.
 - Settings are allowlisted, bounded, and versioned before reaching runtime;
   IPC pages and direct helper arguments are validated again at their ingress.
 - Rapid settings edits merge before one shell update; submission failures
@@ -101,6 +104,11 @@ normal operation poll-driven.
   normalized session identity policy as application rules.
 - History summaries are projections of the existing bounded retained rows;
   they neither extend retention nor create a second data store.
+- History trends, filters, and sorting are pure projections of that same store.
+- Audio endpoint inventory changes remain bounded in memory for the current
+  service session and are never promoted into retained activity history.
+- Inspection handoff copies only a bounded live application name. It does not
+  retain process identifiers or assume an undocumented cross-plugin IPC API.
 - Diagnostics are redacted by default and bounded before clipboard transfer.
 - Notification callbacks and launcher adapters share `privacy-action`, whose
   action names and optional device kind are allowlisted before shell IPC.
@@ -143,8 +151,8 @@ captures media, or sends telemetry over the network.
   equivalent.
 - Suspend periodic probes when no enabled device consumes their results, and
   retain one coalesced refresh when configuration changes during a probe.
-- Cancel stale retry timers when observers restart and reject buffered output
-  after an observer has been retired.
+- `PrivacyObserverWatchdog.qml` owns retry and heartbeat timers consistently;
+  observers reject buffered output after retirement.
 - Run animation timers only while their corresponding pending state exists.
 - Bound scans, retries, stored entries, payload sizes, and rendered history.
 

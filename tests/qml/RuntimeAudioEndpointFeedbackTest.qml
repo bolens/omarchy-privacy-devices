@@ -9,6 +9,7 @@ ShellRoot {
     id: serviceMock
     property string audioEndpointMessage: "Audio endpoint state was not changed."
     function audioEndpoints(_kind) { return [] }
+    function deviceChangesFor(_kind) { return [] }
     function refreshAudioEndpoints(_kind) {}
   }
   QtObject {

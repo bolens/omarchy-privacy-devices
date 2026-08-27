@@ -53,13 +53,32 @@ ShellRoot {
       var search = widget.historySearchControl
       var count = widget.historyCountLabel
       if (!search || !count) throw new Error("history search presentation is not addressable")
-      if (widget.filteredHistory.length !== 2 || count.text !== "2 entries" || widget.historySummaryRows.length !== 2)
+      var filters = widget.historyFilterControls
+      if (filters.length !== 3 || Math.abs(filters[0].y - filters[1].y) > 2 || Math.abs(filters[1].y - filters[2].y) > 2
+          || filters.some(function(control) { return !control.visible || control.width < 90 }))
+        throw new Error("history filters did not render as one usable compact row: "
+          + filters.map(function(control) { return control.x + "," + control.y + " " + control.width + "x" + control.height + " visible=" + control.visible }).join("; "))
+      if (filters[0].text !== "All devices" || filters[1].text !== "All evidence" || filters[2].text !== "Recent first")
+        throw new Error("history filter labels are not concise and specific: " + filters.map(function(control) { return control.text }).join("; "))
+      if (widget.filteredHistory.length !== 2 || count.text !== "2 entries" || widget.historySummaryRows.length !== 2
+          || widget.historyTrend.total !== 2 || widget.historyTrend.buckets.length !== 12)
         throw new Error("history view did not render the in-memory retained activity: filtered=" + widget.filteredHistory.length
           + " count=" + count.text + " summaries=" + widget.historySummaryRows.length)
       search.text = "Firefox"
       Qt.callLater(function() {
         if (widget.historyQuery !== "Firefox" || widget.filteredHistory.length !== 1 || count.text !== "1 of 2")
           throw new Error("history search did not update filtered count feedback")
+        widget.historyKindFilter = "camera"
+        if (widget.filteredHistory.length !== 0) throw new Error("history device filter ignored the active search")
+        search.text = ""
+        if (widget.filteredHistory.length !== 1 || widget.filteredHistory[0].kind !== "camera")
+          throw new Error("history device filter did not constrain retained rows")
+        widget.historyKindFilter = "all"
+        widget.historyConfidenceFilter = "inferred"
+        if (widget.filteredHistory.length !== 0) throw new Error("history evidence filter mislabeled confirmed rows")
+        widget.historyConfidenceFilter = "all"
+        widget.historySortMode = "application"
+        if (widget.filteredHistory[0].application !== "Firefox") throw new Error("history application sorting was unstable")
         search.text = "No match"
         Qt.callLater(function() {
           if (widget.filteredHistory.length !== 0 || count.text !== "0 of 2")

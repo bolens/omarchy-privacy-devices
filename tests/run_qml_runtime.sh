@@ -38,6 +38,7 @@ trap cleanup_runtime EXIT INT TERM
 }
 find "$plugin_dir" -maxdepth 1 -type f -exec ln -s -- '{}' "$runtime_dir/" \;
 ln -s -- "$plugin_dir/tests" "$runtime_dir/tests"
+find "$plugin_dir/tests/qml" -maxdepth 1 -type f -name 'Runtime*Test.qml' -exec ln -s -- '{}' "$runtime_dir/" \;
 ln -s -- "$shell_root/Commons" "$runtime_dir/Commons"
 ln -s -- "$shell_root/Ui" "$runtime_dir/Ui"
 
@@ -128,6 +129,7 @@ run_harness RuntimeHelperCommandBoundaryTest.qml PRIVACY_QML_HELPER_COMMAND_BOUN
 run_harness RuntimeServiceStateMutationTest.qml PRIVACY_QML_SERVICE_STATE_MUTATION_OK
 run_harness RuntimeBarSessionPolicyTest.qml PRIVACY_QML_BAR_SESSION_POLICY_OK
 run_harness RuntimeObserverSessionTeardownTest.qml PRIVACY_QML_OBSERVER_SESSION_TEARDOWN_OK
+run_harness RuntimeObserverWatchdogTest.qml PRIVACY_QML_OBSERVER_WATCHDOG_OK
 run_harness RuntimeIpcDispatchTest.qml PRIVACY_QML_IPC_DISPATCH_OK
 
 if [[ -n $requested_harness && $ran_harness -eq 0 ]]; then

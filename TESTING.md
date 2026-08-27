@@ -40,7 +40,7 @@ qmllint -I "$OMARCHY_PATH/shell" \
   AudioEndpointSettings.qml \
   Privacy*Settings.qml PrivacySettingsNavigation.qml \
   PrivacyConfirmationController.qml PrivacySettingsTransferController.qml \
-  Runtime*.qml
+  tests/qml/Runtime*.qml
 ```
 
 In a graphical session, exercise shared JavaScript in the real Quickshell
@@ -70,7 +70,9 @@ The fast suite verifies that every `Runtime*Test.qml` harness is registered
 exactly once and owns one unique success marker, so adding a harness cannot
 silently leave it out of the real-engine suite.
 
-The runtime runner also rejects QML scene warnings and fatal/critical engine
+Runtime harness sources live under `tests/qml/`; the runner stages them beside
+the plugin runtime files so Quickshell exercises the same sibling-import rules
+as an installed root plugin. The runner also rejects QML scene warnings and fatal/critical engine
 output even when a success marker was emitted, and requires the marker exactly
 once at runtime. This prevents late binding errors or repeating completion
 timers from being hidden by an otherwise successful assertion path.
@@ -127,8 +129,8 @@ at least 0.95.
 
 ## Refreshing screenshots
 
-Capture the activity and both history states, exact bar footprint, global
-settings, and a device settings page from the live plugin on an otherwise
+Capture the activity and both history states, exact bar footprint, global and
+privacy-mode settings, and a device settings page from the live plugin on an otherwise
 empty workspace:
 
 ```sh

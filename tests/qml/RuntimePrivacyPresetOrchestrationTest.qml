@@ -20,7 +20,7 @@ ShellRoot {
     if (!service.requestPrivacyLockdown() || service.privacyPresetState !== "succeeded"
         || service.privacyPresetUndoAvailable || service.privacyPresetResults.length !== 5
         || service.privacyPresetPrevious.microphone !== true || service.privacyPresetPrevious.camera !== true
-        || service.privacyPresetMessage() !== "Privacy preset verified.")
+        || service.privacyPresetMessage() !== "Privacy mode verified.")
       throw new Error("unsupported-only lockdown did not complete deterministically")
     for (var index = 0; index < service.privacyPresetResults.length; index++) {
       if (service.privacyPresetResults[index].reason !== "unsupported")
@@ -28,6 +28,12 @@ ShellRoot {
     }
     if (service.restorePrivacyLockdown())
       throw new Error("undo was offered when lockdown changed no controls")
+
+    if (!service.requestPrivacyMode({name:"Meeting", controls:{camera:false}})
+        || service.privacyPresetState !== "succeeded" || service.privacyPresetName !== "Meeting"
+        || service.privacyPresetResults.length !== 1 || service.privacyPresetResults[0].kind !== "camera"
+        || service.privacyPresetMessage() !== "Privacy mode verified.")
+      throw new Error("named privacy mode did not preserve its bounded control scope")
 
     console.log("PRIVACY_QML_PRIVACY_PRESET_ORCHESTRATION_OK")
     Qt.quit()
