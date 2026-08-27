@@ -2,7 +2,19 @@ import Quickshell
 import QtQuick
 
 ShellRoot {
+  id: root
   Service { id: service }
+  QtObject {
+    id: barMock
+    property bool opened: false
+    property string view: ""
+    property string editingKind: ""
+    function open() { opened = true }
+    function close() { opened = false }
+    function showGlobalSettings(page, section) { view = "settings:" + page + ":" + section }
+    function showActivity() { view = "activity" }
+    function showHistory() { view = "history" }
+  }
 
   Component.onCompleted: {
     service.configure({enabledKinds:[],historyEnabled:false,directDeviceMonitoring:false})
@@ -15,6 +27,15 @@ ShellRoot {
     if (presentation.view !== "settings" || presentation.settingsPage !== "monitoring" || !presentation.ready
         || Object.keys(service.barPresentation("missing-output")).length !== 0)
       throw new Error("monitor-scoped bar presentation was not preserved")
+    service.capturePreviewOwner = "fixture_owner_123456789012"
+    service.capturePreviewActive = true
+    if (!service.registerBarInstance("HDMI-A-1", barMock)
+        || service.openCapturePanel("fixture_owner_123456789012", "HDMI-A-1", "device", "microphone", "") !== "activity"
+        || !barMock.opened || barMock.view !== "activity" || barMock.editingKind !== "microphone")
+      throw new Error("capture did not route directly to the selected monitor instance")
+    if (service.closeCapturePanel("fixture_owner_123456789012", "HDMI-A-1") !== "ok" || barMock.opened)
+      throw new Error("capture did not close the selected monitor instance")
+    service.unregisterBarInstance("HDMI-A-1", barMock)
     service.capturePreviewHistory = [{kind:"camera",application:"Preview",startedAt:3,endedAt:4}]
     service.capturePreviewSessions = [{kind:"camera",application:"Preview",startedAt:20}]
     service.capturePreviewBarSessions = [{kind:"screen-share",application:"Preview",startedAt:30}]

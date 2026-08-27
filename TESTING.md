@@ -154,6 +154,10 @@ not exactly match their preserved snapshots.
 Each panel capture waits for an owner-scoped acknowledgement from the bar on the
 selected monitor, including lazy settings-page and section readiness. It does
 not infer rendering completion from a successful deep-link reply or fixed wait.
+The monitor argument is mandatory, and capture opens the bar instance registered
+for that exact output rather than relying on asynchronous compositor focus.
+Notification capture similarly sends one toast and polls its crop against a
+fresh visual baseline, preventing retry attempts from stacking duplicate toasts.
 
 Settings swaps use the shell's
 live `reloadConfig` IPC and verify its effective configuration, so capture and

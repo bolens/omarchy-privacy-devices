@@ -27,6 +27,9 @@ ShellRoot {
     {target:"privacy-devices-settings", method:"openSection", args:["monitoring", "private-data"], expected:"monitoring#private-data"},
     {target:"privacy-devices-capture-v2", method:"beginCapture", args:["not-base64"], expected:"invalid"},
     {target:"privacy-devices-capture-v2", method:"beginCapture", args:[capturePayload], expected:"ok"},
+    {target:"privacy-devices-capture-v2", method:"openPanel", args:[owner, "DP-1", "device", "microphone", ""], expected:"activity"},
+    {target:"privacy-devices-capture-v2", method:"closePanel", args:[owner, "DP-1"], expected:"ok"},
+    {target:"privacy-devices-capture-v2", method:"openPanel", args:[otherOwner, "DP-1", "activity", "", ""], expected:"denied"},
     {target:"privacy-devices-capture-v2", method:"beginCapture", args:[Qt.btoa(JSON.stringify({owner:otherOwner, settings:{}, history:[], sessions:[]}))], expected:"busy"},
     {target:"privacy-devices-capture-v2", method:"renew", args:[otherOwner], expected:"denied"},
     {target:"privacy-devices-capture-v2", method:"state", args:[owner], validator:"capture-state"},
@@ -49,6 +52,16 @@ ShellRoot {
     }
   }
   Service { id: service; shell: shellMock; settings: ({enabledKinds:[]}) }
+  QtObject {
+    id: barMock
+    property bool opened: false
+    property string editingKind: ""
+    function open() { opened = true }
+    function close() { opened = false }
+    function showGlobalSettings(_page, _section) {}
+    function showActivity() {}
+    function showHistory() {}
+  }
 
   function runNext() {
     if (step >= steps.length) {
@@ -98,5 +111,8 @@ ShellRoot {
     }
   }
 
-  Component.onCompleted: Qt.callLater(runNext)
+  Component.onCompleted: {
+    service.registerBarInstance("DP-1", barMock)
+    Qt.callLater(runNext)
+  }
 }

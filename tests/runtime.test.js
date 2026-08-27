@@ -101,7 +101,7 @@ assert.match(screenshotWorkflow, /set_capture_preview\(\) \{[\s\S]*?beginCapture
 assert.doesNotMatch(screenshotWorkflow, /privacy-history (clear|append)|reloadConfig|mv -- .*settings_file/,
   "capture must never mutate user history, replace settings, or reload shell config")
 assert.match(screenshotWorkflow, /window_count == 0/, "screenshot capture must reject workspaces containing user windows")
-assert.match(screenshotWorkflow, /select\(\.focused\) \| \.name[\s\S]*?focus_capture_workspace\(\)[\s\S]*?cursor\.move[\s\S]*?\[\[ \$focused == true \]\][\s\S]*?workspace = \\"\$capture_workspace\\"/,
+assert.match(screenshotWorkflow, /Capture monitor is required; pass --monitor NAME[\s\S]*?focus_capture_workspace\(\)[\s\S]*?cursor\.move[\s\S]*?\[\[ \$focused == true \]\][\s\S]*?workspace = \\"\$capture_workspace\\"/,
   "capture must focus and verify the selected monitor before switching its workspace")
 assert.match(screenshotWorkflow, /restore_original_workspace\(\) \{[\s\S]*?for attempt in \{1\.\.20\}[\s\S]*?workspace == \"\$original_workspace\"/,
   "workspace restoration must wait until the compositor confirms the original workspace")
@@ -111,8 +111,6 @@ assert.match(screenshotWorkflow, /restore_dnd\(\) \{[\s\S]*?dnd_changed == true[
   "DND restoration must read back the requested state")
 assert.match(screenshotWorkflow, /Restoration: settings=%s history=%s dnd=%s workspace=%s shell=%s/,
   "capture must report every restored desktop-state category")
-assert.match(screenshotWorkflow, /notification_x=.*[\s\S]*?for attempt in \{1\.\.4\}[\s\S]*?notification send[\s\S]*?capture_has_content \"\$capture_dir\/notification\.png\"/,
-  "notification capture must retry transiently missing toasts")
 assert.match(screenshotWorkflow, /debugBarGeometry/, "bar screenshots must use measured live widget geometry")
 assert.match(screenshotWorkflow, /panel_capture_x=\$\(\(widget_x \+ widget_width \/ 2 - panel_width \/ 2 - panel_side_padding\)\)/,
   "panel captures must center on live widget geometry instead of using a stale offset")
@@ -202,17 +200,21 @@ for (const {harness, marker} of runtimeRegistrations) {
 assert.match(screenshotWorkflow, /capture_panel device device/, "screenshot workflow must capture an individual device settings page")
 assert.ok(screenshotWorkflow.indexOf("capture_panel device device microphone") < screenshotWorkflow.indexOf("capture_panel activity activity"),
   "device capture must not redundantly reopen the activity view immediately after its standalone capture")
-assert.match(screenshotWorkflow, /privacy-devices openActivity "\$\{page:-microphone\}"[\s\S]*?capture_panel device device microphone/,
+assert.match(screenshotWorkflow, /openPanel "\$capture_owner" "\$monitor" "\$mode" "\$\{page:-microphone\}"[\s\S]*?capture_panel device device microphone/,
   "device documentation must show the endpoint-aware microphone settings page")
 assert.match(screenshotWorkflow, /docs\/device\.png/, "screenshot workflow must publish the device settings capture")
 assert.match(screenshotWorkflow, /capture_panel history history/,
   "live capture must render fresh history evidence instead of reusing a stale asset")
-assert.match(screenshotWorkflow, /expect_ipc_reply\(\)[\s\S]*?\[\[ \$reply == "\$expected" \]\][\s\S]*?history\) expect_ipc_reply history[\s\S]*?device\)[\s\S]*?expect_ipc_reply activity/,
-  "capture must verify that IPC opened the intended view before taking a screenshot")
+assert.match(screenshotWorkflow, /expect_ipc_reply\(\)[\s\S]*?\[\[ \$reply == "\$expected" \]\][\s\S]*?privacy-devices-capture-v2 openPanel "\$capture_owner" "\$monitor"/,
+  "capture must verify that exact-monitor IPC opened the intended view")
 assert.match(screenshotWorkflow, /wait_for_panel_presentation\(\)[\s\S]*?privacy-devices-capture-v2 presentation[\s\S]*?\.ready == true[\s\S]*?wait_for_panel_presentation "\$mode"/,
   "capture must wait for the selected monitor to render the requested view")
-assert.match(screenshotWorkflow, /wait_for_panel_closed\(\)[\s\S]*?\.opened != true[\s\S]*?shell hide "\$plugin_id"[\s\S]*?wait_for_panel_closed/,
+assert.match(screenshotWorkflow, /wait_for_panel_closed\(\)[\s\S]*?\.opened != true[\s\S]*?closePanel "\$capture_owner" "\$monitor"[\s\S]*?wait_for_panel_closed/,
   "capture must observe panel closure before issuing the next deep link")
+assert.equal((screenshotWorkflow.match(/omarchy notification send --app-name/g) || []).length, 1,
+  "capture must send exactly one documentation notification")
+assert.match(screenshotWorkflow, /notification-baseline\.png[\s\S]*?magick compare -metric AE -fuzz 3%[\s\S]*?changed_pixels >= 500/,
+  "notification capture must advance from observed visual readiness")
 assert.equal((screenshotWorkflow.match(/^set_capture_preview$/gm) || []).length, 1,
   "capture must install one immutable presentation preview for the full workflow")
 assert.match(screenshotWorkflow, /capture_panel history-disabled history-disabled/,
@@ -223,6 +225,8 @@ assert.match(service, /function state\(owner: string\)[\s\S]*?capturePreviewOwne
   "capture IPC must expose an owner-scoped immutable presentation snapshot")
 assert.match(service, /function presentation\(owner: string, screenName: string\)[\s\S]*?capturePreviewOwner !== owner[\s\S]*?barPresentation\(screenName\)/,
   "capture IPC must expose owner- and monitor-scoped render acknowledgement")
+assert.match(service, /function openCapturePanel\(owner, screenName, mode, page, section\)[\s\S]*?barInstances\[String\(screenName[\s\S]*?target\.open\(\)/,
+  "capture routing must invoke only the registered instance for the explicit output")
 assert.match(bar, /presentationScreen:\s*root\.QsWindow\.window[\s\S]*?presentationScreenName[\s\S]*?updateBarPresentation\(presentationScreenName/,
   "bar render acknowledgements must use the window's actual output")
 assert.match(service, /capturePreviewBarSessions = Model\.sanitizeCaptureSessions\(root\.activeSessions, Date\.now\(\)\)/,
@@ -295,9 +299,10 @@ assert.match(screenshotWorkflow, /docs\/notification\.png/,
   "screenshot workflow must publish the notification capture")
 assert.doesNotMatch(screenshotWorkflow, /device\)[\s\S]{0,240}?wtype/,
   "device capture must use deterministic IPC instead of keyboard selection")
-assert.match(screenshotWorkflow, /call shell summon "\$plugin_id" ""/, "activity capture must explicitly summon the main widget view")
-assert.match(screenshotWorkflow.match(/capture_panel\(\) \{[\s\S]*?^\}/m)[0], /focus_capture_workspace[\s\S]*?call shell hide[\s\S]*?case "\$mode"/,
-  "panel capture must close any cross-monitor open copy before opening the requested view")
+assert.match(screenshotWorkflow, /activity\) expect_ipc_reply activity privacy-devices-capture-v2 openPanel/,
+  "activity capture must explicitly open the selected monitor's main view")
+assert.match(screenshotWorkflow.match(/capture_panel\(\) \{[\s\S]*?^\}/m)[0], /focus_capture_workspace[\s\S]*?closePanel[\s\S]*?case "\$mode"/,
+  "panel capture must close the selected monitor instance before opening its requested view")
 assert.match(screenshotWorkflow, /function validate_capture|validate_capture\(\)/, "screenshot workflow must reject blank captures")
 assert.match(screenshotWorkflow, /colors >= 8/, "capture validation must reject low-content images")
 assert.match(screenshotWorkflow, /Capture dimensions do not match its view[\s\S]*?Duplicate captures:/,
@@ -454,6 +459,10 @@ assert.match(service, /function runNextDependencyCheck\(\)[\s\S]*?Model\.nextPro
   "dependency workers must use explicit synchronous ownership and the behavior-tested FIFO policy")
 assert.doesNotMatch(service, /directDeviceProc\.running = false\s*\n\s*Qt\.callLater\(refreshDirectDevices\)|fallbackObserverProc\.running = false\s*\n\s*Qt\.callLater\(refreshFallbackObserver\)/,
   "observer reconfiguration must restart from confirmed process exit instead of event-loop timing")
+assert.match(service, /property bool directObserverOwned:[\s\S]*?function refreshDirectDevices\(\)[\s\S]*?if \(directObserverOwned\)[\s\S]*?directObserverOwned = true/,
+  "direct observer startup must use synchronous service ownership")
+assert.match(service, /property bool fallbackObserverOwned:[\s\S]*?function refreshFallbackObserver\(\)[\s\S]*?if \(fallbackObserverOwned\)[\s\S]*?fallbackObserverOwned = true/,
+  "fallback observer startup must use synchronous service ownership")
 
 for (const signal of [
   "onObservedPipewireSessionsChanged", "onLocationAppsChanged", "onLocationActiveChanged",
@@ -567,6 +576,8 @@ assert.match(service, /function runNextPrivacyState\(\)[\s\S]*?Model\.nextProbeA
   "preventative workers must use explicit synchronous ownership and the behavior-tested FIFO policy")
 assert.match(service, /readonly property bool audioMonitoringEnabled:[\s\S]*?controlPending\("microphone"\)[\s\S]*?controlPending\("audio-output"\)/,
   "audio verification probes must survive device monitoring changes")
+assert.match(service, /function refreshAudioState\(kind\)[\s\S]*?microphoneStateBusy[\s\S]*?microphoneStatePending = true[\s\S]*?outputStateBusy[\s\S]*?outputStatePending = true/,
+  "audio state probes must use per-device synchronous ownership and retained refreshes")
 assert.match(service, /readonly property var preventativeProbeKinds:[\s\S]*?controlPending\(kind\)/,
   "preventative verification probes must survive device monitoring changes")
 assert.match(service, /id:\s*preventativeControlTimer[\s\S]*?running:\s*root\.preventativeProbeKinds\.length > 0/,

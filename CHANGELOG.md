@@ -43,6 +43,14 @@ maintainer guides that define release and validation procedures.
   the fully rendered destination view before capturing screenshots.
 - Prevent superseded GeoClue probes from republishing location activity after
   location monitoring is disabled or reconfigured.
+- Claim observer startup ownership synchronously so same-turn configuration
+  changes cannot launch or overwrite competing observer processes.
+- Retain one final microphone and output-state probe independently while their
+  respective subprocess is busy, including post-control verification refreshes.
+- Capture a single documentation notification after its pixels differ from a
+  fresh monitor baseline instead of sleeping and potentially sending duplicates.
+- Require an explicit capture monitor and route capture-only panel actions to
+  that output's registered bar instance instead of compositor focus state.
 - Stop screenshot capture from switching the workspace on one monitor while
   recording another, and restore the selected monitor without overriding the
   user's original pointer/focus context.
