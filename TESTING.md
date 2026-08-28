@@ -35,7 +35,7 @@ validation_dir=$(mktemp -d)
 git archive HEAD | tar -x -C "$validation_dir"
 omarchy plugin validate "$validation_dir"
 qmllint -I "$OMARCHY_PATH/shell" \
-  BarWidget.qml Service.qml SettingsSurface.qml IntegerSetting.qml \
+  BarWidget.qml Service.qml Privacy*View.qml SettingsSurface.qml IntegerSetting.qml \
   PrivacyActivityCard.qml DeviceSettingsEditor.qml DeviceDiagnostics.qml \
   AudioEndpointSettings.qml \
   Privacy*Settings.qml PrivacySettingsNavigation.qml \

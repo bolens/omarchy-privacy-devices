@@ -7,6 +7,12 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Changed
+
+- Split the main popup's activity, history, and device-settings composition
+  into dedicated QML domain views while preserving BarWidget's behavior and
+  runtime-test facade.
+
 ## [0.8.1] - 2026-08-27
 
 ### Fixed
