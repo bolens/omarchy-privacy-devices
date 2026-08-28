@@ -12,6 +12,10 @@ maintainer guides that define release and validation procedures.
 - Split the main popup's activity, history, and device-settings composition
   into dedicated QML domain views while preserving BarWidget's behavior and
   runtime-test facade.
+- Isolate settings commit/rollback and private-transfer orchestration, lazy-load
+  device backend editors, and move history helper processes and queues behind a
+  dedicated service controller.
+- Use one deterministic QML lint entry point for local and CI validation.
 
 ## [0.8.1] - 2026-08-27
 
