@@ -15,6 +15,14 @@ ShellRoot {
     service.privacyPresetState = "applying"
     if (service.startPrivacyPreset({actions:[], skipped:[]}, false))
       throw new Error("concurrent preset start was accepted")
+    service.privacyPresetPrevious = {camera:true}
+    service.privacyPresetUndoAvailable = true
+    service.privacyPresetName = "Original"
+    if (service.requestPrivacyLockdown()
+        || service.requestPrivacyMode({name:"Replacement", controls:{camera:false}})
+        || service.privacyPresetPrevious.camera !== true || !service.privacyPresetUndoAvailable
+        || service.privacyPresetName !== "Original")
+      throw new Error("rejected concurrent preset request corrupted active preset state")
     service.privacyPresetState = "idle"
 
     if (!service.requestPrivacyLockdown() || service.privacyPresetState !== "succeeded"

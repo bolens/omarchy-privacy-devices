@@ -44,6 +44,7 @@ Item {
   }
 
   function requestLockdown() {
+    if (state === "applying" || state === "restoring") return false
     var values = entries()
     previous = observedState(values)
     presetName = "Lockdown"
@@ -53,6 +54,7 @@ Item {
   }
 
   function requestMode(mode) {
+    if (state === "applying" || state === "restoring") return false
     var clean = Model.sanitizePrivacyModes([mode])
     if (!clean.length) return false
     var values = entries()
