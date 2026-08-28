@@ -18,6 +18,9 @@ maintainer guides that define release and validation procedures.
 - Extract audio-endpoint, privacy-preset, capture-preview, per-device mutation,
   and presentation state machines into focused QML controllers while
   preserving the service and panel facades used by integrations and tests.
+- Isolate popup navigation, notification routing, verified control transactions,
+  dependency and device-control processes, and persistent observer lifecycles
+  behind focused controllers with unchanged public service and panel contracts.
 - Use one deterministic QML lint entry point for local and CI validation.
 
 ## [0.8.1] - 2026-08-27
