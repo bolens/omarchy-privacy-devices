@@ -14,9 +14,9 @@ ColumnLayout {
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Notifications" }
     MultiSelect { objectName: "alertsNotificationKindsSetting"; Layout.fillWidth: true; label: "Activity notifications"; options: page.controller.kindOptions; values: Model.arraySetting(page.controller.setting("notificationKinds", ["microphone", "camera", "screen-share", "screen-recording", "location"]), []); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { page.controller.persistSettings({notificationKinds: values}) } }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: page.controller.popupWidth === "wide" ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
       PrivacySettingToggle { objectName: "alertsNotifyOnActivityToggle"; controller: page.controller; settingKey: "notifyOnActivity"; label: "Activity started"; description: "Notify when selected activity begins." }

@@ -15,9 +15,9 @@ ColumnLayout {
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Behavior" }
     MultiSelect { objectName: "generalEnabledKindsSetting"; Layout.fillWidth: true; label: "Monitored activity"; options: page.controller.kindOptions; values: Model.arraySetting(page.controller.setting("enabledKinds", Model.KINDS), Model.KINDS); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { page.controller.persistSettings({enabledKinds: values}) } }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: page.controller.popupWidth === "wide" ? 2 : 1
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
       PrivacySettingToggle { objectName: "generalShowIdleToggle"; controller: page.controller; settingKey: "showIdle"; fallback: false; label: "Show idle activity icons"; description: "Keep activity icons visible while idle." }

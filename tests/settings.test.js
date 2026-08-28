@@ -24,7 +24,10 @@ const presentationController = fs.readFileSync(path.join(root, "PrivacyPresentat
 const navigationController = fs.readFileSync(path.join(root, "PrivacyPopupNavigationController.qml"), "utf8")
 const messageSurface = fs.readFileSync(path.join(root, "PrivacyMessageSurface.qml"), "utf8")
 const settingToggle = fs.readFileSync(path.join(root, "PrivacySettingToggle.qml"), "utf8")
+const settingsGrid = fs.readFileSync(path.join(root, "PrivacySettingsGrid.qml"), "utf8")
 const transferResult = fs.readFileSync(path.join(root, "PrivacySettingsTransferResult.qml"), "utf8")
+const generalSettings = fs.readFileSync(path.join(root, "PrivacyGeneralSettings.qml"), "utf8")
+const appearanceSettings = fs.readFileSync(path.join(root, "PrivacyAppearanceSettings.qml"), "utf8")
 const monitoringSettings = fs.readFileSync(path.join(root, "PrivacyMonitoringSettings.qml"), "utf8")
 const alertsSettings = fs.readFileSync(path.join(root, "PrivacyAlertsSettings.qml"), "utf8")
 const audioEndpointSettings = fs.readFileSync(path.join(root, "AudioEndpointSettings.qml"), "utf8")
@@ -262,9 +265,14 @@ assert.match(activityView, /Layout\.columnSpan: view\.controller\.popupGridColum
 assert.match(bar, /running:\s*modelData\.pending && root\.animatePending/, "pending animation must honor its visual setting")
 assert.match(bar, /Timer \{[\s\S]*?running: root\.opened[\s\S]*?onTriggered: if \(!contentFlick\.moving\) root\.durationNow = Date\.now\(\)/,
   "the duration timer must pause rendered time updates while the user scrolls")
-assert.match(monitoringSettings, /columns: observerHealthSettings\.width >= Style\.space\(360\) \? 2 : 1/,
+assert.match(settingsGrid, /property real responsiveWidth:[\s\S]*?property real breakpoint:[\s\S]*?responsiveWidth >= breakpoint/,
+  "settings grids must derive responsive columns from an explicit container width")
+for (const settingsPage of [appearanceSettings, monitoringSettings, generalSettings, alertsSettings])
+  assert.match(settingsPage, /responsiveWidth: Math\.min\(width, page\.controller\.configuredPanelWidth/,
+    "settings grids must respect their allocated surface width inside a wide popup")
+assert.match(monitoringSettings, /id: observerHealthSettings[\s\S]*?PrivacySettingsGrid[\s\S]*?breakpoint: Style\.space\(360\)/,
   "self-test actions must reflow instead of crowding narrow popups")
-assert.match(monitoringSettings, /columns: fallbackPollingSettings\.width >= Style\.space\(360\) \? 2 : 1/,
+assert.match(monitoringSettings, /id: fallbackPollingSettings[\s\S]*?PrivacySettingsGrid[\s\S]*?breakpoint: Style\.space\(360\)/,
   "short fallback intervals must share a row at standard settings width")
 assert.match(monitoringSettings, /PrivacyMessageSurface[\s\S]*?selfTestResult\.text/,
   "self-test results must use the shared status surface")

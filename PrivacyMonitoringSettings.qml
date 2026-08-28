@@ -17,9 +17,10 @@ GridLayout {
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Enhanced coverage" }
     MultiSelect { objectName: "monitoringBlockableKindsSetting"; Layout.fillWidth: true; label: "Preventative controls"; options: page.controller.kindOptions.filter(function(option) { return ["camera", "screen-share", "location"].indexOf(option.value) !== -1 }); values: Model.arraySetting(page.controller.setting("blockableKinds", ["camera", "screen-share", "location"]), []); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { page.controller.persistSettings({blockableKinds: values}) } }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: enhancedCoverageSettings.width >= Style.space(600) ? 2 : 1
+      breakpoint: Style.space(600)
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
       PrivacySettingToggle { objectName: "monitoringDirectDeviceToggle"; controller: page.controller; settingKey: "directDeviceMonitoring"; fallback: false; label: "Direct-device monitoring"; description: "Find apps that bypass PipeWire through same-user device handles." }
@@ -32,9 +33,10 @@ GridLayout {
     Layout.fillWidth: true
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Fallback polling" }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: fallbackPollingSettings.width >= Style.space(360) ? 2 : 1
+      breakpoint: Style.space(360)
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
       IntegerSetting { controller: page.controller; controlObjectName: "monitoringLocationPollSetting"; settingKey: "locationPollSeconds"; label: "Location interval, s"; minimum: 5; maximum: 300; fallback: 15; stepSize: 5 }
@@ -51,9 +53,11 @@ GridLayout {
     PrivacySettingToggle { objectName: "historyEnabledToggle"; controller: page.controller; settingKey: "historyEnabled"; fallback: false; label: "Keep recent activity"; description: "Store private metadata for seven days or 100 completed sessions." }
     Button { objectName: "privateDataClearHistoryButton"; text: "Clear stored history"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.clearHistory() }
     Text { Layout.fillWidth: true; text: "Export or restore a versioned settings file stored privately in your user data directory."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: privateDataSettings.width >= Style.space(420) ? 3 : 1
+      breakpoint: Style.space(420)
+      wideColumns: 3
       columnSpacing: Style.spacing.sm
       rowSpacing: Style.spacing.sm
       Button { objectName: "privateDataExportSettingsButton"; Layout.fillWidth: true; text: "Export settings"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: !page.controller.settingsTransferRunning; onClicked: page.controller.exportSettings() }
@@ -76,9 +80,10 @@ GridLayout {
     accent: page.controller.monitoringDegraded ? Color.urgent : page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Observer health" }
     Text { Layout.fillWidth: true; text: page.controller.monitoringTelemetryText(); textFormat: Text.PlainText; color: page.controller.monitoringDegraded ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: observerHealthSettings.width >= Style.space(360) ? 2 : 1
+      breakpoint: Style.space(360)
       columnSpacing: Style.spacing.sm
       rowSpacing: Style.spacing.sm
       Button { objectName: "monitoringRunSelfTestButton"; Layout.fillWidth: true; text: "Run self-test"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.runSelfTest() }

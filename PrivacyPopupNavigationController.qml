@@ -9,9 +9,11 @@ Item {
   property bool showingGlobalSettings: false
   property bool showingHistory: false
   property string globalSettingsPage: "general"
+  property string globalSettingsSection: ""
   property string pendingSettingsSection: ""
   property string selectedKind: ""
   property int handledSettingsRequestSerial: 0
+  property string settingsScrollPosition: "top"
 
   function showSettings(page, section) {
     host.confirmationController.clear()
@@ -20,8 +22,10 @@ Item {
     showingHistory = false
     showingGlobalSettings = true
     globalSettingsPage = target.page
+    globalSettingsSection = target.section
     pendingSettingsSection = target.section
     host.contentViewport.contentY = 0
+    settingsScrollPosition = "top"
     Qt.callLater(controller.scrollToSettingsSection)
   }
 
@@ -33,6 +37,17 @@ Item {
     var position = target.mapToItem(host.contentViewport.contentItem, 0, 0)
     host.contentViewport.contentY = Model.settingsScrollPosition(position.y, host.contentViewport.contentHeight, host.contentViewport.height)
     pendingSettingsSection = ""
+  }
+
+  function applySettingsScroll(position) {
+    var requested = String(position || "")
+    if (requested !== "top" && requested !== "bottom") return "invalid position"
+    if (!showingGlobalSettings) return "settings closed"
+    host.contentViewport.contentY = requested === "bottom"
+      ? Math.max(0, host.contentViewport.contentHeight - host.contentViewport.height) : 0
+    settingsScrollPosition = requested
+    Qt.callLater(function() { host.publishCaptureBarPresentation() })
+    return "ok"
   }
 
   function showActivity() {

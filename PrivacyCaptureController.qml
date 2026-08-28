@@ -58,6 +58,15 @@ Item {
     return "ok"
   }
 
+  function scrollSettings(requestOwner, screenName, position) {
+    if (!active || owner !== requestOwner) return "denied"
+    var requested = String(position || "")
+    if (requested !== "top" && requested !== "bottom") return "invalid position"
+    var target = instances[String(screenName || "")]
+    if (!target || typeof target.applySettingsScroll !== "function") return "unavailable"
+    return target.applySettingsScroll(requested)
+  }
+
   function openPanel(requestOwner, screenName, mode, page, section) {
     if (!active || owner !== requestOwner) return "denied"
     var target = instances[String(screenName || "")]

@@ -36,6 +36,7 @@ Panel {
   readonly property real popupIdleOpacity: Math.max(0.45, Math.min(1, Number(setting("popupIdleOpacity", 0.72))))
   readonly property int selectedPopupWidth: popupWidth === "narrow" ? 400 : (popupWidth === "wide" ? 720 : 460)
   readonly property int popupBaseWidth: popupLayout === "grid" ? Math.max(620, selectedPopupWidth) : selectedPopupWidth
+  readonly property real configuredPanelWidth: popupBaseWidth
   readonly property int popupGridColumns: popupLayout === "list" ? 1
     : (popup.width >= Style.space(600) && (popupLayout === "grid" || popupWidth === "wide") ? 2 : 1)
   readonly property bool showStatePills: setting("showStatePills", true) === true
@@ -102,6 +103,7 @@ Panel {
   property int historySummaryWindow: 24 * 60 * 60 * 1000
   readonly property bool settingsMutationPending: settingsController.mutationPending
   property alias globalSettingsPage: navigationController.globalSettingsPage
+  property alias globalSettingsSection: navigationController.globalSettingsSection
   property alias pendingSettingsSection: navigationController.pendingSettingsSection
   property alias selectedKind: navigationController.selectedKind
   property var displayedActivityItems: []
@@ -163,7 +165,8 @@ Panel {
       view: view,
       argument: view === "device" ? editingKind : "",
       settingsPage: globalSettingsPage,
-      settingsSection: view === "settings" ? privacyService.requestedSettingsSection : "",
+      settingsSection: view === "settings" ? globalSettingsSection : "",
+      settingsScroll: view === "settings" ? navigationController.settingsScrollPosition : "",
       ready: opened && !contentFlick.moving && (view !== "settings" || (settingsPageLoaded && pendingSettingsSection === "")),
       requestSerial: handledSettingsRequestSerial
     })
@@ -180,6 +183,7 @@ Panel {
   function showGlobalSettings(page, section) { navigationController.showSettings(page, section) }
 
   function scrollToSettingsSection() { navigationController.scrollToSettingsSection() }
+  function applySettingsScroll(position) { return navigationController.applySettingsScroll(position) }
 
   function showActivity() { navigationController.showActivity() }
 
@@ -512,6 +516,7 @@ Panel {
   onShowingGlobalSettingsChanged: Qt.callLater(publishCaptureBarPresentation)
   onShowingHistoryChanged: Qt.callLater(publishCaptureBarPresentation)
   onGlobalSettingsPageChanged: Qt.callLater(publishCaptureBarPresentation)
+  onGlobalSettingsSectionChanged: Qt.callLater(publishCaptureBarPresentation)
   onPendingSettingsSectionChanged: Qt.callLater(publishCaptureBarPresentation)
   onSettingsPageLoadedChanged: Qt.callLater(publishCaptureBarPresentation)
   onHandledSettingsRequestSerialChanged: Qt.callLater(publishCaptureBarPresentation)
