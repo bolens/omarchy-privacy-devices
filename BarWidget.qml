@@ -670,7 +670,7 @@ Panel {
             onLoaded: Qt.callLater(root.scrollToSettingsSection)
           }
 
-          Button { Layout.alignment: Qt.AlignRight; iconText: "󰑐"; text: "Reset global settings"; bordered: true; background: Util.alpha(root.activeThemeColor, 0.06); enabled: !root.settingsTransferRunning; onClicked: root.requestGlobalSettingsReset() }
+          Button { Layout.alignment: Qt.AlignRight; iconText: "󰑐"; tooltipText: "Reset all global settings"; horizontalPadding: Style.spacing.controlGap; bordered: true; background: Util.alpha(root.activeThemeColor, 0.06); enabled: !root.settingsTransferRunning; onClicked: root.requestGlobalSettingsReset() }
         }
 
         PrivacyDeviceView {

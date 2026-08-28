@@ -34,7 +34,7 @@ ColumnLayout {
     RowLayout {
       Layout.fillWidth: true
       TextField { id: modeNameField; objectName: "privacyModeNameField"; Layout.fillWidth: true; placeholderText: "Mode name"; foreground: Color.popups.text; accent: page.controller.activeThemeColor; font.family: Style.font.family; onTextChanged: page.newModeName = text }
-      Button { objectName: "privacyModeSaveButton"; text: "Save current"; enabled: page.newModeName.trim() !== "" && page.controller.privacyService !== null; onClicked: { page.controller.savePrivacyMode(page.newModeName); modeNameField.text = "" } }
+      Button { objectName: "privacyModeSaveButton"; iconText: "󰆓"; tooltipText: "Save current device state as mode"; horizontalPadding: Style.spacing.controlGap; enabled: page.newModeName.trim() !== "" && page.controller.privacyService !== null; onClicked: { page.controller.savePrivacyMode(page.newModeName); modeNameField.text = "" } }
     }
     Repeater {
       model: Model.sanitizePrivacyModes(page.controller.setting("privacyModes", []))

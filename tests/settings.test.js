@@ -75,7 +75,7 @@ for (const key of globalKeys) {
 
 assert.match(settingsNavigation, /value:"appearance"/, "appearance settings need a dedicated page")
 assert.match(settingsNavigation, /objectName: "settingsPageButton-" \+ modelData\.value/, "settings tabs must be addressable by runtime interaction tests")
-assert.match(bar, /iconText: "󰑐"[\s\S]*?text: "Reset global settings"[\s\S]*?bordered: true[\s\S]*?onClicked: root\.requestGlobalSettingsReset\(\)/,
+assert.match(bar, /iconText: "󰑐"[\s\S]*?tooltipText: "Reset all global settings"[\s\S]*?bordered: true[\s\S]*?onClicked: root\.requestGlobalSettingsReset\(\)/,
   "the global reset action must use the guarded request path")
 assert.match(settingsController, /function requestGlobalSettingsReset\(\)[\s\S]*?requestTransfer\("checkpoint"/,
   "the global reset request must preserve an undo point before reset policy")
@@ -104,7 +104,7 @@ assert.match(bar, /id:\s*globalSettingsPageLoader[\s\S]*?onLoaded:\s*Qt\.callLat
   "lazy settings pages must complete pending deep links after loading")
 assert.match(historyView, /History is off[\s\S]*?Open monitoring settings[\s\S]*?showGlobalSettings\("monitoring", "private-data"\)/,
   "disabled history must link directly to its opt-in control")
-assert.match(deviceView, /Global status-marker rules still apply[\s\S]*?Global marker settings[\s\S]*?showGlobalSettings\("appearance", "status-presentation"\)/,
+assert.match(deviceView, /Global status-marker rules still apply[\s\S]*?iconText: "󰒓"[\s\S]*?tooltipText: "Open global marker settings"[\s\S]*?showGlobalSettings\("appearance", "status-presentation"\)/,
   "per-device marker guidance must link directly to the governing global rules")
 assert.match(activityCard, /required property var controller[\s\S]*?property var entry:/, "activity card must expose one deep controller/entry interface")
 assert.match(globalSettings, /PanelSectionHeader \{ Layout\.fillWidth: true; text: "Observer health" \}[\s\S]*?text: page\.controller\.monitoringTelemetryText\(\)/,
@@ -129,10 +129,10 @@ assert.match(transferResult, /function apply\(mode, payload\)[\s\S]*?!parsed \|\
   "transferred settings must reject non-objects and use the canonical sanitizer")
 assert.match(settingsController, /Model\.sanitizeSettings\(candidate\)/, "settings writes must pass through the versioned sanitizer")
 assert.match(settingsController, /PrivacySettingsTransferController[\s\S]*?privacy-settings/, "settings transfer must use the bounded helper controller")
-assert.match(monitoringSettings, /text: "Private data"[\s\S]*?text: "Export settings"[\s\S]*?text: "Import settings"[\s\S]*?text: "Undo last change"/,
+assert.match(monitoringSettings, /text: "Private data"[\s\S]*?iconText: "󰈇"[\s\S]*?tooltipText: "Export settings"[\s\S]*?iconText: "󰈆"[\s\S]*?tooltipText: "Import the previously exported settings file"[\s\S]*?iconText: "󰕌"/,
   "Monitoring must own the complete private settings-transfer workflow")
 assert.equal((globalSettings.match(/label: "Keep recent activity"/g) || []).length, 1, "history controls must not be duplicated across settings pages")
-assert.equal((globalSettings.match(/text: "Export settings"/g) || []).length, 1, "settings transfer must have one clear home")
+assert.equal((globalSettings.match(/tooltipText: "Export settings"/g) || []).length, 1, "settings transfer must have one clear home")
 assert.match(activityCard, /HoverHandler[\s\S]*?selectedKind/, "hover should track keyboard selection without polling")
 assert.match(activityCard, /addPolicyValue\("hiddenDevices"[\s\S]*?addPolicyValue\("notificationSuppressedDevices"/,
   "active device rows must expose visibility and alert policy actions")
@@ -174,9 +174,9 @@ assert.match(presentationController, /role === "foreground"[\s\S]*?host\.bar[\s\
   "theme-role fallback must use the documented Omarchy bar foreground")
 assert.match(deviceView, /label: "Show status markers for this device"[\s\S]*?onChanged: function\(value\) \{ root\.persistItemStatusMarker\(root\.editingKind, value\) \}/,
   "per-item marker settings must persist the selected override")
-assert.match(deviceView, /text: "Move left"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, -1\)/,
+assert.match(deviceView, /iconText: "󰅁"[\s\S]*?tooltipText: "Move device left"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, -1\)/,
   "device placement must disable unavailable left movement")
-assert.match(deviceView, /text: "Move right"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, 1\)/,
+assert.match(deviceView, /iconText: "󰅂"[\s\S]*?tooltipText: "Move device right"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, 1\)/,
   "device placement must disable unavailable right movement")
 assert.match(deviceView, /visible: root\.editingKind !== "" && !root\.showingGlobalSettings[\s\S]*?SettingsSurface\s*\{[\s\S]*?text: "Appearance"/,
   "device appearance must use the shared settings surface")
@@ -270,16 +270,16 @@ assert.match(settingsGrid, /property real responsiveWidth:[\s\S]*?property real 
 for (const settingsPage of [appearanceSettings, monitoringSettings, generalSettings, alertsSettings])
   assert.match(settingsPage, /responsiveWidth: Math\.min\(width, page\.controller\.configuredPanelWidth/,
     "settings grids must respect their allocated surface width inside a wide popup")
-assert.match(monitoringSettings, /id: observerHealthSettings[\s\S]*?PrivacySettingsGrid[\s\S]*?breakpoint: Style\.space\(360\)/,
-  "self-test actions must reflow instead of crowding narrow popups")
+assert.match(monitoringSettings, /id: observerHealthSettings[\s\S]*?RowLayout[\s\S]*?monitoringRunSelfTestButton[\s\S]*?monitoringCopyDiagnosticsButton[\s\S]*?Item \{ Layout\.fillWidth: true \}/,
+  "self-test icon actions must form a compact toolbar")
 assert.match(monitoringSettings, /id: fallbackPollingSettings[\s\S]*?PrivacySettingsGrid[\s\S]*?breakpoint: Style\.space\(360\)/,
   "short fallback intervals must share a row at standard settings width")
 assert.match(monitoringSettings, /PrivacyMessageSurface[\s\S]*?selfTestResult\.text/,
   "self-test results must use the shared status surface")
-for (const action of ["Clear stored history", "Export settings", "Import settings", "Run self-test", "Send test alert", "Copy diagnostics"])
-  assert.match(monitoringSettings, new RegExp(`text: "${action}"; bordered: true`), `${action} must look actionable at rest`)
-for (const action of ["Save", "Send test"])
-  assert.match(alertsSettings, new RegExp(`text: "${action}"; bordered: true`), `${action} must look actionable at rest`)
+for (const action of ["Export settings", "Import the previously exported settings file", "Run monitoring self-test", "Send test alert", "Copy health and timing data with application and device names redacted"])
+  assert.match(monitoringSettings, new RegExp(`tooltipText: "${action}"`), `${action} must remain explicit on its icon control`)
+for (const action of ["Save muted applications", "Send test notification"])
+  assert.match(alertsSettings, new RegExp(`tooltipText: "${action}"`), `${action} must remain explicit on its icon control`)
 assert.doesNotMatch(presentationController.match(/function itemColor\(entry\) \{[\s\S]*?^  \}/m)[0], /override\.(?:muted|unmuted)/,
   "legacy audio color fields must not silently override global semantic colors")
 

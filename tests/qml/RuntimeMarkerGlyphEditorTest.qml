@@ -37,6 +37,8 @@ ShellRoot {
     var field = descendant(editor, "markerGlyphField")
     var save = descendant(editor, "markerGlyphSaveButton")
     if (!field || !save) throw new Error("marker editor controls are not addressable")
+    if (save.text !== "" || save.iconText !== "󰆓" || save.tooltipText !== "Save active marker")
+      throw new Error("marker save action is not a descriptive icon control")
     if (field.text !== "●" || field.maximumLength !== 8) throw new Error("marker editor did not reflect its setting")
     field.text = "MIC"
     field.accepted()

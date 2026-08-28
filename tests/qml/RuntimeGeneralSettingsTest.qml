@@ -42,6 +42,8 @@ ShellRoot {
     var modeApply = descendant(page, "privacyModeApply-0")
     var modeDelete = descendant(page, "privacyModeDelete-0")
     if (!kinds || !idle || !controls || !deduplicate || !modeName || !modeSave || !modeApply || !modeDelete) throw new Error("general settings controls are not addressable")
+    if (modeSave.text !== "" || modeSave.iconText !== "󰆓" || modeSave.tooltipText !== "Save current device state as mode")
+      throw new Error("privacy mode save action is not a descriptive icon control")
     if (kinds.values.length !== 1 || kinds.values[0] !== "microphone" || idle.checked || !controls.checked || deduplicate.checked)
       throw new Error("general settings controls did not reflect configured values")
     kinds.changed(["camera"])
