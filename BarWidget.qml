@@ -92,21 +92,21 @@ Panel {
     ? captureFrozenBarItems : liveBarItems
   readonly property bool verticalBar: bar && bar.vertical === true
   readonly property int barFlowColumns: iconGrid.columns
-  property string editingKind: ""
-  property bool showingGlobalSettings: false
-  property bool showingHistory: false
+  property alias editingKind: navigationController.editingKind
+  property alias showingGlobalSettings: navigationController.showingGlobalSettings
+  property alias showingHistory: navigationController.showingHistory
   property string historyQuery: ""
   property string historyKindFilter: "all"
   property string historyConfidenceFilter: "all"
   property string historySortMode: "recent"
   property int historySummaryWindow: 24 * 60 * 60 * 1000
   readonly property bool settingsMutationPending: settingsController.mutationPending
-  property string globalSettingsPage: "general"
-  property string pendingSettingsSection: ""
-  property string selectedKind: ""
+  property alias globalSettingsPage: navigationController.globalSettingsPage
+  property alias pendingSettingsSection: navigationController.pendingSettingsSection
+  property alias selectedKind: navigationController.selectedKind
   property var displayedActivityItems: []
   property var deferredActivityItems: null
-  property int handledSettingsRequestSerial: 0
+  property alias handledSettingsRequestSerial: navigationController.handledSettingsRequestSerial
   property double durationNow: Date.now()
   readonly property string settingsTransferStatus: settingsController.transferResult.status
   readonly property bool settingsTransferRunning: settingsController.transferControl.running
@@ -114,6 +114,8 @@ Panel {
   readonly property string settingsMutationMessage: settingsController.mutationMessage
   readonly property bool settingsPageLoaded: globalSettingsPageLoader.item !== null
   readonly property var confirmationController: confirmationState
+  readonly property var contentViewport: contentFlick
+  readonly property var settingsPageItem: globalSettingsPageLoader.item
   readonly property var settingsMutationControl: settingsController.mutationControl
   readonly property var lockdownActionControl: activityView.lockdownActionControl
   readonly property var privacyPresetFeedbackSurface: activityView.presetFeedbackSurface
@@ -175,72 +177,22 @@ Panel {
     deviceView.syncEditors()
   }
 
-  function showGlobalSettings(page, section) {
-    confirmationState.clear()
-    var target = Model.settingsDeepLink(page, section)
-    editingKind = ""
-    showingHistory = false
-    showingGlobalSettings = true
-    globalSettingsPage = target.page
-    pendingSettingsSection = target.section
-    contentFlick.contentY = 0
-    Qt.callLater(root.scrollToSettingsSection)
-  }
+  function showGlobalSettings(page, section) { navigationController.showSettings(page, section) }
 
-  function scrollToSettingsSection() {
-    if (!pendingSettingsSection || !globalSettingsPageLoader.item || !globalSettingsPageLoader.item.sectionItems) return
-    var target = globalSettingsPageLoader.item.sectionItems[pendingSettingsSection]
-    if (!target) { pendingSettingsSection = ""; return }
-    var position = target.mapToItem(contentFlick.contentItem, 0, 0)
-    contentFlick.contentY = Model.settingsScrollPosition(position.y, contentFlick.contentHeight, contentFlick.height)
-    pendingSettingsSection = ""
-  }
+  function scrollToSettingsSection() { navigationController.scrollToSettingsSection() }
 
-  function showActivity() {
-    confirmationState.clear()
-    editingKind = ""
-    showingGlobalSettings = false
-    showingHistory = false
-    contentFlick.contentY = 0
-  }
+  function showActivity() { navigationController.showActivity() }
 
-  function showHistory() {
-    confirmationState.clear()
-    editingKind = ""
-    showingGlobalSettings = false
-    showingHistory = true
-    contentFlick.contentY = 0
-    if (privacyService) privacyService.loadHistory()
-  }
+  function showHistory() { navigationController.showHistory() }
 
   function requestHistoryClear() {
     if (!confirmationState.request("history")) return
     if (privacyService) privacyService.clearHistory()
   }
 
-  function handleSettingsRequest() {
-    if (!opened || !privacyService || privacyService.settingsRequestSerial <= handledSettingsRequestSerial) return
-    handledSettingsRequestSerial = privacyService.settingsRequestSerial
-    if (privacyService.requestedView === "history") {
-      historyQuery = privacyService.requestedViewArgument ? Model.label(privacyService.requestedViewArgument) : ""
-      showHistory()
-    } else if (privacyService.requestedView === "activity") {
-      showActivity()
-      editingKind = Model.KINDS.indexOf(privacyService.requestedViewArgument) >= 0 ? privacyService.requestedViewArgument : ""
-    } else if (privacyService.requestedView === "lockdown") {
-      showActivity()
-      confirmationState.request("lockdown")
-    } else if (privacyService.requestedView === "diagnostics") showGlobalSettings("monitoring", "observer-health")
-    else showGlobalSettings(privacyService.requestedSettingsPage, privacyService.requestedSettingsSection)
-  }
+  function handleSettingsRequest() { navigationController.handleRequest() }
 
-  function closeCurrentLayer() {
-    var action = Model.popupDismissalAction(editingKind, showingGlobalSettings, showingHistory)
-    if (action === "device") { editingKind = ""; return }
-    if (action === "settings") { showActivity(); return }
-    if (action === "history") { showActivity(); return }
-    close()
-  }
+  function closeCurrentLayer() { navigationController.closeCurrentLayer() }
 
   function activateLockdownAction() {
     if (!privacyService || privacyService.privacyPresetState === "applying" || privacyService.privacyPresetState === "restoring") return false
@@ -256,26 +208,11 @@ Panel {
     return requested
   }
 
-  function moveActivitySelection(delta) {
-    var kinds = displayedActivityItems.map(function(entry) { return entry.kind })
-    selectedKind = Model.nextNavigationKind(kinds, selectedKind, delta)
-  }
+  function moveActivitySelection(delta) { navigationController.moveActivitySelection(delta) }
 
-  function activateActivitySelection() {
-    var kinds = displayedActivityItems.map(function(entry) { return entry.kind })
-    var target = Model.activationKind(kinds, selectedKind)
-    selectedKind = target
-    if (target) { showingGlobalSettings = false; showingHistory = false; editingKind = target; contentFlick.contentY = 0 }
-  }
+  function activateActivitySelection() { navigationController.activateActivitySelection() }
 
-  function moveDeviceEditor(delta) {
-    var order = orderedKinds()
-    var target = Model.nextNavigationKind(order, editingKind, delta)
-    if (!target || target === editingKind) return
-    editingKind = target
-    selectedKind = editingKind
-    contentFlick.contentY = 0
-  }
+  function moveDeviceEditor(delta) { navigationController.moveDeviceEditor(delta) }
 
   function syncDisplayedItems() {
     var next = activitySourceItems
@@ -594,6 +531,7 @@ Panel {
   Component.onDestruction: if (privacyService) privacyService.unregisterBarInstance(registeredPresentationScreen, root)
 
   PrivacyConfirmationController { id: confirmationState }
+  PrivacyPopupNavigationController { id: navigationController; host: root }
   PrivacySettingsController { id: settingsController; host: root }
   PrivacyDeviceSettingsController { id: deviceSettingsController; host: root }
   PrivacyPresentationController { id: presentationController; host: root }

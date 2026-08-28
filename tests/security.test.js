@@ -9,6 +9,7 @@ const presentationController = read("PrivacyPresentationController.qml")
 const popupViews = ["PrivacyActivityView.qml", "PrivacyDeviceView.qml", "PrivacyHistoryView.qml"]
   .map(read).join("\n")
 const service = read("Service.qml")
+const notificationController = read("PrivacyNotificationController.qml")
 const control = read("privacy-control")
 const recording = read("privacy-recording")
 const observer = read("privacy-observe")
@@ -19,7 +20,7 @@ const workflowsDirectory = path.join(root, ".github", "workflows")
 
 if (!(bar + popupViews).includes("textFormat: Text.PlainText")) throw new Error("plain-text QML enforcement missing")
 if (!presentationController.includes("Model.autoTextSafe(value)")) throw new Error("shared AutoText boundary missing")
-if (!service.includes("Model.autoTextSafe(body)")) throw new Error("notification markup boundary missing")
+if (!notificationController.includes("Model.autoTextSafe(body)")) throw new Error("notification markup boundary missing")
 
 const shellRunCalls = [...bar.matchAll(/bar\.run\(([^\n]+)\)/g)].map(match => match[1].trim())
 if (shellRunCalls.length !== 2 || !shellRunCalls.every(call => call === "command" || call === "screenshotCommand"))

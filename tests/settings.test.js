@@ -21,6 +21,7 @@ const mutationController = fs.readFileSync(path.join(root, "PrivacySettingsMutat
 const settingsController = fs.readFileSync(path.join(root, "PrivacySettingsController.qml"), "utf8")
 const deviceSettingsController = fs.readFileSync(path.join(root, "PrivacyDeviceSettingsController.qml"), "utf8")
 const presentationController = fs.readFileSync(path.join(root, "PrivacyPresentationController.qml"), "utf8")
+const navigationController = fs.readFileSync(path.join(root, "PrivacyPopupNavigationController.qml"), "utf8")
 const messageSurface = fs.readFileSync(path.join(root, "PrivacyMessageSurface.qml"), "utf8")
 const settingToggle = fs.readFileSync(path.join(root, "PrivacySettingToggle.qml"), "utf8")
 const transferResult = fs.readFileSync(path.join(root, "PrivacySettingsTransferResult.qml"), "utf8")
@@ -84,7 +85,7 @@ assert.match(activityView, /model:\s*view\.active\s*\?\s*view\.controller\.displ
 assert.match(activityView, /delegate:\s*PrivacyActivityCard\s*\{[\s\S]*?entry:\s*modelData[\s\S]*?controller:\s*view\.controller/,
   "activity presentation must be isolated in its tested card component")
 assert.match(bar, /manageIpc:\s*false/, "per-monitor panels must delegate IPC routing to the singleton service and focused-monitor shell router")
-assert.match(bar, /settingsRequestSerial <= handledSettingsRequestSerial[\s\S]*?requestedView === "history"[\s\S]*?showHistory\(\)[\s\S]*?showGlobalSettings\(privacyService\.requestedSettingsPage, privacyService\.requestedSettingsSection\)/,
+assert.match(navigationController, /settingsRequestSerial <= handledSettingsRequestSerial[\s\S]*?requestedView === "history"[\s\S]*?showHistory\(\)[\s\S]*?showSettings\(service\.requestedSettingsPage, service\.requestedSettingsSection\)/,
   "the focused widget must consume singleton history and settings requests")
 assert.match(bar, /onSettingsRequestSerialChanged\(\) \{ root\.handleSettingsRequest\(\) \}/,
   "settings IPC page changes must apply while the popup remains open")
@@ -92,9 +93,9 @@ assert.match(surface, /default property alias content:/, "settings groups need a
 assert.match(integer, /NumberField[\s\S]*?from: field\.minimum[\s\S]*?to: field\.maximum[\s\S]*?stepSize: field\.stepSize[\s\S]*?onModified:/,
   "integer settings must use the native bounded numeric control")
 assert.match(bar, /Loader\s*\{\s*id:\s*globalSettingsPageLoader[\s\S]*?sourceComponent:[\s\S]*?globalSettingsPage/, "only the active settings page should be instantiated")
-assert.match(bar, /function showGlobalSettings\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)[\s\S]*?pendingSettingsSection = target\.section[\s\S]*?Qt\.callLater\(root\.scrollToSettingsSection\)/,
+assert.match(navigationController, /function showSettings\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)[\s\S]*?pendingSettingsSection = target\.section[\s\S]*?Qt\.callLater\(controller\.scrollToSettingsSection\)/,
   "settings navigation must preserve a validated section deep link until layout completes")
-assert.match(bar, /function scrollToSettingsSection\(\)[\s\S]*?globalSettingsPageLoader\.item\.sectionItems[\s\S]*?mapToItem\(contentFlick\.contentItem[\s\S]*?Model\.settingsScrollPosition/,
+assert.match(navigationController, /function scrollToSettingsSection\(\)[\s\S]*?page\.sectionItems[\s\S]*?mapToItem\(host\.contentViewport\.contentItem[\s\S]*?Model\.settingsScrollPosition/,
   "deep links must resolve the live lazy-loaded section and clamp its scroll position")
 assert.match(bar, /id:\s*globalSettingsPageLoader[\s\S]*?onLoaded:\s*Qt\.callLater\(root\.scrollToSettingsSection\)/,
   "lazy settings pages must complete pending deep links after loading")
@@ -193,7 +194,7 @@ assert.match(audioEndpointSettings, /delegate: Rectangle[\s\S]*?border\.color:[\
   "endpoint controls must remain visually grouped with readable action targets")
 assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceEditor\(dx\)/,
   "left and right keys must navigate device editors")
-assert.match(bar, /function moveDeviceEditor\(delta\)[\s\S]*?Model\.nextNavigationKind\(order, editingKind, delta\)/,
+assert.match(navigationController, /function moveDeviceEditor\(delta\)[\s\S]*?Model\.nextNavigationKind\(order, editingKind, delta\)/,
   "device editor navigation must use behavior-tested boundary handling")
 assert.match(deviceEditor, /tooltipText: "Previous device"[\s\S]*?tooltipText: "Next device"/, "device pages must expose accessible adjacent navigation")
 assert.match(deviceView, /text: confirmationState\.pending === "all" \? "Confirm reset all" : "Reset all device settings"[\s\S]*?root\.resetAllDeviceSettings\(root\.editingKind\)/,

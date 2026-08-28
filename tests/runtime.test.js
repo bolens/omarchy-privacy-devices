@@ -41,6 +41,24 @@ const captureController = fs.readFileSync(captureControllerPath, "utf8")
 const presentationControllerPath = path.join(__dirname, "..", "PrivacyPresentationController.qml")
 assert.ok(fs.existsSync(presentationControllerPath), "privacy presentation projection must live in PrivacyPresentationController.qml")
 const presentationController = fs.readFileSync(presentationControllerPath, "utf8")
+const navigationControllerPath = path.join(__dirname, "..", "PrivacyPopupNavigationController.qml")
+assert.ok(fs.existsSync(navigationControllerPath), "popup navigation must live in PrivacyPopupNavigationController.qml")
+const navigationController = fs.readFileSync(navigationControllerPath, "utf8")
+const notificationControllerPath = path.join(__dirname, "..", "PrivacyNotificationController.qml")
+assert.ok(fs.existsSync(notificationControllerPath), "notification routing must live in PrivacyNotificationController.qml")
+const notificationController = fs.readFileSync(notificationControllerPath, "utf8")
+const transactionControllerPath = path.join(__dirname, "..", "PrivacyControlTransactionController.qml")
+assert.ok(fs.existsSync(transactionControllerPath), "control transactions must live in PrivacyControlTransactionController.qml")
+const transactionController = fs.readFileSync(transactionControllerPath, "utf8")
+const dependencyControllerPath = path.join(__dirname, "..", "PrivacyDependencyController.qml")
+assert.ok(fs.existsSync(dependencyControllerPath), "dependency probes must live in PrivacyDependencyController.qml")
+const dependencyController = fs.readFileSync(dependencyControllerPath, "utf8")
+const observerControllerPath = path.join(__dirname, "..", "PrivacyObserverController.qml")
+assert.ok(fs.existsSync(observerControllerPath), "observer lifecycle must live in PrivacyObserverController.qml")
+const observerController = fs.readFileSync(observerControllerPath, "utf8")
+const controlProcessControllerPath = path.join(__dirname, "..", "PrivacyControlProcessController.qml")
+assert.ok(fs.existsSync(controlProcessControllerPath), "control processes must live in PrivacyControlProcessController.qml")
+const controlProcessController = fs.readFileSync(controlProcessControllerPath, "utf8")
 const ci = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "ci.yml"), "utf8")
 const qmlLint = fs.readFileSync(path.join(__dirname, "..", "scripts", "lint-qml"), "utf8")
 const qmlRuntime = fs.readFileSync(path.join(__dirname, "run_qml_runtime.sh"), "utf8")
@@ -95,6 +113,30 @@ assert.match(bar, /PrivacyPresentationController\s*\{\s*id:\s*presentationContro
   "BarWidget must delegate service-to-visual projection through one controller")
 assert.match(presentationController, /required property var host[\s\S]*?function item\(kind\)[\s\S]*?function itemColor\(entry\)[\s\S]*?function itemTooltip\(entry\)/,
   "activity projection, semantic colors, and tooltip policy must share one owner")
+assert.match(bar, /PrivacyPopupNavigationController\s*\{\s*id:\s*navigationController[\s\S]*?host:\s*root/,
+  "BarWidget must delegate popup navigation through one controller")
+assert.match(navigationController, /required property var host[\s\S]*?function showSettings\(page, section\)[\s\S]*?function handleRequest\(\)[\s\S]*?function closeCurrentLayer\(\)/,
+  "popup modes, deep links, request routing, and dismissal must share one owner")
+assert.match(service, /PrivacyNotificationController\s*\{\s*id:\s*notificationController[\s\S]*?host:\s*root/,
+  "the service must delegate notification and action routing")
+assert.match(notificationController, /required property var host[\s\S]*?function enqueueActivity\(phase, session\)[\s\S]*?function dispatchAction\(name, argument\)[\s\S]*?id:\s*flushTimer/,
+  "notification coalescing, callbacks, and popup routing must share one owner")
+assert.match(service, /PrivacyControlTransactionController\s*\{\s*id:\s*controlTransactionController[\s\S]*?host:\s*root/,
+  "the service must delegate verified control transaction ownership")
+assert.match(transactionController, /required property var host[\s\S]*?function begin\(kind, expectedEnabled\)[\s\S]*?function observe\(kind, observedEnabled, probeValid\)[\s\S]*?status === "verifying"/,
+  "control transitions and verification timeout must share one owner")
+assert.match(service, /PrivacyDependencyController\s*\{\s*id:\s*dependencyController[\s\S]*?host:\s*root/,
+  "the service must delegate dependency probe ownership")
+assert.match(dependencyController, /required property var host[\s\S]*?function refresh\(\)[\s\S]*?function runNext\(\)[\s\S]*?id:\s*checkProcess/,
+  "dependency scheduling, results, installation, and process lifecycle must share one owner")
+assert.match(service, /PrivacyObserverController\s*\{\s*id:\s*observerController[\s\S]*?host:\s*root/,
+  "the service must delegate persistent observer lifecycle ownership")
+assert.match(observerController, /required property var host[\s\S]*?function refreshFallback\(\)[\s\S]*?function refreshDirect\(\)[\s\S]*?PrivacyObserverWatchdog[\s\S]*?id:\s*directProcess[\s\S]*?id:\s*fallbackProcess/,
+  "observer retirement, restart, health, watchdogs, and processes must share one owner")
+assert.match(service, /PrivacyControlProcessController\s*\{\s*id:\s*controlProcessController[\s\S]*?host:\s*root/,
+  "the service must delegate audio and preventative control processes")
+assert.match(controlProcessController, /required property var host[\s\S]*?function startAudioState\(kind, command\)[\s\S]*?function startPreventativeControl\(command\)[\s\S]*?id:\s*privacyStateProcess/,
+  "control process launch, exit handling, and verification callbacks must share one owner")
 assert.doesNotMatch(service, /Quickshell\.execDetached\(\s*["']/, "detached runtime commands must use argument arrays")
 assert.doesNotMatch(service, /locationProc\.command\s*=\s*\["sh",\s*"-c"/, "GeoClue probing must not cross an inline shell boundary")
 assert.match(service, /locationProc\.command = \[locationHelperOverride \|\| String\(Qt\.resolvedUrl\("privacy-location"\)\)/,
@@ -127,7 +169,7 @@ assert.match(qmlRuntime, /repeat count must be an integer from 1 to 10/,
 
 assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?lastSessionRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastSessionRefreshAt, now\)[\s\S]*?lastFallbackRefreshAgeSeconds: Model\.freshnessAgeSeconds\(lastFallbackRefreshAt, now\)[\s\S]*?fallbackObserverHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(fallbackObserverLastSeen, now\)[\s\S]*?directHeartbeatAgeSeconds: Model\.freshnessAgeSeconds\(directObserverLastSeen, now\)/,
   "every exported telemetry timestamp must use the behavior-tested freshness policy")
-assert.match(service, /function requestSettingsView\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)/,
+assert.match(notificationController, /function requestSettings\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)/,
   "settings IPC routes must pass through the shared page and section allowlist")
 assert.match(service, /!historyWasEnabled && settings\.historyEnabled === true\) historyLoaded = false[\s\S]*?loadHistory\(\)/,
   "re-enabling history must invalidate the disabled-state load sentinel")
@@ -393,45 +435,45 @@ assert.doesNotMatch(screenshotWorkflow.match(/capture_panel\(\) \{[\s\S]*?^\}/m)
   "capture retries must remain pinned to the shell that owns the preview lease")
 assert.ok(screenshotWorkflow.lastIndexOf("resolve_geometry", screenshotWorkflow.indexOf("capture_panel general settings general")) >= 0,
   "bar geometry must be resolved before long-running capture operations")
-assert.match(service, /id:\s*fallbackObserverProc/, "process fallbacks must share one persistent structured observer")
+assert.match(observerController, /id:\s*fallbackProcess/, "process fallbacks must share one persistent structured observer")
 assert.match(service, /Model\.classifyNode\(node, settings, pipewireClassificationPolicy\)/,
   "PipeWire classification must reuse normalized settings across stream nodes")
-assert.match(service, /function handleFallbackSnapshot\(line\) \{[\s\S]*?fallbackObserverRetiring[\s\S]*?return/,
+assert.match(observerController, /function acceptFallback\(line\) \{[\s\S]*?fallbackRetiring[\s\S]*?return/,
   "retired fallback observers must reject buffered output")
-assert.match(service, /function handleDirectDeviceSnapshot\(text\) \{[\s\S]*?directObserverRetiring[\s\S]*?return/,
+assert.match(observerController, /function acceptDirect\(text\) \{[\s\S]*?directRetiring[\s\S]*?return/,
   "retired direct observers must reject buffered output")
-assert.match(service, /"watch-fallbacks"/, "fallback observer must use the structured watch protocol")
-assert.match(service, /settings\.recordingPollSeconds/, "the persistent fallback observer must honor the configured scan interval")
-assert.doesNotMatch(service, /id:\s*(?:recordingProc|screenshotProc)/, "recording and screenshot detection must not spawn periodic QML processes")
-assert.doesNotMatch(service, /id:\s*(?:recordingTimer|screenshotTimer)/, "persistent observation must replace recording and screenshot polling timers")
-assert.match(service, /function requestSettingsView\(page, section\)[\s\S]*?shell\.summon/, "singleton service must route settings to the focused monitor")
-assert.match(service, /function requestSettingsView\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)[\s\S]*?requestedSettingsSection = target\.section[\s\S]*?shell\.summon/,
+assert.match(observerController, /"watch-fallbacks"/, "fallback observer must use the structured watch protocol")
+assert.match(observerController, /host\.settings\.recordingPollSeconds/, "the persistent fallback observer must honor the configured scan interval")
+assert.doesNotMatch(service + observerController, /id:\s*(?:recordingProc|screenshotProc)/, "recording and screenshot detection must not spawn periodic QML processes")
+assert.doesNotMatch(service + observerController, /id:\s*(?:recordingTimer|screenshotTimer)/, "persistent observation must replace recording and screenshot polling timers")
+assert.match(notificationController, /function requestSettings\(page, section\)[\s\S]*?host\.shell\.summon/, "singleton service must route settings to the focused monitor")
+assert.match(notificationController, /function requestSettings\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)[\s\S]*?host\.requestedSettingsSection = target\.section[\s\S]*?host\.shell\.summon/,
   "settings IPC must expose validated section deep links through focused-monitor routing")
 assert.match(captureController, /function anyBarOpen\(\)[\s\S]*?presentations[\s\S]*?opened === true/,
   "capture routing must detect an already-open per-monitor panel")
-assert.match(service, /settingsRequestSerial\+\+[\s\S]*?anyBarOpen\(\)\) return view[\s\S]*?shell\.summon/,
+assert.match(notificationController, /settingsRequestSerial\+\+[\s\S]*?anyBarOpen\(\)\) return view[\s\S]*?shell\.summon/,
   "deep links must switch an open widget in place without re-summoning its bar presentation")
 assert.match(service, /function open\(page: string\): string \{ return root\.requestSettingsView\(page, ""\) \}/,
   "page-only IPC navigation must clear stale section targets")
 assert.match(service, /target:\s*"privacy-devices"[\s\S]*?function openDetails\(kind: string\): string[\s\S]*?function openSettings\(page: string\): string[\s\S]*?function openSettingsSection\(page: string, section: string\): string/,
   "primary IPC must expose p2p-style deep links for device and settings destinations")
-assert.match(service, /function requestDeviceView\(kind\)[\s\S]*?Model\.deviceDeepLink\(kind\)[\s\S]*?return "invalid"/,
+assert.match(notificationController, /function requestDevice\(kind\)[\s\S]*?Model\.deviceDeepLink\(kind\)[\s\S]*?return "invalid"/,
   "device deep links must reject unknown detail destinations")
 assert.match(service, /function openHistory\(\): string[\s\S]*?requestPopupView\("history", ""\)/,
   "history IPC must use the singleton service's focused-monitor routing")
 assert.doesNotMatch(bar, /target:\s*"privacy-devices-settings"/, "per-monitor widgets must not compete for settings IPC ownership")
-assert.match(service, /id:\s*notificationFlush[\s\S]*?interval:\s*400/, "activity notifications must use a bounded coalescing window")
-assert.match(service, /id:\s*activityBaseline[\s\S]*?interval:\s*5000[\s\S]*?activityInitialized = true/,
+assert.match(notificationController, /id:\s*flushTimer[\s\S]*?interval:\s*400/, "activity notifications must use a bounded coalescing window")
+assert.match(notificationController, /interval:\s*5000[\s\S]*?activityInitialized = true/,
   "startup observations must settle into a silent baseline before notifications begin")
 assert.doesNotMatch(service, /function refreshSessions\(\)[\s\S]*?activityInitialized = true[\s\S]*?function scheduleSessionRefresh/,
   "individual startup refreshes must not prematurely enable notifications")
 assert.match(service, /Model\.publishableSessionTransitions\([^;]+activityInitialized\)/,
   "history and notifications must share the behavior-tested startup publication policy")
-assert.match(service, /function beginControlTransaction\(kind, expectedEnabled\)[\s\S]*?Model\.controlTransactionTransition\(null, \{type: "begin", expectedEnabled: expectedEnabled\}/,
+assert.match(transactionController, /function begin\(kind, expectedEnabled\)[\s\S]*?Model\.controlTransactionTransition\(null, \{type: "begin", expectedEnabled: expectedEnabled\}/,
   "control requests must enter the behavior-tested reducer with their requested state")
-assert.match(service, /function beginControlVerification\(kind, exitCode\)[\s\S]*?Model\.controlTransactionTransition\(current, \{type: "command", exitCode: exitCode\}/,
+assert.match(transactionController, /function beginVerification\(kind, exitCode\)[\s\S]*?Model\.controlTransactionTransition\(current, \{type: "command", exitCode: exitCode\}/,
   "command results must enter the behavior-tested reducer")
-assert.match(service, /function verifyControlTransaction\(kind, observedEnabled, probeValid\)[\s\S]*?transitionControlTransaction\(kind, \{type: "observation", enabled: observedEnabled, valid: probeValid\}\)/,
+assert.match(transactionController, /function observe\(kind, observedEnabled, probeValid\)[\s\S]*?transition\(kind, \{type: "observation", enabled: observedEnabled, valid: probeValid\}\)/,
   "observations must verify controls through the behavior-tested reducer")
 assert.match(presetController, /function requestLockdown\(\)[\s\S]*?Model\.privacyPresetPlan\([\s\S]*?function runNext\(\)/,
   "privacy lockdown must use the behavior-tested serial preset plan")
@@ -441,7 +483,7 @@ assert.match(service, /onControlTransactionsChanged:[\s\S]*?advancePrivacyPreset
   "preset orchestration must advance only after control transactions settle")
 assert.match(service, /function policies\(\)[\s\S]*?sessionPolicies/,
   "runtime session consumers must share normalized app and device policy")
-assert.match(service, /transitionControlTransaction\(kind, \{type: "timeout"\}, now\)/, "verification must delegate bounded timeout handling to the tested reducer")
+assert.match(transactionController, /controller\.transition\(kind, \{type: "timeout"\}, now\)/, "verification must delegate bounded timeout handling to the tested reducer")
 assert.doesNotMatch(service, /fallbackMicrophoneMuted\s*=\s*!fallbackMicrophoneMuted/, "controls must preserve the last observed microphone state while verification is pending")
 assert.doesNotMatch(service, /fallbackOutputMuted\s*=\s*!fallbackOutputMuted/, "controls must preserve the last observed output state while verification is pending")
 assert.match(bar, /pixelAligned:\s*true/, "popup scrolling should remain pixel aligned")
@@ -451,13 +493,13 @@ assert.match(bar, /function syncDisplayedItems\(\)[\s\S]*?contentFlick\.moving &
 assert.doesNotMatch(bar, /function activityStateChanged\(/,
   "QML must not retain a second untested presentation-state policy")
 assert.match(bar, /onCloseRequested:\s*root\.closeCurrentLayer\(\)/, "Escape must invoke layered popup dismissal")
-assert.match(bar, /function closeCurrentLayer\(\)[\s\S]*?Model\.popupDismissalAction\(editingKind, showingGlobalSettings, showingHistory\)/,
+assert.match(navigationController, /function closeCurrentLayer\(\)[\s\S]*?Model\.popupDismissalAction\(editingKind, showingGlobalSettings, showingHistory\)/,
   "layered dismissal must use the behavior-tested priority policy")
 assert.match(activityView, /text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
   "the activity footer must advertise every main-view keyboard command")
 assert.match(activityView, /tooltipText: "Activity history"[\s\S]*?tooltipText: "Global settings"/,
   "the history action must sit immediately left of global settings")
-assert.match(bar, /function showHistory\(\)[\s\S]*?privacyService\.loadHistory\(\)/,
+assert.match(navigationController, /function showHistory\(\)[\s\S]*?host\.privacyService\.loadHistory\(\)/,
   "opening history must request persisted entries without polling")
 assert.match(historyView, /History is off[\s\S]*?Loading history[\s\S]*?No completed activity yet/,
   "history view must distinguish disabled, loading, and empty states")
@@ -483,11 +525,11 @@ assert.doesNotMatch(bar, /Activity details distinguish observation source/,
   "the activity footer must not retain displaced implementation guidance")
 assert.match(bar, /onMoveRequested:[\s\S]*?dy !== 0[\s\S]*?moveActivitySelection\(dy\)/,
   "advertised vertical navigation must select activity rows")
-assert.match(bar, /function moveActivitySelection\(delta\)[\s\S]*?Model\.nextNavigationKind\(kinds, selectedKind, delta\)/,
+assert.match(navigationController, /function moveActivitySelection\(delta\)[\s\S]*?Model\.nextNavigationKind\(kinds, selectedKind, delta\)/,
   "activity selection must use behavior-tested boundary handling")
 assert.match(bar, /onActivateRequested:[\s\S]*?activateActivitySelection\(\)/,
   "the advertised Enter command must open the selected activity row")
-assert.match(bar, /function activateActivitySelection\(\)[\s\S]*?Model\.activationKind\(kinds, selectedKind\)/,
+assert.match(navigationController, /function activateActivitySelection\(\)[\s\S]*?Model\.activationKind\(kinds, selectedKind\)/,
   "activity activation must reject stale selections through the tested policy")
 assert.match(bar, /text === "s" \|\| text === "S"[\s\S]*?showGlobalSettings\("general"\)/,
   "the advertised S command must open settings")
@@ -515,17 +557,17 @@ assert.match(service, /readonly property var sessionPolicies:\s*\(\{/,
   "session policy arrays must be normalized once per settings update")
 assert.match(service, /id:\s*sessionSafetyTimer[\s\S]*?running:\s*root\.enabledKindList\.length > 0/,
   "safety reconciliation must sleep when monitoring is disabled")
-assert.match(service, /id:\s*dependencyRefreshTimer[\s\S]*?running:\s*root\.enabledKindList\.length > 0/,
+assert.match(dependencyController, /interval:\s*300000[\s\S]*?running:\s*host\.enabledKindList\.length > 0/,
   "dependency polling must sleep when no devices are enabled")
-assert.match(service, /function refreshDependencies\(\)[\s\S]*?Model\.scheduleProbeRefresh\(dependencyCheckBusy, enabledKinds\(\)\)/,
+assert.match(dependencyController, /function refresh\(\)[\s\S]*?Model\.scheduleProbeRefresh\(busy, host\.enabledKinds\(\)\)/,
   "dependency refreshes must use explicit synchronous ownership and the behavior-tested supersession policy")
-assert.match(service, /function runNextDependencyCheck\(\)[\s\S]*?Model\.nextProbeAction\(dependencyQueue, dependencyRefreshPending, dependencyCheckBusy\)/,
+assert.match(dependencyController, /function runNext\(\)[\s\S]*?Model\.nextProbeAction\(queue, refreshPending, busy\)/,
   "dependency workers must use explicit synchronous ownership and the behavior-tested FIFO policy")
-assert.doesNotMatch(service, /directDeviceProc\.running = false\s*\n\s*Qt\.callLater\(refreshDirectDevices\)|fallbackObserverProc\.running = false\s*\n\s*Qt\.callLater\(refreshFallbackObserver\)/,
+assert.doesNotMatch(observerController, /directProcess\.running = false\s*\n\s*Qt\.callLater\(refreshDirect\)|fallbackProcess\.running = false\s*\n\s*Qt\.callLater\(refreshFallback\)/,
   "observer reconfiguration must restart from confirmed process exit instead of event-loop timing")
-assert.match(service, /property bool directObserverOwned:[\s\S]*?function refreshDirectDevices\(\)[\s\S]*?if \(directObserverOwned\)[\s\S]*?directObserverOwned = true/,
+assert.match(observerController, /property bool directOwned:[\s\S]*?function refreshDirect\(\)[\s\S]*?if \(directOwned\)[\s\S]*?directOwned = true/,
   "direct observer startup must use synchronous service ownership")
-assert.match(service, /property bool fallbackObserverOwned:[\s\S]*?function refreshFallbackObserver\(\)[\s\S]*?if \(fallbackObserverOwned\)[\s\S]*?fallbackObserverOwned = true/,
+assert.match(observerController, /property bool fallbackOwned:[\s\S]*?function refreshFallback\(\)[\s\S]*?if \(fallbackOwned\)[\s\S]*?fallbackOwned = true/,
   "fallback observer startup must use synchronous service ownership")
 
 for (const signal of [
@@ -541,17 +583,17 @@ assert.match(service, /interval:\s*15000[\s\S]*?onTriggered:\s*root\.refreshSess
   "a slow safety reconciliation must cover backends with incomplete change signals")
 assert.doesNotMatch(service, /interval:\s*1000[\s\S]{0,100}?onTriggered:\s*root\.refreshSessions\(\)/,
   "session discovery must not continuously rebuild from a one-second poll")
-assert.match(service, /"omarchy",\s*"notification",\s*"send"/,
+assert.match(notificationController, /"omarchy",\s*"notification",\s*"send"/,
   "notifications must use Omarchy's DND-aware notification path")
-assert.match(service, /Quickshell\.iconPath\([^,]+,\s*true\)/,
+assert.match(notificationController, /Quickshell\.iconPath\([^,]+,\s*true\)/,
   "notification icons must be verified against the active icon theme")
-assert.match(service, /resolvedNotificationIcon\([^,]+,\s*[^)]+\)[\s\S]*?candidates/,
+assert.match(notificationController, /function resolvedIcon\([^,]+,\s*[^)]+\)[\s\S]*?candidates/,
   "an unavailable application icon must retry a device or service fallback")
-assert.match(service, /--icon/,
+assert.match(notificationController, /--icon/,
   "resolved application or service icons must be sent with notifications")
-assert.match(service, /command\.push\("--exec", actionHelperPath\(\), callback\.name, callback\.argument\)/,
+assert.match(notificationController, /command\.push\("--exec", actionHelperPath\(\), callback\.name, callback\.argument\)/,
   "notification callbacks must enter through the fixed action helper")
-assert.match(service, /function notificationAction\(action, argument\)[\s\S]*?Model\.privacyAction\(action, argument\)/,
+assert.match(notificationController, /function action\(actionName, argument\)[\s\S]*?Model\.privacyAction\(actionName, argument\)/,
   "notification actions must use the shared allowlist")
 assert.match(service, /function openActivity\(kind: string\): string[\s\S]*?root\.requestPopupView\("activity", kind\)/,
   "IPC must expose focused activity navigation")
@@ -559,9 +601,9 @@ assert.match(service, /function openDiagnostics\(\): string[\s\S]*?root\.request
   "IPC must expose focused diagnostics navigation")
 assert.match(service, /function action\(name: string, argument: string\): string[\s\S]*?Model\.privacyAction\(name, argument\)/,
   "search adapters must use the same allowlisted dispatcher")
-assert.match(service, /action\.name === "lockdown"\) return requestPopupView\("lockdown", ""\)/,
+assert.match(notificationController, /accepted\.name === "lockdown"\) return requestPopup\("lockdown", ""\)/,
   "launcher lockdown must route to confirmation instead of changing controls")
-assert.match(bar, /requestedView === "lockdown"[\s\S]*?confirmationState\.request\("lockdown"\)/,
+assert.match(navigationController, /requestedView === "lockdown"[\s\S]*?host\.confirmationController\.request\("lockdown"\)/,
   "the focused launcher route must arm the existing two-step confirmation")
 assert.match(service, /notifyOnObserverHealth[\s\S]*?Model\.observerHealthNotice\(/,
   "observer health alerts must use transition and rate-limit policy")
@@ -569,41 +611,41 @@ assert.match(service, /function runSelfTest\(\)[\s\S]*?Model\.privacySelfTest\(/
   "guided self-test must use the behavior-tested report model")
 assert.match(service, /props\["application\.icon-name"\]/,
   "PipeWire application icon metadata must reach the notification pipeline")
-assert.match(service, /"watch",\s*"--heartbeat"/, "direct-device monitoring must use one persistent observer")
-assert.match(service, /directObserverRetryMilliseconds[\s\S]*?Math\.min\([^\n]*60000\)/,
+assert.match(observerController, /"watch",\s*"--heartbeat"/, "direct-device monitoring must use one persistent observer")
+assert.match(observerController, /directRetryMilliseconds[\s\S]*?Math\.min\([^\n]*60000\)/,
   "observer restart backoff must be bounded at 60 seconds")
 assert.match(observerWatchdog, /Model\.observerHeartbeatState\(watchdog\.lastSeen, watchdog\.startedAt, Date\.now\(\), watchdog\.heartbeatSeconds\)\.stale/,
   "direct observation must apply startup grace and last-seen state through the tested heartbeat policy")
-assert.match(service, /PrivacyObserverWatchdog\s*\{[\s\S]*?id:\s*fallbackObserverRetry/,
+assert.match(observerController, /PrivacyObserverWatchdog\s*\{[\s\S]*?id:\s*fallbackWatchdog/,
   "fallback observation must apply startup grace and last-seen state through the tested heartbeat policy")
 assert.match(service, /function setObserverHealth\(source, status, code, reason\)[\s\S]*?Model\.updateObserverHealth\(/,
   "observer health mutation must use the behavior-tested idempotent policy")
-assert.doesNotMatch(service, /directDeviceTimer/, "removed polling timer must not remain referenced")
-assert.match(service, /function clearDirectObserverState\(\)[\s\S]*?directObservations = \[\]/,
+assert.doesNotMatch(service + observerController, /directDeviceTimer/, "removed polling timer must not remain referenced")
+assert.match(observerController, /function clearDirect\(\)[\s\S]*?directObservations = \[\]/,
   "direct observer failure must discard stale active-device observations")
-assert.match(service, /function clearDirectObserverState\(\)[\s\S]*?discardObserverSessions\("direct-device"\)/,
+assert.match(observerController, /function clearDirect\(\)[\s\S]*?discardSessions\("direct-device"\)/,
   "direct observer loss must invalidate sessions outside normal stop transitions")
-assert.match(service, /function clearDirectObserverState\(\)[\s\S]*?if \(directObservations\.length\) directObservations = \[\]/,
+assert.match(observerController, /function clearDirect\(\)[\s\S]*?if \(directObservations\.length\) directObservations = \[\]/,
   "repeated direct-observer degradation must not emit empty-array churn")
-assert.match(service, /function clearFallbackObserverState\(\)[\s\S]*?recordingActive = false[\s\S]*?screenshotActive = false/,
+assert.match(observerController, /function clearFallback\(\)[\s\S]*?recordingActive = false[\s\S]*?screenshotActive = false/,
   "fallback observer failure must discard stale capture observations")
-assert.match(service, /function clearFallbackObserverState\(\)[\s\S]*?discardObserverSessions\("process-probe"\)/,
+assert.match(observerController, /function clearFallback\(\)[\s\S]*?discardSessions\("process-probe"\)/,
   "fallback observer loss must invalidate sessions outside normal stop transitions")
-assert.match(service, /function clearFallbackObserverState\(\)[\s\S]*?if \(recordingApps\.length\) recordingApps = \[\]/,
+assert.match(observerController, /function clearFallback\(\)[\s\S]*?if \(recordingApps\.length\) recordingApps = \[\]/,
   "repeated fallback degradation must not emit empty-array churn")
-assert.match(service, /id:\s*fallbackObserverRetry[\s\S]*?onHeartbeatStale:[\s\S]*?fallback observer heartbeat is stale/,
+assert.match(observerController, /id:\s*fallbackWatchdog[\s\S]*?onHeartbeatStale:[\s\S]*?fallback observer heartbeat is stale/,
   "fallback process observation must have heartbeat health coverage")
-assert.match(service, /payload\.type !== "fallback-snapshot"[\s\S]*?throw new Error/,
+assert.match(observerController, /payload\.type !== "fallback-snapshot"[\s\S]*?throw new Error/,
   "structurally invalid fallback payloads must degrade observer health")
-assert.match(service, /result\.type !== "snapshot"[\s\S]*?throw new Error/,
+assert.match(observerController, /result\.type !== "snapshot"[\s\S]*?throw new Error/,
   "structurally invalid direct payloads must degrade observer health")
-assert.match(service, /id:\s*directDeviceProc[\s\S]*?clearDirectObserverState\(\)[\s\S]*?observer_exited/,
+assert.match(observerController, /id:\s*directProcess[\s\S]*?clearDirect\(\)[\s\S]*?observer_exited/,
   "unexpected direct observer exit must clear observations before reporting failure")
-assert.match(service, /id:\s*fallbackObserverProc[\s\S]*?clearFallbackObserverState\(\)[\s\S]*?observer_exited/,
+assert.match(observerController, /id:\s*fallbackProcess[\s\S]*?clearFallback\(\)[\s\S]*?observer_exited/,
   "unexpected fallback observer exit must clear observations before reporting failure")
 assert.match(service, /kind === "screen-recording" \|\| kind === "screenshot"[\s\S]*?observerHealth\["fallback-observer"\]/,
   "capture health must include its observer state")
-assert.match(service, /function discardObserverSessions\(source\)[\s\S]*?Model\.invalidateObserverSessions\(activeSessions, source, suppressedObserverStarts\)/,
+assert.match(observerController, /function discardSessions\(source\)[\s\S]*?Model\.invalidateObserverSessions\(host\.activeSessions, source, host\.suppressedObserverStarts\)/,
   "observer invalidation must remember uncertain sessions across recovery")
 assert.match(service, /function handleSessionTransitions\(transition\)[\s\S]*?Model\.partitionObserverRecoveryStarts\(transition\.started, suppressedObserverStarts\)/,
   "observer recovery must not announce uncertain sessions as new activity")
@@ -660,7 +702,7 @@ assert.match(historyController, /id:\s*historyLoadOutput[\s\S]*?onStreamFinished
   "history loading must parse the collector property exposed by Quickshell")
 assert.doesNotMatch(historyController, /id:\s*historyLoadProc[\s\S]*?onStreamFinished:\s*function\(text\)/,
   "history loading must not assume the completion signal passes collected text")
-assert.match(service, /id:\s*dependencyCheckProc[\s\S]*?if \(!root\.dependencyRefreshPending\)[\s\S]*?dependencyReadyMap = ready/,
+assert.match(dependencyController, /id:\s*checkProcess[\s\S]*?if \(!controller\.refreshPending\)[\s\S]*?controller\.readyMap = ready/,
   "superseded dependency results must not be published")
 
 console.log("runtime behavior contract tests passed")
