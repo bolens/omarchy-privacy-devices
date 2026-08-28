@@ -100,7 +100,7 @@ Panel {
   property string historyConfidenceFilter: "all"
   property string historySortMode: "recent"
   property int historySummaryWindow: 24 * 60 * 60 * 1000
-  property bool settingsMutationPending: false
+  readonly property bool settingsMutationPending: settingsController.mutationPending
   property string globalSettingsPage: "general"
   property string pendingSettingsSection: ""
   property string selectedKind: ""
@@ -108,15 +108,13 @@ Panel {
   property var deferredActivityItems: null
   property int handledSettingsRequestSerial: 0
   property double durationNow: Date.now()
-  readonly property string settingsTransferStatus: settingsTransferResult.status
-  readonly property bool settingsTransferRunning: settingsTransferController.running
-  readonly property bool settingsUndoAvailable: settingsTransferController.undoAvailable
-  readonly property string settingsMutationMessage: settingsMutationController.status === "saving" ? "Saving changes…"
-    : (settingsMutationController.status === "saved" ? "Changes applied"
-    : (settingsMutationController.status === "failed" ? "Settings update failed" + (settingsMutationController.detail ? ": " + settingsMutationController.detail : "") : ""))
+  readonly property string settingsTransferStatus: settingsController.transferResult.status
+  readonly property bool settingsTransferRunning: settingsController.transferControl.running
+  readonly property bool settingsUndoAvailable: settingsController.transferControl.undoAvailable
+  readonly property string settingsMutationMessage: settingsController.mutationMessage
   readonly property bool settingsPageLoaded: globalSettingsPageLoader.item !== null
   readonly property var confirmationController: confirmationState
-  readonly property var settingsMutationControl: settingsMutationController
+  readonly property var settingsMutationControl: settingsController.mutationControl
   readonly property var lockdownActionControl: activityView.lockdownActionControl
   readonly property var privacyPresetFeedbackSurface: activityView.presetFeedbackSurface
   readonly property string confirmationPending: confirmationState.pending
@@ -144,7 +142,7 @@ Panel {
   }
 
   function mutationSetting(key, fallback) {
-    var candidate = settingsMutationController.pending || effectiveSettings
+    var candidate = settingsController.mutationControl.pending || effectiveSettings
     return candidate && candidate[key] !== undefined ? candidate[key] : fallback
   }
 
@@ -428,28 +426,11 @@ Panel {
   }
 
   function persistSettings(values) {
-    settingsMutationController.submit(effectiveSettings, values)
+    settingsController.persist(values)
   }
 
   function commitSettings(candidate) {
-    var previous = settings
-    var clean = Model.sanitizeSettings(candidate)
-    var entry = {id: moduleName}
-    for (var sanitizedKey in clean) entry[sanitizedKey] = clean[sanitizedKey]
-    settings = entry
-    syncService()
-    settingsMutationPending = true
-    settingsMutationGuard.restart()
-    try {
-      if (!bar || !bar.shell || typeof bar.shell.updateEntryInline !== "function") throw new Error("shell settings API unavailable")
-      bar.shell.updateEntryInline(moduleName, entry)
-      settingsMutationController.complete(true)
-      Qt.callLater(function() { if (!root.opened) root.open() })
-    } catch (error) {
-      settings = previous
-      syncService()
-      settingsMutationController.complete(false, String(error && error.message ? error.message : error))
-    }
+    settingsController.commit(candidate)
   }
 
   function settingsHelperPath() {
@@ -457,27 +438,23 @@ Panel {
   }
 
   function exportSettings() {
-    settingsTransferResult.begin("Exporting…")
-    if (!settingsTransferController.request("export", Model.sanitizeSettings(effectiveSettings))) settingsTransferResult.begin("Transfer busy")
+    settingsController.exportSettings()
   }
 
   function importSettings() {
-    settingsTransferResult.begin("Importing…")
-    if (!settingsTransferController.request("import", Model.sanitizeSettings(effectiveSettings))) settingsTransferResult.begin("Transfer busy")
+    settingsController.importSettings()
   }
 
   function undoSettingsChange() {
-    settingsTransferResult.begin("Restoring…")
-    if (!settingsTransferController.request("undo", {})) settingsTransferResult.begin("Transfer busy")
+    settingsController.undoSettingsChange()
   }
 
   function requestGlobalSettingsReset() {
-    settingsTransferResult.begin("Saving undo point…")
-    if (!settingsTransferController.request("checkpoint", Model.sanitizeSettings(effectiveSettings))) settingsTransferResult.begin("Transfer busy")
+    settingsController.requestGlobalSettingsReset()
   }
 
   function handleSettingsTransfer(mode, payload) {
-    settingsTransferResult.apply(mode, payload)
+    settingsController.handleTransfer(mode, payload)
   }
 
   function addPolicyValue(key, value) {
@@ -872,17 +849,8 @@ Panel {
   Component.onCompleted: { syncDisplayedItems(); Qt.callLater(syncService) }
   Component.onDestruction: if (privacyService) privacyService.unregisterBarInstance(registeredPresentationScreen, root)
 
-  Timer {
-    id: settingsMutationGuard
-    interval: 2000
-    onTriggered: root.settingsMutationPending = false
-  }
-
   PrivacyConfirmationController { id: confirmationState }
-  PrivacySettingsMutationController {
-    id: settingsMutationController
-    onCommitRequested: function(settings) { root.commitSettings(settings) }
-  }
+  PrivacySettingsController { id: settingsController; host: root }
 
   Timer {
     interval: 1000
@@ -1001,7 +969,7 @@ Panel {
           PrivacyMessageSurface {
             visible: root.settingsMutationMessage !== ""
             message: root.settingsMutationMessage
-            kind: settingsMutationController.status === "failed" ? "error" : (settingsMutationController.status === "saved" ? "success" : "info")
+            kind: settingsMutationControl.status === "failed" ? "error" : (settingsMutationControl.status === "saved" ? "success" : "info")
           }
 
           Loader {
@@ -1025,14 +993,6 @@ Panel {
       }
     }
   }
-
-  PrivacySettingsTransferController {
-    id: settingsTransferController
-    helper: root.settingsHelperPath()
-    onSucceeded: function(mode, payload) { root.handleSettingsTransfer(mode, payload) }
-    onFailed: function(_mode, detail) { settingsTransferResult.fail(detail) }
-  }
-  PrivacySettingsTransferResult { id: settingsTransferResult; controller: root }
 
   Component { id: generalSettingsPage; PrivacyGeneralSettings { controller: root } }
   Component { id: appearanceSettingsPage; PrivacyAppearanceSettings { controller: root } }

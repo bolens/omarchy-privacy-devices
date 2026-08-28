@@ -12,11 +12,13 @@ const activityCard = fs.readFileSync(path.join(root, "PrivacyActivityCard.qml"),
 const activityView = fs.readFileSync(path.join(root, "PrivacyActivityView.qml"), "utf8")
 const historyView = fs.readFileSync(path.join(root, "PrivacyHistoryView.qml"), "utf8")
 const deviceView = fs.readFileSync(path.join(root, "PrivacyDeviceView.qml"), "utf8")
+const deviceBackendSettings = fs.readFileSync(path.join(root, "PrivacyDeviceBackendSettings.qml"), "utf8")
 const deviceEditor = fs.readFileSync(path.join(root, "DeviceSettingsEditor.qml"), "utf8")
 const deviceDiagnostics = fs.readFileSync(path.join(root, "DeviceDiagnostics.qml"), "utf8")
 const settingsNavigation = fs.readFileSync(path.join(root, "PrivacySettingsNavigation.qml"), "utf8")
 const confirmationController = fs.readFileSync(path.join(root, "PrivacyConfirmationController.qml"), "utf8")
 const mutationController = fs.readFileSync(path.join(root, "PrivacySettingsMutationController.qml"), "utf8")
+const settingsController = fs.readFileSync(path.join(root, "PrivacySettingsController.qml"), "utf8")
 const messageSurface = fs.readFileSync(path.join(root, "PrivacyMessageSurface.qml"), "utf8")
 const settingToggle = fs.readFileSync(path.join(root, "PrivacySettingToggle.qml"), "utf8")
 const transferResult = fs.readFileSync(path.join(root, "PrivacySettingsTransferResult.qml"), "utf8")
@@ -26,7 +28,7 @@ const audioEndpointSettings = fs.readFileSync(path.join(root, "AudioEndpointSett
 const globalSettings = ["PrivacyGeneralSettings.qml", "PrivacyAppearanceSettings.qml", "PrivacyAlertsSettings.qml", "PrivacyMonitoringSettings.qml", "PrivacyMarkerGlyphEditor.qml"]
   .map(file => fs.readFileSync(path.join(root, file), "utf8")).join("\n")
 const settingsUi = bar + "\n" + globalSettings
-const deviceSettings = deviceView + deviceEditor + deviceDiagnostics
+const deviceSettings = deviceView + deviceBackendSettings + deviceEditor + deviceDiagnostics
 const defaults = manifest.barWidget.defaults
 const modelContext = {}
 vm.createContext(modelContext)
@@ -69,7 +71,7 @@ assert.match(settingsNavigation, /value:"appearance"/, "appearance settings need
 assert.match(settingsNavigation, /objectName: "settingsPageButton-" \+ modelData\.value/, "settings tabs must be addressable by runtime interaction tests")
 assert.match(bar, /iconText: "󰑐"[\s\S]*?text: "Reset global settings"[\s\S]*?bordered: true[\s\S]*?onClicked: root\.requestGlobalSettingsReset\(\)/,
   "the global reset action must use the guarded request path")
-assert.match(bar, /function requestGlobalSettingsReset\(\)[\s\S]*?request\("checkpoint"/,
+assert.match(settingsController, /function requestGlobalSettingsReset\(\)[\s\S]*?requestTransfer\("checkpoint"/,
   "the global reset request must preserve an undo point before reset policy")
 for (const selector of ["Monitored activity", "Activity notifications", "Preventative controls"])
   assert.match(globalSettings, new RegExp(`label:\\s*"${selector}"`), `${selector} must remain configurable`)
@@ -103,9 +105,9 @@ assert.match(globalSettings, /PanelSectionHeader \{ Layout\.fillWidth: true; tex
   "the Monitoring page must render live observer telemetry in its health section")
 assert.match(bar, /function monitoringTelemetryText\(\)[\s\S]*?Model\.monitoringTelemetryText\(data\)/,
   "observer telemetry copy must use the behavior-tested formatter")
-assert.match(bar, /function commitSettings\(candidate\)[\s\S]*?settingsMutationPending = true[\s\S]*?onOpenedChanged:[\s\S]*?else if \(settingsMutationPending\) Qt\.callLater\(root\.open\)/,
+assert.match(settingsController + bar, /function commit\(candidate\)[\s\S]*?mutationPending = true[\s\S]*?onOpenedChanged:[\s\S]*?else if \(settingsMutationPending\) Qt\.callLater\(root\.open\)/,
   "settings writes must preserve the open editor across shell config reloads")
-assert.match(bar, /function persistSettings\(values\)[\s\S]*?settingsMutationController\.submit\(effectiveSettings, values\)/,
+assert.match(bar + settingsController, /function persistSettings\(values\)[\s\S]*?settingsController\.persist\(values\)[\s\S]*?function persist\(values\)[\s\S]*?mutation\.submit\(host\.effectiveSettings, values\)/,
   "settings edits must enter the coalescing mutation boundary")
 assert.match(mutationController, /function submit\(current, patch\)[\s\S]*?pending \|\| current[\s\S]*?commitTimer\.restart\(\)/,
   "rapid mutations must merge onto the newest pending settings")
@@ -119,8 +121,8 @@ assert.doesNotMatch(globalSettings, /\bToggle\s*\{/,
   "global pages must not duplicate raw toggle styling and persistence wiring")
 assert.match(transferResult, /function apply\(mode, payload\)[\s\S]*?!parsed \|\| typeof parsed !== "object" \|\| Array\.isArray\(parsed\)[\s\S]*?Model\.sanitizeSettings\(parsed\)/,
   "transferred settings must reject non-objects and use the canonical sanitizer")
-assert.match(bar, /Model\.sanitizeSettings\(candidate\)/, "settings writes must pass through the versioned sanitizer")
-assert.match(bar, /privacy-settings[\s\S]*?PrivacySettingsTransferController/, "settings transfer must use the bounded helper controller")
+assert.match(settingsController, /Model\.sanitizeSettings\(candidate\)/, "settings writes must pass through the versioned sanitizer")
+assert.match(settingsController, /PrivacySettingsTransferController[\s\S]*?privacy-settings/, "settings transfer must use the bounded helper controller")
 assert.match(monitoringSettings, /text: "Private data"[\s\S]*?text: "Export settings"[\s\S]*?text: "Import settings"[\s\S]*?text: "Undo last change"/,
   "Monitoring must own the complete private settings-transfer workflow")
 assert.equal((globalSettings.match(/label: "Keep recent activity"/g) || []).length, 1, "history controls must not be duplicated across settings pages")
@@ -178,7 +180,7 @@ assert.match(deviceView, /label: "Show status markers for this device"[\s\S]*?Gl
   "device marker wording must explain its relationship to global rules")
 for (const label of ["Bar preview", "Display label", "Device icon"])
   assert.match(deviceView, new RegExp(`text: "${label}"`), `${label} must remain visible without relying on input placeholders`)
-assert.match(deviceView, /Shared by microphone and audio output/, "shared audio backend scope must be explicit")
+assert.match(deviceBackendSettings, /Shared by microphone and audio output/, "shared audio backend scope must be explicit")
 assert.match(audioEndpointSettings, /surface\.kind === "microphone" \? "Microphone devices" : "Audio output devices"[\s\S]*?audioEndpoints\(surface\.kind\)/,
   "audio settings pages must enumerate their exact hardware endpoints")
 assert.match(audioEndpointSettings, /text: modelData\.muted \? "Allow" : "Block"[\s\S]*?setAudioEndpointMuted\(surface\.kind, modelData\.id, !modelData\.muted\)/,
@@ -196,8 +198,10 @@ assert.match(deviceView, /text: confirmationState\.pending === "all" \? "Confirm
   "the complete device reset must invoke its scoped reset policy after confirmation")
 assert.match(deviceView, /confirmationState\.pending === "backend"[\s\S]*?Confirm shared backend reset[\s\S]*?confirmationState\.pending === "all"[\s\S]*?Confirm reset all/,
   "shared audio resets must require an explicit second action")
-assert.match(deviceView, /function syncEditors\(\)[\s\S]*?labelEditor\.text = root\.labelFor\(root\.editingKind\)[\s\S]*?customRecorderStopEditor\.text/,
+assert.match(deviceView, /function syncEditors\(\)[\s\S]*?labelEditor\.text = root\.labelFor\(root\.editingKind\)[\s\S]*?backendSettings\.item[\s\S]*?backendSettings\.item\.syncEditors\(\)/,
   "changing devices must replace every editable field instead of retaining stale input")
+assert.match(deviceBackendSettings, /function syncEditors\(\)[\s\S]*?customScreenshotCommandEditor\.text[\s\S]*?customRecorderStopEditor\.text/,
+  "backend synchronization must replace every custom command field")
 assert.match(bar, /onEditingKindChanged:\s*\{[\s\S]*?Qt\.callLater\(syncDeviceEditors\)/,
   "device-editor synchronization must run after every device transition")
 assert.match(confirmationController, /guardMilliseconds:\s*5000[\s\S]*?onTriggered: controller\.pending = ""/,
@@ -215,13 +219,13 @@ assert.match(bar, /deviceVisibilityOptions:[\s\S]*?value: "show", label: "Show"[
   "device visibility modes must use human-readable options")
 assert.match(bar, /function resetDeviceBackend\(kind\)[\s\S]*?Qt\.callLater\(syncDeviceEditors\)/,
   "backend resets must refresh fields whose edit bindings were replaced")
-assert.match(deviceView, /property bool dirty:[\s\S]*?Unsaved changes[\s\S]*?enabled: parent\.dirty/,
+assert.match(deviceBackendSettings, /property bool dirty:[\s\S]*?Unsaved changes[\s\S]*?enabled: parent\.dirty/,
   "device text editors must expose dirty state and disable redundant saves")
-assert.match(deviceView, /Model\.deviceBackendValidation\("screenshot"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,
+assert.match(deviceBackendSettings, /Model\.deviceBackendValidation\("screenshot"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,
   "custom screenshot settings must validate before saving")
-assert.match(deviceView, /Model\.deviceBackendValidation\("screen-recording"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,
+assert.match(deviceBackendSettings, /Model\.deviceBackendValidation\("screen-recording"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,
   "custom recording settings must validate before saving")
-assert.match(deviceView, /maximumLength: 4096/, "custom command editors must expose sanitizer-aligned bounds")
+assert.match(deviceBackendSettings, /maximumLength: 4096/, "custom command editors must expose sanitizer-aligned bounds")
 assert.match(deviceView, /id: labelEditor[\s\S]*?maximumLength: 128/, "device label editor must match its persisted bound")
 assert.match(deviceView, /id: iconEditor[\s\S]*?maximumLength: 8/, "device icon editor must match its persisted bound")
 assert.match(bar, /function persistIcon\(kind, value\)[\s\S]*?Qt\.callLater[\s\S]*?deviceView\.iconEditorControl\.text = root\.iconFor\(kind\)/,

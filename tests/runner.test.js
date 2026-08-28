@@ -8,6 +8,9 @@ const runner = fs.existsSync(runnerPath) ? fs.readFileSync(runnerPath, "utf8") :
 const ci = fs.readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8")
 const testing = fs.readFileSync(path.join(root, "TESTING.md"), "utf8")
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"))
+const qmlLintPath = path.join(root, "scripts", "lint-qml")
+assert.ok(fs.existsSync(qmlLintPath), "one shared QML lint entry point must exist")
+const qmlLint = fs.readFileSync(qmlLintPath, "utf8")
 
 assert.match(runner, /for test_file in tests\/\*\.test\.js/, "the canonical runner must discover every JavaScript suite")
 assert.match(runner, /python3 -m unittest discover -s tests -p 'test_\*\.py'/, "the canonical runner must discover every Python suite")
@@ -22,5 +25,10 @@ assert.ok(pluginJob.indexOf("run: npm ci") >= 0 && pluginJob.indexOf("run: npm c
   "the plugin job must install declared test dependencies before the canonical suite")
 assert.equal(packageJson.scripts.test, "bash tests/run_all.sh", "npm test must delegate to the canonical runner")
 assert.match(testing, /npm test/, "the contributor testing entry point must use the canonical runner")
+assert.match(qmlLint, /\.\/\*\.qml[\s\S]*?\.\/tests\/qml\/\*\.qml[\s\S]*?sort/,
+  "QML linting must discover production and runtime harnesses deterministically")
+assert.match(ci, /QMLLINT=\/usr\/lib\/qt6\/bin\/qmllint[\s\S]*?scripts\/lint-qml/,
+  "CI must use the same QML lint inventory as contributors")
+assert.match(testing, /scripts\/lint-qml/, "testing guidance must advertise the shared QML lint entry point")
 
 console.log("canonical test runner checks passed")
