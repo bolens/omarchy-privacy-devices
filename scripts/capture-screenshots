@@ -23,10 +23,12 @@ verify_only=false
 report_file=""
 panel_width=500
 panel_side_padding=16
+audit_dir=""
+capture_popup_width="standard"
 
 usage() {
   cat <<'EOF'
-Usage: scripts/capture-screenshots [--monitor NAME] [--workspace ID] [--verify] [--report FILE]
+Usage: scripts/capture-screenshots [--monitor NAME] [--workspace ID] [--panel-width PX] [--audit-dir DIR] [--verify] [--report FILE]
 
 Capture the live plugin on an empty workspace, update repository screenshots,
 and restore the monitor's original workspace. By default, the monitor containing
@@ -34,6 +36,8 @@ the launching focused window is selected; --monitor overrides that choice.
 
 --verify performs the complete capture and restoration flow without publishing
 repository assets, then fails if any protected state or the shell PID changed.
+--audit-dir retains temporary top/bottom settings evidence below /tmp without
+publishing repository assets. Supported panel widths are 400 through 800 px.
 EOF
 }
 
@@ -41,12 +45,33 @@ while (($#)); do
   case "$1" in
     --monitor) monitor=${2:-}; shift 2 ;;
     --workspace) capture_workspace=${2:-}; shift 2 ;;
+    --panel-width) panel_width=${2:-}; shift 2 ;;
+    --audit-dir) audit_dir=${2:-}; shift 2 ;;
     --verify) verify_only=true; shift ;;
     --report) report_file=${2:-}; shift 2 ;;
     --help|-h) usage; exit 0 ;;
     *) printf 'Unknown argument: %s\n' "$1" >&2; usage >&2; exit 2 ;;
   esac
 done
+
+if [[ ! $panel_width =~ ^[0-9]+$ ]] || ((panel_width < 400 || panel_width > 800)); then
+  printf 'Panel width must be an integer from 400 through 800.\n' >&2
+  exit 2
+fi
+if [[ -n $audit_dir ]]; then
+  [[ $audit_dir == /tmp/* ]] || { printf 'Audit output must be below /tmp.\n' >&2; exit 2; }
+  [[ ! -e $audit_dir || -d $audit_dir ]] || { printf 'Audit output must be a directory.\n' >&2; exit 2; }
+  if [[ -d $audit_dir && -n $(find "$audit_dir" -mindepth 1 -print -quit) ]]; then
+    printf 'Audit output directory must be empty.\n' >&2
+    exit 2
+  fi
+  verify_only=true
+fi
+if ((panel_width <= 420)); then
+  capture_popup_width="narrow"
+elif ((panel_width >= 620)); then
+  capture_popup_width="wide"
+fi
 
 for command in qs hyprctl jq grim magick wtype omarchy python3 flock base64 find sha256sum ps; do
   command -v "$command" >/dev/null || { printf 'Missing required command: %s\n' "$command" >&2; exit 1; }
@@ -216,9 +241,9 @@ capture_has_content() {
 }
 
 capture_has_panel() {
-  local image=$1 light_fraction
+  local image=$1 light_fraction sample_width=$((panel_width - 100))
   capture_has_content "$image" || return 1
-  light_fraction=$(magick "$image" -crop '400x80+66+30' +repage -colorspace gray -threshold 35% -format '%[fx:mean]' info: 2>/dev/null || true)
+  light_fraction=$(magick "$image" -crop "${sample_width}x80+66+30" +repage -colorspace gray -threshold 35% -format '%[fx:mean]' info: 2>/dev/null || true)
   [[ $light_fraction =~ ^[0-9]+([.][0-9]+)?$ ]] && awk -v value="$light_fraction" 'BEGIN { exit !(value > 0.01 && value < 0.70) }'
 }
 
@@ -262,7 +287,8 @@ wait_for_panel_presentation() {
     ' <<<"${state:-null}" >/dev/null 2>&1; then return 0; fi
     sleep 0.1
   done
-  printf 'Panel did not acknowledge %s view on %s.\n' "$expected_view" "$monitor" >&2
+  printf 'Panel did not acknowledge %s view on %s: %s\n' "$expected_view" "$monitor" \
+    "$(jq -c '{opened,ready,view,argument,settingsPage,settingsSection,settingsScroll,requestSerial}' <<<"${state:-null}" 2>/dev/null || printf unavailable)" >&2
   return 1
 }
 
@@ -275,6 +301,36 @@ wait_for_panel_closed() {
   done
   printf 'Panel on %s did not acknowledge closing.\n' "$monitor" >&2
   return 1
+}
+
+wait_for_settings_scroll() {
+  local position=$1 attempt state
+  for attempt in {1..30}; do
+    state=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 presentation "$capture_owner" "$monitor" 2>/dev/null || true)
+    if jq -e --arg position "$position" '.opened == true and .ready == true and .view == "settings" and .settingsScroll == $position' \
+      <<<"${state:-null}" >/dev/null 2>&1; then return 0; fi
+    sleep 0.1
+  done
+  printf 'Settings did not acknowledge %s scroll position on %s.\n' "$position" "$monitor" >&2
+  return 1
+}
+
+scroll_capture_settings() {
+  local position=$1
+  expect_ipc_reply ok privacy-devices-capture-v2 scrollSettings "$capture_owner" "$monitor" "$position"
+  wait_for_settings_scroll "$position"
+}
+
+capture_current_panel() {
+  local name=$1 height=${2:-660} crop_top=${3:-20}
+  check_capture_environment || return 1
+  focus_capture_workspace || return 1
+  resolve_geometry || return 1
+  capture_monitor_frame "$capture_dir/$name-full.png"
+  magick "$capture_dir/$name-full.png" \
+    -crop "$((panel_width + panel_side_padding * 2))x${height}+${panel_capture_x}+${crop_top}" \
+    +repage "$capture_dir/$name.png"
+  capture_has_panel "$capture_dir/$name.png"
 }
 
 capture_panel() {
@@ -300,12 +356,7 @@ capture_panel() {
       device) expect_ipc_reply activity privacy-devices-capture-v2 openPanel "$capture_owner" "$monitor" "$mode" "${page:-microphone}" "$section" ;;
     esac
     wait_for_panel_presentation "$mode" "$page" "$section" || continue
-    resolve_geometry || return 1
-    capture_monitor_frame "$capture_dir/$name-full.png"
-    magick "$capture_dir/$name-full.png" \
-      -crop "$((panel_width + panel_side_padding * 2))x${height}+${panel_capture_x}+${crop_top}" \
-      +repage "$capture_dir/$name.png"
-    if capture_has_panel "$capture_dir/$name.png"; then return 0; fi
+    if capture_current_panel "$name" "$height" "$crop_top"; then return 0; fi
   done
   printf 'Could not capture populated %s view after four attempts.\n' "$name" >&2
   return 1
@@ -393,10 +444,11 @@ close_capture_notification() {
 }
 set_capture_preview() {
   local payload reply settings
-  settings=$(jq -cn '{privacyModes:[
+  settings=$(jq -cn --argjson audit "$([[ -n $audit_dir ]] && printf true || printf false)" \
+    --arg popupWidth "$capture_popup_width" '{privacyModes:[
     {name:"Meeting",controls:{microphone:true,"audio-output":true,camera:true,"screen-share":false,location:false}},
     {name:"Travel",controls:{microphone:false,"audio-output":true,camera:false,"screen-share":false,location:false}}
-  ]}')
+  ],popupWidth:$popupWidth} + (if $audit then {statusMarkerMode:"custom"} else {} end)')
   payload=$(jq -cn --arg owner "$capture_owner" --argjson settings "$settings" --argjson history "$history_samples" --argjson sessions "$activity_samples" '{owner:$owner,settings:$settings,history:$history,sessions:$sessions}' | base64 -w 0)
   reply=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 beginCapture "$payload" 2>/dev/null || true)
   [[ $reply == ok ]] || { printf 'Could not activate in-memory capture preview.\n' >&2; return 1; }
@@ -490,23 +542,32 @@ focus_capture_workspace
 park_capture_cursor
 resolve_geometry
 
-capture_panel general settings general 660
-capture_preview_state=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 state "$capture_owner" 2>/dev/null || true)
-capture_bar_signature baseline >/dev/null
-for page in alerts monitoring; do capture_panel "$page" settings "$page" 660; done
-capture_panel monitoring-private settings-section monitoring 395 private-data 70
-capture_panel monitoring-health settings-section monitoring 290 observer-health 390
-capture_panel device device microphone 660
-capture_panel activity activity "" 500
-capture_panel appearance settings appearance 660
-capture_panel history history "" 660
-capture_panel history-disabled history-disabled "" 240
+if [[ -n $audit_dir ]]; then
+  for page in general appearance alerts monitoring; do
+    capture_panel "audit-${page}-top" settings "$page" 660
+    scroll_capture_settings bottom
+    capture_current_panel "audit-${page}-bottom" 660
+  done
+else
+  capture_panel general settings general 660
+  capture_preview_state=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 state "$capture_owner" 2>/dev/null || true)
+  capture_bar_signature baseline >/dev/null
+  for page in alerts monitoring; do capture_panel "$page" settings "$page" 660; done
+  capture_panel monitoring-private settings-section monitoring 395 private-data 70
+  capture_panel monitoring-health settings-section monitoring 290 observer-health 390
+  capture_panel device device microphone 660
+  capture_panel activity activity "" 500
+  capture_panel appearance settings appearance 660
+  capture_panel history history "" 660
+  capture_panel history-disabled history-disabled "" 240
+fi
 
 expect_ipc_reply ok privacy-devices-capture-v2 closePanel "$capture_owner" "$monitor"
 wait_for_panel_closed
 resolve_geometry
-capture_monitor_frame "$capture_dir/bar-full.png"
 
+if [[ -z $audit_dir ]]; then
+capture_monitor_frame "$capture_dir/bar-full.png"
 dnd_state=$(qs ipc --pid "$shell_pid" call notifications isDnd)
 original_dnd_state=$dnd_state
 if [[ $dnd_state == on ]]; then
@@ -541,6 +602,7 @@ notification_visible=false
 restore_dnd
 
 magick "$capture_dir/bar-full.png" -crop "${widget_width}x50+${widget_x}+0" +repage "$capture_dir/bar.png"
+fi
 
 validate_capture() {
   local image=$1 expected_width=$2 expected_height=$3 actual
@@ -554,25 +616,59 @@ validate_capture() {
     exit 1
   fi
 }
-validate_capture "$capture_dir/activity.png" 532 500
-validate_capture "$capture_dir/device.png" 532 660
-validate_capture "$capture_dir/bar.png" "$widget_width" 50
-validate_capture "$capture_dir/notification.png" 420 160
-validate_capture "$capture_dir/history.png" 532 660
-validate_capture "$capture_dir/history-disabled.png" 532 240
-for page in general appearance alerts monitoring; do validate_capture "$capture_dir/$page.png" 532 660; done
-validate_capture "$capture_dir/monitoring-private.png" 532 395
-validate_capture "$capture_dir/monitoring-health.png" 532 290
+capture_width=$((panel_width + panel_side_padding * 2))
+if [[ -n $audit_dir ]]; then
+  for page in general appearance alerts monitoring; do
+    validate_capture "$capture_dir/audit-${page}-top.png" "$capture_width" 660
+    validate_capture "$capture_dir/audit-${page}-bottom.png" "$capture_width" 660
+  done
+else
+  validate_capture "$capture_dir/activity.png" "$capture_width" 500
+  validate_capture "$capture_dir/device.png" "$capture_width" 660
+  validate_capture "$capture_dir/bar.png" "$widget_width" 50
+  validate_capture "$capture_dir/notification.png" 420 160
+  validate_capture "$capture_dir/history.png" "$capture_width" 660
+  validate_capture "$capture_dir/history-disabled.png" "$capture_width" 240
+  for page in general appearance alerts monitoring; do validate_capture "$capture_dir/$page.png" "$capture_width" 660; done
+  validate_capture "$capture_dir/monitoring-private.png" "$capture_width" 395
+  validate_capture "$capture_dir/monitoring-health.png" "$capture_width" 290
+fi
 
-declare -A capture_digests=()
-for image in activity device bar notification history history-disabled general appearance alerts monitoring monitoring-private monitoring-health; do
-  digest=$(sha256sum "$capture_dir/$image.png" | awk '{print $1}')
-  if [[ -n ${capture_digests[$digest]:-} ]]; then
-    printf 'Duplicate captures: %s and %s\n' "${capture_digests[$digest]}" "$image" >&2
-    exit 1
-  fi
-  capture_digests[$digest]=$image
-done
+if [[ -z $audit_dir ]]; then
+  declare -A capture_digests=()
+  for image in activity device bar notification history history-disabled general appearance alerts monitoring monitoring-private monitoring-health; do
+    digest=$(sha256sum "$capture_dir/$image.png" | awk '{print $1}')
+    if [[ -n ${capture_digests[$digest]:-} ]]; then
+      printf 'Duplicate captures: %s and %s\n' "${capture_digests[$digest]}" "$image" >&2
+      exit 1
+    fi
+    capture_digests[$digest]=$image
+  done
+fi
+
+if [[ -n $audit_dir ]]; then
+  declare -A audit_digests=()
+  mkdir -p "$capture_dir/audit-output"
+  for page in general appearance alerts monitoring; do
+    for position in top bottom; do
+    image="$capture_dir/audit-${page}-${position}.png"
+    audit_name=${image##*/}
+    staged="$capture_dir/audit-output/$audit_name"
+    magick "$image" -strip -define png:compression-level=9 "$staged"
+    digest=$(sha256sum "$staged" | awk '{print $1}')
+    if [[ -n ${audit_digests[$digest]:-} ]]; then
+      expected_top=${audit_name%-bottom.png}-top.png
+      if [[ $audit_name == *-bottom.png && ${audit_digests[$digest]} == "$expected_top" ]]; then
+        rm -- "$staged"
+        continue
+      fi
+      printf 'Duplicate audit captures: %s and %s\n' "${audit_digests[$digest]}" "${image##*/}" >&2
+      exit 1
+    fi
+    audit_digests[$digest]=${image##*/}
+    done
+  done
+fi
 
 optimize_png() {
   local source=$1 destination=$2
@@ -612,18 +708,27 @@ verify_postconditions() {
     "$monitor" "$original_workspace" "$initial_shell_pid" "$shell_pid" "$original_dnd_state"
 }
 write_report() {
-  local destination=${report_file:-$capture_dir/verification.json}
-  jq -n --arg mode "$([[ $verify_only == true ]] && printf verify || printf publish)" \
+  local destination=${report_file:-$capture_dir/verification.json} mode="publish"
+  if [[ -n $audit_dir ]]; then mode="audit"; elif [[ $verify_only == true ]]; then mode="verify"; fi
+  jq -n --arg mode "$mode" \
     --argjson pid "$initial_shell_pid" --arg monitor "$monitor" --argjson workspace "$original_workspace" \
     '{version:1,result:"passed",mode:$mode,shellPid:$pid,monitor:$monitor,restoredWorkspace:$workspace,settings:"untouched",history:"untouched",dnd:"preserved"}' >"$destination"
   if [[ -z $report_file ]]; then jq -c . "$destination"; else printf 'Verification report: %s\n' "$report_file"; fi
 }
 if [[ $verify_only == true ]]; then
   verify_postconditions
+  if [[ -n $audit_dir ]]; then
+    mkdir -p "$audit_dir"
+    cp -- "$capture_dir"/audit-output/*.png "$audit_dir/"
+  fi
   write_report
   cleanup_capture
   trap - EXIT INT TERM
-  printf 'Capture verification passed; repository assets were not published.\n'
+  if [[ -n $audit_dir ]]; then
+    printf 'Retained settings audit in %s; repository assets were not published.\n' "$audit_dir"
+  else
+    printf 'Capture verification passed; repository assets were not published.\n'
+  fi
   exit 0
 fi
 
