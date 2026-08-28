@@ -496,7 +496,11 @@ Panel {
     Qt.callLater(publishCaptureBarPresentation)
     if (privacyService && isAudioControl({kind: editingKind})) privacyService.refreshAudioEndpoints(editingKind)
   }
-  onPrivacyServiceChanged: Qt.callLater(function() { syncService(); publishCaptureBarPresentation() })
+  onPrivacyServiceChanged: Qt.callLater(function() {
+    if (!root) return
+    root.syncService()
+    root.publishCaptureBarPresentation()
+  })
   onActivitySourceItemsChanged: syncDisplayedItems()
   onOpenedChanged: {
     publishCaptureBarPresentation()

@@ -493,6 +493,8 @@ assert.match(notificationController, /function requestDevice\(kind\)[\s\S]*?Mode
 assert.match(service, /function openHistory\(\): string[\s\S]*?requestPopupView\("history", ""\)/,
   "history IPC must use the singleton service's focused-monitor routing")
 assert.doesNotMatch(bar, /target:\s*"privacy-devices-settings"/, "per-monitor widgets must not compete for settings IPC ownership")
+assert.match(bar, /onPrivacyServiceChanged:\s*Qt\.callLater\(function\(\)\s*\{\s*if \(!root\) return[\s\S]*?root\.syncService\(\)/,
+  "deferred service synchronization must ignore a widget destroyed before the callback runs")
 assert.match(notificationController, /id:\s*flushTimer[\s\S]*?interval:\s*400/, "activity notifications must use a bounded coalescing window")
 assert.match(notificationController, /interval:\s*5000[\s\S]*?activityInitialized = true/,
   "startup observations must settle into a silent baseline before notifications begin")
