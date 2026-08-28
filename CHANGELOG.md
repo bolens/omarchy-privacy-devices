@@ -7,20 +7,13 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-28
+
 ### Changed
 
-- Split the main popup's activity, history, and device-settings composition
-  into dedicated QML domain views while preserving BarWidget's behavior and
-  runtime-test facade.
-- Isolate settings commit/rollback and private-transfer orchestration, lazy-load
-  device backend editors, and move history helper processes and queues behind a
-  dedicated service controller.
-- Extract audio-endpoint, privacy-preset, capture-preview, per-device mutation,
-  and presentation state machines into focused QML controllers while
-  preserving the service and panel facades used by integrations and tests.
-- Isolate popup navigation, notification routing, verified control transactions,
-  dependency and device-control processes, and persistent observer lifecycles
-  behind focused controllers with unchanged public service and panel contracts.
+- Split popup views, settings orchestration, helper processes, control
+  transactions, observers, and presentation state into focused QML controllers
+  while preserving the public service, panel, and runtime-test contracts.
 - Use one deterministic QML lint entry point for local and CI validation.
 - Share width-driven settings grids across global pages so narrow and wide
   popup presets reflow from configured panel width instead of implicit child
@@ -31,6 +24,11 @@ maintainer guides that define release and validation procedures.
 - Replace unambiguous save, transfer, placement, test, copy, and settings
   actions with compact glyph controls while preserving explicit tooltips and
   text for destructive or state-dependent actions.
+
+### Fixed
+
+- Preserve the active privacy preset's saved state and undo metadata when a
+  concurrent lockdown or mode request is rejected.
 
 ## [0.8.1] - 2026-08-27
 
@@ -393,7 +391,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.6.0...v0.7.0
