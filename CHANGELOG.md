@@ -28,6 +28,9 @@ maintainer guides that define release and validation procedures.
 - Add a repository-safe visual audit mode that retains unique top and bottom
   settings evidence only after monitor-scoped rendering and successful desktop
   restoration checks.
+- Replace unambiguous save, transfer, placement, test, copy, and settings
+  actions with compact glyph controls while preserving explicit tooltips and
+  text for destructive or state-dependent actions.
 
 ## [0.8.1] - 2026-08-27
 
