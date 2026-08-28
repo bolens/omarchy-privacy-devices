@@ -143,6 +143,25 @@ empty workspace:
 scripts/capture-screenshots --monitor DP-1 --workspace 10
 ```
 
+For a layout-only review, retain each settings page's top and its bottom when
+the page has a meaningful scroll range, without changing repository screenshots. Run both supported layout
+presets from the terminal whose monitor should be used:
+
+```sh
+narrow_audit=$(mktemp -d /tmp/privacy-devices-narrow.XXXXXX)
+wide_audit=$(mktemp -d /tmp/privacy-devices-wide.XXXXXX)
+scripts/capture-screenshots --panel-width 400 --audit-dir "$narrow_audit"
+scripts/capture-screenshots --panel-width 720 --audit-dir "$wide_audit"
+```
+
+Audit output directories must be empty and below `/tmp`. Audit mode implies
+`--verify`, preserves the repository, enables presentation-only conditional
+controls, and publishes the retained evidence only after desktop restoration
+and byte-for-byte state postconditions pass. A same-page bottom that is
+pixel-identical to its top is omitted; any other repeated evidence fails the
+run. The chosen width also selects the
+matching narrow, standard, or wide live popup preset; it is not merely a crop.
+
 The script requires enabled activity history and an empty workspace. It allows
 only one capture at a time, discovers the shell through IPC, uses measured
 widget geometry, and swaps in bounded example history. It restores the original
@@ -164,15 +183,16 @@ Every staged view is checked for its expected dimensions and uniqueness before
 transactional publication; a partial failure restores replaced assets and
 removes assets that did not exist before the run.
 
-Settings swaps use the shell's
-live `reloadConfig` IPC and verify its effective configuration, so capture and
-restoration do not restart Quickshell or race a shutting-down process.
+Showcase settings and sessions are supplied through an owner-scoped, expiring
+in-memory preview. Capture never swaps the settings file, reloads configuration,
+or restarts Quickshell. Audit scrolling is routed to the selected monitor's bar
+instance and waits for its rendered scroll acknowledgement before capture.
 
 ## Live verification
 
 After changing monitoring, IPC, settings, controls, or layout:
 
-1. Deploy the changed runtime files to the installed plugin.
+1. Deploy the complete QML/JS runtime with `scripts/deploy-shell-runtime`.
 2. Restart Omarchy Shell.
 3. Confirm the `privacy-devices` and `privacy-devices-settings` IPC targets
    exist.

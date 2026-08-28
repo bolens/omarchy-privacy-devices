@@ -22,6 +22,12 @@ maintainer guides that define release and validation procedures.
   dependency and device-control processes, and persistent observer lifecycles
   behind focused controllers with unchanged public service and panel contracts.
 - Use one deterministic QML lint entry point for local and CI validation.
+- Share width-driven settings grids across global pages so narrow and wide
+  popup presets reflow from configured panel width instead of implicit child
+  size.
+- Add a repository-safe visual audit mode that retains unique top and bottom
+  settings evidence only after monitor-scoped rendering and successful desktop
+  restoration checks.
 
 ## [0.8.1] - 2026-08-27
 

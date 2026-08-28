@@ -67,8 +67,11 @@ multiple displays do not duplicate observers or race for IPC ownership.
 - `PrivacyActivityCard.qml`, `DeviceSettingsEditor.qml`, and
   `DeviceDiagnostics.qml` own reusable device presentation within those
   surfaces. `Privacy*Settings.qml`,
-  `PrivacySettingsNavigation.qml`, `SettingsSurface.qml`, and
+  `PrivacySettingsNavigation.qml`, `PrivacySettingsGrid.qml`, `SettingsSurface.qml`, and
   `IntegerSetting.qml` own the global settings interface.
+  Settings field groups use the smaller of configured popup width and allocated
+  surface width as their responsive input, so lazy loaders cannot select from
+  transient implicit size and half-width cards cannot over-pack controls.
 - `PrivacyConfirmationController.qml` and
   `PrivacySettingsTransferController.qml` isolate timed confirmation and
   private import/export/undo state. `PrivacySettingsMutationController.qml`
@@ -169,7 +172,9 @@ normal operation poll-driven.
   user-triggered test.
 - Shared presentation policies own visual state, navigation boundaries, scroll
   deferral, diagnostics, telemetry text, and device-action guidance; QML owns
-  composition and input routing.
+  composition and input routing. Capture-only settings scrolling remains
+  owner- and output-scoped and exposes its rendered top/bottom state rather
+  than relying on elapsed time.
 
 ## Security boundaries
 
