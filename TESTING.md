@@ -34,14 +34,12 @@ mistaken for plugin contents:
 validation_dir=$(mktemp -d)
 git archive HEAD | tar -x -C "$validation_dir"
 omarchy plugin validate "$validation_dir"
-qmllint -I "$OMARCHY_PATH/shell" \
-  BarWidget.qml Service.qml Privacy*View.qml SettingsSurface.qml IntegerSetting.qml \
-  PrivacyActivityCard.qml DeviceSettingsEditor.qml DeviceDiagnostics.qml \
-  AudioEndpointSettings.qml \
-  Privacy*Settings.qml PrivacySettingsNavigation.qml \
-  PrivacyConfirmationController.qml PrivacySettingsTransferController.qml \
-  tests/qml/Runtime*.qml
+scripts/lint-qml
 ```
+
+The lint entry point discovers every root component and `tests/qml/` harness in
+sorted order. CI calls the same script with its pinned Qt executable and
+checked-out Omarchy import path.
 
 In a graphical session, exercise shared JavaScript in the real Quickshell
 engine:

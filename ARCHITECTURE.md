@@ -29,12 +29,18 @@ multiple displays do not duplicate observers or race for IPC ownership.
 
 - `Service.qml` owns monitoring, normalized sessions, control transactions,
   health, history coordination, notifications, and IPC.
+- `PrivacyHistoryController.qml` owns retained-history helper processes, load
+  supersession, and serialized mutations behind the service's stable history
+  methods.
 - `BarWidget.qml` is the panel coordinator: it projects service state, routes
   user actions, and persists sanitized settings through Omarchy Shell.
 - `PrivacyActivityView.qml`, `PrivacyHistoryView.qml`, and
   `PrivacyDeviceView.qml` own the three mutually exclusive popup surfaces.
   They receive the panel coordinator as a controller and expose only the few
   controls needed by the existing runtime-test and IPC facade.
+- `PrivacyDeviceBackendSettings.qml` owns lazy capture/audio backend editing
+  and custom-command validation. `PrivacySettingsController.qml` owns settings
+  commit/rollback, coalescing feedback, private transfer, and mutation expiry.
 - `Model.js` contains pure classification, normalization, reconciliation,
   health and heartbeat, settings, control-request, observer-recovery,
   history-acceptance, and visual-state policy shared by runtime and tests.
