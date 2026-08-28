@@ -36,6 +36,14 @@ multiple displays do not duplicate observers or race for IPC ownership.
 - `PrivacyAudioEndpointController.qml` owns endpoint inventory subprocesses and
   refresh supersession. `PrivacyPresetController.qml` owns serialized lockdown
   and named-mode application plus observed-state restore.
+- `PrivacyControlTransactionController.qml` owns observed-result verification
+  and timeout transitions. `PrivacyControlProcessController.qml` owns the audio
+  and preventative command/probe processes, while
+  `PrivacyDependencyController.qml` owns dependency scheduling and installation.
+- `PrivacyObserverController.qml` owns both persistent observers, retirement and
+  restart state, watchdogs, payload acceptance, and source-specific cleanup.
+- `PrivacyNotificationController.qml` owns notification coalescing, icon and
+  callback validation, action dispatch, and focused popup routing.
 - `PrivacyCaptureController.qml` owns capture-preview sessions, per-bar
   presentation registration, and expiry.
 - `BarWidget.qml` is the panel coordinator: it projects service state, routes
@@ -44,6 +52,8 @@ multiple displays do not duplicate observers or race for IPC ownership.
   semantic text, color, marker, ordering, and tooltip projections.
 - `PrivacyDeviceSettingsController.qml` owns sanitized per-device appearance,
   placement, and backend mutations behind the panel's stable facade.
+- `PrivacyPopupNavigationController.qml` owns popup modes, deep-link scrolling,
+  keyboard selection, singleton request consumption, and layered dismissal.
 - `PrivacyActivityView.qml`, `PrivacyHistoryView.qml`, and
   `PrivacyDeviceView.qml` own the three mutually exclusive popup surfaces.
   They receive the panel coordinator as a controller and expose only the few
