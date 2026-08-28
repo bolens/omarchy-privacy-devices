@@ -17,7 +17,17 @@ const activityView = fs.readFileSync(activityViewPath, "utf8")
 const deviceViewPath = path.join(__dirname, "..", "PrivacyDeviceView.qml")
 assert.ok(fs.existsSync(deviceViewPath), "device settings composition must live in PrivacyDeviceView.qml")
 const deviceView = fs.readFileSync(deviceViewPath, "utf8")
+const backendViewPath = path.join(__dirname, "..", "PrivacyDeviceBackendSettings.qml")
+assert.ok(fs.existsSync(backendViewPath), "device backend composition must live in PrivacyDeviceBackendSettings.qml")
+const backendView = fs.readFileSync(backendViewPath, "utf8")
+const settingsControllerPath = path.join(__dirname, "..", "PrivacySettingsController.qml")
+assert.ok(fs.existsSync(settingsControllerPath), "settings orchestration must live in PrivacySettingsController.qml")
+const settingsController = fs.readFileSync(settingsControllerPath, "utf8")
+const historyControllerPath = path.join(__dirname, "..", "PrivacyHistoryController.qml")
+assert.ok(fs.existsSync(historyControllerPath), "history storage orchestration must live in PrivacyHistoryController.qml")
+const historyController = fs.readFileSync(historyControllerPath, "utf8")
 const ci = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "ci.yml"), "utf8")
+const qmlLint = fs.readFileSync(path.join(__dirname, "..", "scripts", "lint-qml"), "utf8")
 const qmlRuntime = fs.readFileSync(path.join(__dirname, "run_qml_runtime.sh"), "utf8")
 const runtimeSmoke = fs.readFileSync(path.join(__dirname, "qml", "RuntimePluginSmokeTest.qml"), "utf8")
 const serviceEntryPoint = service.trimStart()
@@ -38,6 +48,18 @@ assert.match(bar, /PrivacyDeviceView\s*\{[\s\S]*?id:\s*deviceView[\s\S]*?control
   "the bar must delegate device settings composition through the existing controller contract")
 assert.match(deviceView, /DeviceSettingsEditor\s*\{[\s\S]*?function syncEditors\(\)/,
   "device settings composition must own editable-field synchronization")
+assert.match(deviceView, /Loader\s*\{\s*id:\s*backendSettings[\s\S]*?active:[\s\S]*?PrivacyDeviceBackendSettings\s*\{\s*controller:\s*root/,
+  "the device view must delegate backend editing through the existing controller contract")
+assert.match(backendView, /required property var controller[\s\S]*?function syncEditors\(\)/,
+  "backend composition must own synchronization for every custom command field")
+assert.match(bar, /PrivacySettingsController\s*\{\s*id:\s*settingsController[\s\S]*?host:\s*root/,
+  "BarWidget must delegate settings orchestration through one controller")
+assert.match(settingsController, /required property var host[\s\S]*?PrivacySettingsMutationController[\s\S]*?PrivacySettingsTransferController/,
+  "settings persistence and private transfer lifecycles must share one owner")
+assert.match(service, /PrivacyHistoryController\s*\{\s*id:\s*historyController[\s\S]*?host:\s*root/,
+  "the service must delegate history process ownership through one controller")
+assert.match(historyController, /required property var host[\s\S]*?function load\(\)[\s\S]*?id:\s*historyLoadProc[\s\S]*?id:\s*historyMutationProc/,
+  "history load and mutation queues must share one process owner")
 assert.doesNotMatch(service, /Quickshell\.execDetached\(\s*["']/, "detached runtime commands must use argument arrays")
 assert.doesNotMatch(service, /locationProc\.command\s*=\s*\["sh",\s*"-c"/, "GeoClue probing must not cross an inline shell boundary")
 assert.match(service, /locationProc\.command = \[locationHelperOverride \|\| String\(Qt\.resolvedUrl\("privacy-location"\)\)/,
@@ -141,32 +163,8 @@ assert.match(screenshotWorkflow, /panel_width \+ panel_side_padding \* 2/,
   "panel captures must retain desktop context on both horizontal edges")
 assert.ok(fs.statSync(path.join(__dirname, "..", "scripts/capture-screenshots")).mode & 0o111,
   "screenshot workflow must remain executable")
-for (const qml of [
-  "DeviceSettingsEditor.qml", "DeviceDiagnostics.qml", "RuntimeModelTest.qml",
-  "PrivacySettingsNavigation.qml", "PrivacyConfirmationController.qml",
-  "PrivacySettingsTransferController.qml", "PrivacySettingsMutationController.qml",
-  "PrivacySettingsTransferResult.qml", "PrivacySettingToggle.qml",
-  "PrivacyMessageSurface.qml", "AudioEndpointSettings.qml", "RuntimeSettingsNavigationTest.qml",
-  "RuntimeConfirmationTest.qml", "RuntimeObserverLifecycleTest.qml",
-  "RuntimeSettingsTransferTest.qml", "RuntimeSettingsMutationTest.qml",
-  "RuntimeSettingsTransferFailureTest.qml", "RuntimeObserverRecoveryTest.qml",
-  "RuntimePluginSmokeTest.qml", "RuntimeSettingToggleTest.qml",
-  "RuntimeSettingsTransferResultTest.qml", "RuntimeAppearanceSettingsTest.qml",
-  "RuntimeDeepLinkTest.qml", "RuntimeAudioEndpointSettingsTest.qml",
-  "RuntimeBarSemanticColorTest.qml", "RuntimeActivityCardStateTest.qml",
-  "RuntimeLockdownButtonTest.qml", "RuntimeDeviceSettingsNavigationTest.qml",
-  "RuntimeSettingsRollbackTest.qml", "RuntimeDeviceDiagnosticsTest.qml",
-  "RuntimeMonitoringActionsTest.qml", "RuntimeActivityPolicyActionsTest.qml",
-  "RuntimePrivateDataActionsTest.qml", "RuntimeHistoryViewTest.qml",
-  "RuntimeDeviceAppearanceMutationTest.qml", "RuntimeGeneralSettingsTest.qml",
-  "RuntimeAlertsSettingsTest.qml", "RuntimeIntegerSettingTest.qml",
-  "RuntimeMarkerGlyphEditorTest.qml", "RuntimeMessageSurfaceTest.qml",
-  "RuntimeMonitoringConfigurationTest.qml", "RuntimeAppearancePresentationTest.qml",
-  "RuntimeActivityCardInteractionTest.qml", "RuntimeActivitySessionSummaryTest.qml",
-  "RuntimeCapturePreviewLifecycleTest.qml", "RuntimeAudioEndpointFeedbackTest.qml",
-  "RuntimeDeviceMetadataMutationTest.qml", "RuntimeDeviceBackendResetTest.qml"
-])
-  assert.match(ci, new RegExp(`qmllint[^']*${qml}`), `CI must lint ${qml}`)
+assert.match(qmlLint, /\.\/\*\.qml[\s\S]*?\.\/tests\/qml\/\*\.qml/, "QML lint must discover production and runtime files")
+assert.match(ci, /scripts\/lint-qml/, "CI must delegate QML inventory to the shared lint entry point")
 for (const [harness, marker] of [
   ["RuntimeSettingsNavigationTest.qml", "PRIVACY_QML_SETTINGS_NAVIGATION_OK"],
   ["RuntimeConfirmationTest.qml", "PRIVACY_QML_CONFIRMATION_OK"],
@@ -613,17 +611,17 @@ assert.match(service, /id:\s*preventativeControlTimer[\s\S]*?running:\s*root\.pr
   "preventative polling must remain active only for enabled or verifying kinds")
 assert.match(service, /property int historyGeneration:\s*0[\s\S]*?property int historyLoadGeneration:\s*0/,
   "history loads must be tied to the privacy configuration that requested them")
-assert.match(service, /function clearHistory\(\)[\s\S]*?historyGeneration\+\+/,
+assert.match(historyController, /function clear\(\)[\s\S]*?host\.historyGeneration\+\+/,
   "clearing history must invalidate an in-flight load")
-assert.match(service, /property bool historyLoadBusy:[\s\S]*?function loadHistory\(\)[\s\S]*?historyLoadPending = true[\s\S]*?historyLoadBusy = true/,
+assert.match(service + historyController, /property bool historyLoadBusy:[\s\S]*?function load\(\)[\s\S]*?host\.historyLoadPending = true[\s\S]*?host\.historyLoadBusy = true/,
   "history loading must use synchronous ownership and retain a superseding reload")
-assert.match(service, /function enqueueHistoryMutation\(arguments\)[\s\S]*?historyMutationQueue = historyMutationQueue\.concat[\s\S]*?function runNextHistoryMutation\(\)[\s\S]*?historyMutationBusy = true/,
+assert.match(historyController, /function enqueueMutation\(arguments\)[\s\S]*?host\.historyMutationQueue = host\.historyMutationQueue\.concat[\s\S]*?function runNextMutation\(\)[\s\S]*?host\.historyMutationBusy = true/,
   "history mutations must preserve request order through a service-owned FIFO")
-assert.match(service, /id:\s*historyLoadProc[\s\S]*?Model\.historyLoadAccepted\(root\.historyLoadGeneration, root\.historyGeneration, root\.settings\.historyEnabled\)[\s\S]*?recentHistory = \[\]/,
+assert.match(historyController, /id:\s*historyLoadProc[\s\S]*?Model\.historyLoadAccepted\(controller\.host\.historyLoadGeneration, controller\.host\.historyGeneration, controller\.host\.settings\.historyEnabled\)[\s\S]*?recentHistory = \[\]/,
   "stale history output must not repopulate private data after history is disabled or cleared")
-assert.match(service, /id:\s*historyLoadOutput[\s\S]*?onStreamFinished:\s*\{[\s\S]*?JSON\.parse\(String\(historyLoadOutput\.text \|\| "\[\]"\)\)/,
+assert.match(historyController, /id:\s*historyLoadOutput[\s\S]*?onStreamFinished:\s*\{[\s\S]*?JSON\.parse\(String\(historyLoadOutput\.text \|\| "\[\]"\)\)/,
   "history loading must parse the collector property exposed by Quickshell")
-assert.doesNotMatch(service, /id:\s*historyLoadProc[\s\S]*?onStreamFinished:\s*function\(text\)/,
+assert.doesNotMatch(historyController, /id:\s*historyLoadProc[\s\S]*?onStreamFinished:\s*function\(text\)/,
   "history loading must not assume the completion signal passes collected text")
 assert.match(service, /id:\s*dependencyCheckProc[\s\S]*?if \(!root\.dependencyRefreshPending\)[\s\S]*?dependencyReadyMap = ready/,
   "superseded dependency results must not be published")

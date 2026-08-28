@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+qml_lint=${QMLLINT:-qmllint}
+import_args=()
+
+if [[ -n ${OMARCHY_PATH:-} ]]; then
+  import_args=(-I "$OMARCHY_PATH/shell")
+fi
+
+mapfile -t qml_files < <(
+  cd "$repo_dir"
+  printf '%s\n' ./*.qml ./tests/qml/*.qml | sort
+)
+
+cd "$repo_dir"
+exec "$qml_lint" "${import_args[@]}" "${qml_files[@]}"

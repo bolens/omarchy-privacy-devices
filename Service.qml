@@ -588,34 +588,19 @@ Item {
   }
 
   function clearHistory() {
-    historyGeneration++
-    historyLoadPending = false
-    recentHistory = []
-    historyLoaded = settings.historyEnabled !== true
-    enqueueHistoryMutation(["clear"])
+    historyController.clear()
   }
 
   function enqueueHistoryMutation(arguments) {
-    var values = Array.isArray(arguments) ? arguments.slice() : []
-    if (!values.length || ["append", "clear"].indexOf(values[0]) < 0) return false
-    historyMutationQueue = historyMutationQueue.concat([values])
-    runNextHistoryMutation()
-    return true
+    return historyController.enqueueMutation(arguments)
   }
 
   function runNextHistoryMutation() {
-    if (historyMutationBusy || !historyMutationQueue.length) return false
-    var queue = historyMutationQueue.slice()
-    var arguments = queue.shift()
-    historyMutationQueue = queue
-    historyMutationBusy = true
-    historyMutationProc.command = [historyHelperPath()].concat(arguments)
-    historyMutationProc.running = true
-    return true
+    return historyController.runNextMutation()
   }
 
   function historyHelperPath() {
-    return historyHelperOverride || String(Qt.resolvedUrl("privacy-history")).replace(/^file:\/\//, "")
+    return historyController.helperPath()
   }
 
   function audioEndpointHelperPath() {
@@ -679,17 +664,7 @@ Item {
   }
 
   function loadHistory() {
-    if (historyLoaded || settings.historyEnabled !== true) return false
-    if (historyLoadBusy) {
-      historyLoadPending = true
-      return true
-    }
-    historyLoadPending = false
-    historyLoadBusy = true
-    historyLoadGeneration = historyGeneration
-    historyLoadProc.command = [historyHelperPath(), "load"]
-    historyLoadProc.running = true
-    return true
+    return historyController.load()
   }
 
   function refreshDirectDevices() {
@@ -1200,7 +1175,7 @@ Item {
   function runSelfTest() {
     selfTestResult = Model.privacySelfTest(selfTestInput(settings.historyEnabled === true ? "checking" : "disabled"))
     if (settings.historyEnabled !== true) return
-    if (!historyInspectProc.running) { historyInspectProc.command = [historyHelperPath(), "inspect"]; historyInspectProc.running = true }
+    historyController.inspect()
   }
 
   function sendTestNotification() {
@@ -1578,50 +1553,7 @@ Item {
     stdout: SplitParser { onRead: function(line) { root.handleFallbackSnapshot(line) } }
   }
 
-  Process {
-    id: historyInspectProc
-    stdout: StdioCollector {
-      onStreamFinished: {
-        var status = "attention"
-        try { status = String(JSON.parse(String(text || "{}")).status || "attention") } catch (error) {}
-        root.selfTestResult = Model.privacySelfTest(root.selfTestInput(status))
-      }
-    }
-  }
-
-  Process {
-    id: historyLoadProc
-    onExited: function(exitCode) {
-      root.historyLoadBusy = false
-      if (root.historyLoadGeneration === root.historyGeneration)
-        root.historyLoaded = root.settings.historyEnabled !== true || exitCode === 0
-      if (root.historyLoadPending && root.settings.historyEnabled === true) root.loadHistory()
-    }
-    stdout: StdioCollector {
-      id: historyLoadOutput
-      waitForEnd: true
-      onStreamFinished: {
-        if (!Model.historyLoadAccepted(root.historyLoadGeneration, root.historyGeneration, root.settings.historyEnabled)) {
-          root.recentHistory = []
-          return
-        }
-        try {
-          var value = JSON.parse(String(historyLoadOutput.text || "[]"))
-          root.recentHistory = Array.isArray(value) ? value : []
-        } catch (error) {
-          root.recentHistory = []
-        }
-      }
-    }
-  }
-
-  Process {
-    id: historyMutationProc
-    onExited: function(_exitCode) {
-      root.historyMutationBusy = false
-      root.runNextHistoryMutation()
-    }
-  }
+  PrivacyHistoryController { id: historyController; host: root }
 
   PwObjectTracker {
     objects: root.streamNodes
