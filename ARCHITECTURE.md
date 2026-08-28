@@ -28,12 +28,22 @@ multiple displays do not duplicate observers or race for IPC ownership.
 ## Runtime ownership
 
 - `Service.qml` owns monitoring, normalized sessions, control transactions,
-  health, history coordination, notifications, and IPC.
+  health, notifications, and IPC. It retains stable facade methods while
+  delegating bounded state machines to focused controllers.
 - `PrivacyHistoryController.qml` owns retained-history helper processes, load
   supersession, and serialized mutations behind the service's stable history
   methods.
+- `PrivacyAudioEndpointController.qml` owns endpoint inventory subprocesses and
+  refresh supersession. `PrivacyPresetController.qml` owns serialized lockdown
+  and named-mode application plus observed-state restore.
+- `PrivacyCaptureController.qml` owns capture-preview sessions, per-bar
+  presentation registration, and expiry.
 - `BarWidget.qml` is the panel coordinator: it projects service state, routes
   user actions, and persists sanitized settings through Omarchy Shell.
+- `PrivacyPresentationController.qml` owns bar/device presentation policy and
+  semantic text, color, marker, ordering, and tooltip projections.
+- `PrivacyDeviceSettingsController.qml` owns sanitized per-device appearance,
+  placement, and backend mutations behind the panel's stable facade.
 - `PrivacyActivityView.qml`, `PrivacyHistoryView.qml`, and
   `PrivacyDeviceView.qml` own the three mutually exclusive popup surfaces.
   They receive the panel coordinator as a controller and expose only the few

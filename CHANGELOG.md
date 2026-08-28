@@ -15,6 +15,9 @@ maintainer guides that define release and validation procedures.
 - Isolate settings commit/rollback and private-transfer orchestration, lazy-load
   device backend editors, and move history helper processes and queues behind a
   dedicated service controller.
+- Extract audio-endpoint, privacy-preset, capture-preview, per-device mutation,
+  and presentation state machines into focused QML controllers while
+  preserving the service and panel facades used by integrations and tests.
 - Use one deterministic QML lint entry point for local and CI validation.
 
 ## [0.8.1] - 2026-08-27
