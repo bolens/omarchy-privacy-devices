@@ -25,7 +25,7 @@ ColumnLayout {
       font.family: Style.font.family
       onAccepted: editor.save()
     }
-    Button { objectName: "markerGlyphSaveButton"; text: "Save"; onClicked: editor.save() }
+    Button { objectName: "markerGlyphSaveButton"; iconText: "󰆓"; tooltipText: "Save " + editor.label.toLowerCase(); horizontalPadding: Style.spacing.controlGap; onClicked: editor.save() }
   }
   function save() {
     var update = {}

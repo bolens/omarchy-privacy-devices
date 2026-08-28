@@ -51,6 +51,11 @@ ShellRoot {
     var copySelf = descendant(page, "monitoringCopySelfTestButton")
     var copyDiagnostics = descendant(page, "monitoringCopyDiagnosticsButton")
     if (!run || !alert || !copySelf || !copyDiagnostics) throw new Error("monitoring actions are not addressable")
+    if (run.text !== "" || run.iconText !== "󰐊" || run.tooltipText !== "Run monitoring self-test"
+        || alert.text !== "" || alert.iconText !== "󰂚" || alert.tooltipText !== "Send test alert"
+        || copySelf.text !== "" || copySelf.iconText !== "󰆏" || copySelf.tooltipText !== "Copy self-test result"
+        || copyDiagnostics.text !== "" || copyDiagnostics.iconText !== "󰆍")
+      throw new Error("monitoring actions are not descriptive icon controls")
     if (!run.enabled || !alert.enabled || copySelf.enabled || !copyDiagnostics.enabled)
       throw new Error("monitoring actions did not reflect initial availability")
     serviceMock.selfTestResult = {status:"passed",text:"All checks passed"}

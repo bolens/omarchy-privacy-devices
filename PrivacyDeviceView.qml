@@ -88,7 +88,7 @@ DeviceSettingsEditor {
         RowLayout {
           Layout.fillWidth: true
           TextField { id: labelEditor; Layout.fillWidth: true; placeholderText: "Display label"; text: root.editingKind ? root.labelFor(root.editingKind) : ""; maximumLength: 128; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistLabel(root.editingKind, text) }
-          Button { text: "Save"; bordered: true; tooltipText: "Save display label"; enabled: appearanceSurface.labelDirty; onClicked: root.persistLabel(root.editingKind, labelEditor.text) }
+          Button { objectName: "deviceLabelSaveButton"; iconText: "󰆓"; bordered: true; tooltipText: "Save display label"; horizontalPadding: Style.spacing.controlGap; enabled: appearanceSurface.labelDirty; onClicked: root.persistLabel(root.editingKind, labelEditor.text) }
         }
       }
       ColumnLayout {
@@ -98,7 +98,7 @@ DeviceSettingsEditor {
         RowLayout {
           Layout.fillWidth: true
           TextField { id: iconEditor; Layout.fillWidth: true; placeholderText: "Icon"; text: root.editingKind ? root.iconFor(root.editingKind) : ""; maximumLength: 8; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistIcon(root.editingKind, text) }
-          Button { text: "Save"; bordered: true; tooltipText: "Save device icon"; enabled: appearanceSurface.iconDirty; onClicked: root.persistIcon(root.editingKind, iconEditor.text) }
+          Button { objectName: "deviceIconSaveButton"; iconText: "󰆓"; bordered: true; tooltipText: "Save device icon"; horizontalPadding: Style.spacing.controlGap; enabled: appearanceSurface.iconDirty; onClicked: root.persistIcon(root.editingKind, iconEditor.text) }
         }
       }
     }
@@ -154,7 +154,10 @@ DeviceSettingsEditor {
         onModified: function(value) { root.persistItemIdleOpacity(root.editingKind, value) }
       }
       Button {
-        text: "Use default"
+        objectName: "deviceIdleOpacityDefaultButton"
+        iconText: "󰑐"
+        tooltipText: "Use global idle opacity"
+        horizontalPadding: Style.spacing.controlGap
         enabled: Model.hasItemOverride(root.effectiveSettings, "itemIdleOpacity", root.editingKind)
         onClicked: root.persistItemIdleOpacity(root.editingKind, null)
       }
@@ -170,7 +173,7 @@ DeviceSettingsEditor {
     RowLayout {
       Layout.fillWidth: true
       Text { Layout.fillWidth: true; text: "Global status-marker rules still apply when this device is set to show."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-      Button { text: "Global marker settings"; onClicked: root.showGlobalSettings("appearance", "status-presentation") }
+      Button { objectName: "deviceGlobalMarkerSettingsButton"; iconText: "󰒓"; tooltipText: "Open global marker settings"; horizontalPadding: Style.spacing.controlGap; onClicked: root.showGlobalSettings("appearance", "status-presentation") }
     }
   }
 
@@ -180,12 +183,18 @@ DeviceSettingsEditor {
     RowLayout {
       Layout.fillWidth: true
       Button {
-        text: "Move left"
+        objectName: "deviceMoveLeftButton"
+        iconText: "󰅁"
+        tooltipText: "Move device left"
+        horizontalPadding: Style.spacing.controlGap
         enabled: root.canMoveItem(root.editingKind, -1)
         onClicked: root.moveItem(root.editingKind, -1)
       }
       Button {
-        text: "Move right"
+        objectName: "deviceMoveRightButton"
+        iconText: "󰅂"
+        tooltipText: "Move device right"
+        horizontalPadding: Style.spacing.controlGap
         enabled: root.canMoveItem(root.editingKind, 1)
         onClicked: root.moveItem(root.editingKind, 1)
       }
@@ -215,7 +224,7 @@ DeviceSettingsEditor {
         RowLayout {
           Layout.fillWidth: true
           TextField { id: deviceLabelEditor; Layout.fillWidth: true; text: root.deviceLabel(modelData); placeholderText: "Friendly device name"; maximumLength: 128; foreground: Color.popups.text; accent: root.activeThemeColor; font.family: Style.font.family; onAccepted: root.persistDeviceLabel(modelData, text) }
-          Button { text: "Save name"; enabled: deviceLabelEditor.text.trim() !== root.deviceLabel(modelData); onClicked: root.persistDeviceLabel(modelData, deviceLabelEditor.text) }
+          Button { objectName: "deviceHardwareNameSave-" + index; iconText: "󰆓"; tooltipText: "Save hardware name"; horizontalPadding: Style.spacing.controlGap; enabled: deviceLabelEditor.text.trim() !== root.deviceLabel(modelData); onClicked: root.persistDeviceLabel(modelData, deviceLabelEditor.text) }
         }
       }
     }

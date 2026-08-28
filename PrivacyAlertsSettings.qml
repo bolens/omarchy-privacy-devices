@@ -28,12 +28,12 @@ ColumnLayout {
     RowLayout {
       Layout.fillWidth: true
       TextField { id: suppressedAppsEditor; objectName: "alertsSuppressedAppsEditor"; Layout.fillWidth: true; text: Model.arraySetting(page.controller.setting("notificationSuppressedApps", []), []).join(", "); placeholderText: "Firefox, OBS"; foreground: Color.popups.text; accent: page.controller.activeThemeColor; font.family: Style.font.family; onAccepted: page.controller.persistSettings({notificationSuppressedApps: page.controller.commaList(text)}) }
-      Button { objectName: "alertsSaveSuppressedAppsButton"; text: "Save"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); onClicked: page.controller.persistSettings({notificationSuppressedApps: page.controller.commaList(suppressedAppsEditor.text)}) }
+      Button { objectName: "alertsSaveSuppressedAppsButton"; iconText: "󰆓"; tooltipText: "Save muted applications"; horizontalPadding: Style.spacing.controlGap; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); onClicked: page.controller.persistSettings({notificationSuppressedApps: page.controller.commaList(suppressedAppsEditor.text)}) }
     }
     RowLayout {
       Layout.fillWidth: true
       Text { Layout.fillWidth: true; text: "Check notification delivery without changing activity or controls."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-      Button { objectName: "alertsSendTestButton"; text: "Send test"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.sendTestNotification() }
+      Button { objectName: "alertsSendTestButton"; iconText: "󰂚"; tooltipText: "Send test notification"; horizontalPadding: Style.spacing.controlGap; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.sendTestNotification() }
     }
   }
 }

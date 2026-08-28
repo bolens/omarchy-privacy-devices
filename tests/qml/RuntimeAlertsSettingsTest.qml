@@ -51,6 +51,9 @@ ShellRoot {
     var send = descendant(page, "alertsSendTestButton")
     if (!kinds || !activity || !stop || !controls || !health || !editor || !save || !send)
       throw new Error("alert settings controls are not addressable")
+    if (save.text !== "" || save.iconText !== "󰆓" || save.tooltipText !== "Save muted applications"
+        || send.text !== "" || send.iconText !== "󰂚" || send.tooltipText !== "Send test notification")
+      throw new Error("alert actions are not descriptive icon controls")
     if (kinds.values[0] !== "camera" || !activity.checked || stop.checked || controls.checked || !health.checked
         || editor.text !== "Firefox" || !send.enabled)
       throw new Error("alert settings controls did not reflect configured values")
