@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+plugin_id="io.github.bolens.privacy-devices"
+destination=${1:-${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/$plugin_id}
+
+[[ -d $destination ]] || { printf 'Installed plugin directory not found: %s\n' "$destination" >&2; exit 2; }
+
+mapfile -d '' runtime_files < <(find "$root" -maxdepth 1 -type f \
+  \( -name '*.qml' -o -name '*.js' -o -name 'manifest.json' \) -print0 | sort -z)
+(( ${#runtime_files[@]} > 2 )) || { printf 'No shell runtime files found.\n' >&2; exit 1; }
+
+for source in "${runtime_files[@]}"; do
+  target="$destination/${source##*/}"
+  install -m 0644 -- "$source" "$target"
+  cmp -s -- "$source" "$target" || {
+    printf 'Installed runtime file does not match: %s\n' "${source##*/}" >&2
+    exit 1
+  }
+done
+
+printf 'Deployed %s shell runtime files to %s.\n' "${#runtime_files[@]}" "$destination"

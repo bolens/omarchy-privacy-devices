@@ -7,6 +7,7 @@ const observerWatchdog = fs.readFileSync(path.join(__dirname, "..", "PrivacyObse
 const screenshotWorkflow = fs.readFileSync(path.join(__dirname, "..", "scripts/capture-screenshots"), "utf8")
 const captureGuard = fs.readFileSync(path.join(__dirname, "..", "scripts/capture-environment-guard"), "utf8")
 const capturePostconditions = fs.readFileSync(path.join(__dirname, "..", "scripts/verify-capture-postconditions"), "utf8")
+const runtimeDeployment = fs.readFileSync(path.join(__dirname, "..", "scripts/deploy-shell-runtime"), "utf8")
 const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
 const historyViewPath = path.join(__dirname, "..", "PrivacyHistoryView.qml")
 assert.ok(fs.existsSync(historyViewPath), "history composition must live in PrivacyHistoryView.qml")
@@ -109,6 +110,8 @@ assert.match(service, /PrivacyCaptureController\s*\{\s*id:\s*captureController[\
   "the service must delegate capture preview and bar-instance routing")
 assert.match(captureController, /required property var host[\s\S]*?function openPanel\([\s\S]*?function clear\(\)[\s\S]*?Date\.now\(\) >= controller\.expiresAt/,
   "capture authorization, panel routing, state reset, and expiry must share one owner")
+assert.match(captureController, /function scrollSettings\(requestOwner, screenName, position\)[\s\S]*?target\.applySettingsScroll\(requested\)/,
+  "capture settings scroll must validate ownership and route to the monitor-specific panel")
 assert.match(bar, /PrivacyPresentationController\s*\{\s*id:\s*presentationController[\s\S]*?host:\s*root/,
   "BarWidget must delegate service-to-visual projection through one controller")
 assert.match(presentationController, /required property var host[\s\S]*?function item\(kind\)[\s\S]*?function itemColor\(entry\)[\s\S]*?function itemTooltip\(entry\)/,
@@ -192,12 +195,20 @@ assert.match(bar, /filteredHistory: Model\.filterAndSortHistory\(privacyService 
 assert.match(screenshotWorkflow, /trap cleanup_capture EXIT INT TERM/, "screenshot capture must restore user and repository state on failure")
 assert.match(screenshotWorkflow, /--verify\) verify_only=true/,
   "capture must expose a repository-safe live verification mode")
+assert.match(screenshotWorkflow, /--panel-width\) panel_width=[\s\S]*?panel_width < 400 \|\| panel_width > 800/,
+  "capture must bound explicit narrow and wide evidence widths")
+assert.match(screenshotWorkflow, /panel_width <= 420[\s\S]*?capture_popup_width="narrow"[\s\S]*?panel_width >= 620[\s\S]*?capture_popup_width="wide"/,
+  "capture crop width must select the matching live popup width preset")
+assert.match(screenshotWorkflow, /--audit-dir\) audit_dir=[\s\S]*?audit_dir == \/tmp\/\*[\s\S]*?verify_only=true/,
+  "retained visual audits must remain temporary and repository-safe")
 assert.match(screenshotWorkflow, /if \[\[ \$verify_only == false \]\]; then[\s\S]*?optimize_png[\s\S]*?social-card\.png[\s\S]*?fi[\s\S]*?restore_desktop/,
   "verification must skip publication-only image processing")
 assert.match(screenshotWorkflow, /if \[\[ \$verify_only == false \]\]; then[\s\S]*?command -v pngquant/,
   "verification must not require publication-only image tooling")
 assert.match(screenshotWorkflow, /root=.*BASH_SOURCE[\s\S]*?cd "\$root"/,
   "capture must resolve repository helpers independently of the caller's working directory")
+assert.match(runtimeDeployment, /find "\$root" -maxdepth 1[\s\S]*?-name '\*\.qml'[\s\S]*?-name '\*\.js'[\s\S]*?manifest\.json[\s\S]*?install -m 0644[\s\S]*?cmp -s/,
+  "live deployment must copy and byte-verify the complete source-owned shell runtime")
 assert.match(screenshotWorkflow, /plugin_fingerprint=.*capture-plugin-fingerprint[\s\S]*?check_capture_environment\(\)[\s\S]*?capture-environment-guard/,
   "capture must abort when another agent changes the live plugin tree")
 assert.match(screenshotWorkflow, /plugin_root="\$\{XDG_CONFIG_HOME[^\n]+\/\$plugin_id"/,
@@ -325,8 +336,14 @@ assert.match(service, /function presentation\(owner: string, screenName: string\
   "capture IPC must expose owner- and monitor-scoped render acknowledgement")
 assert.match(captureController, /function openPanel\(requestOwner, screenName, mode, page, section\)[\s\S]*?instances\[String\(screenName[\s\S]*?target\.open\(\)/,
   "capture routing must invoke only the registered instance for the explicit output")
+assert.match(captureController, /function scrollSettings\(requestOwner, screenName, position\)[\s\S]*?instances\[String\(screenName[\s\S]*?target\.applySettingsScroll\(requested\)/,
+  "capture scrolling must remain owner- and monitor-scoped")
+assert.match(service, /function scrollSettings\(owner: string, screenName: string, position: string\)[\s\S]*?scrollCaptureSettings\(owner, screenName, position\)/,
+  "capture IPC must expose deterministic settings scrolling")
 assert.match(bar, /presentationScreen:\s*root\.QsWindow\.window[\s\S]*?presentationScreenName[\s\S]*?updateBarPresentation\(presentationScreenName/,
   "bar render acknowledgements must use the window's actual output")
+assert.match(bar, /settingsSection:\s*view === "settings" \? globalSettingsSection : ""/,
+  "bar render acknowledgements must describe the displayed navigation section")
 assert.match(service, /capturePreviewBarSessions = Model\.sanitizeCaptureSessions\(root\.activeSessions, Date\.now\(\)\)/,
   "capture must freeze the real pre-capture bar sessions")
 assert.match(service, /capturePreviewSettings = Object\.assign\(\{\}, Model\.sanitizeSettings\(root\.settings\), previewSettings\)/,
@@ -345,11 +362,19 @@ assert.match(screenshotWorkflow, /capture_bar_signature\(\)[\s\S]*?debugBarGeome
   "bar invariants must follow live widget geometry instead of stale crop coordinates")
 assert.match(screenshotWorkflow, /capture_bar_signature baseline >\/dev\/null/,
   "capture must retain a baseline bar artifact for visual regression evidence")
-assert.match(screenshotWorkflow, /set_capture_preview\(\)[\s\S]*settings=\$\(jq -cn '\{privacyModes:/,
+assert.match(screenshotWorkflow, /set_capture_preview\(\)[\s\S]*settings=\$\(jq -cn[\s\S]*?privacyModes:/,
   "capture may add presentation-only privacy modes without replacing bar settings")
 assert.doesNotMatch(screenshotWorkflow.match(/set_capture_preview\(\) \{[\s\S]*?^\}/m)[0],
-  /showIdle|displayMode|statusMarkerMode|showBarActiveMarker|showBarDisabledMarker/,
+  /showIdle|displayMode|showBarActiveMarker|showBarDisabledMarker/,
   "capture preview must not override any bar setting")
+assert.match(screenshotWorkflow, /if \[\[ -n \$audit_dir \]\]; then[\s\S]*?capture_panel "audit-\$\{page\}-top"[\s\S]*?scroll_capture_settings bottom[\s\S]*?capture_current_panel "audit-\$\{page\}-bottom"/,
+  "audit mode must retain observable top and bottom evidence for every settings page")
+assert.match(screenshotWorkflow, /wait_for_settings_scroll\(\)[\s\S]*?\.settingsScroll == \$position[\s\S]*?scrollSettings "\$capture_owner" "\$monitor" "\$position"/,
+  "audit scrolling must wait for render acknowledgement instead of sleeping")
+assert.match(screenshotWorkflow, /mkdir -p "\$capture_dir\/audit-output"[\s\S]*?Duplicate audit captures/,
+  "audit evidence must reject repeated images while still staged privately")
+assert.match(screenshotWorkflow, /verify_postconditions[\s\S]*?mkdir -p "\$audit_dir"[\s\S]*?audit-output\/\*\.png "\$audit_dir\/"/,
+  "audit evidence must publish only after desktop postconditions pass")
 assert.match(screenshotWorkflow, /activity_samples=[\s\S]*?microphone[\s\S]*?audio-output[\s\S]*?screenshot/,
   "published bar and activity views must use deterministic preview sessions")
 assert.match(screenshotWorkflow, /--argjson sessions "\$activity_samples"[\s\S]*sessions:\$sessions/,
@@ -403,12 +428,14 @@ assert.match(screenshotWorkflow.match(/capture_panel\(\) \{[\s\S]*?^\}/m)[0], /f
   "panel capture must close the selected monitor instance before opening its requested view")
 assert.match(screenshotWorkflow, /function validate_capture|validate_capture\(\)/, "screenshot workflow must reject blank captures")
 assert.match(screenshotWorkflow, /colors >= 8/, "capture validation must reject low-content images")
+assert.match(screenshotWorkflow, /sample_width=\$\(\(panel_width - 100\)\)[\s\S]*?-crop "\$\{sample_width\}x80/,
+  "panel content sampling must remain inside narrow and wide crops")
 assert.match(screenshotWorkflow, /Capture dimensions do not match its view[\s\S]*?Duplicate captures:/,
   "capture publication must reject wrong-sized or repeated view assets")
 for (const [name, height] of [["history", 660], ["history-disabled", 240]]) {
-  assert.match(screenshotWorkflow, new RegExp(`validate_capture "\\$capture_dir/${name}\\.png" 532 ${height}`),
+  assert.match(screenshotWorkflow, new RegExp(`validate_capture "\\$capture_dir/${name}\\.png" "\\$capture_width" ${height}`),
     `${name} capture must be dimension-checked before publication`)
-  assert.match(screenshotWorkflow.match(/for image in[^\n]+; do\n  digest=/)[0], new RegExp(`\\b${name}\\b`),
+  assert.match(screenshotWorkflow.match(/for image in[^\n]+; do\n\s+digest=/)[0], new RegExp(`\\b${name}\\b`),
     `${name} capture must participate in pre-publication duplicate detection`)
 }
 assert.equal((screenshotWorkflow.match(/optimize_png "\$capture_dir\/\$page\.png"/g) || []).length, 1,
@@ -429,7 +456,7 @@ assert.match(screenshotWorkflow, /python3 -c 'import time; print\(time\.time_ns\
   "capture must derive portable millisecond timestamps from Python")
 assert.match(screenshotWorkflow, /capture_panel\(\)[\s\S]*?for attempt in \{1\.\.4\}[\s\S]*?capture_has_content/,
   "each popup capture must retry until its target crop contains real content")
-assert.match(screenshotWorkflow, /capture_has_panel\(\)[\s\S]*?-crop '400x80\+66\+30'[\s\S]*?-threshold 35%[\s\S]*?value < 0\.70[\s\S]*?capture_has_panel "\$capture_dir\/\$name\.png"/,
+assert.match(screenshotWorkflow, /capture_has_panel\(\)[\s\S]*?sample_width=\$\(\(panel_width - 100\)\)[\s\S]*?-crop "\$\{sample_width\}x80\+66\+30"[\s\S]*?-threshold 35%[\s\S]*?value < 0\.70[\s\S]*?capture_has_panel "\$capture_dir\/\$name\.png"/,
   "panel capture must reject colorful wallpaper-only crops")
 assert.doesNotMatch(screenshotWorkflow.match(/capture_panel\(\) \{[\s\S]*?^\}/m)[0], /wait_for_shell/,
   "capture retries must remain pinned to the shell that owns the preview lease")
