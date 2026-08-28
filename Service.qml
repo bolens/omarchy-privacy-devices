@@ -29,6 +29,7 @@ Item {
   function registerBarInstance(screenName, instance) { return captureController.register(screenName, instance) }
   function unregisterBarInstance(screenName, instance) { return captureController.unregister(screenName, instance) }
   function closeCapturePanel(owner, screenName) { return captureController.closePanel(owner, screenName) }
+  function scrollCaptureSettings(owner, screenName, position) { return captureController.scrollSettings(owner, screenName, position) }
   function openCapturePanel(owner, screenName, mode, page, section) { return captureController.openPanel(owner, screenName, mode, page, section) }
   function clearCapturePreview() { captureController.clear() }
   property alias observerHelperOverride: observerController.helperOverride
@@ -968,6 +969,7 @@ Item {
       return JSON.stringify(root.barPresentation(screenName))
     }
     function closePanel(owner: string, screenName: string): string { return root.closeCapturePanel(owner, screenName) }
+    function scrollSettings(owner: string, screenName: string, position: string): string { return root.scrollCaptureSettings(owner, screenName, position) }
     function openPanel(owner: string, screenName: string, mode: string, page: string, section: string): string {
       return root.openCapturePanel(owner, screenName, mode, page, section)
     }

@@ -9,11 +9,13 @@ ShellRoot {
     property bool opened: false
     property string view: ""
     property string editingKind: ""
+    property string scrollPosition: ""
     function open() { opened = true }
     function close() { opened = false }
     function showGlobalSettings(page, section) { view = "settings:" + page + ":" + section }
     function showActivity() { view = "activity" }
     function showHistory() { view = "history" }
+    function applySettingsScroll(position) { scrollPosition = position; return view.indexOf("settings:") === 0 ? "ok" : "settings closed" }
   }
 
   Component.onCompleted: {
@@ -33,6 +35,13 @@ ShellRoot {
         || service.openCapturePanel("fixture_owner_123456789012", "HDMI-A-1", "device", "microphone", "") !== "activity"
         || !barMock.opened || barMock.view !== "activity" || barMock.editingKind !== "microphone")
       throw new Error("capture did not route directly to the selected monitor instance")
+    if (service.scrollCaptureSettings("fixture_owner_123456789012", "HDMI-A-1", "bottom") !== "settings closed")
+      throw new Error("capture scroll did not reject a non-settings view")
+    barMock.showGlobalSettings("monitoring", "")
+    if (service.scrollCaptureSettings("fixture_owner_123456789012", "HDMI-A-1", "bottom") !== "ok" || barMock.scrollPosition !== "bottom"
+        || service.scrollCaptureSettings("fixture_owner_123456789012", "HDMI-A-1", "middle") !== "invalid position"
+        || service.scrollCaptureSettings("wrong_owner_123456789012345", "HDMI-A-1", "top") !== "denied")
+      throw new Error("capture settings scroll did not validate and route to the selected monitor")
     if (service.closeCapturePanel("fixture_owner_123456789012", "HDMI-A-1") !== "ok" || barMock.opened)
       throw new Error("capture did not close the selected monitor instance")
     service.unregisterBarInstance("HDMI-A-1", barMock)

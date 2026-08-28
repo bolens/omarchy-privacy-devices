@@ -15,9 +15,10 @@ GridLayout {
     Layout.fillWidth: true
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Bar layout" }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: barLayoutSettings.width >= Style.space(420) ? 2 : 1
+      breakpoint: Style.space(420)
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
       Dropdown { objectName: "appearanceDisplayModeSetting"; Layout.fillWidth: true; label: "Bar presentation"; options: ["icons", "active-count", "active-only"]; value: String(page.controller.setting("displayMode", "icons")); onChanged: function(value) { page.controller.persistSettings({displayMode: value}) } }
@@ -32,9 +33,10 @@ GridLayout {
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Theme colors" }
     Text { Layout.fillWidth: true; text: "Blocked request applies when an application session remains observable while its device control is blocked. Some backends suppress the request entirely."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: themeColorsSettings.width >= Style.space(420) ? 2 : 1
+      breakpoint: Style.space(420)
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
       Dropdown { objectName: "activeColorRoleSetting"; Layout.fillWidth: true; label: "In use"; options: ["accent", "bar-active", "urgent", "foreground", "muted"]; value: String(page.controller.setting("activeColorRole", "accent")); onChanged: function(value) { page.controller.persistSettings({activeColorRole: value}) } }
@@ -53,19 +55,21 @@ GridLayout {
     Layout.columnSpan: page.columns
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Status presentation" }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: statusPresentationSettings.width >= Style.space(420) ? 2 : 1
+      breakpoint: Style.space(420)
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
       Dropdown { objectName: "appearanceStatusMarkerModeSetting"; Layout.fillWidth: true; label: "Bar status markers"; options: ["symbols", "letters", "custom", "off"]; value: page.controller.statusMarkerMode; onChanged: function(value) { page.controller.persistSettings({statusMarkerMode: value}) } }
       Dropdown { objectName: "appearanceMarkerPositionSetting"; Layout.fillWidth: true; label: "Marker position"; options: ["after", "before"]; value: page.controller.barMarkerPosition; onChanged: function(value) { page.controller.persistSettings({barMarkerPosition: value}) } }
     }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       objectName: "appearanceCustomMarkers"
       visible: page.controller.statusMarkerMode === "custom"
       Layout.fillWidth: true
-      columns: statusPresentationSettings.width >= Style.space(420) ? 2 : 1
+      breakpoint: Style.space(420)
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
       PrivacyMarkerGlyphEditor { controller: page.controller; settingKey: "barActiveMarkerIcon"; label: "Active marker icon"; fallback: "●" }
@@ -73,9 +77,10 @@ GridLayout {
       PrivacyMarkerGlyphEditor { controller: page.controller; settingKey: "barPendingMarkerIcon"; label: "Verifying marker icon"; fallback: "…" }
       PrivacyMarkerGlyphEditor { controller: page.controller; settingKey: "barDegradedMarkerIcon"; label: "Degraded marker icon"; fallback: "!" }
     }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: statusPresentationSettings.width >= Style.space(600) ? 2 : 1
+      breakpoint: Style.space(600)
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
       PrivacySettingToggle { objectName: "appearanceShowActiveMarkerToggle"; controller: page.controller; settingKey: "showBarActiveMarker"; label: "Active marker"; description: "Mark active device icons." }
@@ -83,17 +88,19 @@ GridLayout {
       PrivacySettingToggle { controller: page.controller; settingKey: "showBarPendingMarker"; label: "Verifying marker"; description: "Mark controls awaiting confirmation." }
       PrivacySettingToggle { controller: page.controller; settingKey: "showBarDegradedMarker"; label: "Degraded marker"; description: "Mark unhealthy monitoring sources." }
     }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: statusPresentationSettings.width >= Style.space(420) ? 2 : 1
+      breakpoint: Style.space(420)
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
       Dropdown { objectName: "appearanceStatePillStyleSetting"; Layout.fillWidth: true; label: "Popup state pills"; options: ["filled", "outline", "minimal"]; value: page.controller.statePillStyle; onChanged: function(value) { page.controller.persistSettings({statePillStyle: value}) } }
       Dropdown { objectName: "appearancePopupDensitySetting"; Layout.fillWidth: true; label: "Popup density"; options: ["comfortable", "compact"]; value: page.controller.popupDensity; onChanged: function(value) { page.controller.persistSettings({popupDensity: value}) } }
     }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: statusPresentationSettings.width >= Style.space(420) ? 2 : 1
+      breakpoint: Style.space(420)
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
       Dropdown { objectName: "appearancePopupLayoutSetting"; Layout.fillWidth: true; label: "Popup layout"; options: ["adaptive", "list", "grid"]; value: page.controller.popupLayout; onChanged: function(value) { page.controller.persistSettings({popupLayout: value}) } }
@@ -101,9 +108,10 @@ GridLayout {
       NumberField { objectName: "appearancePopupItemScaleSetting"; Layout.fillWidth: true; label: "Popup item scale (%)"; from: 85; to: 130; stepSize: 5; value: Math.round(page.controller.popupItemScale * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({popupItemScale: Number(value) / 100}) } }
       NumberField { Layout.fillWidth: true; label: "Popup idle visibility (%)"; from: 45; to: 100; stepSize: 5; value: Math.round(page.controller.popupIdleOpacity * 100); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onModified: function(value) { page.controller.persistSettings({popupIdleOpacity: Number(value) / 100}) } }
     }
-    GridLayout {
+    PrivacySettingsGrid {
+      responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
-      columns: statusPresentationSettings.width >= Style.space(600) ? 2 : 1
+      breakpoint: Style.space(600)
       columnSpacing: Style.spacing.md
       rowSpacing: Style.spacing.md
       PrivacySettingToggle { controller: page.controller; settingKey: "showStatePills"; label: "State pills"; description: "Show textual state beside popup items." }
