@@ -10,97 +10,27 @@ Item {
   property var shell: null
   property var manifest: null
   property var settings: ({})
-  property bool capturePreviewActive: false
-  property var capturePreviewHistory: []
-  property var capturePreviewSessions: []
-  property var capturePreviewBarSessions: []
-  property var capturePreviewSettings: ({})
-  property var barPresentations: ({})
-  property var barInstances: ({})
-  property bool captureHistoryPresentationEnabled: true
-  property string capturePreviewOwner: ""
-  property double capturePreviewExpiresAt: 0
+  property alias capturePreviewActive: captureController.active
+  property alias capturePreviewHistory: captureController.history
+  property alias capturePreviewSessions: captureController.sessions
+  property alias capturePreviewBarSessions: captureController.barSessions
+  property alias capturePreviewSettings: captureController.previewSettings
+  property alias barPresentations: captureController.presentations
+  property alias barInstances: captureController.instances
+  property alias captureHistoryPresentationEnabled: captureController.historyPresentationEnabled
+  property alias capturePreviewOwner: captureController.owner
+  property alias capturePreviewExpiresAt: captureController.expiresAt
   readonly property var displayHistory: capturePreviewActive ? capturePreviewHistory : recentHistory
   readonly property var displaySessions: capturePreviewActive ? capturePreviewSessions : activeSessions
 
-  function updateBarPresentation(screenName, presentation) {
-    var next = Object.assign({}, barPresentations)
-    next[String(screenName || "unknown")] = presentation || ({})
-    barPresentations = next
-  }
-
-  function anyBarOpen() {
-    var names = Object.keys(barPresentations)
-    for (var index = 0; index < names.length; index++) if (barPresentations[names[index]].opened === true) return true
-    return false
-  }
-
-  function barPresentation(screenName) {
-    return barPresentations[String(screenName || "unknown")] || ({})
-  }
-
-  function registerBarInstance(screenName, instance) {
-    var key = String(screenName || "")
-    if (!key || key === "unknown" || !instance) return false
-    var next = Object.assign({}, barInstances)
-    next[key] = instance
-    barInstances = next
-    return true
-  }
-
-  function unregisterBarInstance(screenName, instance) {
-    var key = String(screenName || "")
-    if (!key || barInstances[key] !== instance) return false
-    var next = Object.assign({}, barInstances)
-    delete next[key]
-    barInstances = next
-    return true
-  }
-
-  function closeCapturePanel(owner, screenName) {
-    if (!capturePreviewActive || capturePreviewOwner !== owner) return "denied"
-    var target = barInstances[String(screenName || "")]
-    if (!target || typeof target.close !== "function") return "unavailable"
-    target.close()
-    return "ok"
-  }
-
-  function openCapturePanel(owner, screenName, mode, page, section) {
-    if (!capturePreviewActive || capturePreviewOwner !== owner) return "denied"
-    var target = barInstances[String(screenName || "")]
-    if (!target || typeof target.open !== "function") return "unavailable"
-    var selected = String(mode || "")
-    if (["settings", "settings-section", "device", "activity", "history", "history-disabled"].indexOf(selected) < 0) return "invalid"
-    target.open()
-    if (selected === "settings" || selected === "settings-section") target.showGlobalSettings(page, selected === "settings-section" ? section : "")
-    else if (selected === "device") { target.showActivity(); target.editingKind = Model.deviceDeepLink(page) }
-    else if (selected === "activity") target.showActivity()
-    else {
-      captureHistoryPresentationEnabled = selected !== "history-disabled"
-      target.showHistory()
-    }
-    return selected === "settings" ? String(page || "general")
-      : (selected === "settings-section" ? String(page || "general") + "#" + String(section || "")
-      : (selected === "history-disabled" ? "history-disabled" : (selected === "device" ? "activity" : selected)))
-  }
-
-  function clearCapturePreview() {
-    capturePreviewHistory = []
-    capturePreviewSessions = []
-    capturePreviewBarSessions = []
-    capturePreviewSettings = ({})
-    captureHistoryPresentationEnabled = true
-    capturePreviewOwner = ""
-    capturePreviewExpiresAt = 0
-    capturePreviewActive = false
-  }
-
-  Timer {
-    interval: 1000
-    repeat: true
-    running: root.capturePreviewActive
-    onTriggered: if (Date.now() >= root.capturePreviewExpiresAt) root.clearCapturePreview()
-  }
+  function updateBarPresentation(screenName, presentation) { captureController.updatePresentation(screenName, presentation) }
+  function anyBarOpen() { return captureController.anyBarOpen() }
+  function barPresentation(screenName) { return captureController.presentation(screenName) }
+  function registerBarInstance(screenName, instance) { return captureController.register(screenName, instance) }
+  function unregisterBarInstance(screenName, instance) { return captureController.unregister(screenName, instance) }
+  function closeCapturePanel(owner, screenName) { return captureController.closePanel(owner, screenName) }
+  function openCapturePanel(owner, screenName, mode, page, section) { return captureController.openPanel(owner, screenName, mode, page, section) }
+  function clearCapturePreview() { captureController.clear() }
   property string observerHelperOverride: ""
   property string audioEndpointHelperOverride: ""
   property string historyHelperOverride: ""
@@ -146,14 +76,14 @@ Item {
   property var notificationQueue: []
   property var suppressedObserverStarts: ({})
   property var controlTransactions: ({})
-  property string privacyPresetState: "idle"
-  property var privacyPresetQueue: []
-  property string privacyPresetActiveKind: ""
-  property var privacyPresetPrevious: ({})
-  property var privacyPresetResults: []
-  property bool privacyPresetUndoAvailable: false
-  property bool privacyPresetRestoring: false
-  property string privacyPresetName: ""
+  property alias privacyPresetState: privacyPresetController.state
+  property alias privacyPresetQueue: privacyPresetController.queue
+  property alias privacyPresetActiveKind: privacyPresetController.activeKind
+  property alias privacyPresetPrevious: privacyPresetController.previous
+  property alias privacyPresetResults: privacyPresetController.results
+  property alias privacyPresetUndoAvailable: privacyPresetController.undoAvailable
+  property alias privacyPresetRestoring: privacyPresetController.restoring
+  property alias privacyPresetName: privacyPresetController.presetName
   property var observerHealth: ({
     pipewire: {status: "healthy", source: "pipewire", code: "ok", reason: ""},
     "direct-device": {status: "healthy", source: "direct-device", code: "ok", reason: ""},
@@ -192,12 +122,12 @@ Item {
   property var dependencyReadyMap: ({})
   property var dependencyCheckedMap: ({})
   property var dependencyQueue: []
-  property var audioEndpointMap: ({microphone: [], "audio-output": []})
-  property var audioEndpointInitialized: ({})
-  property string audioEndpointKind: ""
-  property string audioEndpointOperation: ""
-  property string pendingAudioEndpointRefreshKind: ""
-  property string audioEndpointMessage: ""
+  readonly property var audioEndpointMap: audioEndpointController.endpointMap
+  readonly property var audioEndpointInitialized: audioEndpointController.initializedKinds
+  readonly property string audioEndpointKind: audioEndpointController.activeKind
+  readonly property string audioEndpointOperation: audioEndpointController.operation
+  readonly property string pendingAudioEndpointRefreshKind: audioEndpointController.pendingRefreshKind
+  readonly property string audioEndpointMessage: audioEndpointController.message
   property string inspectionMessage: ""
   property var recentDeviceChanges: []
   property string dependencyCheckKind: ""
@@ -604,12 +534,11 @@ Item {
   }
 
   function audioEndpointHelperPath() {
-    return audioEndpointHelperOverride || String(Qt.resolvedUrl("privacy-audio-devices")).replace(/^file:\/\//, "")
+    return audioEndpointController.helperPath()
   }
 
   function audioEndpoints(kind) {
-    var rows = audioEndpointMap[kind]
-    return Array.isArray(rows) ? rows : []
+    return audioEndpointController.endpoints(kind)
   }
 
   function deviceChangesFor(kind) {
@@ -617,50 +546,19 @@ Item {
   }
 
   function acceptAudioEndpoints(kind, text) {
-    try {
-      var rows = JSON.parse(String(text || "[]"))
-      if (!Array.isArray(rows)) throw new Error("invalid endpoint list")
-      rows = Model.sanitizeAudioEndpoints(rows, 64)
-      var changes = audioEndpointInitialized[kind] === true ? Model.deviceInventoryChanges(kind, audioEndpoints(kind), rows, Date.now()) : []
-      if (changes.length) recentDeviceChanges = changes.concat(recentDeviceChanges).slice(0, 24)
-      var initialized = Object.assign({}, audioEndpointInitialized); initialized[kind] = true; audioEndpointInitialized = initialized
-      var next = Object.assign({}, audioEndpointMap)
-      next[kind] = rows
-      audioEndpointMap = next
-      audioEndpointMessage = rows.length ? "" : "No audio endpoints detected."
-    } catch (error) { audioEndpointMessage = "Audio endpoints could not be read." }
+    audioEndpointController.accept(kind, text)
   }
 
   function refreshAudioEndpoints(kind) {
-    if (["microphone", "audio-output"].indexOf(kind) === -1) return false
-    if (audioEndpointOperation !== "") {
-      pendingAudioEndpointRefreshKind = kind
-      return true
-    }
-    pendingAudioEndpointRefreshKind = ""
-    audioEndpointOperation = "list"
-    audioEndpointKind = kind
-    audioEndpointMessage = "Loading audio endpoints…"
-    audioEndpointListProc.command = [audioEndpointHelperPath(), "list", kind]
-    audioEndpointListProc.running = true
-    return true
+    return audioEndpointController.refresh(kind)
   }
 
   function runPendingAudioEndpointRefresh() {
-    var kind = pendingAudioEndpointRefreshKind
-    if (!kind || audioEndpointOperation !== "") return false
-    pendingAudioEndpointRefreshKind = ""
-    return refreshAudioEndpoints(kind)
+    return audioEndpointController.runPendingRefresh()
   }
 
   function setAudioEndpointMuted(kind, identifier, muted) {
-    if (["microphone", "audio-output"].indexOf(kind) === -1 || audioEndpointOperation !== "") return false
-    audioEndpointOperation = "set"
-    audioEndpointKind = kind
-    audioEndpointMessage = muted ? "Blocking selected endpoint…" : "Allowing selected endpoint…"
-    audioEndpointSetProc.command = [audioEndpointHelperPath(), "set", kind, String(identifier), muted === true ? "true" : "false"]
-    audioEndpointSetProc.running = true
-    return true
+    return audioEndpointController.setMuted(kind, identifier, muted)
   }
 
   function loadHistory() {
@@ -913,111 +811,14 @@ Item {
     return false
   }
 
-  function privacyPresetEntries() {
-    return ["microphone", "audio-output", "camera", "screen-share", "location"].map(function(kind) {
-      return {
-        kind: kind,
-        enabled: controlEnabled(kind),
-        controllable: kindEnabled(kind) && serviceControllable(kind),
-        dependenciesReady: dependenciesReady(kind),
-        pending: controlPending(kind) || controlProcessBusy(kind)
-      }
-    })
-  }
-
-  function startPrivacyPreset(plan, restoring) {
-    if (privacyPresetState === "applying" || privacyPresetState === "restoring") return false
-    privacyPresetRestoring = restoring === true
-    privacyPresetState = privacyPresetRestoring ? "restoring" : "applying"
-    privacyPresetQueue = plan.actions.slice()
-    privacyPresetResults = plan.skipped.slice()
-    privacyPresetActiveKind = ""
-    runNextPrivacyPreset()
-    return true
-  }
-
-  function requestPrivacyLockdown() {
-    var entries = privacyPresetEntries()
-    var previous = {}
-    for (var index = 0; index < entries.length; index++) previous[entries[index].kind] = entries[index].enabled === true
-    var plan = Model.privacyPresetPlan(entries, false)
-    privacyPresetPrevious = previous
-    privacyPresetName = "Lockdown"
-    privacyPresetUndoAvailable = false
-    privacyPresetUndoTimer.stop()
-    return startPrivacyPreset(plan, false)
-  }
-
-  function requestPrivacyMode(mode) {
-    var clean = Model.sanitizePrivacyModes([mode])
-    if (!clean.length) return false
-    var entries = privacyPresetEntries()
-    var previous = {}
-    for (var index = 0; index < entries.length; index++) previous[entries[index].kind] = entries[index].enabled === true
-    privacyPresetPrevious = previous
-    privacyPresetName = clean[0].name
-    privacyPresetUndoAvailable = false
-    privacyPresetUndoTimer.stop()
-    entries = entries.filter(function(entry) { return Object.prototype.hasOwnProperty.call(clean[0].controls, entry.kind) })
-    return startPrivacyPreset(Model.privacyPresetPlan(entries, clean[0].controls), false)
-  }
-
-  function restorePrivacyLockdown() {
-    if (!privacyPresetUndoAvailable) return false
-    var plan = Model.privacyPresetPlan(privacyPresetEntries(), privacyPresetPrevious)
-    privacyPresetUndoAvailable = false
-    privacyPresetUndoTimer.stop()
-    return startPrivacyPreset(plan, true)
-  }
-
-  function runNextPrivacyPreset() {
-    var next = Model.nextPrivacyPresetAction(privacyPresetQueue, privacyPresetActiveKind)
-    if (next.action === "wait") return
-    if (next.action === "complete") {
-      var outcome = Model.privacyPresetOutcome(privacyPresetResults)
-      privacyPresetState = outcome.state
-      if (!privacyPresetRestoring && outcome.changed) {
-        privacyPresetUndoAvailable = true
-        privacyPresetUndoTimer.restart()
-      } else privacyPresetFeedbackTimer.restart()
-      privacyPresetRestoring = false
-      return
-    }
-    var action = next.current
-    privacyPresetQueue = next.queue
-    if ((controlEnabled(action.kind) === true) === action.expectedEnabled) {
-      privacyPresetResults = privacyPresetResults.concat([{kind: action.kind, reason: "already-set"}])
-      Qt.callLater(function() { root.runNextPrivacyPreset() })
-      return
-    }
-    privacyPresetActiveKind = action.kind
-    if (!toggleControl(action.kind)) {
-      privacyPresetResults = privacyPresetResults.concat([{kind: action.kind, reason: "request-failed"}])
-      privacyPresetActiveKind = ""
-      Qt.callLater(function() { root.runNextPrivacyPreset() })
-    }
-  }
-
-  function advancePrivacyPreset() {
-    if (!privacyPresetActiveKind) return
-    var transaction = controlTransactions[privacyPresetActiveKind]
-    if (!transaction || (transaction.status !== "succeeded" && transaction.status !== "failed")) return
-    privacyPresetResults = privacyPresetResults.concat([{
-      kind: privacyPresetActiveKind,
-      status: transaction.status,
-      reason: transaction.status === "failed" ? String(transaction.code || "failed") : ""
-    }])
-    privacyPresetActiveKind = ""
-    runNextPrivacyPreset()
-  }
-
-  function privacyPresetMessage() {
-    if (privacyPresetState === "applying") return "Applying " + (privacyPresetName || "privacy mode") + "…"
-    if (privacyPresetState === "restoring") return "Restoring previous privacy state…"
-    if (privacyPresetState === "partial") return "Privacy preset finished with unavailable or failed controls."
-    if (privacyPresetState === "succeeded") return privacyPresetUndoAvailable ? (privacyPresetName || "Privacy mode") + " verified. Undo is available for 30 seconds." : "Privacy mode verified."
-    return ""
-  }
+  function privacyPresetEntries() { return privacyPresetController.entries() }
+  function startPrivacyPreset(plan, restoring) { return privacyPresetController.start(plan, restoring) }
+  function requestPrivacyLockdown() { return privacyPresetController.requestLockdown() }
+  function requestPrivacyMode(mode) { return privacyPresetController.requestMode(mode) }
+  function restorePrivacyLockdown() { return privacyPresetController.restore() }
+  function runNextPrivacyPreset() { privacyPresetController.runNext() }
+  function advancePrivacyPreset() { privacyPresetController.advance() }
+  function privacyPresetMessage() { return privacyPresetController.message() }
 
   function helperPath() {
     return String(Qt.resolvedUrl("privacy-control")).replace(/^file:\/\//, "")
@@ -1305,19 +1106,8 @@ Item {
     running: root.kindEnabled("location")
     onTriggered: root.refreshLocation()
   }
-  Timer {
-    id: privacyPresetUndoTimer
-    interval: 30000
-    onTriggered: {
-      root.privacyPresetUndoAvailable = false
-      if (root.privacyPresetState === "succeeded" || root.privacyPresetState === "partial") root.privacyPresetState = "idle"
-    }
-  }
-  Timer {
-    id: privacyPresetFeedbackTimer
-    interval: 8000
-    onTriggered: if (root.privacyPresetState !== "applying" && root.privacyPresetState !== "restoring") root.privacyPresetState = "idle"
-  }
+  PrivacyPresetController { id: privacyPresetController; host: root }
+  PrivacyCaptureController { id: captureController; host: root }
   Timer { id: inspectionMessageTimer; interval: 5000; onTriggered: root.inspectionMessage = "" }
 
   Timer {
@@ -1413,25 +1203,7 @@ Item {
     onTriggered: root.refreshDependencies()
   }
 
-  Process {
-    id: audioEndpointListProc
-    onExited: function(exitCode) {
-      if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoints could not be read."
-      root.audioEndpointOperation = ""
-      root.runPendingAudioEndpointRefresh()
-    }
-    stdout: StdioCollector { id: audioEndpointListOutput; waitForEnd: true; onStreamFinished: root.acceptAudioEndpoints(root.audioEndpointKind, audioEndpointListOutput.text) }
-  }
-
-  Process {
-    id: audioEndpointSetProc
-    onExited: function(exitCode) {
-      if (exitCode !== 0) root.audioEndpointMessage = "Audio endpoint state was not changed."
-      root.audioEndpointOperation = ""
-      root.runPendingAudioEndpointRefresh()
-    }
-    stdout: StdioCollector { id: audioEndpointSetOutput; waitForEnd: true; onStreamFinished: root.acceptAudioEndpoints(root.audioEndpointKind, audioEndpointSetOutput.text) }
-  }
+  PrivacyAudioEndpointController { id: audioEndpointController; host: root }
 
   Process {
     id: locationProc

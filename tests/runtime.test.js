@@ -26,6 +26,21 @@ const settingsController = fs.readFileSync(settingsControllerPath, "utf8")
 const historyControllerPath = path.join(__dirname, "..", "PrivacyHistoryController.qml")
 assert.ok(fs.existsSync(historyControllerPath), "history storage orchestration must live in PrivacyHistoryController.qml")
 const historyController = fs.readFileSync(historyControllerPath, "utf8")
+const audioEndpointControllerPath = path.join(__dirname, "..", "PrivacyAudioEndpointController.qml")
+assert.ok(fs.existsSync(audioEndpointControllerPath), "audio endpoint orchestration must live in PrivacyAudioEndpointController.qml")
+const audioEndpointController = fs.readFileSync(audioEndpointControllerPath, "utf8")
+const deviceSettingsControllerPath = path.join(__dirname, "..", "PrivacyDeviceSettingsController.qml")
+assert.ok(fs.existsSync(deviceSettingsControllerPath), "per-device settings policy must live in PrivacyDeviceSettingsController.qml")
+const deviceSettingsController = fs.readFileSync(deviceSettingsControllerPath, "utf8")
+const presetControllerPath = path.join(__dirname, "..", "PrivacyPresetController.qml")
+assert.ok(fs.existsSync(presetControllerPath), "privacy preset orchestration must live in PrivacyPresetController.qml")
+const presetController = fs.readFileSync(presetControllerPath, "utf8")
+const captureControllerPath = path.join(__dirname, "..", "PrivacyCaptureController.qml")
+assert.ok(fs.existsSync(captureControllerPath), "capture preview routing must live in PrivacyCaptureController.qml")
+const captureController = fs.readFileSync(captureControllerPath, "utf8")
+const presentationControllerPath = path.join(__dirname, "..", "PrivacyPresentationController.qml")
+assert.ok(fs.existsSync(presentationControllerPath), "privacy presentation projection must live in PrivacyPresentationController.qml")
+const presentationController = fs.readFileSync(presentationControllerPath, "utf8")
 const ci = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "ci.yml"), "utf8")
 const qmlLint = fs.readFileSync(path.join(__dirname, "..", "scripts", "lint-qml"), "utf8")
 const qmlRuntime = fs.readFileSync(path.join(__dirname, "run_qml_runtime.sh"), "utf8")
@@ -60,6 +75,26 @@ assert.match(service, /PrivacyHistoryController\s*\{\s*id:\s*historyController[\
   "the service must delegate history process ownership through one controller")
 assert.match(historyController, /required property var host[\s\S]*?function load\(\)[\s\S]*?id:\s*historyLoadProc[\s\S]*?id:\s*historyMutationProc/,
   "history load and mutation queues must share one process owner")
+assert.match(service, /PrivacyAudioEndpointController\s*\{\s*id:\s*audioEndpointController[\s\S]*?host:\s*root/,
+  "the service must delegate audio endpoint process ownership through one controller")
+assert.match(audioEndpointController, /required property var host[\s\S]*?function refresh\(kind\)[\s\S]*?id:\s*listProcess[\s\S]*?id:\s*setProcess/,
+  "audio endpoint inventory and mutations must share one queue owner")
+assert.match(bar, /PrivacyDeviceSettingsController\s*\{\s*id:\s*deviceSettingsController[\s\S]*?host:\s*root/,
+  "BarWidget must delegate per-device settings policy through one controller")
+assert.match(deviceSettingsController, /required property var host[\s\S]*?function resetItemSettings\(kind\)[\s\S]*?function resetAllDeviceSettings\(kind\)/,
+  "device overrides and scoped reset policy must share one owner")
+assert.match(service, /PrivacyPresetController\s*\{\s*id:\s*privacyPresetController[\s\S]*?host:\s*root/,
+  "the service must delegate privacy preset state-machine ownership")
+assert.match(presetController, /required property var host[\s\S]*?function requestLockdown\(\)[\s\S]*?function advance\(\)[\s\S]*?id:\s*undoTimer/,
+  "privacy preset queue, transaction advancement, and undo expiry must share one owner")
+assert.match(service, /PrivacyCaptureController\s*\{\s*id:\s*captureController[\s\S]*?host:\s*root/,
+  "the service must delegate capture preview and bar-instance routing")
+assert.match(captureController, /required property var host[\s\S]*?function openPanel\([\s\S]*?function clear\(\)[\s\S]*?Date\.now\(\) >= controller\.expiresAt/,
+  "capture authorization, panel routing, state reset, and expiry must share one owner")
+assert.match(bar, /PrivacyPresentationController\s*\{\s*id:\s*presentationController[\s\S]*?host:\s*root/,
+  "BarWidget must delegate service-to-visual projection through one controller")
+assert.match(presentationController, /required property var host[\s\S]*?function item\(kind\)[\s\S]*?function itemColor\(entry\)[\s\S]*?function itemTooltip\(entry\)/,
+  "activity projection, semantic colors, and tooltip policy must share one owner")
 assert.doesNotMatch(service, /Quickshell\.execDetached\(\s*["']/, "detached runtime commands must use argument arrays")
 assert.doesNotMatch(service, /locationProc\.command\s*=\s*\["sh",\s*"-c"/, "GeoClue probing must not cross an inline shell boundary")
 assert.match(service, /locationProc\.command = \[locationHelperOverride \|\| String\(Qt\.resolvedUrl\("privacy-location"\)\)/,
@@ -100,7 +135,7 @@ assert.match(service, /function protocol\(\): string \{ return "2" \}[\s\S]*?fun
   "capture previews must be controlled through bounded in-memory IPC")
 assert.match(service, /capturePreviewExpiresAt = Date\.now\(\) \+ 180000/,
   "capture preview leases must have a bounded duration")
-assert.match(service, /Date\.now\(\) >= root\.capturePreviewExpiresAt[\s\S]*?root\.clearCapturePreview\(\)/,
+assert.match(captureController, /Date\.now\(\) >= controller\.expiresAt[\s\S]*?controller\.clear\(\)/,
   "abandoned capture previews must expire automatically")
 assert.match(screenshotWorkflow, /capture_owner=.*secrets\.token_urlsafe[\s\S]*?call privacy-devices-capture-v2 protocol/,
   "capture must negotiate the owner-based protocol")
@@ -246,7 +281,7 @@ assert.match(service, /function state\(owner: string\)[\s\S]*?capturePreviewOwne
   "capture IPC must expose an owner-scoped immutable presentation snapshot")
 assert.match(service, /function presentation\(owner: string, screenName: string\)[\s\S]*?capturePreviewOwner !== owner[\s\S]*?barPresentation\(screenName\)/,
   "capture IPC must expose owner- and monitor-scoped render acknowledgement")
-assert.match(service, /function openCapturePanel\(owner, screenName, mode, page, section\)[\s\S]*?barInstances\[String\(screenName[\s\S]*?target\.open\(\)/,
+assert.match(captureController, /function openPanel\(requestOwner, screenName, mode, page, section\)[\s\S]*?instances\[String\(screenName[\s\S]*?target\.open\(\)/,
   "capture routing must invoke only the registered instance for the explicit output")
 assert.match(bar, /presentationScreen:\s*root\.QsWindow\.window[\s\S]*?presentationScreenName[\s\S]*?updateBarPresentation\(presentationScreenName/,
   "bar render acknowledgements must use the window's actual output")
@@ -372,7 +407,9 @@ assert.doesNotMatch(service, /id:\s*(?:recordingTimer|screenshotTimer)/, "persis
 assert.match(service, /function requestSettingsView\(page, section\)[\s\S]*?shell\.summon/, "singleton service must route settings to the focused monitor")
 assert.match(service, /function requestSettingsView\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)[\s\S]*?requestedSettingsSection = target\.section[\s\S]*?shell\.summon/,
   "settings IPC must expose validated section deep links through focused-monitor routing")
-assert.match(service, /function anyBarOpen\(\)[\s\S]*?barPresentations[\s\S]*?opened === true[\s\S]*?settingsRequestSerial\+\+[\s\S]*?anyBarOpen\(\)\) return view[\s\S]*?shell\.summon/,
+assert.match(captureController, /function anyBarOpen\(\)[\s\S]*?presentations[\s\S]*?opened === true/,
+  "capture routing must detect an already-open per-monitor panel")
+assert.match(service, /settingsRequestSerial\+\+[\s\S]*?anyBarOpen\(\)\) return view[\s\S]*?shell\.summon/,
   "deep links must switch an open widget in place without re-summoning its bar presentation")
 assert.match(service, /function open\(page: string\): string \{ return root\.requestSettingsView\(page, ""\) \}/,
   "page-only IPC navigation must clear stale section targets")
@@ -396,9 +433,9 @@ assert.match(service, /function beginControlVerification\(kind, exitCode\)[\s\S]
   "command results must enter the behavior-tested reducer")
 assert.match(service, /function verifyControlTransaction\(kind, observedEnabled, probeValid\)[\s\S]*?transitionControlTransaction\(kind, \{type: "observation", enabled: observedEnabled, valid: probeValid\}\)/,
   "observations must verify controls through the behavior-tested reducer")
-assert.match(service, /function requestPrivacyLockdown\(\)[\s\S]*?Model\.privacyPresetPlan\([\s\S]*?runNextPrivacyPreset\(\)/,
+assert.match(presetController, /function requestLockdown\(\)[\s\S]*?Model\.privacyPresetPlan\([\s\S]*?function runNext\(\)/,
   "privacy lockdown must use the behavior-tested serial preset plan")
-assert.match(service, /function restorePrivacyLockdown\(\)[\s\S]*?Model\.privacyPresetPlan\(privacyPresetEntries\(\), privacyPresetPrevious\)/,
+assert.match(presetController, /function restore\(\)[\s\S]*?Model\.privacyPresetPlan\(entries\(\), previous\)/,
   "privacy lockdown undo must derive restoration from observed prior state")
 assert.match(service, /onControlTransactionsChanged:[\s\S]*?advancePrivacyPreset\(\)/,
   "preset orchestration must advance only after control transactions settle")
@@ -572,17 +609,17 @@ assert.match(service, /function handleSessionTransitions\(transition\)[\s\S]*?Mo
   "observer recovery must not announce uncertain sessions as new activity")
 assert.match(service, /function serviceControllable\(kind\)[\s\S]*?\["microphone", "audio-output", "camera", "screen-share", "location"\]/,
   "headless control must be limited to actions owned by the singleton service")
-assert.match(service, /function setAudioEndpointMuted\(kind, identifier, muted\)[\s\S]*?audioEndpointHelperPath\(\), "set", kind, String\(identifier\)/,
+assert.match(audioEndpointController, /function setMuted\(kind, identifier, muted\)[\s\S]*?helperPath\(\), "set", kind, String\(identifier\)/,
   "per-endpoint audio control must cross one bounded helper boundary")
-assert.match(service, /property string audioEndpointOperation:[\s\S]*?function refreshAudioEndpoints\(kind\)[\s\S]*?audioEndpointOperation !== ""[\s\S]*?pendingAudioEndpointRefreshKind = kind/,
+assert.match(audioEndpointController, /property string operation:[\s\S]*?function refresh\(kind\)[\s\S]*?operation !== ""[\s\S]*?pendingRefreshKind = kind/,
   "audio endpoint requests must use synchronous ownership and retain the latest busy refresh")
-assert.match(service, /function runPendingAudioEndpointRefresh\(\)[\s\S]*?pendingAudioEndpointRefreshKind[\s\S]*?refreshAudioEndpoints\(kind\)/,
+assert.match(audioEndpointController, /function runPendingRefresh\(\)[\s\S]*?pendingRefreshKind[\s\S]*?refresh\(kind\)/,
   "audio endpoint completion must drain the retained refresh")
-assert.match(service, /function acceptAudioEndpoints\(kind, text\)[\s\S]*?sanitizeAudioEndpoints\(rows, 64\)/,
+assert.match(audioEndpointController, /function accept\(kind, text\)[\s\S]*?sanitizeAudioEndpoints\(rows, 64\)/,
   "audio endpoint state must remain bounded before reaching the UI")
-assert.match(service, /function acceptAudioEndpoints\(kind, text\)[\s\S]*?Model\.sanitizeAudioEndpoints\(rows, 64\)/,
+assert.match(audioEndpointController, /function accept\(kind, text\)[\s\S]*?Model\.sanitizeAudioEndpoints\(rows, 64\)/,
   "audio endpoint process output must be sanitized again at the QML trust boundary")
-assert.match(service, /id: audioEndpointListOutput[\s\S]*?audioEndpointListOutput\.text[\s\S]*?id: audioEndpointSetOutput[\s\S]*?audioEndpointSetOutput\.text/,
+assert.match(audioEndpointController, /id: listOutput[\s\S]*?listOutput\.text[\s\S]*?id: setOutput[\s\S]*?setOutput\.text/,
   "audio endpoint collectors must read Quickshell's collected text property")
 assert.match(service, /function toggleControl\(kind\)[\s\S]*?if \(controlRequestStatus\(kind\) !== "ok"\) return false/,
   "control requests must reject disabled, unsupported, and pending devices")
@@ -592,7 +629,7 @@ assert.match(service, /function toggle\(kind: string\): string[\s\S]*?root\.cont
   "control IPC must report why an action was not accepted")
 assert.match(bar, /function toggleEntry\(entry\)[\s\S]*?if \(!privacyService \|\| !entry\.controllable \|\| entry\.pending\) return/,
   "bar controls must ignore repeated input while verification is pending")
-assert.match(bar, /function itemTooltip\(entry\)[\s\S]*?var action = Model\.itemTooltipAction\(entry\)/,
+assert.match(presentationController, /function itemTooltip\(entry\)[\s\S]*?var action = Model\.itemTooltipAction\(entry\)/,
   "bar action guidance must use the behavior-tested device policy")
 assert.doesNotMatch(bar, /function controlDescription\(/, "unused duplicate control guidance must not return")
 assert.match(bar, /if \(!privacyService\.beginExternalControl\("screen-recording", !entry\.controlEnabled\)\) return/,
