@@ -574,26 +574,50 @@ if [[ $dnd_state == on ]]; then
   qs ipc --pid "$shell_pid" call notifications setDnd off >/dev/null
   dnd_changed=true
 fi
-notification_x=$((monitor_width - 428))
-((notification_x >= 0)) || { printf 'Monitor is too narrow for notification capture.\n' >&2; exit 1; }
-capture_monitor_frame "$capture_dir/notification-baseline-full.png"
-magick "$capture_dir/notification-baseline-full.png" -crop "420x160+${notification_x}+30" \
-  +repage "$capture_dir/notification-baseline.png"
+mapfile -t notification_monitors < <(jq -r '.[] | select(.width >= 428 and .height >= 190) | .name' <<<"$monitor_json")
+((${#notification_monitors[@]} > 0)) || { printf 'No active output can fit the notification capture.\n' >&2; exit 1; }
+declare -A notification_keys=()
+for candidate_monitor in "${notification_monitors[@]}"; do
+  [[ $candidate_monitor =~ ^[A-Za-z0-9_.-]+$ ]] || continue
+  notification_key=${candidate_monitor//[^A-Za-z0-9_.-]/_}
+  notification_keys[$candidate_monitor]=$notification_key
+  candidate_width=$(jq -r --arg monitor "$candidate_monitor" '.[] | select(.name == $monitor) | .width' <<<"$monitor_json")
+  grim -o "$candidate_monitor" "$capture_dir/notification-${notification_key}-baseline-full.png"
+  magick "$capture_dir/notification-${notification_key}-baseline-full.png" \
+    -crop "420x160+$((candidate_width - 428))+30" +repage \
+    "$capture_dir/notification-${notification_key}-baseline.png"
+done
 omarchy notification send --app-name "Privacy Devices" \
   --icon firefox --urgency normal --expire-time 15000 \
   "$notification_summary" "Firefox: Microphone"
 notification_visible=true
 notification_changed=false
+notification_monitor=""
 for attempt in {1..40}; do
-  grim -o "$monitor" "$capture_dir/notification-full.png"
-  magick "$capture_dir/notification-full.png" -crop "420x160+${notification_x}+30" \
-    +repage "$capture_dir/notification.png"
-  changed_pixels=$(magick compare -metric AE -fuzz 3% "$capture_dir/notification-baseline.png" \
-    "$capture_dir/notification.png" null: 2>&1 || true)
-  if [[ $changed_pixels =~ ^[0-9]+$ ]] && ((changed_pixels >= 500)); then notification_changed=true; break; fi
+  for candidate_monitor in "${notification_monitors[@]}"; do
+    notification_key=${notification_keys[$candidate_monitor]:-}
+    [[ -n $notification_key ]] || continue
+    candidate_width=$(jq -r --arg monitor "$candidate_monitor" '.[] | select(.name == $monitor) | .width' <<<"$monitor_json")
+    grim -o "$candidate_monitor" "$capture_dir/notification-${notification_key}-full.png"
+    magick "$capture_dir/notification-${notification_key}-full.png" \
+      -crop "420x160+$((candidate_width - 428))+30" +repage \
+      "$capture_dir/notification-${notification_key}.png"
+    changed_pixels=$(magick compare -metric AE -fuzz 3% \
+      "$capture_dir/notification-${notification_key}-baseline.png" \
+      "$capture_dir/notification-${notification_key}.png" null: 2>&1 || true)
+    changed_pixels=${changed_pixels%% *}
+    changed_pixels=${changed_pixels%%.*}
+    if [[ $changed_pixels =~ ^[0-9]+$ ]] && ((changed_pixels >= 500)); then
+      notification_monitor=$candidate_monitor
+      magick "$capture_dir/notification-${notification_key}.png" "$capture_dir/notification.png"
+      notification_changed=true
+      break 2
+    fi
+  done
   sleep 0.1
 done
-[[ $notification_changed == true ]] || { printf 'Notification did not become visibly ready on %s.\n' "$monitor" >&2; exit 1; }
+[[ $notification_changed == true ]] || { printf 'Notification did not become visibly ready on any active output.\n' >&2; exit 1; }
+printf 'Captured notification on %s.\n' "$notification_monitor"
 dismiss_result=$(qs ipc --pid "$shell_pid" call notifications dismiss "$notification_summary")
 if [[ $dismiss_result != ok ]]; then
   printf 'Capture notification dismissal was unavailable; it will expire automatically.\n' >&2

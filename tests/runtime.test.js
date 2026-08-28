@@ -322,8 +322,12 @@ assert.match(screenshotWorkflow, /wait_for_panel_closed\(\)[\s\S]*?\.opened != t
   "capture must observe panel closure before issuing the next deep link")
 assert.equal((screenshotWorkflow.match(/omarchy notification send --app-name/g) || []).length, 1,
   "capture must send exactly one documentation notification")
-assert.match(screenshotWorkflow, /notification-baseline\.png[\s\S]*?magick compare -metric AE -fuzz 3%[\s\S]*?changed_pixels >= 500/,
+assert.match(screenshotWorkflow, /notification-[^\s"]*-baseline\.png[\s\S]*?magick compare -metric AE -fuzz 3%[\s\S]*?changed_pixels >= 500/,
   "notification capture must advance from observed visual readiness")
+assert.match(screenshotWorkflow, /notification_monitors[\s\S]*?monitor_json[\s\S]*?notification_monitor[\s\S]*?grim -o "\$candidate_monitor"/,
+  "notification capture must discover the shell-selected output instead of assuming the panel output")
+assert.match(screenshotWorkflow, /changed_pixels=\$\{changed_pixels%% \*\}[\s\S]*?changed_pixels=\$\{changed_pixels%%\.\*\}[\s\S]*?changed_pixels >= 500/,
+  "notification readiness must normalize ImageMagick integer and decimal AE formats")
 assert.equal((screenshotWorkflow.match(/^set_capture_preview$/gm) || []).length, 1,
   "capture must install one immutable presentation preview for the full workflow")
 assert.match(screenshotWorkflow, /capture_panel history-disabled history-disabled/,
