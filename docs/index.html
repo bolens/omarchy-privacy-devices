@@ -406,15 +406,12 @@
       }
 
       .interface-showcase {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(220px, 0.55fr);
-        gap: 1rem;
-        align-items: center;
         margin-bottom: 2.5rem;
       }
 
       .interface-supporting {
         display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 1rem;
       }
 
@@ -831,7 +828,7 @@
         .hero { grid-template-columns: 1fr; padding-top: 3.5rem; }
         .preview { max-width: 500px; }
         .features { grid-template-columns: 1fr; }
-        .guide-grid, .steps, .interface-showcase, .gallery-explorer { grid-template-columns: 1fr; }
+        .guide-grid, .steps, .interface-supporting, .gallery-explorer { grid-template-columns: 1fr; }
         .gallery-copy { position: static; }
         .gallery-tabs { flex-direction: row; overflow-x: auto; padding-bottom: 0.25rem; }
         .gallery-tab { width: auto; flex: 0 0 auto; white-space: nowrap; }
@@ -927,10 +924,6 @@
           <div class="eyebrow">Current interface</div>
           <h2>Clear at a glance.<br>Flexible underneath.</h2>
           <div class="interface-showcase">
-            <figure class="screenshot-card">
-              <img src="preview.png" alt="Activity panel with active, idle, capture, and disabled states" width="532" height="500" loading="lazy">
-              <figcaption>Activity, session context, and controls.</figcaption>
-            </figure>
             <div class="interface-supporting">
               <figure class="screenshot-card bar-shot">
                 <img src="bar.png" alt="Privacy Devices indicators occupying their exact center-bar footprint" width="141" height="50" loading="lazy">
@@ -1064,9 +1057,9 @@
           <h2>Fast from the bar.</h2>
           <p class="section-intro">Add or move Privacy Devices through <strong>Setup → Bar</strong>. Its icons show current activity; the combined widget opens the full activity panel.</p>
           <ol class="steps">
-            <li><strong>Left-click</strong>Run the icon’s control, or open details for status-only items.</li>
-            <li><strong>Middle-click</strong>Open settings for a bar icon or popup row.</li>
-            <li><strong>Right-click</strong>Open the activity panel from an individual icon.</li>
+            <li><strong>Left-click</strong> Run the icon’s control, or open details for status-only items.</li>
+            <li><strong>Middle-click</strong> Open settings for a bar icon or popup row.</li>
+            <li><strong>Right-click</strong> Open the activity panel from an individual icon.</li>
           </ol>
           <p class="section-intro"><strong>Keyboard:</strong> use ↑/↓ and Enter to select and open devices, H for history, S for settings, R to refresh observers, Esc to go back, and 1–4 to switch settings pages.</p>
           <p class="notice">Toggle controllable rows directly in the popup. Blocking the Hyprland screen-sharing portal also suspends other features supplied by that portal until it is re-enabled.</p>
@@ -1100,7 +1093,7 @@
           <h2>Make it yours.</h2>
           <p class="section-intro">Open <strong>Setup → Plugins → Privacy Devices</strong>. Use General, Appearance, Alerts, and Monitoring; press <strong>1–4</strong> to switch pages.</p>
           <div class="guide-grid">
-            <article class="guide-card"><h3>General</h3><p>Choose monitored activities, reorder icons, hide selected idle items, configure controls, and tune alert deduplication.</p></article>
+            <article class="guide-card"><h3>General</h3><p>Choose monitored activities, idle visibility, control availability, privacy modes, and alert deduplication.</p></article>
             <article class="guide-card"><h3>Appearance</h3><p>Tune bar layout, markers, counts, popup density, labels, colors, and disabled presentation.</p></article>
             <article class="guide-card"><h3>Notifications</h3><p>Choose activity and control alerts, with per-application or per-device suppression and the detected application icon when available.</p></article>
             <article class="guide-card"><h3>Enhanced monitoring</h3><p>Optionally inspect same-user open device handles to detect direct V4L2 camera and ALSA microphone access that bypasses ordinary PipeWire streams.</p></article>
