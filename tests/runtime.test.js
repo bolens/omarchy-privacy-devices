@@ -8,6 +8,15 @@ const screenshotWorkflow = fs.readFileSync(path.join(__dirname, "..", "scripts/c
 const captureGuard = fs.readFileSync(path.join(__dirname, "..", "scripts/capture-environment-guard"), "utf8")
 const capturePostconditions = fs.readFileSync(path.join(__dirname, "..", "scripts/verify-capture-postconditions"), "utf8")
 const bar = fs.readFileSync(path.join(__dirname, "..", "BarWidget.qml"), "utf8")
+const historyViewPath = path.join(__dirname, "..", "PrivacyHistoryView.qml")
+assert.ok(fs.existsSync(historyViewPath), "history composition must live in PrivacyHistoryView.qml")
+const historyView = fs.readFileSync(historyViewPath, "utf8")
+const activityViewPath = path.join(__dirname, "..", "PrivacyActivityView.qml")
+assert.ok(fs.existsSync(activityViewPath), "activity composition must live in PrivacyActivityView.qml")
+const activityView = fs.readFileSync(activityViewPath, "utf8")
+const deviceViewPath = path.join(__dirname, "..", "PrivacyDeviceView.qml")
+assert.ok(fs.existsSync(deviceViewPath), "device settings composition must live in PrivacyDeviceView.qml")
+const deviceView = fs.readFileSync(deviceViewPath, "utf8")
 const ci = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "ci.yml"), "utf8")
 const qmlRuntime = fs.readFileSync(path.join(__dirname, "run_qml_runtime.sh"), "utf8")
 const runtimeSmoke = fs.readFileSync(path.join(__dirname, "qml", "RuntimePluginSmokeTest.qml"), "utf8")
@@ -17,6 +26,18 @@ const barEntryPoint = bar.trimStart()
 assert.match(serviceEntryPoint, /^import[\s\S]*?\nItem\s*\{/, "the service entry point must remain an embeddable Item")
 assert.doesNotMatch(serviceEntryPoint, /\nShellRoot\s*\{/, "the service entry point must not create a second shell root")
 assert.doesNotMatch(barEntryPoint, /\nShellRoot\s*\{/, "the bar entry point must not create a second shell root")
+assert.match(bar, /PrivacyHistoryView\s*\{[\s\S]*?id:\s*historyView[\s\S]*?controller:\s*root/,
+  "the bar must delegate history composition through the existing controller contract")
+assert.match(historyView, /required property var controller[\s\S]*?readonly property alias searchControl:[\s\S]*?readonly property var filterControls:/,
+  "history composition must expose only the controls required by behavior tests and IPC")
+assert.match(bar, /PrivacyActivityView\s*\{[\s\S]*?id:\s*activityView[\s\S]*?controller:\s*root/,
+  "the bar must delegate activity composition through the existing controller contract")
+assert.match(activityView, /required property var controller[\s\S]*?readonly property alias lockdownActionControl:[\s\S]*?readonly property alias presetFeedbackSurface:/,
+  "activity composition must expose only its tested action and feedback controls")
+assert.match(bar, /PrivacyDeviceView\s*\{[\s\S]*?id:\s*deviceView[\s\S]*?controller:\s*root/,
+  "the bar must delegate device settings composition through the existing controller contract")
+assert.match(deviceView, /DeviceSettingsEditor\s*\{[\s\S]*?function syncEditors\(\)/,
+  "device settings composition must own editable-field synchronization")
 assert.doesNotMatch(service, /Quickshell\.execDetached\(\s*["']/, "detached runtime commands must use argument arrays")
 assert.doesNotMatch(service, /locationProc\.command\s*=\s*\["sh",\s*"-c"/, "GeoClue probing must not cross an inline shell boundary")
 assert.match(service, /locationProc\.command = \[locationHelperOverride \|\| String\(Qt\.resolvedUrl\("privacy-location"\)\)/,
@@ -397,29 +418,29 @@ assert.doesNotMatch(bar, /function activityStateChanged\(/,
 assert.match(bar, /onCloseRequested:\s*root\.closeCurrentLayer\(\)/, "Escape must invoke layered popup dismissal")
 assert.match(bar, /function closeCurrentLayer\(\)[\s\S]*?Model\.popupDismissalAction\(editingKind, showingGlobalSettings, showingHistory\)/,
   "layered dismissal must use the behavior-tested priority policy")
-assert.match(bar, /text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
+assert.match(activityView, /text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
   "the activity footer must advertise every main-view keyboard command")
-assert.match(bar, /tooltipText: "Activity history"[\s\S]*?tooltipText: "Global settings"/,
+assert.match(activityView, /tooltipText: "Activity history"[\s\S]*?tooltipText: "Global settings"/,
   "the history action must sit immediately left of global settings")
 assert.match(bar, /function showHistory\(\)[\s\S]*?privacyService\.loadHistory\(\)/,
   "opening history must request persisted entries without polling")
-assert.match(bar, /id:\s*historyView[\s\S]*?History is off[\s\S]*?Loading history[\s\S]*?No completed activity yet/,
+assert.match(historyView, /History is off[\s\S]*?Loading history[\s\S]*?No completed activity yet/,
   "history view must distinguish disabled, loading, and empty states")
 assert.match(bar, /filteredHistory:\s*Model\.filterAndSortHistory\(privacyService \? privacyService\.displayHistory : \[\]/,
   "history view must derive from the full service-bounded history")
-assert.equal((bar.match(/"Clear history"/g) || []).length, 1,
+assert.equal((historyView.match(/"Clear history"/g) || []).length, 1,
   "history clearing must have one explicit home")
-assert.match(bar, /id:\s*historySearch[\s\S]*?placeholderText:\s*"Search history"/,
+assert.match(historyView, /id:\s*historySearch[\s\S]*?placeholderText:\s*"Search history"/,
   "history view must expose a local search field")
-assert.match(bar, /id:\s*historyCountPill[\s\S]*?radius:\s*implicitHeight \/ 2[\s\S]*?Model\.historyCountLabel\(/,
+assert.match(historyView, /id:\s*historyCountPill[\s\S]*?radius:\s*implicitHeight \/ 2[\s\S]*?Model\.historyCountLabel\(/,
   "history result counts must render as a labeled status pill")
 assert.match(bar, /readonly property var filteredHistory:\s*Model\.filterAndSortHistory\(/,
   "history filtering must use the behavior-tested bounded model policy")
-assert.match(bar, /model:\s*root\.filteredHistory/,
+assert.match(historyView, /model:\s*view\.controller\.filteredHistory/,
   "history delegates must render only filtered entries")
-assert.match(bar, /No history matches your search\./,
+assert.match(historyView, /No history matches your search\./,
   "history must distinguish a filtered-empty result from an empty store")
-assert.match(bar, /Model\.historyPeriodLabel\(modelData\.endedAt, root\.durationNow\)/,
+assert.match(historyView, /Model\.historyPeriodLabel\(modelData\.endedAt, view\.controller\.durationNow\)/,
   "history entries must expose behavior-tested relative period groups")
 assert.match(bar, /function requestHistoryClear\(\)[\s\S]*?confirmationState\.request\("history"\)[\s\S]*?privacyService\.clearHistory\(\)/,
   "destructive history clearing must use the runtime-tested confirmation controller")

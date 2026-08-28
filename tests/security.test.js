@@ -5,6 +5,8 @@ const root = path.join(__dirname, "..")
 const read = file => fs.readFileSync(path.join(root, file), "utf8")
 
 const bar = read("BarWidget.qml")
+const popupViews = ["PrivacyActivityView.qml", "PrivacyDeviceView.qml", "PrivacyHistoryView.qml"]
+  .map(read).join("\n")
 const service = read("Service.qml")
 const control = read("privacy-control")
 const recording = read("privacy-recording")
@@ -14,7 +16,7 @@ const diagnostics = read("privacy-diagnostics")
 const manifest = read("manifest.json")
 const workflowsDirectory = path.join(root, ".github", "workflows")
 
-if (!bar.includes("textFormat: Text.PlainText")) throw new Error("plain-text QML enforcement missing")
+if (!(bar + popupViews).includes("textFormat: Text.PlainText")) throw new Error("plain-text QML enforcement missing")
 if (!bar.includes("Model.autoTextSafe(value)")) throw new Error("shared AutoText boundary missing")
 if (!service.includes("Model.autoTextSafe(body)")) throw new Error("notification markup boundary missing")
 

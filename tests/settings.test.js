@@ -9,6 +9,9 @@ const bar = fs.readFileSync(path.join(root, "BarWidget.qml"), "utf8")
 const surface = fs.readFileSync(path.join(root, "SettingsSurface.qml"), "utf8")
 const integer = fs.readFileSync(path.join(root, "IntegerSetting.qml"), "utf8")
 const activityCard = fs.readFileSync(path.join(root, "PrivacyActivityCard.qml"), "utf8")
+const activityView = fs.readFileSync(path.join(root, "PrivacyActivityView.qml"), "utf8")
+const historyView = fs.readFileSync(path.join(root, "PrivacyHistoryView.qml"), "utf8")
+const deviceView = fs.readFileSync(path.join(root, "PrivacyDeviceView.qml"), "utf8")
 const deviceEditor = fs.readFileSync(path.join(root, "DeviceSettingsEditor.qml"), "utf8")
 const deviceDiagnostics = fs.readFileSync(path.join(root, "DeviceDiagnostics.qml"), "utf8")
 const settingsNavigation = fs.readFileSync(path.join(root, "PrivacySettingsNavigation.qml"), "utf8")
@@ -23,7 +26,7 @@ const audioEndpointSettings = fs.readFileSync(path.join(root, "AudioEndpointSett
 const globalSettings = ["PrivacyGeneralSettings.qml", "PrivacyAppearanceSettings.qml", "PrivacyAlertsSettings.qml", "PrivacyMonitoringSettings.qml", "PrivacyMarkerGlyphEditor.qml"]
   .map(file => fs.readFileSync(path.join(root, file), "utf8")).join("\n")
 const settingsUi = bar + "\n" + globalSettings
-const deviceSettings = bar + deviceEditor + deviceDiagnostics
+const deviceSettings = deviceView + deviceEditor + deviceDiagnostics
 const defaults = manifest.barWidget.defaults
 const modelContext = {}
 vm.createContext(modelContext)
@@ -70,11 +73,11 @@ assert.match(bar, /function requestGlobalSettingsReset\(\)[\s\S]*?request\("chec
   "the global reset request must preserve an undo point before reset policy")
 for (const selector of ["Monitored activity", "Activity notifications", "Preventative controls"])
   assert.match(globalSettings, new RegExp(`label:\\s*"${selector}"`), `${selector} must remain configurable`)
-assert.match(bar, /GridLayout\s*\{\s*id:\s*activityRows[\s\S]*?visible:\s*root\.editingKind === "" && !root\.showingGlobalSettings[\s\S]*?Repeater\s*\{/,
+assert.match(activityView, /readonly property bool active:\s*controller\.editingKind === "" && !controller\.showingGlobalSettings && !controller\.showingHistory[\s\S]*?visible:\s*active[\s\S]*?GridLayout\s*\{\s*id:\s*activityRows[\s\S]*?Repeater\s*\{/,
   "activity delegates must be owned by a visual container that hides them on settings pages")
-assert.match(bar, /model:\s*root\.editingKind === "" && !root\.showingGlobalSettings && !root\.showingHistory\s*\?[\s\S]*?root\.displayedActivityItems[\s\S]*?:\s*\[\]/,
+assert.match(activityView, /model:\s*view\.active\s*\?\s*view\.controller\.displayedActivityItems\s*:\s*\[\]/,
   "settings and history pages must remove main-widget delegates from the object tree")
-assert.match(bar, /delegate:\s*PrivacyActivityCard\s*\{[\s\S]*?entry:\s*modelData[\s\S]*?controller:\s*root/,
+assert.match(activityView, /delegate:\s*PrivacyActivityCard\s*\{[\s\S]*?entry:\s*modelData[\s\S]*?controller:\s*view\.controller/,
   "activity presentation must be isolated in its tested card component")
 assert.match(bar, /manageIpc:\s*false/, "per-monitor panels must delegate IPC routing to the singleton service and focused-monitor shell router")
 assert.match(bar, /settingsRequestSerial <= handledSettingsRequestSerial[\s\S]*?requestedView === "history"[\s\S]*?showHistory\(\)[\s\S]*?showGlobalSettings\(privacyService\.requestedSettingsPage, privacyService\.requestedSettingsSection\)/,
@@ -91,9 +94,9 @@ assert.match(bar, /function scrollToSettingsSection\(\)[\s\S]*?globalSettingsPag
   "deep links must resolve the live lazy-loaded section and clamp its scroll position")
 assert.match(bar, /id:\s*globalSettingsPageLoader[\s\S]*?onLoaded:\s*Qt\.callLater\(root\.scrollToSettingsSection\)/,
   "lazy settings pages must complete pending deep links after loading")
-assert.match(bar, /History is off[\s\S]*?Open monitoring settings[\s\S]*?showGlobalSettings\("monitoring", "private-data"\)/,
+assert.match(historyView, /History is off[\s\S]*?Open monitoring settings[\s\S]*?showGlobalSettings\("monitoring", "private-data"\)/,
   "disabled history must link directly to its opt-in control")
-assert.match(bar, /Global status-marker rules still apply[\s\S]*?Global marker settings[\s\S]*?showGlobalSettings\("appearance", "status-presentation"\)/,
+assert.match(deviceView, /Global status-marker rules still apply[\s\S]*?Global marker settings[\s\S]*?showGlobalSettings\("appearance", "status-presentation"\)/,
   "per-device marker guidance must link directly to the governing global rules")
 assert.match(activityCard, /required property var controller[\s\S]*?property var entry:/, "activity card must expose one deep controller/entry interface")
 assert.match(globalSettings, /PanelSectionHeader \{ Layout\.fillWidth: true; text: "Observer health" \}[\s\S]*?text: page\.controller\.monitoringTelemetryText\(\)/,
@@ -129,13 +132,15 @@ assert.match(bar, /function persistDeviceLabel\(device, value\)[\s\S]*?deviceLab
   "friendly device names must persist through the sanitized settings boundary")
 assert.match(bar, /Model\.historySummary\([\s\S]*?historySummaryWindow/,
   "history insights must project existing retained rows without separate storage")
-assert.match(bar, /text: "Today"; bordered: true; selected: root\.historySummaryWindow === 24 \* 60 \* 60 \* 1000[\s\S]*?text: "7 days"; bordered: true; selected: root\.historySummaryWindow === 7 \* 24 \* 60 \* 60 \* 1000[\s\S]*?historySummaryRows/,
+assert.match(historyView, /text: "Today"; bordered: true; selected: view\.controller\.historySummaryWindow === 24 \* 60 \* 60 \* 1000[\s\S]*?text: "7 days"; bordered: true; selected: view\.controller\.historySummaryWindow === 7 \* 24 \* 60 \* 60 \* 1000[\s\S]*?historySummaryRows/,
   "history must offer bounded today and seven-day summaries")
-assert.match(bar, /model: root\.historySummaryRows[\s\S]*?delegate: Rectangle[\s\S]*?id: summaryRow[\s\S]*?font\.weight: Font\.DemiBold/,
+assert.match(historyView, /model: view\.controller\.historySummaryRows[\s\S]*?delegate: Rectangle[\s\S]*?id: summaryRow[\s\S]*?font\.weight: Font\.DemiBold/,
   "history summaries must have scannable grouped rows")
-assert.match(bar, /id: historyRows[\s\S]*?visible: root\.historyPresentationEnabled/,
+assert.match(historyView, /id: historyRows[\s\S]*?visible: view\.controller\.historyPresentationEnabled/,
   "disabled history must not display retained activity rows")
-assert.match(bar, /function activateLockdownAction\(\)[\s\S]*?Model\.lockdownActionPresentation\([\s\S]*?restorePrivacyLockdown\(\)[\s\S]*?confirmationState\.request\("lockdown"\)[\s\S]*?requestPrivacyLockdown\(\)[\s\S]*?objectName: "privacyLockdownButton"[\s\S]*?iconText: presentation\.icon[\s\S]*?tooltipText: presentation\.tooltip[\s\S]*?onClicked: root\.activateLockdownAction\(\)/,
+assert.match(bar, /function activateLockdownAction\(\)[\s\S]*?Model\.lockdownActionPresentation\([\s\S]*?restorePrivacyLockdown\(\)[\s\S]*?confirmationState\.request\("lockdown"\)[\s\S]*?requestPrivacyLockdown\(\)/,
+  "the controller must preserve lockdown and observed-state undo behavior")
+assert.match(activityView, /objectName: "privacyLockdownButton"[\s\S]*?iconText: presentation\.icon[\s\S]*?tooltipText: presentation\.tooltip[\s\S]*?onClicked: view\.controller\.activateLockdownAction\(\)/,
   "one compact lock/unlock action must expose lockdown and observed-state undo")
 assert.doesNotMatch(bar, /text: "Undo lockdown"/, "lockdown undo must not consume a second text-button row")
 assert.match(activityCard, /text: !entry\.dependenciesReady \? "INSTALL" : \(entry\.kind === "screenshot" \? "CAPTURE" : controller\.itemStateLabel\(entry\)\)/,
@@ -159,21 +164,21 @@ assert.match(bar, /Grid\s*\{\s*id:\s*iconGrid[\s\S]*?columns:\s*root\.verticalBa
   "bar items must stack on vertical Omarchy bars")
 assert.match(bar, /role === "foreground"[\s\S]*?bar\.foreground/,
   "theme-role fallback must use the documented Omarchy bar foreground")
-assert.match(bar, /label: "Show status markers for this device"[\s\S]*?onChanged: function\(value\) \{ root\.persistItemStatusMarker\(root\.editingKind, value\) \}/,
+assert.match(deviceView, /label: "Show status markers for this device"[\s\S]*?onChanged: function\(value\) \{ root\.persistItemStatusMarker\(root\.editingKind, value\) \}/,
   "per-item marker settings must persist the selected override")
-assert.match(bar, /text: "Move left"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, -1\)/,
+assert.match(deviceView, /text: "Move left"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, -1\)/,
   "device placement must disable unavailable left movement")
-assert.match(bar, /text: "Move right"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, 1\)/,
+assert.match(deviceView, /text: "Move right"[\s\S]*?enabled: root\.canMoveItem\(root\.editingKind, 1\)/,
   "device placement must disable unavailable right movement")
-assert.match(bar, /visible: root\.editingKind !== "" && !root\.showingGlobalSettings[\s\S]*?SettingsSurface\s*\{[\s\S]*?text: "Appearance"/,
+assert.match(deviceView, /visible: root\.editingKind !== "" && !root\.showingGlobalSettings[\s\S]*?SettingsSurface\s*\{[\s\S]*?text: "Appearance"/,
   "device appearance must use the shared settings surface")
 for (const section of ["Bar placement", "Backend", "Diagnostics", "Reset device appearance"])
   assert.match(deviceSettings, new RegExp(`SettingsSurface\\s*\\{[\\s\\S]*?text: "${section}"`), `${section} must use the shared device settings structure`)
-assert.match(bar, /label: "Show status markers for this device"[\s\S]*?Global status-marker rules still apply/,
+assert.match(deviceView, /label: "Show status markers for this device"[\s\S]*?Global status-marker rules still apply/,
   "device marker wording must explain its relationship to global rules")
 for (const label of ["Bar preview", "Display label", "Device icon"])
-  assert.match(bar, new RegExp(`text: "${label}"`), `${label} must remain visible without relying on input placeholders`)
-assert.match(bar, /Shared by microphone and audio output/, "shared audio backend scope must be explicit")
+  assert.match(deviceView, new RegExp(`text: "${label}"`), `${label} must remain visible without relying on input placeholders`)
+assert.match(deviceView, /Shared by microphone and audio output/, "shared audio backend scope must be explicit")
 assert.match(audioEndpointSettings, /surface\.kind === "microphone" \? "Microphone devices" : "Audio output devices"[\s\S]*?audioEndpoints\(surface\.kind\)/,
   "audio settings pages must enumerate their exact hardware endpoints")
 assert.match(audioEndpointSettings, /text: modelData\.muted \? "Allow" : "Block"[\s\S]*?setAudioEndpointMuted\(surface\.kind, modelData\.id, !modelData\.muted\)/,
@@ -187,11 +192,11 @@ assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceE
 assert.match(bar, /function moveDeviceEditor\(delta\)[\s\S]*?Model\.nextNavigationKind\(order, editingKind, delta\)/,
   "device editor navigation must use behavior-tested boundary handling")
 assert.match(deviceEditor, /tooltipText: "Previous device"[\s\S]*?tooltipText: "Next device"/, "device pages must expose accessible adjacent navigation")
-assert.match(bar, /text: confirmationState\.pending === "all" \? "Confirm reset all" : "Reset all device settings"[\s\S]*?root\.resetAllDeviceSettings\(root\.editingKind\)/,
+assert.match(deviceView, /text: confirmationState\.pending === "all" \? "Confirm reset all" : "Reset all device settings"[\s\S]*?root\.resetAllDeviceSettings\(root\.editingKind\)/,
   "the complete device reset must invoke its scoped reset policy after confirmation")
-assert.match(bar, /confirmationState\.pending === "backend"[\s\S]*?Confirm shared backend reset[\s\S]*?confirmationState\.pending === "all"[\s\S]*?Confirm reset all/,
+assert.match(deviceView, /confirmationState\.pending === "backend"[\s\S]*?Confirm shared backend reset[\s\S]*?confirmationState\.pending === "all"[\s\S]*?Confirm reset all/,
   "shared audio resets must require an explicit second action")
-assert.match(bar, /function syncDeviceEditors\(\)[\s\S]*?labelEditor\.text = root\.labelFor\(editingKind\)[\s\S]*?customRecorderStopEditor\.text/,
+assert.match(deviceView, /function syncEditors\(\)[\s\S]*?labelEditor\.text = root\.labelFor\(root\.editingKind\)[\s\S]*?customRecorderStopEditor\.text/,
   "changing devices must replace every editable field instead of retaining stale input")
 assert.match(bar, /onEditingKindChanged:\s*\{[\s\S]*?Qt\.callLater\(syncDeviceEditors\)/,
   "device-editor synchronization must run after every device transition")
@@ -210,28 +215,28 @@ assert.match(bar, /deviceVisibilityOptions:[\s\S]*?value: "show", label: "Show"[
   "device visibility modes must use human-readable options")
 assert.match(bar, /function resetDeviceBackend\(kind\)[\s\S]*?Qt\.callLater\(syncDeviceEditors\)/,
   "backend resets must refresh fields whose edit bindings were replaced")
-assert.match(bar, /property bool dirty:[\s\S]*?Unsaved changes[\s\S]*?enabled: parent\.dirty/,
+assert.match(deviceView, /property bool dirty:[\s\S]*?Unsaved changes[\s\S]*?enabled: parent\.dirty/,
   "device text editors must expose dirty state and disable redundant saves")
-assert.match(bar, /Model\.deviceBackendValidation\("screenshot"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,
+assert.match(deviceView, /Model\.deviceBackendValidation\("screenshot"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,
   "custom screenshot settings must validate before saving")
-assert.match(bar, /Model\.deviceBackendValidation\("screen-recording"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,
+assert.match(deviceView, /Model\.deviceBackendValidation\("screen-recording"[\s\S]*?enabled: parent\.dirty && parent\.validation\.valid/,
   "custom recording settings must validate before saving")
-assert.match(bar, /maximumLength: 4096/, "custom command editors must expose sanitizer-aligned bounds")
-assert.match(bar, /id: labelEditor[\s\S]*?maximumLength: 128/, "device label editor must match its persisted bound")
-assert.match(bar, /id: iconEditor[\s\S]*?maximumLength: 8/, "device icon editor must match its persisted bound")
-assert.match(bar, /function persistIcon\(kind, value\)[\s\S]*?Qt\.callLater[\s\S]*?iconEditor\.text = root\.iconFor\(kind\)/,
+assert.match(deviceView, /maximumLength: 4096/, "custom command editors must expose sanitizer-aligned bounds")
+assert.match(deviceView, /id: labelEditor[\s\S]*?maximumLength: 128/, "device label editor must match its persisted bound")
+assert.match(deviceView, /id: iconEditor[\s\S]*?maximumLength: 8/, "device icon editor must match its persisted bound")
+assert.match(bar, /function persistIcon\(kind, value\)[\s\S]*?Qt\.callLater[\s\S]*?deviceView\.iconEditorControl\.text = root\.iconFor\(kind\)/,
   "sanitized icon saves must reconcile the visible field")
-assert.match(bar, /function persistLabel\(kind, value\)[\s\S]*?Qt\.callLater[\s\S]*?labelEditor\.text = root\.labelFor\(kind\)/,
+assert.match(bar, /function persistLabel\(kind, value\)[\s\S]*?Qt\.callLater[\s\S]*?deviceView\.labelEditorControl\.text = root\.labelFor\(kind\)/,
   "sanitized label saves must reconcile the visible field")
-assert.match(bar, /root\.deviceAppearanceCustomized\(root\.editingKind\) \? "Customized" : "Using global defaults"/,
+assert.match(deviceView, /root\.deviceAppearanceCustomized\(root\.editingKind\) \? "Customized" : "Using global defaults"/,
   "device appearance must identify inherited versus customized state")
-assert.match(bar, /DeviceSettingsEditor\s*\{[\s\S]*?controller: root/, "device editor navigation must use a narrow controller interface")
+assert.match(deviceEditor, /required property var controller/, "device editor navigation must use a narrow controller interface")
 assert.match(deviceDiagnostics, /required property var controller[\s\S]*?required property string kind/, "device diagnostics must expose a narrow controller and device interface")
 assert.match(bar, /function deviceDiagnostic\(kind\)[\s\S]*?Model\.deviceDiagnosticPresentation\(privacyService\.diagnostic\(kind\)\)/,
   "diagnostic content must use the behavior-tested presentation policy")
 assert.match(deviceDiagnostics, /model: diagnostics\.data\.rows[\s\S]*?text: modelData\.label[\s\S]*?text: modelData\.value/,
   "the diagnostics component must render every tested label/value row")
-assert.match(bar, /text: "Reset device appearance"[\s\S]*?default label, icon, colors, idle visibility, idle opacity, and status-marker visibility/,
+assert.match(deviceView, /text: "Reset device appearance"[\s\S]*?default label, icon, colors, idle visibility, idle opacity, and status-marker visibility/,
   "device reset copy must match every reset field")
 assert.match(activityCard, /controller\.statePillStyle === "filled"[\s\S]*?controller\.statePillStyle === "minimal"/, "state-pill styles must alter fill and border presentation")
 assert.match(activityCard, /controller\.popupDensity === "compact"[\s\S]*?verticalPadding/, "popup density must alter row spacing")
@@ -245,7 +250,7 @@ assert.match(activityCard, /visible: card\.visualState !== "idle" \|\| !controll
   "idle cards must not repeat state text already carried by the visible pill")
 assert.match(activityCard, /function sessionSummary\(session\)[\s\S]*?session\.device[\s\S]*?formatDuration[\s\S]*?Inferred/,
   "activity summaries must prioritize device, duration, and attribution quality over backend jargon")
-assert.match(bar, /Layout\.columnSpan: root\.popupGridColumns === 2[\s\S]*?root\.displayedActivityItems\.length % 2 === 1 \? 2 : 1/,
+assert.match(activityView, /Layout\.columnSpan: view\.controller\.popupGridColumns === 2[\s\S]*?view\.controller\.displayedActivityItems\.length % 2 === 1 \? 2 : 1/,
   "an odd final grid card must consume the otherwise empty column")
 assert.match(bar, /running:\s*modelData\.pending && root\.animatePending/, "pending animation must honor its visual setting")
 assert.match(bar, /Timer \{[\s\S]*?running: root\.opened[\s\S]*?onTriggered: if \(!contentFlick\.moving\) root\.durationNow = Date\.now\(\)/,

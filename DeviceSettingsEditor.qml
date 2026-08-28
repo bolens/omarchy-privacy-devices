@@ -25,7 +25,7 @@ ColumnLayout {
     Text {
       objectName: "deviceSettingsTitle"
       Layout.fillWidth: true
-      text: Model.label(editor.controller.editingKind) + " settings"
+      text: editor.controller ? Model.label(editor.controller.editingKind) + " settings" : "Device settings"
       textFormat: Text.PlainText
       color: Color.popups.text
       font.family: Style.font.family
@@ -36,7 +36,7 @@ ColumnLayout {
       objectName: "deviceSettingsPreviousButton"
       iconText: "󰅁"
       tooltipText: "Previous device"
-      enabled: editor.controller.canMoveItem(editor.controller.editingKind, -1)
+      enabled: editor.controller ? editor.controller.canMoveItem(editor.controller.editingKind, -1) : false
       horizontalPadding: Style.spacing.controlGap
       onClicked: editor.controller.moveDeviceEditor(-1)
     }
@@ -44,7 +44,7 @@ ColumnLayout {
       objectName: "deviceSettingsNextButton"
       iconText: "󰅂"
       tooltipText: "Next device"
-      enabled: editor.controller.canMoveItem(editor.controller.editingKind, 1)
+      enabled: editor.controller ? editor.controller.canMoveItem(editor.controller.editingKind, 1) : false
       horizontalPadding: Style.spacing.controlGap
       onClicked: editor.controller.moveDeviceEditor(1)
     }
