@@ -122,6 +122,8 @@ Panel {
   readonly property var historyCountLabel: historyView.countLabel
   readonly property var historyDisabledSettingsControl: historyView.disabledSettingsControl
   readonly property var historyFilterControls: historyView.filterControls
+  readonly property var deviceEditorIconControl: deviceView.iconEditorControl
+  readonly property var deviceEditorLabelControl: deviceView.labelEditorControl
   readonly property var filteredHistory: Model.filterAndSortHistory(privacyService ? privacyService.displayHistory : [], {
     query: historyQuery, kind: historyKindFilter, confidence: historyConfidenceFilter, sort: historySortMode
   })
@@ -334,96 +336,19 @@ Panel {
     persistSettings({privacyModes: modes})
   }
 
-  function item(kind) {
-    var apps = privacyService ? privacyService.appsFor(kind) : []
-    return {
-      kind: kind,
-      label: labelFor(kind),
-      icon: iconFor(kind),
-      active: privacyService ? privacyService.active(kind) : false,
-      apps: apps,
-      controllable: privacyService ? privacyService.controllable(kind) : false,
-      controlEnabled: privacyService ? privacyService.controlEnabled(kind) : false,
-      pending: privacyService && typeof privacyService.controlPending === "function" ? privacyService.controlPending(kind) : false,
-      dependenciesReady: privacyService && typeof privacyService.dependenciesReady === "function" ? privacyService.dependenciesReady(kind) : true,
-      health: privacyService && typeof privacyService.healthFor === "function" ? privacyService.healthFor(kind) : {status: "healthy", summary: ""},
-      sessions: privacyService && typeof privacyService.attributedSessionsFor === "function" ? privacyService.attributedSessionsFor(kind) : []
-    }
-  }
-
-  function barItem(kind) {
-    var entry = item(kind)
-    if (!privacyService || typeof privacyService.barActive !== "function") return entry
-    entry.active = privacyService.barActive(kind)
-    entry.apps = privacyService.barAppsFor(kind)
-    entry.sessions = privacyService.barAttributedSessionsFor(kind)
-    return entry
-  }
-
-  function themeColor(role, activeFallback) {
-    if (role === "bar-active") return Color.bar.active
-    if (role === "urgent") return Color.urgent
-    if (role === "accent") return Color.accent
-    if (role === "foreground") return bar ? bar.foreground : Color.foreground
-    if (role === "muted") return Color.muted
-    return activeFallback ? Color.bar.active : Color.muted
-  }
-
-  function deviceDiagnostic(kind) {
-    if (!privacyService || typeof privacyService.diagnostic !== "function") return {
-      healthStatus: "unavailable", dependenciesReady: true, dependencyDescription: "",
-      rows: [{label: "Status", value: "Diagnostics unavailable", urgent: true}]
-    }
-    return Model.deviceDiagnosticPresentation(privacyService.diagnostic(kind))
-  }
-
-  function isAudioControl(entry) {
-    return entry.kind === "microphone" || entry.kind === "audio-output"
-  }
-
-  function isPreventativeControl(entry) {
-    return ["camera", "screen-share", "location"].indexOf(entry.kind) >= 0
-  }
-
-  function itemVisualState(entry) {
-    return Model.privacyVisualState(entry)
-  }
-
-  function itemStateLabel(entry) { return Model.privacyStateLabel(entry) }
-  function itemStatusMarkerVisible(kind) {
-    var visibility = setting("itemStatusMarkerVisibility", {}) || {}
-    return visibility[kind] === undefined ? true : visibility[kind] === true
-  }
-  function itemStateMarker(entry) {
-    var state = itemVisualState(entry)
-    var stateVisible = state === "active" ? showBarActiveMarker
-      : (state === "disabled" || state === "blocked-active" ? showBarDisabledMarker
-      : (state === "pending" ? showBarPendingMarker
-      : (state === "unavailable" ? showBarDegradedMarker : true)))
-    return Model.privacyStateMarker(entry, statusMarkerMode, itemStatusMarkerVisible(entry.kind) && stateVisible, customBarMarkers)
-  }
-  function itemSessionCount(entry) { return Model.privacySessionCount(entry, showSessionCounts) }
-
-  function barItemText(entry) {
-    var marker = itemStateMarker(entry)
-    var count = Model.privacySessionCount(entry, showBarSessionCounts)
-    var text = entry.icon
-    if (marker) text = barMarkerPosition === "before" ? marker + " " + text : text + " " + marker
-    return text + (count ? " " + String(count) : "")
-  }
-
-  function itemColor(entry) {
-    var state = itemVisualState(entry)
-    if (state === "unavailable") return Color.urgent
-    if (state === "pending") return Color.accent
-    var roles = setting("itemColorRoles", {}) || {}
-    var override = roles[entry.kind] || {}
-    if (state === "blocked-active") return themeColor(String(override.blocked || setting("blockedActiveColorRole", "urgent")), true)
-    if (state === "disabled") return themeColor(String(override.disabled || setting("disabledColorRole", "muted")), false)
-    return state === "active"
-      ? themeColor(String(override.active || setting("activeColorRole", "accent")), true)
-      : themeColor(String(override.inactive || setting("inactiveColorRole", "foreground")), false)
-  }
+  function item(kind) { return presentationController.item(kind) }
+  function barItem(kind) { return presentationController.barItem(kind) }
+  function themeColor(role, activeFallback) { return presentationController.themeColor(role, activeFallback) }
+  function deviceDiagnostic(kind) { return presentationController.deviceDiagnostic(kind) }
+  function isAudioControl(entry) { return presentationController.isAudioControl(entry) }
+  function isPreventativeControl(entry) { return presentationController.isPreventativeControl(entry) }
+  function itemVisualState(entry) { return presentationController.itemVisualState(entry) }
+  function itemStateLabel(entry) { return presentationController.itemStateLabel(entry) }
+  function itemStatusMarkerVisible(kind) { return presentationController.itemStatusMarkerVisible(kind) }
+  function itemStateMarker(entry) { return presentationController.itemStateMarker(entry) }
+  function itemSessionCount(entry) { return presentationController.itemSessionCount(entry) }
+  function barItemText(entry) { return presentationController.barItemText(entry) }
+  function itemColor(entry) { return presentationController.itemColor(entry) }
 
   function persistSettings(values) {
     settingsController.persist(values)
@@ -535,144 +460,25 @@ Panel {
     })
   }
 
-  function persistIcon(kind, value) {
-    var icons = JSON.parse(JSON.stringify(mutationSetting("icons", {}) || {}))
-    icons[kind] = String(value || "")
-    persistSettings({icons: icons})
-    Qt.callLater(function() { if (root.editingKind === kind) deviceView.iconEditorControl.text = root.iconFor(kind) })
-  }
-
-  function labelFor(kind) {
-    var labels = setting("itemLabels", {}) || {}
-    return labels[kind] !== undefined && String(labels[kind]) !== "" ? String(labels[kind]) : Model.label(kind)
-  }
-
-  function persistLabel(kind, value) {
-    var labels = JSON.parse(JSON.stringify(mutationSetting("itemLabels", {}) || {}))
-    var text = String(value || "").trim()
-    if (text) labels[kind] = text
-    else delete labels[kind]
-    persistSettings({itemLabels: labels})
-    Qt.callLater(function() { if (root.editingKind === kind) deviceView.labelEditorControl.text = root.labelFor(kind) })
-  }
-
-  function persistItemColor(kind, state, role) {
-    var roles = JSON.parse(JSON.stringify(mutationSetting("itemColorRoles", {}) || {}))
-    if (role === "inherit") {
-      if (roles[kind]) {
-        delete roles[kind][state]
-        if (Object.keys(roles[kind]).length === 0) delete roles[kind]
-      }
-    } else {
-      if (!roles[kind]) roles[kind] = {}
-      roles[kind][state] = role
-    }
-    persistSettings({itemColorRoles: roles})
-  }
-
-  function persistItemStatusMarker(kind, mode) {
-    var visibility = JSON.parse(JSON.stringify(mutationSetting("itemStatusMarkerVisibility", {}) || {}))
-    if (mode === "inherit") delete visibility[kind]
-    else visibility[kind] = mode === "show"
-    persistSettings({itemStatusMarkerVisibility: visibility})
-  }
-
-  function itemColorRole(kind, state, fallback) {
-    var roles = setting("itemColorRoles", {}) || {}
-    return roles[kind] && roles[kind][state] ? String(roles[kind][state]) : fallback
-  }
-
-  function itemColorOverrideRole(kind, state) {
-    return Model.hasItemOverride(effectiveSettings, "itemColorRoles", kind, state)
-      ? String(setting("itemColorRoles", {})[kind][state]) : "inherit"
-  }
-
-  function itemOverrideMode(group, kind) {
-    return Model.itemOverrideMode(effectiveSettings, group, kind)
-  }
-
-  function moveItem(kind, delta) {
-    var order = orderedKinds()
-    var index = order.indexOf(kind)
-    var target = index + delta
-    if (index < 0 || target < 0 || target >= order.length) return
-    var swap = order[target]
-    order[target] = order[index]
-    order[index] = swap
-    persistSettings({order: order})
-  }
-
-  function canMoveItem(kind, delta) {
-    var order = orderedKinds()
-    var index = order.indexOf(kind)
-    return index >= 0 && index + delta >= 0 && index + delta < order.length
-  }
-
-  function itemShowsWhenIdle(kind) {
-    var overrides = setting("itemIdleVisibility", {}) || {}
-    return overrides[kind] !== undefined ? overrides[kind] === true : showIdle
-  }
-
-  function persistItemIdleVisibility(kind, mode) {
-    var overrides = JSON.parse(JSON.stringify(mutationSetting("itemIdleVisibility", {}) || {}))
-    if (mode === "inherit") delete overrides[kind]
-    else overrides[kind] = mode === "show"
-    persistSettings({itemIdleVisibility: overrides})
-  }
-
-  function itemIdleOpacity(kind) {
-    var overrides = setting("itemIdleOpacity", {}) || {}
-    var value = overrides[kind] !== undefined ? Number(overrides[kind]) : idleOpacity
-    return Math.max(0.1, Math.min(1, isFinite(value) ? value : idleOpacity))
-  }
-
-  function persistItemIdleOpacity(kind, percent) {
-    var overrides = JSON.parse(JSON.stringify(mutationSetting("itemIdleOpacity", {}) || {}))
-    if (percent === null || percent === undefined) delete overrides[kind]
-    else overrides[kind] = Math.max(10, Math.min(100, Number(percent))) / 100
-    persistSettings({itemIdleOpacity: overrides})
-  }
-
-  function itemResetValues(kind) {
-    var icons = JSON.parse(JSON.stringify(mutationSetting("icons", {}) || {}))
-    var roles = JSON.parse(JSON.stringify(mutationSetting("itemColorRoles", {}) || {}))
-    var visibility = JSON.parse(JSON.stringify(mutationSetting("itemIdleVisibility", {}) || {}))
-    var opacity = JSON.parse(JSON.stringify(mutationSetting("itemIdleOpacity", {}) || {}))
-    var markerVisibility = JSON.parse(JSON.stringify(mutationSetting("itemStatusMarkerVisibility", {}) || {}))
-    var labels = JSON.parse(JSON.stringify(mutationSetting("itemLabels", {}) || {}))
-    delete icons[kind]
-    delete roles[kind]
-    delete visibility[kind]
-    delete opacity[kind]
-    delete markerVisibility[kind]
-    delete labels[kind]
-    return {icons: icons, itemColorRoles: roles, itemIdleVisibility: visibility, itemIdleOpacity: opacity, itemStatusMarkerVisibility: markerVisibility, itemLabels: labels}
-  }
-
-  function resetItemSettings(kind) {
-    persistSettings(itemResetValues(kind))
-    Qt.callLater(syncDeviceEditors)
-  }
-
-  function deviceBackendDefaults(kind) {
-    if (kind === "screenshot") return {screenshotBackend: "omarchy", screenshotCustomCommand: "", screenshotProcessName: ""}
-    if (kind === "screen-recording") return {recordingBackend: "omarchy", recordingProcessName: "", recordingCustomStartCommand: "", recordingCustomStopCommand: ""}
-    if (isAudioControl({kind: kind})) return {audioControlBackend: "auto"}
-    return {}
-  }
-
-  function resetDeviceBackend(kind) {
-    persistSettings(deviceBackendDefaults(kind))
-    Qt.callLater(syncDeviceEditors)
-  }
-
-  function resetAllDeviceSettings(kind) {
-    var values = itemResetValues(kind)
-    var backend = deviceBackendDefaults(kind)
-    for (var key in backend) values[key] = backend[key]
-    persistSettings(values)
-    Qt.callLater(syncDeviceEditors)
-  }
+  function persistIcon(kind, value) { deviceSettingsController.persistIcon(kind, value) }
+  function labelFor(kind) { return deviceSettingsController.labelFor(kind) }
+  function persistLabel(kind, value) { deviceSettingsController.persistLabel(kind, value) }
+  function persistItemColor(kind, state, role) { deviceSettingsController.persistItemColor(kind, state, role) }
+  function persistItemStatusMarker(kind, mode) { deviceSettingsController.persistItemStatusMarker(kind, mode) }
+  function itemColorRole(kind, state, fallback) { return deviceSettingsController.itemColorRole(kind, state, fallback) }
+  function itemColorOverrideRole(kind, state) { return deviceSettingsController.itemColorOverrideRole(kind, state) }
+  function itemOverrideMode(group, kind) { return deviceSettingsController.itemOverrideMode(group, kind) }
+  function moveItem(kind, delta) { deviceSettingsController.moveItem(kind, delta) }
+  function canMoveItem(kind, delta) { return deviceSettingsController.canMoveItem(kind, delta) }
+  function itemShowsWhenIdle(kind) { return deviceSettingsController.itemShowsWhenIdle(kind) }
+  function persistItemIdleVisibility(kind, mode) { deviceSettingsController.persistItemIdleVisibility(kind, mode) }
+  function itemIdleOpacity(kind) { return deviceSettingsController.itemIdleOpacity(kind) }
+  function persistItemIdleOpacity(kind, percent) { deviceSettingsController.persistItemIdleOpacity(kind, percent) }
+  function itemResetValues(kind) { return deviceSettingsController.itemResetValues(kind) }
+  function resetItemSettings(kind) { deviceSettingsController.resetItemSettings(kind) }
+  function deviceBackendDefaults(kind) { return deviceSettingsController.deviceBackendDefaults(kind) }
+  function resetDeviceBackend(kind) { deviceSettingsController.resetDeviceBackend(kind) }
+  function resetAllDeviceSettings(kind) { deviceSettingsController.resetAllDeviceSettings(kind) }
 
   function toggleEntry(entry) {
     if (!privacyService || !entry.controllable || entry.pending) return
@@ -711,78 +517,16 @@ Panel {
     privacyService.toggleControl(entry.kind)
   }
 
-  function enabled(kind) {
-    return privacyService ? privacyService.kindEnabled(kind) : Model.arraySetting(setting("enabledKinds", Model.KINDS), Model.KINDS).indexOf(kind) !== -1
-  }
-
-  function orderedKinds() {
-    var result = []
-    for (var index = 0; index < configuredOrder.length; index++) {
-      var kind = configuredOrder[index]
-      if (enabled(kind) && result.indexOf(kind) === -1) result.push(kind)
-    }
-    for (var fallbackIndex = 0; fallbackIndex < Model.KINDS.length; fallbackIndex++) {
-      var fallbackKind = Model.KINDS[fallbackIndex]
-      if (enabled(fallbackKind) && result.indexOf(fallbackKind) === -1) result.push(fallbackKind)
-    }
-    return result
-  }
-
-  function activeItems() {
-    return activeItemList
-  }
-
-  function iconFor(kind) {
-    var icons = setting("icons", {}) || {}
-    return icons[kind] !== undefined ? String(icons[kind]) : defaultIcon(kind)
-  }
-
-  function defaultIcon(kind) {
-    var defaults = {"microphone":"󰍬", "audio-output":"󰓃", "camera":"󰄀", "screen-share":"󰍹", "screenshot":"󰹑", "screen-recording":"󰻂", "location":"󰋽"}
-    return String(defaults[kind] || "")
-  }
-
-  function deviceAppearanceCustomized(kind) {
-    var labels = setting("itemLabels", {}) || {}
-    var icons = setting("icons", {}) || {}
-    return Object.prototype.hasOwnProperty.call(labels, kind)
-      || (Object.prototype.hasOwnProperty.call(icons, kind) && String(icons[kind]) !== defaultIcon(kind))
-      || Model.hasItemOverride(effectiveSettings, "itemColorRoles", kind)
-      || Model.hasItemOverride(effectiveSettings, "itemIdleVisibility", kind)
-      || Model.hasItemOverride(effectiveSettings, "itemIdleOpacity", kind)
-      || Model.hasItemOverride(effectiveSettings, "itemStatusMarkerVisibility", kind)
-  }
-
-  function sharedText(value) {
-    return Model.autoTextSafe(value)
-  }
-
-  function barText() {
-    if (displayMode === "active-count") return activeCount > 0 ? "󰒃 " + activeCount : (showIdle ? "󰒃" : "")
-    var items = displayMode === "active-only" ? activeItems() : visibleItems
-    return items.map(function(entry) { return entry.icon }).join(" ")
-  }
-
-  function tooltip() {
-    if (activeCount === 0) return "Privacy devices idle"
-    return activeItems().map(function(entry) {
-      return sharedText(entry.label) + (entry.apps.length ? ": " + entry.apps.map(sharedText).join(", ") : " in use")
-    }).join("\n")
-  }
-
-  function itemTooltip(entry) {
-    if (entry.kind === "summary") return tooltip()
-    var label = sharedText(entry.label)
-    var visualState = itemVisualState(entry)
-    var state = itemStateLabel(entry)
-    if (visualState === "active" && entry.apps.length) state += " — " + entry.apps.map(sharedText).join(", ")
-    else if (visualState === "unavailable" && entry.health.summary) state += " — " + sharedText(entry.health.summary)
-    var action = Model.itemTooltipAction(entry)
-    return label + " · " + state
-      + "\n" + action
-      + "\nMiddle click for " + label.toLowerCase() + " settings"
-      + "\nRight click for privacy details"
-  }
+  function enabled(kind) { return presentationController.enabled(kind) }
+  function orderedKinds() { return presentationController.orderedKinds() }
+  function activeItems() { return presentationController.activeItems() }
+  function iconFor(kind) { return presentationController.iconFor(kind) }
+  function defaultIcon(kind) { return presentationController.defaultIcon(kind) }
+  function deviceAppearanceCustomized(kind) { return presentationController.deviceAppearanceCustomized(kind) }
+  function sharedText(value) { return presentationController.sharedText(value) }
+  function barText() { return presentationController.barText() }
+  function tooltip() { return presentationController.tooltip() }
+  function itemTooltip(entry) { return presentationController.itemTooltip(entry) }
 
   function pressItem(entry, buttonCode) {
     if (buttonCode === Qt.MiddleButton) {
@@ -851,6 +595,8 @@ Panel {
 
   PrivacyConfirmationController { id: confirmationState }
   PrivacySettingsController { id: settingsController; host: root }
+  PrivacyDeviceSettingsController { id: deviceSettingsController; host: root }
+  PrivacyPresentationController { id: presentationController; host: root }
 
   Timer {
     interval: 1000

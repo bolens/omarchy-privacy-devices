@@ -19,6 +19,8 @@ const settingsNavigation = fs.readFileSync(path.join(root, "PrivacySettingsNavig
 const confirmationController = fs.readFileSync(path.join(root, "PrivacyConfirmationController.qml"), "utf8")
 const mutationController = fs.readFileSync(path.join(root, "PrivacySettingsMutationController.qml"), "utf8")
 const settingsController = fs.readFileSync(path.join(root, "PrivacySettingsController.qml"), "utf8")
+const deviceSettingsController = fs.readFileSync(path.join(root, "PrivacyDeviceSettingsController.qml"), "utf8")
+const presentationController = fs.readFileSync(path.join(root, "PrivacyPresentationController.qml"), "utf8")
 const messageSurface = fs.readFileSync(path.join(root, "PrivacyMessageSurface.qml"), "utf8")
 const settingToggle = fs.readFileSync(path.join(root, "PrivacySettingToggle.qml"), "utf8")
 const transferResult = fs.readFileSync(path.join(root, "PrivacySettingsTransferResult.qml"), "utf8")
@@ -150,7 +152,7 @@ assert.match(activityCard, /text: !entry\.dependenciesReady \? "INSTALL" : \(ent
 assert.match(globalSettings, /Status legend[\s\S]*?Active[\s\S]*?Disabled[\s\S]*?Verifying[\s\S]*?Degraded/, "monitoring settings must explain non-color status markers")
 for (const label of ["Icon scale", "Space between bar items", "Bar item padding", "In use", "In-use opacity", "Enabled and idle", "Enabled-idle opacity", "Disabled", "Disabled opacity", "Blocked request", "Blocked-request opacity", "Bar status markers", "Marker position", "Active marker", "Disabled marker", "Verifying marker", "Degraded marker", "Popup state pills", "Popup density", "Popup layout", "Popup width", "Popup item scale", "Popup idle visibility", "State pills", "Popup session counts", "Bar session counts", "Animate verification"])
   assert.match(globalSettings, new RegExp(label), `${label} must be exposed in global visual settings`)
-assert.match(bar, /state === "active" \? showBarActiveMarker[\s\S]*?state === "disabled" \|\| state === "blocked-active" \? showBarDisabledMarker[\s\S]*?state === "pending" \? showBarPendingMarker[\s\S]*?state === "unavailable" \? showBarDegradedMarker/,
+assert.match(presentationController, /state === "active" \? host\.showBarActiveMarker[\s\S]*?state === "disabled" \|\| state === "blocked-active" \? host\.showBarDisabledMarker[\s\S]*?state === "pending" \? host\.showBarPendingMarker[\s\S]*?state === "unavailable" \? host\.showBarDegradedMarker/,
   "bar status classes must have independent marker visibility")
 for (const label of ["Active marker icon", "Disabled marker icon", "Verifying marker icon", "Degraded marker icon"])
   assert.match(globalSettings, new RegExp(label), `${label} must be exposed for custom marker mode`)
@@ -161,10 +163,10 @@ assert.match(fs.readFileSync(path.join(root, "PrivacyAppearanceSettings.qml"), "
 assert.match(monitoringSettings, /GridLayout\s*\{[\s\S]*?columns: width >= Style\.space\(650\) \? 2 : 1[\s\S]*?id: privateDataSettings[\s\S]*?Layout\.columnSpan: page\.columns/,
   "wide monitoring settings must pair related sections while keeping private data full-width")
 assert.match(bar, /"1234"[\s\S]*?\["general", "appearance", "alerts", "monitoring"\]/, "settings keyboard shortcuts must cover all pages")
-assert.match(bar, /var count = Model\.privacySessionCount\(entry, showBarSessionCounts\)/, "bar counts must not depend on popup-count visibility")
+assert.match(presentationController, /var count = Model\.privacySessionCount\(entry, host\.showBarSessionCounts\)/, "bar counts must not depend on popup-count visibility")
 assert.match(bar, /Grid\s*\{\s*id:\s*iconGrid[\s\S]*?columns:\s*root\.verticalBar \? 1/,
   "bar items must stack on vertical Omarchy bars")
-assert.match(bar, /role === "foreground"[\s\S]*?bar\.foreground/,
+assert.match(presentationController, /role === "foreground"[\s\S]*?host\.bar[\s\S]*?host\.bar\.foreground/,
   "theme-role fallback must use the documented Omarchy bar foreground")
 assert.match(deviceView, /label: "Show status markers for this device"[\s\S]*?onChanged: function\(value\) \{ root\.persistItemStatusMarker\(root\.editingKind, value\) \}/,
   "per-item marker settings must persist the selected override")
@@ -217,7 +219,7 @@ assert.match(bar, /deviceColorRoleOptions:[\s\S]*?value: "inherit", label: "Use 
   "device color inheritance must use a human-readable option")
 assert.match(bar, /deviceVisibilityOptions:[\s\S]*?value: "show", label: "Show"[\s\S]*?value: "hide", label: "Hide"/,
   "device visibility modes must use human-readable options")
-assert.match(bar, /function resetDeviceBackend\(kind\)[\s\S]*?Qt\.callLater\(syncDeviceEditors\)/,
+assert.match(deviceSettingsController, /function resetDeviceBackend\(kind\)[\s\S]*?Qt\.callLater\(host\.syncDeviceEditors\)/,
   "backend resets must refresh fields whose edit bindings were replaced")
 assert.match(deviceBackendSettings, /property bool dirty:[\s\S]*?Unsaved changes[\s\S]*?enabled: parent\.dirty/,
   "device text editors must expose dirty state and disable redundant saves")
@@ -228,15 +230,15 @@ assert.match(deviceBackendSettings, /Model\.deviceBackendValidation\("screen-rec
 assert.match(deviceBackendSettings, /maximumLength: 4096/, "custom command editors must expose sanitizer-aligned bounds")
 assert.match(deviceView, /id: labelEditor[\s\S]*?maximumLength: 128/, "device label editor must match its persisted bound")
 assert.match(deviceView, /id: iconEditor[\s\S]*?maximumLength: 8/, "device icon editor must match its persisted bound")
-assert.match(bar, /function persistIcon\(kind, value\)[\s\S]*?Qt\.callLater[\s\S]*?deviceView\.iconEditorControl\.text = root\.iconFor\(kind\)/,
+assert.match(deviceSettingsController, /function persistIcon\(kind, value\)[\s\S]*?Qt\.callLater[\s\S]*?host\.deviceEditorIconControl\.text = root\.iconFor\(kind\)/,
   "sanitized icon saves must reconcile the visible field")
-assert.match(bar, /function persistLabel\(kind, value\)[\s\S]*?Qt\.callLater[\s\S]*?deviceView\.labelEditorControl\.text = root\.labelFor\(kind\)/,
+assert.match(deviceSettingsController, /function persistLabel\(kind, value\)[\s\S]*?Qt\.callLater[\s\S]*?host\.deviceEditorLabelControl\.text = root\.labelFor\(kind\)/,
   "sanitized label saves must reconcile the visible field")
 assert.match(deviceView, /root\.deviceAppearanceCustomized\(root\.editingKind\) \? "Customized" : "Using global defaults"/,
   "device appearance must identify inherited versus customized state")
 assert.match(deviceEditor, /required property var controller/, "device editor navigation must use a narrow controller interface")
 assert.match(deviceDiagnostics, /required property var controller[\s\S]*?required property string kind/, "device diagnostics must expose a narrow controller and device interface")
-assert.match(bar, /function deviceDiagnostic\(kind\)[\s\S]*?Model\.deviceDiagnosticPresentation\(privacyService\.diagnostic\(kind\)\)/,
+assert.match(presentationController, /function deviceDiagnostic\(kind\)[\s\S]*?Model\.deviceDiagnosticPresentation\(host\.privacyService\.diagnostic\(kind\)\)/,
   "diagnostic content must use the behavior-tested presentation policy")
 assert.match(deviceDiagnostics, /model: diagnostics\.data\.rows[\s\S]*?text: modelData\.label[\s\S]*?text: modelData\.value/,
   "the diagnostics component must render every tested label/value row")
@@ -269,7 +271,7 @@ for (const action of ["Clear stored history", "Export settings", "Import setting
   assert.match(monitoringSettings, new RegExp(`text: "${action}"; bordered: true`), `${action} must look actionable at rest`)
 for (const action of ["Save", "Send test"])
   assert.match(alertsSettings, new RegExp(`text: "${action}"; bordered: true`), `${action} must look actionable at rest`)
-assert.doesNotMatch(bar.match(/function itemColor\(entry\) \{[\s\S]*?^  \}/m)[0], /override\.(?:muted|unmuted)/,
+assert.doesNotMatch(presentationController.match(/function itemColor\(entry\) \{[\s\S]*?^  \}/m)[0], /override\.(?:muted|unmuted)/,
   "legacy audio color fields must not silently override global semantic colors")
 
 console.log("global settings contract tests passed")
