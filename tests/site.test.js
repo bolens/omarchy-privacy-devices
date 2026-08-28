@@ -61,8 +61,8 @@ assert.match(html, /\.site-header\s*\{[^}]*position:\s*sticky/s,
   "primary navigation must remain visible through the long guide");
 assert.match(html, /@media \(max-width: 760px\)[\s\S]*?\.site-header\s*\{\s*position:\s*static;/,
   "mobile navigation must not consume the viewport while scrolling");
-assert.equal(source.querySelectorAll("#screenshots .interface-showcase .screenshot-card").length, 3,
-  "activity, bar, and notification captures must form the interface showcase");
+assert.equal(source.querySelectorAll("#screenshots .interface-showcase .screenshot-card").length, 2,
+  "bar and notification captures must complement the unrepeated hero activity view");
 assert.equal(source.querySelectorAll("#screenshots [data-gallery]").length, 2,
   "settings and workflow captures must be split into focused explorers");
 assert.equal(source.querySelectorAll("#screenshots [data-gallery] .gallery-panel").length, 9,
@@ -80,8 +80,8 @@ assert.match(html, /detected application icon/i,
 for (const capability of ["Privacy lockdown", "Device policies", "today or seven-day counts, duration"])
   assert.match(html, new RegExp(capability, "i"), `user guide must document ${capability}`);
 for (const image of ["preview", "bar", "notification", "general", "appearance", "alerts", "monitoring", "monitoring-private", "monitoring-health", "device", "history", "history-disabled"]) {
-  const element = source.querySelector(`#screenshots img[src="${image}.png"]`);
-  assert.ok(element, `Pages gallery must showcase ${image}.png`);
+  const element = source.querySelector(`${image === "preview" ? ".hero" : "#screenshots"} img[src="${image}.png"]`);
+  assert.ok(element, `Pages guide must showcase ${image}.png exactly once`);
   assert.deepEqual(
     [Number(element.getAttribute("width")), Number(element.getAttribute("height"))],
     pngDimensions(`docs/${image}.png`),
