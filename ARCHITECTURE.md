@@ -54,7 +54,9 @@ multiple displays do not duplicate observers or race for IPC ownership.
   placement, and backend mutations behind the panel's stable facade.
 - `PrivacyPopupNavigationController.qml` owns popup modes, deep-link scrolling,
   keyboard selection, singleton request consumption, and layered dismissal.
-- `PrivacyActivityView.qml`, `PrivacyHistoryView.qml`, and
+- `PrivacyActivityHeader.qml` owns the fixed main-view title and actions while
+  `PrivacyActivityView.qml` owns the independently scrollable activity body.
+  `PrivacyHistoryView.qml` and
   `PrivacyDeviceView.qml` own the three mutually exclusive popup surfaces.
   They receive the panel coordinator as a controller and expose only the few
   controls needed by the existing runtime-test and IPC facade.
