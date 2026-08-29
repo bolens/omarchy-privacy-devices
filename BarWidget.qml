@@ -37,6 +37,7 @@ Panel {
   readonly property int selectedPopupWidth: popupWidth === "narrow" ? 400 : (popupWidth === "wide" ? 720 : 460)
   readonly property int popupBaseWidth: popupLayout === "grid" ? Math.max(620, selectedPopupWidth) : selectedPopupWidth
   readonly property real configuredPanelWidth: popupBaseWidth
+  readonly property real configuredPopupHeight: Style.space(Math.max(360, Math.min(900, Number(setting("popupMaxHeight", 620)) || 620)))
   readonly property int popupGridColumns: popupLayout === "list" ? 1
     : (popup.width >= Style.space(600) && (popupLayout === "grid" || popupWidth === "wide") ? 2 : 1)
   readonly property bool showStatePills: setting("showStatePills", true) === true
@@ -601,7 +602,7 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: fittedContentWidth(Style.space(root.popupBaseWidth))
-    contentHeight: fittedContentHeight(content.implicitHeight, Style.space(Math.max(360, Math.min(900, Number(root.setting("popupMaxHeight", 620)) || 620))))
+    contentHeight: fittedContentHeight(root.configuredPopupHeight, root.configuredPopupHeight)
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -627,6 +628,7 @@ Panel {
       ColumnLayout {
         id: popupLayout
         anchors.fill: parent
+        implicitHeight: root.configuredPopupHeight
         spacing: Style.spacing.md
 
         PrivacyActivityHeader {
@@ -650,9 +652,11 @@ Panel {
 
         Flickable {
         id: contentFlick
+        implicitHeight: 0
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.minimumHeight: Style.space(180)
+        Layout.preferredHeight: 0
         contentWidth: width
         contentHeight: content.implicitHeight
         clip: true
