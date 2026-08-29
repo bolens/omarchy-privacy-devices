@@ -64,7 +64,8 @@ Activity notifications use the detected application icon when available:
 - Keyboard navigation throughout the popup and settings, with activity actions
   and shortcut help pinned around independently scrollable content. Global
   settings navigation and reset actions remain pinned as settings fields move,
-  while the configured popup dimensions stay stable between settings pages.
+  while independently anchored chrome keeps settings content from rendering
+  behind those controls and preserves stable dimensions between pages.
 - Persistent observers and bounded background work, with no network telemetry.
 
 See the [user guide](https://bolens.github.io/omarchy-privacy-devices/#usage)
