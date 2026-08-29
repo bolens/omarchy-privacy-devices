@@ -625,11 +625,17 @@ Panel {
       }
       onTabRequested: function(direction) { if (bar && typeof bar.switchPanelFrom === "function") bar.switchPanelFrom(root, direction) }
 
-      ColumnLayout {
+      Item {
         id: popupLayout
         anchors.fill: parent
         implicitHeight: root.configuredPopupHeight
-        spacing: Style.spacing.md
+
+        ColumnLayout {
+          id: popupHeaderChrome
+          anchors.top: parent.top
+          anchors.left: parent.left
+          anchors.right: parent.right
+          spacing: Style.spacing.md
 
         PrivacyActivityHeader {
           id: activityHeader
@@ -649,14 +655,21 @@ Panel {
           Layout.fillWidth: true
           foreground: root.bar ? root.bar.foreground : Color.popups.text
         }
+        }
+
+        Item {
+        id: contentViewportFrame
+        implicitHeight: 0
+        anchors.top: popupHeaderChrome.bottom
+        anchors.bottom: popupFooterChrome.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.topMargin: Style.spacing.md
+        anchors.bottomMargin: Style.spacing.md
 
         Flickable {
         id: contentFlick
-        implicitHeight: 0
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        Layout.minimumHeight: Style.space(180)
-        Layout.preferredHeight: 0
+        anchors.fill: parent
         contentWidth: width
         contentHeight: content.implicitHeight
         clip: true
@@ -711,6 +724,14 @@ Panel {
 
         }
       }
+      }
+
+        ColumnLayout {
+          id: popupFooterChrome
+          anchors.bottom: parent.bottom
+          anchors.left: parent.left
+          anchors.right: parent.right
+          spacing: Style.spacing.md
 
         PanelSeparator {
           visible: root.showingGlobalSettings
@@ -739,6 +760,7 @@ Panel {
           font.family: Style.font.family
           font.pixelSize: Style.font.caption
           wrapMode: Text.WordWrap
+        }
         }
       }
     }
