@@ -10,6 +10,7 @@ const surface = fs.readFileSync(path.join(root, "SettingsSurface.qml"), "utf8")
 const integer = fs.readFileSync(path.join(root, "IntegerSetting.qml"), "utf8")
 const activityCard = fs.readFileSync(path.join(root, "PrivacyActivityCard.qml"), "utf8")
 const activityView = fs.readFileSync(path.join(root, "PrivacyActivityView.qml"), "utf8")
+const activityHeader = fs.readFileSync(path.join(root, "PrivacyActivityHeader.qml"), "utf8")
 const historyView = fs.readFileSync(path.join(root, "PrivacyHistoryView.qml"), "utf8")
 const deviceView = fs.readFileSync(path.join(root, "PrivacyDeviceView.qml"), "utf8")
 const deviceBackendSettings = fs.readFileSync(path.join(root, "PrivacyDeviceBackendSettings.qml"), "utf8")
@@ -148,7 +149,7 @@ assert.match(historyView, /id: historyRows[\s\S]*?visible: view\.controller\.his
   "disabled history must not display retained activity rows")
 assert.match(bar, /function activateLockdownAction\(\)[\s\S]*?Model\.lockdownActionPresentation\([\s\S]*?restorePrivacyLockdown\(\)[\s\S]*?confirmationState\.request\("lockdown"\)[\s\S]*?requestPrivacyLockdown\(\)/,
   "the controller must preserve lockdown and observed-state undo behavior")
-assert.match(activityView, /objectName: "privacyLockdownButton"[\s\S]*?iconText: presentation\.icon[\s\S]*?tooltipText: presentation\.tooltip[\s\S]*?onClicked: view\.controller\.activateLockdownAction\(\)/,
+assert.match(activityHeader, /objectName: "privacyLockdownButton"[\s\S]*?iconText: presentation\.icon[\s\S]*?tooltipText: presentation\.tooltip[\s\S]*?onClicked: header\.controller\.activateLockdownAction\(\)/,
   "one compact lock/unlock action must expose lockdown and observed-state undo")
 assert.doesNotMatch(bar, /text: "Undo lockdown"/, "lockdown undo must not consume a second text-button row")
 assert.match(activityCard, /text: !entry\.dependenciesReady \? "INSTALL" : \(entry\.kind === "screenshot" \? "CAPTURE" : controller\.itemStateLabel\(entry\)\)/,

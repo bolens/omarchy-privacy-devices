@@ -119,7 +119,7 @@ Panel {
   readonly property var contentViewport: contentFlick
   readonly property var settingsPageItem: globalSettingsPageLoader.item
   readonly property var settingsMutationControl: settingsController.mutationControl
-  readonly property var lockdownActionControl: activityView.lockdownActionControl
+  readonly property var lockdownActionControl: activityHeader.lockdownActionControl
   readonly property var privacyPresetFeedbackSurface: activityView.presetFeedbackSurface
   readonly property string confirmationPending: confirmationState.pending
   readonly property var historySearchControl: historyView.searchControl
@@ -601,7 +601,7 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: fittedContentWidth(Style.space(root.popupBaseWidth))
-    contentHeight: fittedContentHeight(content.implicitHeight, Style.space(Math.max(360, Math.min(900, Number(root.setting("popupMaxHeight", 620)) || 620))))
+    contentHeight: fittedContentHeight(popupLayout.implicitHeight, Style.space(Math.max(360, Math.min(900, Number(root.setting("popupMaxHeight", 620)) || 620))))
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -624,9 +624,23 @@ Panel {
       }
       onTabRequested: function(direction) { if (bar && typeof bar.switchPanelFrom === "function") bar.switchPanelFrom(root, direction) }
 
-      Flickable {
-        id: contentFlick
+      ColumnLayout {
+        id: popupLayout
         anchors.fill: parent
+        spacing: Style.spacing.md
+
+        PrivacyActivityHeader {
+          id: activityHeader
+          visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory
+          controller: root
+          Layout.fillWidth: true
+        }
+
+        Flickable {
+        id: contentFlick
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        Layout.minimumHeight: Style.space(180)
         contentWidth: width
         contentHeight: content.implicitHeight
         clip: true
@@ -682,6 +696,18 @@ Panel {
           controller: root
         }
 
+        }
+      }
+
+        Text {
+          visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory
+          Layout.fillWidth: true
+          text: "Keyboard: ↑/↓ select · Enter open · H history · S settings · R refresh · Esc close"
+          textFormat: Text.PlainText
+          color: Color.muted
+          font.family: Style.font.family
+          font.pixelSize: Style.font.caption
+          wrapMode: Text.WordWrap
         }
       }
     }
