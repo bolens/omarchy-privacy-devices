@@ -60,6 +60,8 @@ multiple displays do not duplicate observers or race for IPC ownership.
   `PrivacyDeviceView.qml` own the three mutually exclusive popup surfaces.
   They receive the panel coordinator as a controller and expose only the few
   controls needed by the existing runtime-test and IPC facade.
+  Global-settings navigation and reset actions remain panel-owned fixed chrome;
+  lazy page content alone occupies the shared scroll viewport.
 - `PrivacyDeviceBackendSettings.qml` owns lazy capture/audio backend editing
   and custom-command validation. `PrivacySettingsController.qml` owns settings
   commit/rollback, coalescing feedback, private transfer, and mutation expiry.
