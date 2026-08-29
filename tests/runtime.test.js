@@ -83,6 +83,8 @@ assert.match(activityView, /required property var controller[\s\S]*?readonly pro
   "scrollable activity composition must expose its tested feedback control")
 assert.match(activityHeader, /required property var controller[\s\S]*?readonly property alias lockdownActionControl:/,
   "the fixed activity header must expose its tested action control")
+assert.match(activityHeader, /readonly property bool narrow:[\s\S]*?Rectangle \{[\s\S]*?visible: !header\.narrow/,
+  "the activity header must yield its status badge before narrow actions overflow")
 assert.match(bar, /PrivacyDeviceView\s*\{[\s\S]*?id:\s*deviceView[\s\S]*?controller:\s*root/,
   "the bar must delegate device settings composition through the existing controller contract")
 assert.match(deviceView, /DeviceSettingsEditor\s*\{[\s\S]*?function syncEditors\(\)/,
@@ -535,6 +537,10 @@ assert.match(navigationController, /function closeCurrentLayer\(\)[\s\S]*?Model\
   "layered dismissal must use the behavior-tested priority policy")
 assert.match(bar, /ColumnLayout\s*\{[\s\S]*?id:\s*popupLayout[\s\S]*?PrivacyActivityHeader[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
   "the activity header and footer must remain outside the scrollable content viewport")
+assert.match(bar, /contentHeight:\s*fittedContentHeight\(content\.implicitHeight,[\s\S]*?popupMaxHeight", 620/,
+  "fixed activity chrome must not collapse the configured panel height to the viewport minimum")
+assert.match(bar, /PrivacySettingsNavigation[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?tooltipText:\s*"Reset all global settings"/,
+  "global settings navigation and reset actions must remain outside the scroll viewport")
 assert.match(bar, /text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
   "the activity footer must advertise every main-view keyboard command")
 assert.match(activityHeader, /tooltipText: "Activity history"[\s\S]*?tooltipText: "Global settings"/,
