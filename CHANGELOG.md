@@ -7,6 +7,14 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-08-29
+
+### Fixed
+
+- Keep activity and global-settings popups at the configured dimensions across
+  sparse and content-heavy views, preserving a useful scroll viewport without
+  layout jumps between settings pages.
+
 ## [0.9.2] - 2026-08-29
 
 ### Fixed
@@ -406,7 +414,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.2...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.3...HEAD
+[0.9.3]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.8.1...v0.9.0
