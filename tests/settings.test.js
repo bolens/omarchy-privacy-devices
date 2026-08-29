@@ -101,7 +101,7 @@ assert.match(navigationController, /function showSettings\(page, section\)[\s\S]
   "settings navigation must preserve a validated section deep link until layout completes")
 assert.match(navigationController, /function scrollToSettingsSection\(\)[\s\S]*?page\.sectionItems[\s\S]*?mapToItem\(host\.contentViewport\.contentItem[\s\S]*?Model\.settingsScrollPosition/,
   "deep links must resolve the live lazy-loaded section and clamp its scroll position")
-assert.match(bar, /id:\s*globalSettingsPageLoader[\s\S]*?onLoaded:\s*Qt\.callLater\(root\.scrollToSettingsSection\)/,
+assert.match(bar, /id:\s*globalSettingsPageLoader[\s\S]*?onLoaded:\s*\{[\s\S]*?Qt\.callLater\(root\.scrollToSettingsSection\)/,
   "lazy settings pages must complete pending deep links after loading")
 assert.match(historyView, /History is off[\s\S]*?Open monitoring settings[\s\S]*?showGlobalSettings\("monitoring", "private-data"\)/,
   "disabled history must link directly to its opt-in control")

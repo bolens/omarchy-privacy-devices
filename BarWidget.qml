@@ -38,6 +38,13 @@ Panel {
   readonly property int popupBaseWidth: popupLayout === "grid" ? Math.max(620, selectedPopupWidth) : selectedPopupWidth
   readonly property real configuredPanelWidth: popupBaseWidth
   readonly property real configuredPopupHeight: Style.space(Math.max(360, Math.min(900, Number(setting("popupMaxHeight", 620)) || 620)))
+  property int popupContentRevision: 0
+  readonly property real popupChromeHeight: popupHeaderChrome.implicitHeight + popupFooterChrome.implicitHeight + Style.spacing.md * 2
+  readonly property real popupViewportHeight: {
+    var revision = popupContentRevision
+    return Math.min(Math.max(0, configuredPopupHeight - popupChromeHeight), Math.max(Style.space(180), contentFlick.contentHeight))
+  }
+  readonly property real desiredPopupHeight: popupChromeHeight + popupViewportHeight
   readonly property int popupGridColumns: popupLayout === "list" ? 1
     : (popup.width >= Style.space(600) && (popupLayout === "grid" || popupWidth === "wide") ? 2 : 1)
   readonly property bool showStatePills: setting("showStatePills", true) === true
@@ -602,7 +609,7 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: fittedContentWidth(Style.space(root.popupBaseWidth))
-    contentHeight: fittedContentHeight(root.configuredPopupHeight, root.configuredPopupHeight)
+    contentHeight: fittedContentHeight(root.desiredPopupHeight, root.configuredPopupHeight)
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -628,7 +635,7 @@ Panel {
       Item {
         id: popupLayout
         anchors.fill: parent
-        implicitHeight: root.configuredPopupHeight
+        implicitHeight: root.desiredPopupHeight
 
         ColumnLayout {
           id: popupHeaderChrome
@@ -712,7 +719,10 @@ Panel {
             sourceComponent: root.globalSettingsPage === "general" ? generalSettingsPage
               : (root.globalSettingsPage === "appearance" ? appearanceSettingsPage
               : (root.globalSettingsPage === "alerts" ? alertsSettingsPage : monitoringSettingsPage))
-            onLoaded: Qt.callLater(root.scrollToSettingsSection)
+            onLoaded: {
+              Qt.callLater(root.scrollToSettingsSection)
+              Qt.callLater(function() { root.popupContentRevision += 1 })
+            }
           }
 
         }
