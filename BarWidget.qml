@@ -601,7 +601,7 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: fittedContentWidth(Style.space(root.popupBaseWidth))
-    contentHeight: fittedContentHeight(popupLayout.implicitHeight, Style.space(Math.max(360, Math.min(900, Number(root.setting("popupMaxHeight", 620)) || 620))))
+    contentHeight: fittedContentHeight(content.implicitHeight, Style.space(Math.max(360, Math.min(900, Number(root.setting("popupMaxHeight", 620)) || 620))))
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -634,6 +634,18 @@ Panel {
           visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory
           controller: root
           Layout.fillWidth: true
+        }
+
+        PrivacySettingsNavigation {
+          visible: root.showingGlobalSettings
+          controller: root
+          Layout.fillWidth: true
+        }
+
+        PanelSeparator {
+          visible: root.showingGlobalSettings
+          Layout.fillWidth: true
+          foreground: root.bar ? root.bar.foreground : Color.popups.text
         }
 
         Flickable {
@@ -671,8 +683,6 @@ Panel {
           Layout.fillWidth: true
           spacing: Style.spacing.md
 
-          PrivacySettingsNavigation { controller: root }
-
           PrivacyMessageSurface {
             visible: root.settingsMutationMessage !== ""
             message: root.settingsMutationMessage
@@ -688,7 +698,6 @@ Panel {
             onLoaded: Qt.callLater(root.scrollToSettingsSection)
           }
 
-          Button { Layout.alignment: Qt.AlignRight; iconText: "󰑐"; tooltipText: "Reset all global settings"; horizontalPadding: Style.spacing.controlGap; bordered: true; background: Util.alpha(root.activeThemeColor, 0.06); enabled: !root.settingsTransferRunning; onClicked: root.requestGlobalSettingsReset() }
         }
 
         PrivacyDeviceView {
@@ -698,6 +707,24 @@ Panel {
 
         }
       }
+
+        PanelSeparator {
+          visible: root.showingGlobalSettings
+          Layout.fillWidth: true
+          foreground: root.bar ? root.bar.foreground : Color.popups.text
+        }
+
+        Button {
+          visible: root.showingGlobalSettings
+          Layout.alignment: Qt.AlignRight
+          iconText: "󰑐"
+          tooltipText: "Reset all global settings"
+          horizontalPadding: Style.spacing.controlGap
+          bordered: true
+          background: Util.alpha(root.activeThemeColor, 0.06)
+          enabled: !root.settingsTransferRunning
+          onClicked: root.requestGlobalSettingsReset()
+        }
 
         Text {
           visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory

@@ -8,6 +8,7 @@ import "Model.js" as Model
 RowLayout {
   id: header
   required property var controller
+  readonly property bool narrow: width < Style.space(440)
   readonly property var privacyService: controller.privacyService
   readonly property alias lockdownActionControl: lockdownButton
   Layout.fillWidth: true
@@ -22,6 +23,7 @@ RowLayout {
   }
   Item { Layout.fillWidth: true }
   Rectangle {
+    visible: !header.narrow
     implicitWidth: statusText.implicitWidth + Style.spacing.md * 2
     implicitHeight: statusText.implicitHeight + Style.spacing.sm
     radius: implicitHeight / 2
