@@ -537,10 +537,14 @@ assert.match(navigationController, /function closeCurrentLayer\(\)[\s\S]*?Model\
   "layered dismissal must use the behavior-tested priority policy")
 assert.match(bar, /ColumnLayout\s*\{[\s\S]*?id:\s*popupLayout[\s\S]*?PrivacyActivityHeader[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
   "the activity header and footer must remain outside the scrollable content viewport")
-assert.match(bar, /contentHeight:\s*fittedContentHeight\(content\.implicitHeight,[\s\S]*?popupMaxHeight", 620/,
-  "fixed activity chrome must not collapse the configured panel height to the viewport minimum")
+assert.match(bar, /configuredPopupHeight:[\s\S]*?popupMaxHeight", 620[\s\S]*?contentHeight:\s*fittedContentHeight\(root\.configuredPopupHeight, root\.configuredPopupHeight\)/,
+  "every popup mode and settings page must retain a consistent configured height")
 assert.match(bar, /PrivacySettingsNavigation[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?tooltipText:\s*"Reset all global settings"/,
   "global settings navigation and reset actions must remain outside the scroll viewport")
+assert.match(bar, /id:\s*contentFlick[\s\S]*?implicitHeight:\s*0[\s\S]*?Layout\.fillHeight:\s*true[\s\S]*?Layout\.preferredHeight:\s*0/,
+  "long settings pages must not contribute their implicit height to the fixed panel layout")
+assert.match(bar, /id:\s*popupLayout[\s\S]*?implicitHeight:\s*root\.configuredPopupHeight/,
+  "the panel layout must report the same stable height as its outer frame")
 assert.match(bar, /text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
   "the activity footer must advertise every main-view keyboard command")
 assert.match(activityHeader, /tooltipText: "Activity history"[\s\S]*?tooltipText: "Global settings"/,
