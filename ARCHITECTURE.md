@@ -61,7 +61,9 @@ multiple displays do not duplicate observers or race for IPC ownership.
   They receive the panel coordinator as a controller and expose only the few
   controls needed by the existing runtime-test and IPC facade.
   Global-settings navigation and reset actions remain panel-owned fixed chrome;
-  lazy page content alone occupies the shared scroll viewport.
+  lazy page content alone occupies the shared scroll viewport. The popup frame
+  owns a configured fixed height, and scroll bodies contribute no implicit
+  height, preventing content-heavy pages from resizing or relocating the frame.
 - `PrivacyDeviceBackendSettings.qml` owns lazy capture/audio backend editing
   and custom-command validation. `PrivacySettingsController.qml` owns settings
   commit/rollback, coalescing feedback, private transfer, and mutation expiry.
