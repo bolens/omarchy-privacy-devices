@@ -7,6 +7,14 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-08-29
+
+### Fixed
+
+- Keep popup width stable between views while fitting height to loaded content,
+  retaining a useful minimum scroll viewport and the configured maximum without
+  leaving large empty regions below short pages.
+
 ## [0.9.4] - 2026-08-29
 
 ### Fixed
@@ -422,7 +430,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.4...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.5...HEAD
+[0.9.5]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.4...v0.9.5
 [0.9.4]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.1...v0.9.2
