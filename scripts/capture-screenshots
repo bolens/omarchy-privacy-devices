@@ -325,6 +325,9 @@ capture_current_panel() {
   local name=$1 height=${2:-660} crop_top=${3:-20}
   check_capture_environment || return 1
   focus_capture_workspace || return 1
+  # IPC readiness confirms QML state, not compositor presentation. Let the
+  # scrolled frame settle before retaining visual evidence.
+  sleep 0.3
   resolve_geometry || return 1
   capture_monitor_frame "$capture_dir/$name-full.png"
   magick "$capture_dir/$name-full.png" \

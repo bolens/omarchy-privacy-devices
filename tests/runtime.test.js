@@ -535,16 +535,20 @@ assert.doesNotMatch(bar, /function activityStateChanged\(/,
 assert.match(bar, /onCloseRequested:\s*root\.closeCurrentLayer\(\)/, "Escape must invoke layered popup dismissal")
 assert.match(navigationController, /function closeCurrentLayer\(\)[\s\S]*?Model\.popupDismissalAction\(editingKind, showingGlobalSettings, showingHistory\)/,
   "layered dismissal must use the behavior-tested priority policy")
-assert.match(bar, /ColumnLayout\s*\{[\s\S]*?id:\s*popupLayout[\s\S]*?PrivacyActivityHeader[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
+assert.match(bar, /Item\s*\{[\s\S]*?id:\s*popupLayout[\s\S]*?PrivacyActivityHeader[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
   "the activity header and footer must remain outside the scrollable content viewport")
 assert.match(bar, /configuredPopupHeight:[\s\S]*?popupMaxHeight", 620[\s\S]*?contentHeight:\s*fittedContentHeight\(root\.configuredPopupHeight, root\.configuredPopupHeight\)/,
   "every popup mode and settings page must retain a consistent configured height")
 assert.match(bar, /PrivacySettingsNavigation[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?tooltipText:\s*"Reset all global settings"/,
   "global settings navigation and reset actions must remain outside the scroll viewport")
-assert.match(bar, /id:\s*contentFlick[\s\S]*?implicitHeight:\s*0[\s\S]*?Layout\.fillHeight:\s*true[\s\S]*?Layout\.preferredHeight:\s*0/,
+assert.match(bar, /id:\s*contentViewportFrame[\s\S]*?implicitHeight:\s*0[\s\S]*?anchors\.top:\s*popupHeaderChrome\.bottom[\s\S]*?anchors\.bottom:\s*popupFooterChrome\.top/,
   "long settings pages must not contribute their implicit height to the fixed panel layout")
 assert.match(bar, /id:\s*popupLayout[\s\S]*?implicitHeight:\s*root\.configuredPopupHeight/,
   "the panel layout must report the same stable height as its outer frame")
+assert.match(bar, /Item\s*\{[\s\S]*?id:\s*contentViewportFrame[\s\S]*?implicitHeight:\s*0[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?anchors\.fill:\s*parent/,
+  "the scroll viewport must be isolated from page-content implicit sizing")
+assert.match(bar, /id:\s*popupHeaderChrome[\s\S]*?anchors\.top:\s*parent\.top[\s\S]*?id:\s*contentViewportFrame[\s\S]*?anchors\.top:\s*popupHeaderChrome\.bottom[\s\S]*?anchors\.bottom:\s*popupFooterChrome\.top[\s\S]*?id:\s*popupFooterChrome[\s\S]*?anchors\.bottom:\s*parent\.bottom/,
+  "fixed chrome and the scroll viewport must use independent anchored regions")
 assert.match(bar, /text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
   "the activity footer must advertise every main-view keyboard command")
 assert.match(activityHeader, /tooltipText: "Activity history"[\s\S]*?tooltipText: "Global settings"/,
