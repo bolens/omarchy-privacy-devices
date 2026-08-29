@@ -62,7 +62,8 @@ Activity notifications use the detected application icon when available:
 - Deep-linked IPC routes for the main activity view, a validated device detail,
   a settings page, or a validated settings section.
 - Keyboard navigation throughout the popup and settings, with activity actions
-  and shortcut help pinned around independently scrollable content.
+  and shortcut help pinned around independently scrollable content. Global
+  settings navigation and reset actions remain pinned as settings fields move.
 - Persistent observers and bounded background work, with no network telemetry.
 
 See the [user guide](https://bolens.github.io/omarchy-privacy-devices/#usage)
