@@ -65,7 +65,8 @@ Activity notifications use the detected application icon when available:
   and shortcut help pinned around independently scrollable content. Global
   settings navigation and reset actions remain pinned as settings fields move,
   while independently anchored chrome keeps settings content from rendering
-  behind those controls and preserves stable dimensions between pages.
+  behind those controls. Width remains stable between pages while height fits
+  loaded content between a useful minimum viewport and the configured cap.
 - Persistent observers and bounded background work, with no network telemetry.
 
 See the [user guide](https://bolens.github.io/omarchy-privacy-devices/#usage)
