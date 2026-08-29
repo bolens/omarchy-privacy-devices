@@ -15,6 +15,9 @@ const historyView = fs.readFileSync(historyViewPath, "utf8")
 const activityViewPath = path.join(__dirname, "..", "PrivacyActivityView.qml")
 assert.ok(fs.existsSync(activityViewPath), "activity composition must live in PrivacyActivityView.qml")
 const activityView = fs.readFileSync(activityViewPath, "utf8")
+const activityHeaderPath = path.join(__dirname, "..", "PrivacyActivityHeader.qml")
+assert.ok(fs.existsSync(activityHeaderPath), "the fixed activity header must live in PrivacyActivityHeader.qml")
+const activityHeader = fs.readFileSync(activityHeaderPath, "utf8")
 const deviceViewPath = path.join(__dirname, "..", "PrivacyDeviceView.qml")
 assert.ok(fs.existsSync(deviceViewPath), "device settings composition must live in PrivacyDeviceView.qml")
 const deviceView = fs.readFileSync(deviceViewPath, "utf8")
@@ -76,8 +79,10 @@ assert.match(historyView, /required property var controller[\s\S]*?readonly prop
   "history composition must expose only the controls required by behavior tests and IPC")
 assert.match(bar, /PrivacyActivityView\s*\{[\s\S]*?id:\s*activityView[\s\S]*?controller:\s*root/,
   "the bar must delegate activity composition through the existing controller contract")
-assert.match(activityView, /required property var controller[\s\S]*?readonly property alias lockdownActionControl:[\s\S]*?readonly property alias presetFeedbackSurface:/,
-  "activity composition must expose only its tested action and feedback controls")
+assert.match(activityView, /required property var controller[\s\S]*?readonly property alias presetFeedbackSurface:/,
+  "scrollable activity composition must expose its tested feedback control")
+assert.match(activityHeader, /required property var controller[\s\S]*?readonly property alias lockdownActionControl:/,
+  "the fixed activity header must expose its tested action control")
 assert.match(bar, /PrivacyDeviceView\s*\{[\s\S]*?id:\s*deviceView[\s\S]*?controller:\s*root/,
   "the bar must delegate device settings composition through the existing controller contract")
 assert.match(deviceView, /DeviceSettingsEditor\s*\{[\s\S]*?function syncEditors\(\)/,
@@ -528,9 +533,11 @@ assert.doesNotMatch(bar, /function activityStateChanged\(/,
 assert.match(bar, /onCloseRequested:\s*root\.closeCurrentLayer\(\)/, "Escape must invoke layered popup dismissal")
 assert.match(navigationController, /function closeCurrentLayer\(\)[\s\S]*?Model\.popupDismissalAction\(editingKind, showingGlobalSettings, showingHistory\)/,
   "layered dismissal must use the behavior-tested priority policy")
-assert.match(activityView, /text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
+assert.match(bar, /ColumnLayout\s*\{[\s\S]*?id:\s*popupLayout[\s\S]*?PrivacyActivityHeader[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
+  "the activity header and footer must remain outside the scrollable content viewport")
+assert.match(bar, /text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
   "the activity footer must advertise every main-view keyboard command")
-assert.match(activityView, /tooltipText: "Activity history"[\s\S]*?tooltipText: "Global settings"/,
+assert.match(activityHeader, /tooltipText: "Activity history"[\s\S]*?tooltipText: "Global settings"/,
   "the history action must sit immediately left of global settings")
 assert.match(navigationController, /function showHistory\(\)[\s\S]*?host\.privacyService\.loadHistory\(\)/,
   "opening history must request persisted entries without polling")

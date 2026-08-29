@@ -11,67 +11,11 @@ ColumnLayout {
   required property var controller
   readonly property var privacyService: controller.privacyService
   readonly property bool active: controller.editingKind === "" && !controller.showingGlobalSettings && !controller.showingHistory
-  readonly property alias lockdownActionControl: lockdownButton
   readonly property alias presetFeedbackSurface: presetFeedback
 
   visible: active
   Layout.fillWidth: true
   spacing: Style.spacing.md
-
-  RowLayout {
-    Layout.fillWidth: true
-    Text {
-      text: "Privacy activity"
-      textFormat: Text.PlainText
-      color: Color.popups.text
-      font.family: Style.font.family
-      font.pixelSize: Style.font.title
-      font.weight: Font.DemiBold
-    }
-    Item { Layout.fillWidth: true }
-    Rectangle {
-      implicitWidth: statusText.implicitWidth + Style.spacing.md * 2
-      implicitHeight: statusText.implicitHeight + Style.spacing.sm
-      radius: implicitHeight / 2
-      color: Util.alpha(view.controller.monitoringDegraded ? Color.urgent : (view.controller.activeCount > 0 ? view.controller.activeThemeColor : view.controller.inactiveThemeColor), 0.14)
-      border.width: 1
-      border.color: Util.alpha(view.controller.monitoringDegraded ? Color.urgent : (view.controller.activeCount > 0 ? view.controller.activeThemeColor : view.controller.inactiveThemeColor), 0.32)
-      Text {
-        id: statusText
-        anchors.centerIn: parent
-        text: view.controller.monitoringDegraded ? "󰀦  Degraded" : (view.controller.activeCount > 0 ? view.controller.activeCount + " active" : "All idle")
-        textFormat: Text.PlainText
-        color: view.controller.monitoringDegraded ? Color.urgent : (view.controller.activeCount > 0 ? view.controller.activeThemeColor : view.controller.inactiveThemeColor)
-        font.family: Style.font.family
-        font.pixelSize: Style.font.caption
-        font.weight: Font.DemiBold
-      }
-    }
-    Button {
-      iconText: "󰋚"
-      tooltipText: "Activity history"
-      horizontalPadding: Style.spacing.controlGap
-      onClicked: view.controller.showHistory()
-    }
-    Button {
-      id: lockdownButton
-      objectName: "privacyLockdownButton"
-      readonly property var presentation: Model.lockdownActionPresentation(
-        view.privacyService && view.privacyService.privacyPresetUndoAvailable,
-        view.controller.confirmationPending === "lockdown")
-      iconText: presentation.icon
-      enabled: view.privacyService && view.privacyService.privacyPresetState !== "applying" && view.privacyService.privacyPresetState !== "restoring"
-      tooltipText: presentation.tooltip
-      horizontalPadding: Style.spacing.controlGap
-      onClicked: view.controller.activateLockdownAction()
-    }
-    Button {
-      iconText: "󰒓"
-      tooltipText: "Global settings"
-      horizontalPadding: Style.spacing.controlGap
-      onClicked: view.controller.showGlobalSettings("general")
-    }
-  }
 
   PrivacyMessageSurface {
     id: presetFeedback
@@ -123,13 +67,4 @@ ColumnLayout {
     }
   }
 
-  Text {
-    Layout.fillWidth: true
-    text: "Keyboard: ↑/↓ select · Enter open · H history · S settings · R refresh · Esc close"
-    textFormat: Text.PlainText
-    color: Color.muted
-    font.family: Style.font.family
-    font.pixelSize: Style.font.caption
-    wrapMode: Text.WordWrap
-  }
 }
