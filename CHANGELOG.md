@@ -7,6 +7,14 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-08-29
+
+### Fixed
+
+- Isolate fixed popup headers and footers in independently anchored regions so
+  no settings content can render beneath or displace them, and settle visual
+  audit frames before retaining scroll-boundary evidence.
+
 ## [0.9.3] - 2026-08-29
 
 ### Fixed
@@ -414,7 +422,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.3...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.4...HEAD
+[0.9.4]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.0...v0.9.1
