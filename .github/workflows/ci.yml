@@ -24,12 +24,24 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: basecamp/omarchy
+          ref: 13f18b2cb7286fb54f87daf571a031aa6af3d8f0 # v4.0.1
           path: .omarchy
+          persist-credentials: false
 
       - name: Install validation tools
         run: |
           sudo apt-get update
           sudo apt-get install --yes jq shellcheck
+
+      - name: Check shell helpers
+        run: >-
+          shellcheck scripts/build-site.sh scripts/capture-environment-guard
+          scripts/capture-plugin-fingerprint scripts/capture-screenshots
+          scripts/deploy-shell-runtime scripts/lint-qml
+          scripts/prune-capture-recovery scripts/publish-screenshot-assets
+          scripts/restart-shell-safely scripts/restore-capture-state
+          scripts/select-capture-monitor scripts/verify-capture-postconditions
+          tests/run_all.sh tests/run_qml_runtime.sh
 
       - name: Validate plugin manifest
         run: |
@@ -73,9 +85,24 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+      checks: write
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lint workflows
+        uses: reviewdog/action-actionlint@dbe5299849118fd6f099ba563d263d770955a64a # v1.73.2
+        with:
+          reporter: github-check
+          fail_level: error
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.19.0
+          cache: npm
 
       - name: Install document validators
         run: |
@@ -124,4 +151,4 @@ jobs:
           site_server=$!
           trap 'kill "$site_server" 2>/dev/null || true' EXIT
           npx lighthouse http://127.0.0.1:4173/ --only-categories=accessibility --chrome-flags="--headless --no-sandbox" --output=json --output-path=/tmp/lighthouse.json
-          node -e 'const report = require("/tmp/lighthouse.json"); const score = report.categories.accessibility.score; console.log("accessibility score:", score); process.exit(score >= 0.95 ? 0 : 1)'
+          node -e 'const report = require("/tmp/lighthouse.json"); const score = report.categories.accessibility.score; console.log("accessibility score:", score); process.exit(score === 1 ? 0 : 1)'

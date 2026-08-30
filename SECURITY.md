@@ -80,6 +80,7 @@ Before tagging a release:
 6. Inspect the clean `git archive` used for release and scan tracked files for
    credentials, private diagnostics, generated output, and dependency trees.
 7. Audit site-tooling dependencies and resolve production-impacting findings.
+8. Verify the GitHub artifact attestation for the release archive.
 
 ## Related documentation
 

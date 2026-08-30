@@ -1,0 +1,42 @@
+name: Omarchy compatibility
+
+on:
+  schedule:
+    - cron: "41 8 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  compatibility:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Supported Omarchy v4.0.1
+            omarchy-ref: 13f18b2cb7286fb54f87daf571a031aa6af3d8f0
+            experimental: false
+          - name: Omarchy quattro canary
+            omarchy-ref: quattro
+            experimental: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: basecamp/omarchy
+          ref: ${{ matrix.omarchy-ref }}
+          path: .omarchy
+          persist-credentials: false
+      - name: Run behavior and QML checks
+        run: |
+          docker run --rm --volume "$GITHUB_WORKSPACE:/workspace:ro" --workdir /workspace \
+            archlinux@sha256:4bf33b21a715aac0b48ce6e9eaed4782a898eae96f88f5da3635572129c2584a \
+            bash -lc 'pacman -Syu --noconfirm nodejs python quickshell qt6-declarative shellcheck >/dev/null && tests/run_all.sh && QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy scripts/lint-qml'

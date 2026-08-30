@@ -21,6 +21,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -36,6 +38,11 @@ jobs:
           archive="privacy-devices-$version.tar.gz"
           git archive --prefix="privacy-devices-$version/" -o "$archive" HEAD
           sha256sum "$archive" > "$archive.sha256"
+
+      - name: Attest release archive
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v4.2.2
+        with:
+          subject-path: "*.tar.gz"
 
       - name: Create GitHub release
         env:
