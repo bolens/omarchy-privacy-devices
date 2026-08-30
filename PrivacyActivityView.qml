@@ -12,6 +12,7 @@ ColumnLayout {
   readonly property var privacyService: controller.privacyService
   readonly property bool active: controller.editingKind === "" && !controller.showingGlobalSettings && !controller.showingHistory
   readonly property alias presetFeedbackSurface: presetFeedback
+  readonly property string presetMessage: view.privacyService ? view.privacyService.privacyPresetMessage() : ""
 
   visible: active
   Layout.fillWidth: true
@@ -20,9 +21,9 @@ ColumnLayout {
   PrivacyMessageSurface {
     id: presetFeedback
     objectName: "privacyPresetFeedback"
-    visible: view.privacyService && view.privacyService.privacyPresetMessage() !== ""
+    visible: view.presetMessage !== ""
     Layout.fillWidth: true
-    message: view.privacyService ? view.privacyService.privacyPresetMessage() : ""
+    message: view.presetMessage
     kind: view.privacyService && view.privacyService.privacyPresetState === "partial" ? "error" : "info"
   }
 
