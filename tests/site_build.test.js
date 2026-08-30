@@ -19,7 +19,7 @@ try {
   fs.writeFileSync(path.join(temporary, "_site", "stale.txt"), "stale\n")
   for (const arguments of [["init", "-q"], ["config", "user.email", "test@example.test"], ["config", "user.name", "Test"], ["add", "."], ["commit", "-qm", "fixture"]]) {
     const git = spawnSync("git", arguments, { cwd: temporary, encoding: "utf8" })
-    assert.equal(git.status, 0, git.stderr)
+    assert.equal(git.status, 0, git.error?.message ?? git.stderr ?? "git exited without diagnostics")
   }
 
   const result = spawnSync(path.join(temporary, "scripts", "build-site.sh"), [], { cwd: "/", encoding: "utf8" })
