@@ -37,6 +37,7 @@ jobs:
           persist-credentials: false
       - name: Run behavior and QML checks
         run: |
-          docker run --rm --volume "$GITHUB_WORKSPACE:/workspace" --workdir /workspace \
+          docker run --rm --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            --tmpfs /workspace/node_modules:rw,exec,nosuid,size=256m --workdir /workspace \
             archlinux@sha256:4bf33b21a715aac0b48ce6e9eaed4782a898eae96f88f5da3635572129c2584a \
             bash -lc 'pacman -Syu --noconfirm diffutils jq nodejs npm python quickshell qt6-declarative ruby shellcheck >/dev/null && npm ci --ignore-scripts && tests/run_all.sh && QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy scripts/lint-qml'

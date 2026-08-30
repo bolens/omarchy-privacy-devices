@@ -27,7 +27,10 @@ assert.match(compatibility, /pacman[^\n]*\bjq\b/)
 assert.match(compatibility, /pacman[^\n]*\bdiffutils\b/)
 assert.match(compatibility, /pacman[^\n]*\bruby\b/)
 assert.match(compatibility, /npm ci --ignore-scripts/)
-assert.doesNotMatch(compatibility, /GITHUB_WORKSPACE:\/workspace:ro/)
+assert.match(compatibility, /\$GITHUB_WORKSPACE:\/workspace:ro/,
+  "compatibility checks must not write into the checkout")
+assert.match(compatibility, /--tmpfs \/workspace\/node_modules:/,
+  "npm dependencies need an isolated writable mount")
 
 assert.match(release, /actions\/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a/)
 assert.match(release, /id-token:\s*write/)
