@@ -26,6 +26,7 @@ assert.match(compatibility, /workflow_dispatch:/)
 assert.match(compatibility, /pacman[^\n]*\bjq\b/)
 assert.match(compatibility, /pacman[^\n]*\bdiffutils\b/)
 assert.match(compatibility, /pacman[^\n]*\bruby\b/)
+assert.match(compatibility, /pacman[^\n]*\bgit\b/)
 assert.match(compatibility, /npm ci --ignore-scripts/)
 assert.match(compatibility, /\$GITHUB_WORKSPACE:\/source:ro/,
   "compatibility checks must not write into the checkout")

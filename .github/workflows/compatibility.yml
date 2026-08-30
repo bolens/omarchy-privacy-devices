@@ -40,4 +40,4 @@ jobs:
           docker run --rm --volume "$GITHUB_WORKSPACE:/source:ro" \
             --tmpfs /workspace:rw,exec,nosuid,size=512m --workdir /workspace \
             archlinux@sha256:4bf33b21a715aac0b48ce6e9eaed4782a898eae96f88f5da3635572129c2584a \
-            bash -lc 'cp -a /source/. /workspace && pacman -Syu --noconfirm diffutils jq nodejs npm python quickshell qt6-declarative ruby shellcheck >/dev/null && npm ci --ignore-scripts && tests/run_all.sh && QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy scripts/lint-qml'
+            bash -lc 'cp -a /source/. /workspace && pacman -Syu --noconfirm diffutils git jq nodejs npm python quickshell qt6-declarative ruby shellcheck >/dev/null && npm ci --ignore-scripts && tests/run_all.sh && QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy scripts/lint-qml'
