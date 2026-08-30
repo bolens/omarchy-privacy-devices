@@ -17,6 +17,9 @@ assert.match(runner, /python3 -m unittest discover -s tests -p 'test_\*\.py'/, "
 for (const helper of ["privacy-audio-devices", "privacy-diagnostics", "privacy-history", "privacy-location", "privacy-menu-entry", "privacy-observe", "privacy-settings"])
   assert.match(runner, new RegExp(`python3 -m py_compile[^\\n]*${helper}`), `the canonical runner must compile ${helper}`)
 assert.match(runner, /shellcheck[\s\S]*?privacy-control[\s\S]*?tests\/run_qml_runtime\.sh[\s\S]*?tests\/fixtures\/\*/, "the canonical runner must lint runtime, maintainer, and fixture shell scripts")
+assert.match(runner, /runtime_mode=\$\{PRIVACY_RUNTIME_TESTS:-auto\}/, "the canonical runner must expose one runtime-QML mode switch")
+assert.match(runner, /tests\/run_qml_runtime\.sh/, "the canonical runner must be able to execute the runtime QML suite")
+assert.match(runner, /PRIVACY_RUNTIME_TESTS must be auto, always, or never/, "the canonical runner must reject invalid runtime modes")
 for (const helper of ["privacy-action", "scripts/build-site.sh"])
   assert.match(runner, new RegExp(`shellcheck[\\s\\S]*?${helper.replace(".", "\\.")}`), `the canonical runner must lint ${helper}`)
 assert.match(ci, /name: Run behavior suite[\s\S]*?run: tests\/run_all\.sh/, "CI must delegate the behavior suite to the canonical runner")
@@ -25,6 +28,7 @@ assert.ok(pluginJob.indexOf("run: npm ci") >= 0 && pluginJob.indexOf("run: npm c
   "the plugin job must install declared test dependencies before the canonical suite")
 assert.equal(packageJson.scripts.test, "bash tests/run_all.sh", "npm test must delegate to the canonical runner")
 assert.match(testing, /npm test/, "the contributor testing entry point must use the canonical runner")
+assert.match(testing, /PRIVACY_RUNTIME_TESTS=always/, "testing guidance must describe the forced runtime-QML path")
 assert.match(qmlLint, /\.\/\*\.qml[\s\S]*?\.\/tests\/qml\/\*\.qml[\s\S]*?sort/,
   "QML linting must discover production and runtime harnesses deterministically")
 assert.match(ci, /QMLLINT=\/usr\/lib\/qt6\/bin\/qmllint[\s\S]*?scripts\/lint-qml/,

@@ -20,3 +20,26 @@ shellcheck \
   scripts/publish-screenshot-assets scripts/restart-shell-safely scripts/restore-capture-state \
   tests/run_all.sh tests/run_qml_runtime.sh \
   tests/fixtures/*
+
+runtime_mode=${PRIVACY_RUNTIME_TESTS:-auto}
+case "$runtime_mode" in
+  always)
+    tests/run_qml_runtime.sh
+    ;;
+  never)
+    printf 'Runtime QML tests skipped (PRIVACY_RUNTIME_TESTS=never).\n'
+    ;;
+  auto)
+    wayland_socket=${XDG_RUNTIME_DIR:-}/${WAYLAND_DISPLAY:-}
+    if [[ -n ${WAYLAND_DISPLAY:-} && -S $wayland_socket ]] \
+      && { command -v quickshell >/dev/null || [[ -x $HOME/.local/opt/quickshell-git/usr/bin/quickshell ]]; }; then
+      tests/run_qml_runtime.sh
+    else
+      printf 'Runtime QML tests skipped (no usable Wayland session; set PRIVACY_RUNTIME_TESTS=always to require them).\n'
+    fi
+    ;;
+  *)
+    printf 'PRIVACY_RUNTIME_TESTS must be auto, always, or never.\n' >&2
+    exit 2
+    ;;
+esac
