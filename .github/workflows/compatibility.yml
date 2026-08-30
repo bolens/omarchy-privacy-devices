@@ -39,4 +39,4 @@ jobs:
         run: |
           docker run --rm --volume "$GITHUB_WORKSPACE:/workspace:ro" --workdir /workspace \
             archlinux@sha256:4bf33b21a715aac0b48ce6e9eaed4782a898eae96f88f5da3635572129c2584a \
-            bash -lc 'pacman -Syu --noconfirm nodejs python quickshell qt6-declarative shellcheck >/dev/null && tests/run_all.sh && QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy scripts/lint-qml'
+            bash -lc 'pacman -Syu --noconfirm jq nodejs python quickshell qt6-declarative shellcheck >/dev/null && tests/run_all.sh && QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy scripts/lint-qml'
