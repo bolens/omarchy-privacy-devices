@@ -15,6 +15,7 @@ assert.match(ci, /reviewdog\/action-actionlint@dbe5299849118fd6f099ba563d263d770
 assert.match(ci, /actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/)
 assert.match(ci, /shellcheck/)
 assert.match(ci, /lycheeverse\/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8/)
+assert.match(ci, /--exclude-path '[^']*node_modules/)
 assert.match(ci, /accessibility\.score\s*===\s*1|score\s*===\s*1/)
 assert.match(ci, /13f18b2cb7286fb54f87daf571a031aa6af3d8f0/)
 
