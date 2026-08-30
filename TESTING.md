@@ -41,8 +41,21 @@ The lint entry point discovers every root component and `tests/qml/` harness in
 sorted order. CI calls the same script with its pinned Qt executable and
 checked-out Omarchy import path.
 
-In a graphical session, exercise shared JavaScript in the real Quickshell
-engine:
+In a graphical session, `npm test` also runs the real-engine QML suite when a
+usable Wayland session and Quickshell executable are present. To require that
+path explicitly:
+
+```sh
+PRIVACY_RUNTIME_TESTS=always npm test
+```
+
+To skip it while iterating on non-graphical changes:
+
+```sh
+PRIVACY_RUNTIME_TESTS=never npm test
+```
+
+You can still run the QML suite directly:
 
 ```sh
 tests/run_qml_runtime.sh
