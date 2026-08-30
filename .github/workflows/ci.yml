@@ -130,11 +130,10 @@ jobs:
           args: >-
             --no-progress
             --exclude-path '(^|/)node_modules/'
-            --exclude-path '(^|/)_site/'
             --accept 200,204,206,429
             --exclude '^https://github\.com/bolens/omarchy-privacy-devices/compare/'
             './**/*.md'
-            './docs/**/*.html'
+            './_site/**/*.html'
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
