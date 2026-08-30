@@ -7,6 +7,13 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Added
+
+- Add weekly compatibility checks for Omarchy v4.0.1 and the current
+  `quattro` branch.
+- Add release artifact attestations and require a 1.00 accessibility score.
+- Add Actionlint and an explicit Node.js version to repository CI.
+
 ## [0.9.5] - 2026-08-29
 
 ### Fixed

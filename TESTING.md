@@ -130,8 +130,13 @@ npm run build:site
 npm run test:site
 ```
 
-CI additionally checks links and requires a Lighthouse accessibility score of
-at least 0.95.
+CI also runs Actionlint and link checks. It requires a Lighthouse accessibility
+score of 1.00.
+
+The required CI checks use Omarchy v4.0.1. The weekly compatibility workflow
+checks QML imports against v4.0.1 and the current `quattro` branch. A `quattro`
+failure reports upcoming incompatibility without blocking supported-version
+changes.
 
 ## Refreshing screenshots
 
@@ -183,7 +188,7 @@ Every staged view is checked for its expected dimensions and uniqueness before
 transactional publication; a partial failure restores replaced assets and
 removes assets that did not exist before the run.
 
-Showcase settings and sessions are supplied through an owner-scoped, expiring
+Sample settings and sessions use an owner-scoped, expiring
 in-memory preview. Capture never swaps the settings file, reloads configuration,
 or restarts Quickshell. Audit scrolling is routed to the selected monitor's bar
 instance and waits for its rendered scroll acknowledgement before capture.

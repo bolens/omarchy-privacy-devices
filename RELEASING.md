@@ -109,7 +109,8 @@ git push origin "v$version"
 
 The Release workflow rejects a tag that does not match the manifest version.
 It reruns validation, builds `privacy-devices-X.Y.Z.tar.gz`, creates a SHA-256
-checksum, and publishes both files with GitHub-generated release notes.
+checksum, attests the archive, and publishes both files with GitHub-generated
+release notes.
 
 ## 6. Verify publication
 
@@ -118,6 +119,8 @@ version=$(jq -r .version manifest.json)
 run_id=$(gh run list --workflow Release --limit 1 --json databaseId --jq '.[0].databaseId')
 gh run watch --exit-status "$run_id"
 gh release view "v$version"
+gh attestation verify "privacy-devices-$version.tar.gz" \
+  --repo bolens/omarchy-privacy-devices
 ```
 
 Verify all of the following:
@@ -125,6 +128,7 @@ Verify all of the following:
 - The release tag targets the validated commit.
 - The archive and checksum are attached.
 - The checksum validates after downloading the archive.
+- The artifact attestation verifies against this repository.
 - The Pages site displays the new version.
 - A clean Omarchy installation can install or update the plugin.
 - The official plugin directory reflects the release.
