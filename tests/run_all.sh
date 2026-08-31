@@ -25,7 +25,11 @@ shellcheck \
 validation_dir=$(mktemp -d)
 trap 'rm -rf -- "$validation_dir"' EXIT
 git archive HEAD | tar -x -C "$validation_dir"
-omarchy plugin validate "$validation_dir"
+if [[ -n ${OMARCHY_PLUGIN_VALIDATE:-} ]]; then
+  "$OMARCHY_PLUGIN_VALIDATE" "$validation_dir"
+else
+  omarchy plugin validate "$validation_dir"
+fi
 rm -rf -- "$validation_dir"
 trap - EXIT
 

@@ -84,6 +84,8 @@ jobs:
 
       - name: Run behavior suite
         run: tests/run_all.sh
+        env:
+          OMARCHY_PLUGIN_VALIDATE: .omarchy/bin/omarchy-plugin-validate
 
   repository:
     name: Repository
