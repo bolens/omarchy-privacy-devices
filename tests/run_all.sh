@@ -21,6 +21,13 @@ shellcheck \
   tests/run_all.sh tests/run_qml_runtime.sh \
   tests/fixtures/*
 
+validation_dir=$(mktemp -d)
+trap 'rm -rf -- "$validation_dir"' EXIT
+git archive HEAD | tar -x -C "$validation_dir"
+omarchy plugin validate "$validation_dir"
+rm -rf -- "$validation_dir"
+trap - EXIT
+
 runtime_mode=${PRIVACY_RUNTIME_TESTS:-auto}
 case "$runtime_mode" in
   always)
