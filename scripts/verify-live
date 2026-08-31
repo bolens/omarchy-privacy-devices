@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+qs_command=${PRIVACY_QS_COMMAND:-qs}
+command -v "$qs_command" >/dev/null || { printf 'Missing required command: %s\n' "$qs_command" >&2; exit 127; }
+command -v jq >/dev/null || { printf 'Missing required command: jq\n' >&2; exit 127; }
+
+shell_pid=""
+while read -r candidate; do
+  [[ $candidate =~ ^[1-9][0-9]*$ ]] || continue
+  probe=$($qs_command ipc --pid "$candidate" call privacy-devices diagnostics summary 2>/dev/null || true)
+  if jq -e '.version == 1 and .redacted == true and (.health | type == "object")' <<<"$probe" >/dev/null 2>&1; then
+    shell_pid=$candidate
+    break
+  fi
+done < <($qs_command list --all | awk '/Process ID:/ { print $3 }')
+[[ -n $shell_pid ]] || { printf 'No IPC-ready Privacy Devices shell found.\n' >&2; exit 1; }
+
+call() { "$qs_command" ipc --pid "$shell_pid" call privacy-devices "$@"; }
+status=$(call status)
+health=$(call health)
+diagnostics=$(call diagnostics summary)
+jq -e 'length == 7 and all(.[]; (.kind | type == "string") and (.active | type == "boolean")
+  and (.pending | type == "boolean") and (.health.status | IN("healthy", "degraded", "unavailable")))' \
+  <<<"$status" >/dev/null || { printf 'Invalid privacy status payload.\n' >&2; exit 1; }
+jq -e 'keys | sort == ["audio-output","camera","location","microphone","screen-recording","screen-share","screenshot"]' \
+  <<<"$health" >/dev/null || { printf 'Invalid privacy health payload.\n' >&2; exit 1; }
+jq -e '.version == 1 and .redacted == true and all(.sessions[]; .application == "redacted" and .device == "redacted")' \
+  <<<"$diagnostics" >/dev/null || { printf 'Diagnostics payload was not redacted.\n' >&2; exit 1; }
+[[ $(call toggle __invalid__) == unsupported ]] || { printf 'Invalid privacy kind was accepted.\n' >&2; exit 1; }
+printf 'Privacy Devices live read-only IPC verification passed for PID %s.\n' "$shell_pid"

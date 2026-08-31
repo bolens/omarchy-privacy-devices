@@ -55,6 +55,9 @@ To skip it while iterating on non-graphical changes:
 PRIVACY_RUNTIME_TESTS=never npm test
 ```
 
+Run `npm run verify:live` for read-only IPC discovery, redaction, payload, and
+invalid-input checks against an installed plugin.
+
 You can still run the QML suite directly:
 
 ```sh
