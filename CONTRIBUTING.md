@@ -18,7 +18,11 @@ Hyprland, PipeWire, Node.js, ShellCheck, and `qmllint`.
 ```sh
 git clone https://github.com/bolens/omarchy-privacy-devices.git
 cd omarchy-privacy-devices
+npm run hooks:install
 ```
+
+The pre-commit hook validates the staged release payload and runs the
+deterministic suite. Graphical and live-system checks remain explicit.
 
 Install the checkout through Omarchy for integration tests. Use only controls
 you can safely restore.
