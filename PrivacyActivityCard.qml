@@ -61,6 +61,19 @@ Rectangle {
   color: Util.alpha(controller.itemColor(entry), hovered ? 0.18 : (visualState === "active" ? 0.13 : 0.07))
   border.width: controller.selectedKind === entry.kind ? 2 : 1
   border.color: Util.alpha(controller.itemColor(entry), controller.selectedKind === entry.kind ? 0.8 : (entry.active ? 0.5 : 0.16))
+  activeFocusOnTab: true
+  Keys.onReturnPressed: card.activate(Qt.LeftButton)
+  Keys.onEnterPressed: card.activate(Qt.LeftButton)
+  Keys.onSpacePressed: card.activate(Qt.LeftButton)
+  Accessible.role: Accessible.Button
+  Accessible.name: entry.label
+  Accessible.description: visualState === "unavailable" ? "Monitoring degraded. " + entry.health.summary
+    : visualState === "pending" ? "Waiting for observed state confirmation"
+    : visualState === "blocked-active" ? "Blocked request observed"
+    : visualState === "disabled" ? "Blocked by privacy control"
+    : visualState === "active" ? "In use"
+    : "Available, not in use"
+  Accessible.onPressAction: card.activate(Qt.LeftButton)
 
   HoverHandler {
     onHoveredChanged: {

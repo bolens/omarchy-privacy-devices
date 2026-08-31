@@ -140,6 +140,7 @@ run_harness RuntimeObserverReconfigurationTest.qml PRIVACY_QML_OBSERVER_RECONFIG
 run_harness RuntimeObserverStartupOwnershipTest.qml PRIVACY_QML_OBSERVER_STARTUP_OWNERSHIP_OK
 run_harness RuntimeLocationProbeSupersessionTest.qml PRIVACY_QML_LOCATION_PROBE_SUPERSESSION_OK
 run_harness RuntimeIpcDispatchTest.qml PRIVACY_QML_IPC_DISPATCH_OK
+run_harness RuntimeAccessibilityTest.qml PRIVACY_QML_ACCESSIBILITY_OK
 
 if [[ -n $requested_harness && $ran_harness -eq 0 ]]; then
   printf 'Requested QML runtime harness not found: %s\n' "$requested_harness" >&2

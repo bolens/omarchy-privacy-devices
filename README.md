@@ -51,6 +51,8 @@ Activity notifications use the detected application icon when available:
   pages, with exact hardware names and verified mute/unmute results.
 - Global and per-device appearance, ordering, visibility, backend, and status
   settings.
+- Keyboard-focusable controls and activity cards with named state descriptions
+  for assistive technologies.
 - App- and device-aware visibility and notification policies, friendly hardware
   labels, session-only device-change feedback, and live inspection-target copy.
 - Private diagnostics and searchable optional bounded history with trend bars,
