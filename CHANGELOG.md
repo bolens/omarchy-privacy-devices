@@ -7,6 +7,8 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-08-31
+
 ### Added
 
 - Add weekly compatibility checks for Omarchy v4.0.1 and the current
@@ -22,6 +24,14 @@ maintainer guides that define release and validation procedures.
   maintained plugin suite.
 - Run canonical QML tests automatically in graphical sessions and improve
   subprocess failure diagnostics.
+- Validate staged release payloads before commits and add a read-only live IPC
+  redaction and payload probe.
+- Stop isolated QML harnesses after their unique success marker while retaining
+  timeout and late-error guards.
+
+### Fixed
+
+- Use CI's pinned Omarchy validator in the canonical behavior suite.
 
 ## [0.9.5] - 2026-08-29
 
@@ -446,7 +456,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.5...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.6...HEAD
+[0.9.6]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.5...v0.9.6
 [0.9.5]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.4...v0.9.5
 [0.9.4]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.2...v0.9.3
