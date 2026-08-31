@@ -9,6 +9,8 @@ const bar = fs.readFileSync(path.join(root, "BarWidget.qml"), "utf8")
 const surface = fs.readFileSync(path.join(root, "SettingsSurface.qml"), "utf8")
 const integer = fs.readFileSync(path.join(root, "IntegerSetting.qml"), "utf8")
 const activityCard = fs.readFileSync(path.join(root, "PrivacyActivityCard.qml"), "utf8")
+const button = fs.readFileSync(path.join(root, "Button.qml"), "utf8")
+const widgetButton = fs.readFileSync(path.join(root, "WidgetButton.qml"), "utf8")
 const activityView = fs.readFileSync(path.join(root, "PrivacyActivityView.qml"), "utf8")
 const activityHeader = fs.readFileSync(path.join(root, "PrivacyActivityHeader.qml"), "utf8")
 const historyView = fs.readFileSync(path.join(root, "PrivacyHistoryView.qml"), "utf8")
@@ -52,6 +54,15 @@ const globalKeys = [
   "showBarActiveMarker", "showBarDisabledMarker", "showBarPendingMarker", "showBarDegradedMarker"
   , "barActiveMarkerIcon", "barDisabledMarkerIcon", "barPendingMarkerIcon", "barDegradedMarkerIcon"
 ]
+
+assert.match(button, /focusable:\s*true[\s\S]*Accessible\.role:\s*Accessible\.Button[\s\S]*Accessible\.onPressAction/,
+  "local buttons must be keyboard-focusable and expose an assistive press action")
+assert.match(button, /function triggerAccessiblePress\(\)[\s\S]*if \(!enabled\) return false/,
+  "assistive activation must honor disabled button state")
+assert.match(widgetButton, /activeFocusOnTab:[\s\S]*Keys\.onSpacePressed:[\s\S]*Accessible\.name:[\s\S]*Accessible\.onPressAction/,
+  "privacy bar targets must support keyboard and assistive activation")
+assert.match(activityCard, /activeFocusOnTab:\s*true[\s\S]*Keys\.onSpacePressed:[\s\S]*Accessible\.role:\s*Accessible\.Button/,
+  "activity cards must support keyboard and assistive activation")
 
 assert.deepEqual(
   JSON.parse(JSON.stringify(modelContext.sanitizeSettings(defaults))),

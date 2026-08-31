@@ -78,22 +78,22 @@ ShellRoot {
         widget.showGlobalSettings("general", "")
         root.stage = 2
       } else if (root.stage === 2) {
-        if (widget.globalSettingsPage !== "general") throw new Error("general settings page route changed")
+        if (widget.globalSettingsPage !== "general") throw new Error("general settings page route changed: " + widget.globalSettingsPage + ", opened=" + widget.opened)
         if (!widget.settingsPageLoaded) return
         widget.showGlobalSettings("appearance", "")
         root.stage = 3
       } else if (root.stage === 3) {
-        if (widget.globalSettingsPage !== "appearance") throw new Error("appearance settings page route changed")
+        if (widget.globalSettingsPage !== "appearance") throw new Error("appearance settings page route changed: " + widget.globalSettingsPage + ", opened=" + widget.opened)
         if (!widget.settingsPageLoaded) return
         widget.showGlobalSettings("alerts", "")
         root.stage = 4
       } else if (root.stage === 4) {
-        if (widget.globalSettingsPage !== "alerts") throw new Error("alerts settings page route changed")
+        if (widget.globalSettingsPage !== "alerts") throw new Error("alerts settings page route changed: " + widget.globalSettingsPage + ", opened=" + widget.opened)
         if (!widget.settingsPageLoaded) return
         widget.showGlobalSettings("monitoring", "")
         root.stage = 5
       } else if (root.stage === 5) {
-        if (widget.globalSettingsPage !== "monitoring") throw new Error("monitoring settings page route changed")
+        if (widget.globalSettingsPage !== "monitoring") throw new Error("monitoring settings page route changed: " + widget.globalSettingsPage + ", opened=" + widget.opened)
         if (!widget.settingsPageLoaded) return
         widget.showHistory()
         if (!widget.showingHistory || widget.showingGlobalSettings) throw new Error("history navigation failed")
