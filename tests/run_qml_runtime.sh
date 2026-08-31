@@ -43,14 +43,27 @@ ln -s -- "$shell_root/Commons" "$runtime_dir/Commons"
 ln -s -- "$shell_root/Ui" "$runtime_dir/Ui"
 
 run_harness() {
-  local file=$1 marker=$2 output status marker_count iteration
+  local file=$1 marker=$2 output status marker_count iteration output_file runner_pid
   if [[ -n $requested_harness && $file != "$requested_harness" ]]; then return 0; fi
   ran_harness=1
   for ((iteration=1; iteration<=repeat_count; iteration++)); do
     active_harness="$runtime_dir/$file"
+    output_file="$runtime_parent/harness.log"
+    : >"$output_file"
     set +e
-    output="$(timeout 4 "$quickshell_bin" --no-color --path "$active_harness" 2>&1)"
+    timeout 4 "$quickshell_bin" --no-color --path "$active_harness" >"$output_file" 2>&1 &
+    runner_pid=$!
+    while kill -0 "$runner_pid" 2>/dev/null; do
+      if grep -Fq "$marker" "$output_file"; then
+        sleep 0.1
+        "$quickshell_bin" kill --path "$active_harness" --any-display >/dev/null 2>&1 || true
+        break
+      fi
+      sleep 0.05
+    done
+    wait "$runner_pid"
     status=$?
+    output=$(<"$output_file")
     set -e
     "$quickshell_bin" kill --path "$active_harness" --any-display >/dev/null 2>&1 || true
     active_harness=""
