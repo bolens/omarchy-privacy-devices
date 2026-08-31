@@ -172,6 +172,8 @@ assert.match(qmlRuntime, /emitted runtime errors/,
   "QML runtime failures must identify log-based errors")
 assert.match(qmlRuntime, /marker_count=.*grep -Fc/,
   "QML runtime harnesses must emit their success marker exactly once")
+assert.match(qmlRuntime, /grep -Fq "\$marker" "\$output_file"[\s\S]*?kill --path "\$active_harness" --any-display/,
+  "QML runtime harnesses must stop their exact instance after success")
 assert.match(qmlRuntime, /QML_RUNTIME_REPEAT/,
   "the QML runtime suite must support bounded repeated harness runs")
 assert.match(qmlRuntime, /repeat count must be an integer from 1 to 10/,
