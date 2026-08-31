@@ -8,6 +8,7 @@
   "scripts": {
     "test": "bash tests/run_all.sh",
     "hooks:install": "bash scripts/install-git-hooks",
+    "verify:live": "bash scripts/verify-live",
     "build:site": "bash scripts/build-site.sh",
     "test:docs": "node tests/documentation.test.js",
     "test:site": "node tests/site.test.js"
