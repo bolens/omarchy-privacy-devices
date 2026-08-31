@@ -13,6 +13,7 @@ const capture = fs.existsSync("scripts/capture-screenshots")
   ? read("scripts/capture-screenshots")
   : ""
 const runner = read("tests/run_all.sh")
+const preCommit = read("scripts/pre-commit")
 
 assert.match(ci, /reviewdog\/action-actionlint@dbe5299849118fd6f099ba563d263d770955a64a/)
 assert.match(ci, /actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/)
@@ -42,6 +43,9 @@ assert.match(compatibility, /cp -a \/source\/\. \/workspace/,
   "compatibility checks must copy the read-only checkout into the isolated workspace")
 assert.match(runner, /git archive HEAD \| tar -x -C "\$validation_dir"/)
 assert.match(runner, /omarchy plugin validate "\$validation_dir"/)
+assert.match(preCommit, /archive "\$\(git -C "\$root" write-tree\)"/)
+assert.match(preCommit, /PRIVACY_RUNTIME_TESTS=never/)
+assert.ok(fs.statSync(".githooks/pre-commit").mode & 0o100)
 
 assert.match(release, /actions\/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a/)
 assert.match(release, /id-token:\s*write/)

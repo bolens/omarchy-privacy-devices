@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root=$(git rev-parse --show-toplevel)
+validation_dir=$(mktemp -d)
+trap 'rm -rf -- "$validation_dir"' EXIT
+git -C "$root" archive "$(git -C "$root" write-tree)" | tar -x -C "$validation_dir"
+omarchy plugin validate "$validation_dir"
+cd "$root"
+PRIVACY_RUNTIME_TESTS=never npm test
