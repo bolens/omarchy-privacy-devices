@@ -13,6 +13,15 @@ maintainer guides that define release and validation procedures.
   `quattro` branch.
 - Add release artifact attestations and require a 1.00 accessibility score.
 - Add Actionlint and an explicit Node.js version to repository CI.
+- Add isolated stable and canary compatibility runs that keep the checkout
+  read-only.
+
+### Changed
+
+- Align CI, release, dependency, runtime, and archive policies with the
+  maintained plugin suite.
+- Run canonical QML tests automatically in graphical sessions and improve
+  subprocess failure diagnostics.
 
 ## [0.9.5] - 2026-08-29
 
