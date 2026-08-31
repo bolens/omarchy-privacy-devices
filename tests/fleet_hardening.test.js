@@ -4,6 +4,8 @@ const fs = require("node:fs")
 const read = path => fs.readFileSync(path, "utf8")
 const ci = read(".github/workflows/ci.yml")
 const release = read(".github/workflows/release.yml")
+const dependabot = read(".github/dependabot.yml")
+const packageMetadata = JSON.parse(read("package.json"))
 const compatibility = fs.existsSync(".github/workflows/compatibility.yml")
   ? read(".github/workflows/compatibility.yml")
   : ""
@@ -18,6 +20,9 @@ assert.match(ci, /lycheeverse\/lychee-action@e7477775783ea5526144ba13e8db5eec577
 assert.match(ci, /--exclude-path '[^']*node_modules/)
 assert.match(ci, /accessibility\.score\s*===\s*1|score\s*===\s*1/)
 assert.match(ci, /13f18b2cb7286fb54f87daf571a031aa6af3d8f0/)
+assert.match(ci, /concurrency:[\s\S]*cancel-in-progress:\s*true/)
+assert.doesNotMatch(ci, /runs-on:\s*ubuntu-latest/)
+assert.match(ci, /PRIVATE KEY\|gh\[pousr\]_/)
 
 assert.match(compatibility, /schedule:/)
 assert.match(compatibility, /13f18b2cb7286fb54f87daf571a031aa6af3d8f0/)
@@ -39,6 +44,13 @@ assert.match(release, /actions\/attest-build-provenance@977bb373ede98d70efdf65b8
 assert.match(release, /id-token:\s*write/)
 assert.match(release, /attestations:\s*write/)
 assert.match(release, /validate:[\s\S]*?checks:\s*write/)
+assert.match(release, /concurrency:[\s\S]*cancel-in-progress:\s*false/)
+assert.doesNotMatch(release, /runs-on:\s*ubuntu-latest/)
+assert.match(release, /persist-credentials:\s*false/)
+
+assert.equal(packageMetadata.engines.node, ">=24.19.0")
+assert.equal(packageMetadata.packageManager, "npm@11.19.0")
+assert.equal((dependabot.match(/interval:\s*weekly/g) || []).length, 2)
 
 assert.ok(fs.statSync("scripts/capture-screenshots").mode & 0o100)
 assert.match(capture, /trap .*?(cleanup|restore)/)
