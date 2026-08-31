@@ -21,6 +21,10 @@ assert.match(runner, /shellcheck[\s\S]*?privacy-control[\s\S]*?tests\/run_qml_ru
 assert.match(runner, /runtime_mode=\$\{PRIVACY_RUNTIME_TESTS:-auto\}/, "the canonical runner must expose one runtime-QML mode switch")
 assert.match(runner, /tests\/run_qml_runtime\.sh/, "the canonical runner must be able to execute the runtime QML suite")
 assert.match(runner, /PRIVACY_RUNTIME_TESTS must be auto, always, or never/, "the canonical runner must reject invalid runtime modes")
+assert.match(runner, /OMARCHY_PLUGIN_VALIDATE/,
+  "the canonical runner must accept CI's pinned validator command")
+assert.match(ci, /OMARCHY_PLUGIN_VALIDATE: \.omarchy\/bin\/omarchy-plugin-validate/,
+  "CI must pass its pinned validator to the canonical runner")
 for (const helper of ["privacy-action", "scripts/build-site.sh"])
   assert.match(runner, new RegExp(`shellcheck[\\s\\S]*?${helper.replace(".", "\\.")}`), `the canonical runner must lint ${helper}`)
 assert.match(ci, /name: Run behavior suite[\s\S]*?run: tests\/run_all\.sh/, "CI must delegate the behavior suite to the canonical runner")
