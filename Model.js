@@ -186,13 +186,13 @@ function sanitizeSettings(data) {
     }
     clean[mapName] = map
   }
-  if (Array.isArray(source.privacyModes)) clean.privacyModes = sanitizePrivacyModes(source.privacyModes)
+  if (isArrayLike(source.privacyModes)) clean.privacyModes = sanitizePrivacyModes(source.privacyModes)
   clean._privacySettingsVersion = SETTINGS_VERSION
   return clean
 }
 
 function sanitizePrivacyModes(modes) {
-  var rows = Array.isArray(modes) ? modes : []
+  var rows = isArrayLike(modes) ? arrayFrom(modes) : []
   var result = [], names = {}
   for (var index = 0; index < rows.length && result.length < 8; index++) {
     var row = rows[index]
