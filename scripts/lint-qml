@@ -2,7 +2,8 @@
 set -euo pipefail
 
 repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-qml_lint=${QMLLINT:-qmllint}
+qml_lint=${QMLLINT:-/usr/lib/qt6/bin/qmllint}
+[[ -x $qml_lint ]] || { printf 'Qt 6 qmllint not found: %s\n' "$qml_lint" >&2; exit 1; }
 import_args=()
 
 if [[ -n ${OMARCHY_PATH:-} ]]; then

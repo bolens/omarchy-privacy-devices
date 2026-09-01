@@ -36,6 +36,8 @@ assert.match(testing, /npm test/, "the contributor testing entry point must use 
 assert.match(testing, /PRIVACY_RUNTIME_TESTS=always/, "testing guidance must describe the forced runtime-QML path")
 assert.match(qmlLint, /\.\/\*\.qml[\s\S]*?\.\/tests\/qml\/\*\.qml[\s\S]*?sort/,
   "QML linting must discover production and runtime harnesses deterministically")
+assert.match(qmlLint, /QMLLINT:-\/usr\/lib\/qt6\/bin\/qmllint/,
+  "local linting must prefer the current Qt 6 qmllint")
 assert.match(ci, /QMLLINT=\/usr\/lib\/qt6\/bin\/qmllint[\s\S]*?scripts\/lint-qml/,
   "CI must use the same QML lint inventory as contributors")
 assert.match(testing, /scripts\/lint-qml/, "testing guidance must advertise the shared QML lint entry point")
