@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { JSDOM } = require("jsdom");
+const { dimensions } = require("./png");
 
 const root = path.resolve(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "docs/index.html"), "utf8");
@@ -19,11 +20,7 @@ function cssBlock(source, marker) {
   assert.fail(`unclosed ${marker}`);
 }
 
-function pngDimensions(relativePath) {
-  const image = fs.readFileSync(path.join(root, relativePath));
-  assert.deepEqual([...image.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
-  return [image.readUInt32BE(16), image.readUInt32BE(20)];
-}
+const pngDimensions = relativePath => dimensions(path.join(root, relativePath), relativePath);
 
 assert.match(html, /<main id="main">/);
 assert.match(html, /@media \(prefers-reduced-motion: reduce\)/);
