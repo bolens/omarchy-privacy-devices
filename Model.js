@@ -10,6 +10,12 @@ var SETTINGS_SECTIONS = {
   monitoring: ["enhanced-coverage", "fallback-polling", "private-data", "status-legend", "observer-health"]
 }
 
+function timestampOrNow(value) {
+  if (value === undefined || value === null || value === "") return Date.now()
+  var timestamp = Number(value)
+  return isFinite(timestamp) ? timestamp : Date.now()
+}
+
 function settingsPage(value) {
   var page = String(value || "general")
   return SETTINGS_PAGES.indexOf(page) >= 0 ? page : "general"
@@ -930,7 +936,7 @@ function formatDuration(milliseconds) {
 }
 
 function historyAgeLabel(endedAt, now) {
-  var ageSeconds = Math.max(0, Math.floor((Number(now || Date.now()) - Number(endedAt || 0)) / 1000))
+  var ageSeconds = Math.max(0, Math.floor((timestampOrNow(now) - Number(endedAt || 0)) / 1000))
   if (ageSeconds < 60) return "Just now"
   var minutes = Math.floor(ageSeconds / 60)
   if (minutes < 60) return minutes + "m ago"
@@ -1013,7 +1019,7 @@ function deviceInventoryChanges(kind, previous, current, now) {
 }
 
 function historyPeriodLabel(endedAt, now) {
-  var age = Math.max(0, Number(now || Date.now()) - Number(endedAt || 0))
+  var age = Math.max(0, timestampOrNow(now) - Number(endedAt || 0))
   var day = 24 * 60 * 60 * 1000
   if (age < day) return "Today"
   if (age < 2 * day) return "Yesterday"
