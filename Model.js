@@ -215,7 +215,9 @@ function sanitizePrivacyModes(modes) {
 }
 
 function isArrayLike(value) {
-  return !!value && typeof value !== "string" && typeof value.length === "number"
+  if (!value || typeof value !== "object") return false
+  var length = Number(value.length)
+  return isFinite(length) && length >= 0 && Math.floor(length) === length && length <= 4096
 }
 
 function arrayFrom(value) {
