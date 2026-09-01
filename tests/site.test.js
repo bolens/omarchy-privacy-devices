@@ -8,6 +8,7 @@ const { dimensions } = require("./png");
 
 const root = path.resolve(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "docs/index.html"), "utf8");
+const notFound = fs.readFileSync(path.join(root, "docs/404.html"), "utf8");
 function cssBlock(source, marker) {
   const start = source.indexOf(marker);
   assert.notEqual(start, -1, `missing ${marker}`);
@@ -24,6 +25,10 @@ const pngDimensions = relativePath => dimensions(path.join(root, relativePath), 
 
 assert.match(html, /<main id="main">/);
 assert.match(html, /@media \(prefers-reduced-motion: reduce\)/);
+assert.match(html, /prefers-color-scheme: light/);
+assert.match(notFound, /prefers-color-scheme: light/);
+assert.match(html, /preferredTheme\s*=\s*prefersLight\s*\?\s*"github-light"\s*:\s*"tokyo-night"/,
+  "browser light preference must default to GitHub Light while dark remains the fallback");
 assert.match(html, /property="og:site_name"/);
 assert.match(html, /name="twitter:title"/);
 assert.equal((html.match(/data-copy=/g) || []).length, 4);
@@ -60,6 +65,8 @@ for (const image of ["bar", "notification", "general", "appearance", "alerts", "
 }
 
 const source = new JSDOM(html).window.document;
+for (const lightTheme of ["github-light", "catppuccin-latte", "solarized-light"])
+  assert.ok(source.querySelector(`#theme-select option[value="${lightTheme}"]`), `missing ${lightTheme} option`);
 assert.ok(source.querySelector('nav a[href="#screenshots"]'),
   "primary navigation must expose the interface gallery");
 assert.ok(html.indexOf('id="screenshots"') < html.indexOf('id="install"') &&

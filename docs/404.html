@@ -14,6 +14,12 @@
       main { width: min(34rem, calc(100% - 2rem)); }
       p { color: #a8afa2; }
       a { color: #b9f27c; text-underline-offset: 0.2em; }
+      @media (prefers-color-scheme: light) {
+        :root { color-scheme: light; }
+        body { background: #fff; color: #1f2328; }
+        p { color: #59636e; }
+        a { color: #0969da; }
+      }
     </style>
   </head>
   <body>

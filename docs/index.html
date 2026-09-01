@@ -27,8 +27,10 @@
       try {
         const savedTheme = localStorage.getItem("privacy-devices-theme");
         const requestedTheme = new URLSearchParams(location.search).get("theme");
-        document.documentElement.dataset.theme = requestedTheme || savedTheme || "tokyo-night";
-      } catch {}
+        const prefersLight = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: light)").matches;
+        const preferredTheme = prefersLight ? "github-light" : "tokyo-night";
+        document.documentElement.dataset.theme = requestedTheme || savedTheme || preferredTheme;
+      } catch { document.documentElement.dataset.theme = "tokyo-night"; }
     </script>
     <script type="application/ld+json">
       {
@@ -160,6 +162,39 @@
         --muted: #a7b0ba;
         --accent: #58a6ff;
         --border: #30363d;
+      }
+
+      [data-theme="github-light"] {
+        color-scheme: light;
+        --background: #ffffff;
+        --surface: #f6f8fa;
+        --surface-light: #eaeef2;
+        --text: #1f2328;
+        --muted: #59636e;
+        --accent: #0969da;
+        --border: #d0d7de;
+      }
+
+      [data-theme="catppuccin-latte"] {
+        color-scheme: light;
+        --background: #eff1f5;
+        --surface: #e6e9ef;
+        --surface-light: #dce0e8;
+        --text: #4c4f69;
+        --muted: #6c6f85;
+        --accent: #1e66f5;
+        --border: #bcc0cc;
+      }
+
+      [data-theme="solarized-light"] {
+        color-scheme: light;
+        --background: #fdf6e3;
+        --surface: #eee8d5;
+        --surface-light: #e5ddc7;
+        --text: #073642;
+        --muted: #586e75;
+        --accent: #268bd2;
+        --border: #93a1a1;
       }
 
       [data-theme="kanagawa"] {
@@ -877,6 +912,9 @@
             <option value="one-dark">One Dark</option>
             <option value="monokai">Monokai</option>
             <option value="github-dark">GitHub Dark</option>
+            <option value="github-light">GitHub Light</option>
+            <option value="catppuccin-latte">Catppuccin Latte</option>
+            <option value="solarized-light">Solarized Light</option>
             <option value="kanagawa">Kanagawa</option>
           </select>
         </label>
