@@ -11,8 +11,7 @@ maintainer guides that define release and validation procedures.
 
 ### Added
 
-- Add complete favicon, touch-icon, install-manifest, and social-card metadata
-  to the Pages site, backed by regression checks.
+- Pages now include favicons, touch and install icons, a web manifest, and a 1200x630 social card. Regression tests protect the metadata and image dimensions.
 
 ## [0.9.13] - 2026-09-01
 
@@ -32,9 +31,8 @@ maintainer guides that define release and validation procedures.
 
 ### Added
 
-- Add selectable dark and light themes to the Pages site.
-- Default to GitHub Light for a browser light preference while retaining the
-  existing dark palette when no color preference is specified.
+- Pages offer selectable dark and light themes.
+- Browsers that prefer light mode start with GitHub Light; browsers without a preference keep the default dark theme.
 
 ## [0.9.10] - 2026-09-01
 
@@ -48,8 +46,7 @@ maintainer guides that define release and validation procedures.
 
 ### Fixed
 
-- Delegate `pull-requests: read` to the reusable validation workflow so
-  tag-triggered releases can start after CI path filtering was introduced.
+- Tag-triggered releases now receive the pull-request metadata required by path-filtered validation.
 
 ## [0.9.8] - 2026-09-01
 
@@ -173,118 +170,40 @@ maintainer guides that define release and validation procedures.
 
 ### Added
 
-- Add locally stored named privacy modes that reapply available device controls
-  through the existing verified serial transaction and undo path.
-- Add bounded history trends, device/evidence filters, and stable sort modes.
-- Add session-only audio-endpoint discovery feedback and a privacy-safe live
-  application inspection target for diagnostics and X-Ray-style workflows.
+- Named privacy modes that reapply available controls through the verified serial transaction and undo path.
+- Bounded history trends, device and evidence filters, stable sorting, audio-endpoint feedback, and privacy-safe live application inspection.
 
 ### Changed
 
-- Share retry and heartbeat ownership through a tested observer watchdog.
-- Move QML runtime harnesses under `tests/qml/` while preserving installed-root
-  import semantics in the live runner.
-- Make screenshot capture monitor-specific, fresh for every documented view,
-  resistant to blank/duplicate evidence, and independent of optional workspace
-  routing plugins.
-- Compact history filters into one responsive row and hide idle bar icons by
-  default for new installations and global resets.
+- Screenshot capture is monitor-specific, uses fresh and distinct evidence, and restores desktop state without optional workspace plugins.
+- History filters share one responsive row, and new installations hide idle bar icons by default.
+- QML runtime harnesses use installed-root import behavior under `tests/qml/`.
 
 ### Fixed
 
-- Preserve the latest audio-endpoint refresh while another endpoint operation
-  is active instead of depending on asynchronous `Process.running` updates.
-- Restart reconfigured observers only after confirmed teardown, allow stopped
-  observers to re-enable, and serialize dependency/shared-control ownership.
-- Replace timing-based QML debounce and observer assertions with event-driven
-  completion plus bounded failure deadlines.
-- Serialize history writes in request order, retain the newest history reload
-  across in-flight work, and publish capture-preview expiry only after its
-  transient payload has been cleared.
-- Replace fixed-delay settings, confirmation, preview-expiry, verification, and
-  session-refresh runtime checks with observed completion signals.
-- Wait for the selected monitor's bar instance to acknowledge panel closure and
-  the fully rendered destination view before capturing screenshots.
-- Prevent superseded GeoClue probes from republishing location activity after
-  location monitoring is disabled or reconfigured.
-- Claim observer startup ownership synchronously so same-turn configuration
-  changes cannot launch or overwrite competing observer processes.
-- Retain one final microphone and output-state probe independently while their
-  respective subprocess is busy, including post-control verification refreshes.
-- Capture a single documentation notification after its pixels differ from a
-  fresh monitor baseline instead of sleeping and potentially sending duplicates.
-- Select the capture monitor from the launching focused window, with pointer and
-  focused-output fallbacks plus an explicit override, then route capture-only
-  panel actions to that output's registered bar instance.
-- Stop screenshot capture from switching the workspace on one monitor while
-  recording another, and restore the selected monitor without overriding the
-  user's original pointer/focus context.
-- Avoid accepting wallpaper-only crops as populated plugin screenshots.
+- Endpoint refresh, observer restart, history writes, settings actions, confirmations, previews, and verification use observed completion instead of fixed delays.
+- Concurrent observer and endpoint operations retain the latest requested state without stale subprocess results.
+- Screenshot capture waits for the selected monitor, rendered view, and changed pixels while rejecting blank or duplicate crops.
+- GeoClue probes, notification capture, workspace routing, and desktop restoration cannot republish stale state or disturb another monitor.
 
 ## [0.7.0] - 2026-08-26
 
 ### Added
 
-- Add a confirmed, serial privacy lockdown for service-owned controls with
-  verified partial results and a 30-second observed-state undo.
-- Add bounded per-device visibility and notification policies plus friendly
-  hardware labels.
-- Add today and seven-day activity summaries derived from existing opt-in,
-  bounded local history without extending retention.
-- Add actionable activity/failure notifications and an allowlisted quick-action
-  adapter for activity, history, diagnostics, lockdown, undo, and rescanning.
-- Add optional transition-only observer-health alerts with per-source rate
-  limiting and redacted source/code details.
-- Add a guided, non-mutating privacy self-test with private storage permission
-  checks, remediation guidance, notification delivery test, and redacted copy.
-- Add an optional idempotent Omarchy menu adapter for searchable privacy
-  actions, with lockdown routed through the existing confirmation step.
-- Add verified per-endpoint block/allow controls for microphones and audio
-  outputs on their device settings pages.
-- Add validated p2p-style IPC deep links for the main view, individual device
-  details, settings pages, and settings sections while retaining legacy routes.
+- Confirmed serial privacy lockdown with verified partial results and a 30-second undo.
+- Per-device visibility, notification, color, opacity, and audio-endpoint control policies.
+- Today and seven-day summaries from existing bounded local history.
+- Actionable alerts, health monitoring, a privacy self-test, menu actions, and validated deep links.
 
 ### Changed
 
-- Match new installations to the compact bar presentation with idle device
-  icons and activity status markers disabled.
-- Keep screenshot capture presentation-neutral while freezing only its sample
-  activity and documentation history.
-- Use accent for allowed in-use devices, foreground for enabled idle devices,
-  muted for disabled devices, and urgent for observable blocked requests by
-  default, with global and per-device role overrides and opacity controls for
-  every global semantic color.
-- Align integer settings with the shell's native bounded number fields and
-  consolidate bar-layout controls into a balanced responsive grid.
-- Reflow observer-health actions into a balanced responsive grid and present
-  self-test output through the shared status surface.
-- Describe the requested device state in privacy-control success and failure
-  notifications instead of reporting a generic applied change.
-- Replace the activity-header lockdown text and separate undo button with one
-  compact, state-aware lock/unlock icon and tooltip.
+- New installations use a compact bar with idle icons and activity markers disabled.
+- Device colors distinguish active, idle, disabled, and blocked states with global and per-device overrides.
+- Settings grids and observer-health actions reflow from the configured panel width.
 
 ### Fixed
 
-- Prevent failed `grim` captures from leaving partial files that resemble successful screenshots.
-- Fail closed on malformed audio metadata, corrupt history encoding, unsafe
-  screenshot publication paths, and incomplete owned menu blocks.
-- Sanitize location-client labels and make capture recovery independent of the
-  caller's working directory.
-- Reject invalid zero-sized screenshot metadata before publishing documentation.
-- Prevent full-row clicks from activating hidden controls for screenshots or
-  devices with unavailable dependencies.
-- Preserve zero in bounded integer settings instead of replacing it with the
-  field fallback.
-- Preserve rapid per-device appearance edits to different fields while settings
-  writes are coalesced.
-- Describe an observable blocked request consistently in activity cards instead
-  of pairing its urgent state with an idle availability message.
-- Allow the compact privacy-lockdown control to enter its required confirmation
-  state and execute the verified serial lockdown plan.
-- Report degraded fallback-observer health in the guided privacy self-test
-  instead of silently treating the missing alias as healthy.
-- Give active-count summary rows complete pending and dependency state so the
-  bar does not emit QML binding warnings while rendering the summary icon.
+- Lockdown, undo, quick actions, and endpoint controls share verified transaction paths and redacted diagnostics.
 
 ## [0.6.0] - 2026-08-26
 
