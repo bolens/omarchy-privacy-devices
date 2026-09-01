@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.bolens.privacy-devices",
   "name": "Privacy Devices",
-  "version": "0.9.9",
+  "version": "0.9.10",
   "author": "bolens",
   "license": "MIT",
   "description": "Unified, configurable privacy indicators for microphones, audio playback, cameras, screen sharing, screenshots, screen recording, and location access.",
