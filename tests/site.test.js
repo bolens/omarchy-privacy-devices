@@ -94,9 +94,13 @@ assert.match(html, /\.keyboard-guide\s*\{[^}]*margin:\s*1\.5rem 0 2\.5rem;/s,
   "keyboard guidance must clear the action-card grid at every viewport width");
 assert.ok(source.querySelector("#usage .steps + .keyboard-guide"),
   "keyboard guidance must use its non-overlapping layout role after the action cards");
+assert.doesNotMatch(html, /\.js \.reveal\s*\{[^}]*opacity:\s*0/s,
+  "primary content must remain visible without a scripted scroll journey");
+assert.ok(!(html.includes('querySelectorAll(".reveal")') && html.includes("IntersectionObserver")),
+  "primary content must not use observer-driven reveal classes");
 assert.match(html,
-  /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.js \.reveal \.steps li,[\s\S]*?transition:\s*none;/,
-  "reduced-motion styles must override nested reveal styles completely");
+  /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.hero > div:first-child > \*,\s*\.preview\s*\{[^}]*opacity:\s*1;[^}]*transform:\s*none;/,
+  "reduced-motion mode must leave animated hero content in its final visible state");
 assert.equal(source.querySelectorAll("#screenshots .interface-showcase .screenshot-card").length, 2,
   "bar and notification captures must complement the unrepeated hero activity view");
 assert.equal(source.querySelectorAll("#screenshots [data-gallery]").length, 2,
