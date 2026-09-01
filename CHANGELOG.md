@@ -7,6 +7,10 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Fixed
+
+- Validate complete PNG headers before reading screenshot dimensions in tests.
+
 ## [0.9.7] - 2026-09-01
 
 ### Fixed
