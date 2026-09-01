@@ -571,6 +571,14 @@
         font-size: 1.05rem;
       }
 
+      .keyboard-guide {
+        max-width: 700px;
+        margin: 1.5rem 0 2.5rem;
+        color: var(--muted);
+        font-family: system-ui, sans-serif;
+        font-size: 1.05rem;
+      }
+
       .guide-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -812,12 +820,16 @@
         }
         .hero > div:first-child > *,
         .preview,
-        .reveal,
-        .reveal .card,
-        .reveal .guide-card,
-        .reveal .steps li,
-        .reveal .requirement-list li,
-        .reveal .commands > div { opacity: 1; transform: none; }
+        .js .reveal,
+        .js .reveal .card,
+        .js .reveal .guide-card,
+        .js .reveal .steps li,
+        .js .reveal .requirement-list li,
+        .js .reveal .commands > div {
+          opacity: 1;
+          transform: none;
+          transition: none;
+        }
       }
 
       @media (max-width: 760px) {
@@ -1063,7 +1075,7 @@
             <li><strong>Middle-click</strong> Open settings for a bar icon or popup row.</li>
             <li><strong>Right-click</strong> Open the activity panel from an individual icon.</li>
           </ol>
-          <p class="section-intro"><strong>Keyboard:</strong> use ↑/↓ and Enter to select and open devices, H for history, S for settings, R to refresh observers, Esc to go back, and 1–4 to switch settings pages.</p>
+          <p class="keyboard-guide"><strong>Keyboard:</strong> use ↑/↓ and Enter to select and open devices, H for history, S for settings, R to refresh observers, Esc to go back, and 1–4 to switch settings pages.</p>
           <p class="notice">Toggle controllable rows directly in the popup. Blocking the Hyprland screen-sharing portal also suspends other features supplied by that portal until it is re-enabled.</p>
         </div>
       </section>

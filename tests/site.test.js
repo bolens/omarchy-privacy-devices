@@ -76,6 +76,13 @@ assert.match(mobileCss, /\.gallery-explorer > \*\s*\{\s*min-width:\s*0;/,
   "mobile gallery children must be allowed to shrink");
 assert.match(mobileCss, /\.gallery-stage\s*\{\s*min-width:\s*0;\s*width:\s*100%;/,
   "mobile gallery stages must stay within the viewport");
+assert.match(html, /\.keyboard-guide\s*\{[^}]*margin:\s*1\.5rem 0 2\.5rem;/s,
+  "keyboard guidance must clear the action-card grid at every viewport width");
+assert.ok(source.querySelector("#usage .steps + .keyboard-guide"),
+  "keyboard guidance must use its non-overlapping layout role after the action cards");
+assert.match(html,
+  /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.js \.reveal \.steps li,[\s\S]*?transition:\s*none;/,
+  "reduced-motion styles must override nested reveal styles completely");
 assert.equal(source.querySelectorAll("#screenshots .interface-showcase .screenshot-card").length, 2,
   "bar and notification captures must complement the unrepeated hero activity view");
 assert.equal(source.querySelectorAll("#screenshots [data-gallery]").length, 2,
