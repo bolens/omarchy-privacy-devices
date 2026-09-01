@@ -7,6 +7,8 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-09-01
+
 ### Fixed
 
 - Validate complete PNG headers before reading screenshot dimensions in tests.
@@ -471,7 +473,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.7...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.8...HEAD
+[0.9.8]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.7...v0.9.8
 [0.9.7]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.6...v0.9.7
 [0.9.6]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.5...v0.9.6
 [0.9.5]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.4...v0.9.5
