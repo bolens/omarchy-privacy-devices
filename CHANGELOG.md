@@ -11,7 +11,7 @@ maintainer guides that define release and validation procedures.
 
 ### Fixed
 
-- Delegate pull-request read permission to the reusable validation workflow so
+- Delegate `pull-requests: read` to the reusable validation workflow so
   tag-triggered releases can start after CI path filtering was introduced.
 
 ## [0.9.8] - 2026-09-01
