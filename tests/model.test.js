@@ -33,6 +33,11 @@ if (JSON.stringify(sanitized) !== JSON.stringify({showIdle: true, popupMaxHeight
 const arrayLikeKinds = {0: "camera", 1: "location", length: 2}
 assert.deepEqual(JSON.parse(JSON.stringify(context.arraySetting(arrayLikeKinds, context.KINDS))), ["camera", "location"])
 assert.deepEqual(JSON.parse(JSON.stringify(context.sanitizeSettings({enabledKinds: arrayLikeKinds}).enabledKinds)), ["camera", "location"])
+let lengthReads = 0
+const shiftingKinds = {0: "camera", 1: "location"}
+Object.defineProperty(shiftingKinds, "length", {get() { lengthReads++; return lengthReads === 1 ? 2 : 4097 }})
+assert.deepEqual(JSON.parse(JSON.stringify(context.arraySetting(shiftingKinds, context.KINDS))), ["camera", "location"])
+assert.equal(lengthReads, 1)
 for (const invalidList of [{length: Infinity}, {length: 4097}, {length: -1}, {length: 1.5}, function settingsList() {}]) {
   assert.deepEqual(JSON.parse(JSON.stringify(context.arraySetting(invalidList, ["fallback"]))), ["fallback"])
   assert.equal(context.sanitizeSettings({enabledKinds: invalidList}).enabledKinds, undefined)
