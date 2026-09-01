@@ -30,7 +30,7 @@ assert.match(ci, /OMARCHY_PLUGIN_VALIDATE: \.omarchy\/bin\/omarchy-plugin-valida
 for (const helper of ["privacy-action", "scripts/build-site.sh"])
   assert.match(runner, new RegExp(`shellcheck[\\s\\S]*?${helper.replace(".", "\\.")}`), `the canonical runner must lint ${helper}`)
 assert.match(ci, /name: Run behavior suite[\s\S]*?run: tests\/run_all\.sh/, "CI must delegate the behavior suite to the canonical runner")
-const pluginJob = ci.slice(ci.indexOf("\n  plugin:\n"), ci.indexOf("\n  repository:\n"))
+const pluginJob = ci.slice(ci.indexOf("\n  plugin-fast:\n"), ci.indexOf("\n  plugin-qml:\n"))
 assert.ok(pluginJob.indexOf("run: npm ci") >= 0 && pluginJob.indexOf("run: npm ci") < pluginJob.indexOf("run: tests/run_all.sh"),
   "the plugin job must install declared test dependencies before the canonical suite")
 assert.equal(packageJson.scripts.test, "bash tests/run_all.sh", "npm test must delegate to the canonical runner")
