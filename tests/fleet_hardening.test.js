@@ -47,7 +47,7 @@ assert.match(preCommit, /archive "\$\(git -C "\$root" write-tree\)"/)
 assert.match(preCommit, /PRIVACY_RUNTIME_TESTS=never/)
 assert.ok(fs.statSync(".githooks/pre-commit").mode & 0o100)
 
-assert.match(release, /actions\/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a/)
+assert.match(release, /actions\/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8/)
 assert.match(release, /id-token:\s*write/)
 assert.match(release, /attestations:\s*write/)
 assert.match(release, /validate:[\s\S]*?checks:\s*write/)
