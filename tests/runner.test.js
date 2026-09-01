@@ -12,6 +12,8 @@ const qmlLintPath = path.join(root, "scripts", "lint-qml")
 assert.ok(fs.existsSync(qmlLintPath), "one shared QML lint entry point must exist")
 const qmlLint = fs.readFileSync(qmlLintPath, "utf8")
 const live = fs.readFileSync(path.join(root, "scripts", "verify-live"), "utf8")
+const qmlModule = fs.readFileSync(path.join(root, "qmldir"), "utf8")
+const qmlLintPolicy = fs.readFileSync(path.join(root, ".qmllint.ini"), "utf8")
 
 assert.match(runner, /for test_file in tests\/\*\.test\.js/, "the canonical runner must discover every JavaScript suite")
 assert.match(runner, /python3 -m unittest discover -s tests -p 'test_\*\.py'/, "the canonical runner must discover every Python suite")
@@ -38,6 +40,9 @@ assert.match(qmlLint, /\.\/\*\.qml[\s\S]*?\.\/tests\/qml\/\*\.qml[\s\S]*?sort/,
   "QML linting must discover production and runtime harnesses deterministically")
 assert.match(qmlLint, /QMLLINT:-\/usr\/lib\/qt6\/bin\/qmllint/,
   "local linting must prefer the current Qt 6 qmllint")
+assert.match(qmlModule, /^module io\.github\.bolens\.privacy_devices$/m)
+assert.match(qmlModule, /^PrivacySettingsController 1\.0 PrivacySettingsController\.qml$/m)
+assert.match(qmlLintPolicy, /^UnreachableCode=error$/m)
 assert.match(ci, /QMLLINT=\/usr\/lib\/qt6\/bin\/qmllint[\s\S]*?scripts\/lint-qml/,
   "CI must use the same QML lint inventory as contributors")
 assert.match(testing, /scripts\/lint-qml/, "testing guidance must advertise the shared QML lint entry point")
