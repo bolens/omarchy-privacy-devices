@@ -34,6 +34,12 @@ assert.match(notFound, /URLSearchParams/);
 assert.match(notFound, /root\.dataset\.themeStorage/);
 assert.match(html, /property="og:site_name"/);
 assert.match(html, /name="twitter:title"/);
+for (const contract of ["og:image:width\" content=\"1200", "og:image:height\" content=\"630",
+  "twitter:image:alt", "apple-touch-icon.png", "site.webmanifest"])
+  assert.ok(html.includes(contract), `missing discovery contract: ${contract}`);
+for (const asset of ["apple-touch-icon.png", "icon-192.png", "icon-512.png", "site.webmanifest"])
+  assert.ok(fs.existsSync(path.join(root, "docs", asset)), `missing discovery asset: ${asset}`);
+assert.deepEqual(pngDimensions("docs/social-card.png"), [1200, 630]);
 assert.equal((html.match(/data-copy=/g) || []).length, 4);
 const panelCaptureWidth = 532;
 assert.deepEqual(pngDimensions("preview.png"), [panelCaptureWidth, 500]);

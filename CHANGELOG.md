@@ -7,6 +7,13 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.9.14] - 2026-09-01
+
+### Added
+
+- Add complete favicon, touch-icon, install-manifest, and social-card metadata
+  to the Pages site, backed by regression checks.
+
 ## [0.9.13] - 2026-09-01
 
 ### Fixed
@@ -510,7 +517,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.13...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.14...HEAD
+[0.9.14]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.13...v0.9.14
 [0.9.13]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.12...v0.9.13
 [0.9.12]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.11...v0.9.12
 [0.9.11]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.10...v0.9.11
