@@ -6,6 +6,9 @@ const context = {}
 vm.createContext(context)
 vm.runInContext(source, context)
 
+assert.equal(context.historyAgeLabel(0, 0), "Just now", "an injected epoch clock must not fall back to wall time")
+assert.equal(context.historyPeriodLabel(0, 0), "Today", "period labels must honor an injected epoch clock")
+
 function node(mediaClass, name, extra = {}) {
   return {
     ready: true,

@@ -7,6 +7,13 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.9.12] - 2026-09-01
+
+### Fixed
+
+- Honor injected epoch timestamps in history labels instead of silently
+  substituting the wall clock.
+
 ## [0.9.11] - 2026-09-01
 
 ### Added
@@ -496,7 +503,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.11...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.12...HEAD
+[0.9.12]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.11...v0.9.12
 [0.9.11]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.10...v0.9.11
 [0.9.10]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.9...v0.9.10
 [0.9.9]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.8...v0.9.9
