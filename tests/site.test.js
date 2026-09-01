@@ -27,8 +27,11 @@ assert.match(html, /<main id="main">/);
 assert.match(html, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(html, /prefers-color-scheme: light/);
 assert.match(notFound, /prefers-color-scheme: light/);
-assert.match(html, /preferredTheme\s*=\s*prefersLight\s*\?\s*"github-light"\s*:\s*"tokyo-night"/,
+assert.match(html, /preferredTheme\s*=\s*prefersLight\s*\?\s*"github-light"\s*:\s*root\.dataset\.defaultTheme/,
   "browser light preference must default to GitHub Light while dark remains the fallback");
+assert.match(html, /localStorage\.getItem\(root\.dataset\.themeStorage\)/);
+assert.match(notFound, /URLSearchParams/);
+assert.match(notFound, /root\.dataset\.themeStorage/);
 assert.match(html, /property="og:site_name"/);
 assert.match(html, /name="twitter:title"/);
 assert.equal((html.match(/data-copy=/g) || []).length, 4);

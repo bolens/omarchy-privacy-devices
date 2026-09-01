@@ -1,5 +1,5 @@
 <!doctype html>
-<html class="no-js" lang="en">
+<html class="no-js" lang="en" data-default-theme="tokyo-night" data-theme-storage="privacy-devices-theme">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -24,13 +24,14 @@
     <title>Privacy Devices for Omarchy</title>
     <script>
       document.documentElement.classList.replace("no-js", "js");
-      try {
-        const savedTheme = localStorage.getItem("privacy-devices-theme");
-        const requestedTheme = new URLSearchParams(location.search).get("theme");
-        const prefersLight = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: light)").matches;
-        const preferredTheme = prefersLight ? "github-light" : "tokyo-night";
-        document.documentElement.dataset.theme = requestedTheme || savedTheme || preferredTheme;
-      } catch { document.documentElement.dataset.theme = "tokyo-night"; }
+      const root = document.documentElement;
+      let requestedTheme = null;
+      let savedTheme = null;
+      try { requestedTheme = new URLSearchParams(location.search).get("theme"); } catch {}
+      try { savedTheme = root.dataset.themeStorage ? localStorage.getItem(root.dataset.themeStorage) : null; } catch {}
+      const prefersLight = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: light)").matches;
+      const preferredTheme = prefersLight ? "github-light" : root.dataset.defaultTheme;
+      root.dataset.theme = requestedTheme || savedTheme || preferredTheme;
     </script>
     <script type="application/ld+json">
       {

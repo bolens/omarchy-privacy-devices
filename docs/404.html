@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-default-theme="tokyo-night" data-theme-storage="privacy-devices-theme">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,18 +8,23 @@
     <link rel="canonical" href="https://bolens.github.io/omarchy-privacy-devices/">
     <link rel="icon" href="https://bolens.github.io/omarchy-privacy-devices/favicon.svg" type="image/svg+xml">
     <title>Page not found · Privacy Devices</title>
+    <script>
+      const root = document.documentElement;
+      let requested = null;
+      let saved = null;
+      try { requested = new URLSearchParams(location.search).get("theme"); } catch {}
+      try { saved = root.dataset.themeStorage ? localStorage.getItem(root.dataset.themeStorage) : null; } catch {}
+      const preferred = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: light)").matches
+        ? "github-light" : root.dataset.defaultTheme;
+      root.dataset.theme = requested || saved || preferred;
+    </script>
     <style>
-      :root { color-scheme: dark; }
-      body { display: grid; min-height: 100vh; margin: 0; place-items: center; background: #0c0e0c; color: #f2f4ed; font: 1rem/1.6 ui-monospace, monospace; }
+      :root { color-scheme: dark; --background: #0c0e0c; --text: #f2f4ed; --muted: #a8afa2; --accent: #b9f27c; }
+      [data-theme="github-light"], [data-theme="catppuccin-latte"], [data-theme="solarized-light"] { color-scheme: light; --background: #fff; --text: #1f2328; --muted: #59636e; --accent: #0969da; }
+      body { display: grid; min-height: 100vh; margin: 0; place-items: center; background: var(--background); color: var(--text); font: 1rem/1.6 ui-monospace, monospace; }
       main { width: min(34rem, calc(100% - 2rem)); }
-      p { color: #a8afa2; }
-      a { color: #b9f27c; text-underline-offset: 0.2em; }
-      @media (prefers-color-scheme: light) {
-        :root { color-scheme: light; }
-        body { background: #fff; color: #1f2328; }
-        p { color: #59636e; }
-        a { color: #0969da; }
-      }
+      p { color: var(--muted); }
+      a { color: var(--accent); text-underline-offset: 0.2em; }
     </style>
   </head>
   <body>
