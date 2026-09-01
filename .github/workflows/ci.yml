@@ -14,8 +14,52 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  plugin:
-    name: Plugin
+  changes:
+    name: Changes
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: read
+    outputs:
+      plugin: ${{ github.event_name != 'pull_request' || steps.filter.outputs.plugin == 'true' }}
+      repository: ${{ github.event_name != 'pull_request' || steps.filter.outputs.repository == 'true' }}
+    steps:
+      - name: Classify changed paths
+        if: github.event_name == 'pull_request'
+        id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            plugin:
+              - '*.js'
+              - '*.qml'
+              - '.githooks/**'
+              - '.github/dependabot.yml'
+              - '.github/workflows/**'
+              - '.qmllint.ini'
+              - 'backend/**'
+              - 'manifest.json'
+              - 'package*.json'
+              - 'privacy-*'
+              - 'qmldir'
+              - 'scripts/**'
+              - 'tests/**'
+            repository:
+              - '**/*.md'
+              - '.github/ISSUE_TEMPLATE/**'
+              - '.github/dependabot.yml'
+              - '.github/workflows/**'
+              - 'docs/**'
+              - 'manifest.json'
+              - 'package*.json'
+              - 'preview.png'
+              - 'scripts/build-site.sh'
+              - 'site/**'
+              - 'tests/**'
+
+  plugin-fast:
+    name: Plugin fast and behavior checks
+    needs: changes
+    if: needs.changes.outputs.plugin == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -71,14 +115,6 @@ jobs:
             exit 1
           fi
 
-      - name: Lint QML
-        run: |
-          docker run --rm \
-            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
-            --workdir /workspace \
-            archlinux@sha256:4bf33b21a715aac0b48ce6e9eaed4782a898eae96f88f5da3635572129c2584a \
-            bash -lc 'pacman -Syu --noconfirm quickshell qt6-declarative >/dev/null && QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy scripts/lint-qml'
-
       - name: Install test dependencies
         run: npm ci
 
@@ -87,8 +123,51 @@ jobs:
         env:
           OMARCHY_PLUGIN_VALIDATE: .omarchy/bin/omarchy-plugin-validate
 
-  repository:
-    name: Repository
+  plugin-qml:
+    name: Plugin QML
+    needs: changes
+    if: needs.changes.outputs.plugin == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Check out plugin
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check out Omarchy shell imports
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: basecamp/omarchy
+          ref: 13f18b2cb7286fb54f87daf571a031aa6af3d8f0 # v4.0.1
+          path: .omarchy
+          persist-credentials: false
+      - name: Lint QML
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            --workdir /workspace \
+            archlinux@sha256:4bf33b21a715aac0b48ce6e9eaed4782a898eae96f88f5da3635572129c2584a \
+            bash -lc 'pacman -Syu --noconfirm quickshell qt6-declarative >/dev/null && QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy scripts/lint-qml'
+  plugin-result:
+    name: Plugin
+    needs: [changes, plugin-fast, plugin-qml]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require selected plugin checks
+        env:
+          SELECTED: ${{ needs.changes.outputs.plugin }}
+          FAST_RESULT: ${{ needs.plugin-fast.result }}
+          QML_RESULT: ${{ needs.plugin-qml.result }}
+        run: |
+          [[ "$SELECTED" != true ]] || { [[ "$FAST_RESULT" == success ]] && [[ "$QML_RESULT" == success ]]; }
+
+  repository-checks:
+    name: Repository checks
+    needs: changes
+    if: needs.changes.outputs.repository == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -161,3 +240,16 @@ jobs:
           trap 'kill "$site_server" 2>/dev/null || true' EXIT
           npx lighthouse http://127.0.0.1:4173/ --only-categories=accessibility --chrome-flags="--headless --no-sandbox" --output=json --output-path=/tmp/lighthouse.json
           node -e 'const report = require("/tmp/lighthouse.json"); const score = report.categories.accessibility.score; console.log("accessibility score:", score); process.exit(score === 1 ? 0 : 1)'
+
+  repository-result:
+    name: Repository
+    needs: [changes, repository-checks]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require selected repository checks
+        env:
+          SELECTED: ${{ needs.changes.outputs.repository }}
+          REPOSITORY_RESULT: ${{ needs.repository-checks.result }}
+        run: |
+          [[ "$SELECTED" != true ]] || [[ "$REPOSITORY_RESULT" == success ]]
