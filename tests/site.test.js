@@ -61,6 +61,8 @@ assert.match(html, /\.site-header\s*\{[^}]*position:\s*sticky/s,
   "primary navigation must remain visible through the long guide");
 assert.match(html, /@media \(max-width: 760px\)[\s\S]*?\.site-header\s*\{\s*position:\s*static;/,
   "mobile navigation must not consume the viewport while scrolling");
+assert.match(html, /@media \(max-width: 760px\)[\s\S]*?\.gallery-explorer\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\);[\s\S]*?\.gallery-explorer > \*\s*\{\s*min-width:\s*0;[\s\S]*?\.gallery-stage\s*\{\s*min-width:\s*0;\s*width:\s*100%;/,
+  "mobile galleries must not expand to image or tab min-content width");
 assert.equal(source.querySelectorAll("#screenshots .interface-showcase .screenshot-card").length, 2,
   "bar and notification captures must complement the unrepeated hero activity view");
 assert.equal(source.querySelectorAll("#screenshots [data-gallery]").length, 2,
