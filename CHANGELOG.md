@@ -7,6 +7,17 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.9.7] - 2026-09-01
+
+### Fixed
+
+- Preserve QML-backed list settings, including enabled device kinds and privacy
+  modes, across sanitization, save, serialization, and reload while rejecting
+  malformed or oversized values with a single bounded length snapshot.
+- Keep native privacy-mode arrays on the allocation-free sanitization path.
+- Require Qt 6 QML tooling, publish plugin module metadata, and gate reliable
+  semantic lint errors in local and CI validation.
+
 ## [0.9.6] - 2026-08-31
 
 ### Added
@@ -456,7 +467,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.6...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.7...HEAD
+[0.9.7]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.6...v0.9.7
 [0.9.6]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.5...v0.9.6
 [0.9.5]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.4...v0.9.5
 [0.9.4]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.3...v0.9.4
