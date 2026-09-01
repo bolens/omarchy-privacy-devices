@@ -78,6 +78,7 @@ assert.match(release, /actions\/attest-build-provenance@4d101475d8b20a2381f78447
 assert.match(release, /id-token:\s*write/)
 assert.match(release, /attestations:\s*write/)
 assert.match(release, /validate:[\s\S]*?checks:\s*write/)
+assert.match(release, /validate:[\s\S]*?pull-requests:\s*read/)
 assert.match(release, /concurrency:[\s\S]*cancel-in-progress:\s*false/)
 assert.doesNotMatch(release, /runs-on:\s*ubuntu-latest/)
 assert.match(release, /persist-credentials:\s*false/)
