@@ -2,11 +2,12 @@
 set -euo pipefail
 
 repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-qml_lint=${QMLLINT:-qmllint}
+qml_lint=${QMLLINT:-/usr/lib/qt6/bin/qmllint}
+[[ -x "$qml_lint" ]] || { printf 'Qt 6 qmllint not found: %s\n' "$qml_lint" >&2; exit 1; }
 import_args=()
 
 if [[ -n ${OMARCHY_PATH:-} ]]; then
-  import_args=(-I "$OMARCHY_PATH/shell")
+  import_args=(-I "$OMARCHY_PATH/shell" -i "$OMARCHY_PATH/shell/Commons/qmldir" -i "$OMARCHY_PATH/shell/Ui/qmldir")
 fi
 
 mapfile -t qml_files < <(
@@ -15,4 +16,4 @@ mapfile -t qml_files < <(
 )
 
 cd "$repo_dir"
-exec "$qml_lint" "${import_args[@]}" "${qml_files[@]}"
+exec "$qml_lint" "${import_args[@]}" -i "$repo_dir/qmldir" "${qml_files[@]}"

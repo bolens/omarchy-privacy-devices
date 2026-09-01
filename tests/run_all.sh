@@ -43,8 +43,8 @@ case "$runtime_mode" in
     ;;
   auto)
     wayland_socket=${XDG_RUNTIME_DIR:-}/${WAYLAND_DISPLAY:-}
-    if [[ -n ${WAYLAND_DISPLAY:-} && -S $wayland_socket ]] \
-      && { command -v quickshell >/dev/null || [[ -x $HOME/.local/opt/quickshell-git/usr/bin/quickshell ]]; }; then
+    if [[ -n ${WAYLAND_DISPLAY:-} && -S "$wayland_socket" ]] \
+      && { command -v quickshell >/dev/null || [[ -x "$HOME/.local/opt/quickshell-git/usr/bin/quickshell" ]]; }; then
       tests/run_qml_runtime.sh
     else
       printf 'Runtime QML tests skipped (no usable Wayland session; set PRIVACY_RUNTIME_TESTS=always to require them).\n'

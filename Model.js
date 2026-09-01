@@ -124,11 +124,15 @@ function sanitizeSettings(data) {
     clean[key] = Math.max(realBounds[0], Math.min(realBounds[1], realValue))
   }
   var kindLists = ["enabledKinds", "order", "notificationKinds", "blockableKinds"]
-  for (index = 0; index < kindLists.length; index++) if (isArrayLike(source[kindLists[index]]))
-    clean[kindLists[index]] = unique(arrayFrom(source[kindLists[index]]).filter(function(value) { return KINDS.indexOf(value) >= 0 })).slice(0, KINDS.length)
+  for (index = 0; index < kindLists.length; index++) {
+    var kindListLength = arrayLikeLength(source[kindLists[index]])
+    if (kindListLength >= 0) clean[kindLists[index]] = unique(arrayFrom(source[kindLists[index]], kindListLength).filter(function(value) { return KINDS.indexOf(value) >= 0 })).slice(0, KINDS.length)
+  }
   var stringLists = ["excludedApps", "hiddenApps", "notificationSuppressedApps", "hiddenDevices", "notificationSuppressedDevices", "cameraKeywords", "screenShareKeywords"]
-  for (index = 0; index < stringLists.length; index++) if (isArrayLike(source[stringLists[index]]))
-    clean[stringLists[index]] = unique(arrayFrom(source[stringLists[index]]).map(function(value) { return boundedPlainText(value, 256) }).filter(Boolean)).slice(0, 256)
+  for (index = 0; index < stringLists.length; index++) {
+    var stringListLength = arrayLikeLength(source[stringLists[index]])
+    if (stringListLength >= 0) clean[stringLists[index]] = unique(arrayFrom(source[stringLists[index]], stringListLength).map(function(value) { return boundedPlainText(value, 256) }).filter(Boolean)).slice(0, 256)
+  }
   var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["off","symbols","letters","custom"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], popupLayout:["adaptive","list","grid"], popupWidth:["narrow","standard","wide"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
     audioControlBackend:["auto","pactl","wpctl"], screenshotBackend:["omarchy","grim","grim-satty","hyprshot","flameshot","custom"],
     activeColorRole:["accent","bar-active","urgent","foreground","muted"], inactiveColorRole:["foreground","bar-active","muted","accent","urgent"], disabledColorRole:["muted","urgent","accent","foreground","bar-active"], blockedActiveColorRole:["urgent","accent","bar-active","muted","foreground"],
@@ -186,13 +190,14 @@ function sanitizeSettings(data) {
     }
     clean[mapName] = map
   }
-  if (Array.isArray(source.privacyModes)) clean.privacyModes = sanitizePrivacyModes(source.privacyModes)
+  if (arrayLikeLength(source.privacyModes) >= 0) clean.privacyModes = sanitizePrivacyModes(source.privacyModes)
   clean._privacySettingsVersion = SETTINGS_VERSION
   return clean
 }
 
 function sanitizePrivacyModes(modes) {
-  var rows = Array.isArray(modes) ? modes : []
+  var length = arrayLikeLength(modes)
+  var rows = Array.isArray(modes) ? modes : arrayFrom(modes, length)
   var result = [], names = {}
   for (var index = 0; index < rows.length && result.length < 8; index++) {
     var row = rows[index]
@@ -215,20 +220,26 @@ function sanitizePrivacyModes(modes) {
 }
 
 function isArrayLike(value) {
-  if (!value || typeof value !== "object") return false
-  var length = Number(value.length)
-  return isFinite(length) && length >= 0 && Math.floor(length) === length && length <= 4096
+  return arrayLikeLength(value) >= 0
 }
 
-function arrayFrom(value) {
-  if (!isArrayLike(value)) return []
+function arrayLikeLength(value) {
+  if (!value || typeof value !== "object") return -1
+  var length = Number(value.length)
+  return isFinite(length) && length >= 0 && Math.floor(length) === length && length <= 4096 ? length : -1
+}
+
+function arrayFrom(value, validatedLength) {
+  var length = validatedLength === undefined ? arrayLikeLength(value) : validatedLength
+  if (length < 0) return []
   var result = []
-  for (var index = 0; index < value.length; index++) result.push(value[index])
+  for (var index = 0; index < length; index++) result.push(value[index])
   return result
 }
 
 function arraySetting(value, fallback) {
-  if (isArrayLike(value)) return arrayFrom(value).map(function(entry) { return String(entry) })
+  var length = arrayLikeLength(value)
+  if (length >= 0) return arrayFrom(value, length).map(function(entry) { return String(entry) })
   if (typeof value === "string") return value.split(",").map(function(entry) { return entry.trim() }).filter(Boolean)
   return fallback.slice()
 }

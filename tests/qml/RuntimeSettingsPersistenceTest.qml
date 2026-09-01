@@ -5,6 +5,7 @@ import "Model.js" as Model
 ShellRoot {
   id: root
   property list<string> loadedKinds: ["microphone", "camera"]
+  property var loadedModes: ({0:{name:"Meeting",controls:{microphone:false}},length:1})
   property var persistedEntry: null
 
   QtObject {
@@ -21,7 +22,7 @@ ShellRoot {
   QtObject {
     id: hostMock
     property string moduleName: "io.github.bolens.privacy-devices"
-    property var settings: ({enabledKinds: root.loadedKinds, showIdle: false})
+    property var settings: ({enabledKinds: root.loadedKinds, privacyModes:root.loadedModes, showIdle: false})
     readonly property var effectiveSettings: settings
     property var bar: barMock
     property bool opened: true
@@ -43,9 +44,13 @@ ShellRoot {
       if (controller.mutationControl.status !== "saved") return
       if (!root.persistedEntry || root.persistedEntry.enabledKinds.join("|") !== "camera")
         throw new Error("monitored service subset was not serialized")
+      if (root.persistedEntry.privacyModes.length !== 1 || root.persistedEntry.privacyModes[0].name !== "Meeting")
+        throw new Error("privacy modes were not serialized")
       hostMock.settings = JSON.parse(JSON.stringify(root.persistedEntry))
       if (Model.arraySetting(hostMock.settings.enabledKinds, Model.KINDS).join("|") !== "camera")
         throw new Error("monitored service subset reset after reload")
+      if (Model.sanitizePrivacyModes(hostMock.settings.privacyModes).length !== 1)
+        throw new Error("privacy modes reset after reload")
       console.log("PRIVACY_QML_SETTINGS_PERSISTENCE_OK")
       Qt.quit()
     }
