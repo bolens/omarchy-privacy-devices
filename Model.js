@@ -124,11 +124,11 @@ function sanitizeSettings(data) {
     clean[key] = Math.max(realBounds[0], Math.min(realBounds[1], realValue))
   }
   var kindLists = ["enabledKinds", "order", "notificationKinds", "blockableKinds"]
-  for (index = 0; index < kindLists.length; index++) if (Array.isArray(source[kindLists[index]]))
-    clean[kindLists[index]] = unique(source[kindLists[index]].filter(function(value) { return KINDS.indexOf(value) >= 0 })).slice(0, KINDS.length)
+  for (index = 0; index < kindLists.length; index++) if (isArrayLike(source[kindLists[index]]))
+    clean[kindLists[index]] = unique(arrayFrom(source[kindLists[index]]).filter(function(value) { return KINDS.indexOf(value) >= 0 })).slice(0, KINDS.length)
   var stringLists = ["excludedApps", "hiddenApps", "notificationSuppressedApps", "hiddenDevices", "notificationSuppressedDevices", "cameraKeywords", "screenShareKeywords"]
-  for (index = 0; index < stringLists.length; index++) if (Array.isArray(source[stringLists[index]]))
-    clean[stringLists[index]] = unique(source[stringLists[index]].map(function(value) { return boundedPlainText(value, 256) }).filter(Boolean)).slice(0, 256)
+  for (index = 0; index < stringLists.length; index++) if (isArrayLike(source[stringLists[index]]))
+    clean[stringLists[index]] = unique(arrayFrom(source[stringLists[index]]).map(function(value) { return boundedPlainText(value, 256) }).filter(Boolean)).slice(0, 256)
   var enums = {displayMode:["icons","active-count","active-only"], statusMarkerMode:["off","symbols","letters","custom"], barMarkerPosition:["after","before"], statePillStyle:["filled","outline","minimal"], popupDensity:["comfortable","compact"], popupLayout:["adaptive","list","grid"], popupWidth:["narrow","standard","wide"], recordingBackend:["omarchy","gpu-screen-recorder","wf-recorder","custom"],
     audioControlBackend:["auto","pactl","wpctl"], screenshotBackend:["omarchy","grim","grim-satty","hyprshot","flameshot","custom"],
     activeColorRole:["accent","bar-active","urgent","foreground","muted"], inactiveColorRole:["foreground","bar-active","muted","accent","urgent"], disabledColorRole:["muted","urgent","accent","foreground","bar-active"], blockedActiveColorRole:["urgent","accent","bar-active","muted","foreground"],
@@ -214,8 +214,19 @@ function sanitizePrivacyModes(modes) {
   return result
 }
 
+function isArrayLike(value) {
+  return !!value && typeof value !== "string" && typeof value.length === "number"
+}
+
+function arrayFrom(value) {
+  if (!isArrayLike(value)) return []
+  var result = []
+  for (var index = 0; index < value.length; index++) result.push(value[index])
+  return result
+}
+
 function arraySetting(value, fallback) {
-  if (Array.isArray(value)) return value.map(function(entry) { return String(entry) })
+  if (isArrayLike(value)) return arrayFrom(value).map(function(entry) { return String(entry) })
   if (typeof value === "string") return value.split(",").map(function(entry) { return entry.trim() }).filter(Boolean)
   return fallback.slice()
 }

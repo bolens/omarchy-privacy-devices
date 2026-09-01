@@ -3,11 +3,18 @@ import QtQuick
 import "Model.js" as Model
 
 ShellRoot {
+  id: root
+  property list<string> persistedKinds: ["camera", "location"]
+
   Component.onCompleted: {
     var raw = {showIdle:"yes", statusMarkerMode:"invalid", popupMaxHeight:9999, enabledKinds:["camera", "camera", "bogus"], unknown:"discard"}
     var clean = Model.sanitizeSettings(raw)
     if (clean.showIdle !== true || clean.popupMaxHeight !== 900 || clean.statusMarkerMode !== "off") throw new Error("settings normalization failed")
     if (JSON.stringify(clean.enabledKinds) !== JSON.stringify(["camera"])) throw new Error("kind normalization failed")
+    var persisted = Model.sanitizeSettings({enabledKinds: root.persistedKinds})
+    if (Model.arraySetting(root.persistedKinds, Model.KINDS).join("|") !== "camera|location"
+        || persisted.enabledKinds.join("|") !== "camera|location")
+      throw new Error("QML list settings did not survive normalization")
     if (clean.unknown !== undefined || clean._privacySettingsVersion !== 1) throw new Error("settings version boundary failed")
     var grouped = Model.coalesceNotificationEvents([{phase:"started",kind:"camera",application:"Browser"},{phase:"started",kind:"camera",application:"Browser"}])
     if (grouped.count !== 1 || grouped.body !== "Browser: Camera") throw new Error("notification coalescing failed")

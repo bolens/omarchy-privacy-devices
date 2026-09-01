@@ -30,6 +30,9 @@ if (context.privacySessionCount({sessions: [{}, {}]}) !== 2 || context.privacySe
 if (context.privacySessionCount({sessions: [{}, {}]}, false) !== 0) throw new Error("multi-session count suppression")
 const sanitized = context.sanitizeSettings({showIdle: "yes", popupMaxHeight: 9999, enabledKinds: ["camera", "camera", "bogus"], unknown: "discard"})
 if (JSON.stringify(sanitized) !== JSON.stringify({showIdle: true, popupMaxHeight: 900, enabledKinds: ["camera"], _privacySettingsVersion: 1})) throw new Error("settings sanitizer")
+const arrayLikeKinds = {0: "camera", 1: "location", length: 2}
+assert.deepEqual(JSON.parse(JSON.stringify(context.arraySetting(arrayLikeKinds, context.KINDS))), ["camera", "location"])
+assert.deepEqual(JSON.parse(JSON.stringify(context.sanitizeSettings({enabledKinds: arrayLikeKinds}).enabledKinds)), ["camera", "location"])
 const hardenedSettings = context.sanitizeSettings({
   idleOpacity: -4,
   displayMode: "invalid",
