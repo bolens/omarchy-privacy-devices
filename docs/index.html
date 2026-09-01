@@ -828,9 +828,11 @@
         .hero { grid-template-columns: 1fr; padding-top: 3.5rem; }
         .preview { max-width: 500px; }
         .features { grid-template-columns: 1fr; }
-        .guide-grid, .steps, .interface-supporting, .gallery-explorer { grid-template-columns: 1fr; }
-        .gallery-copy { position: static; }
-        .gallery-tabs { flex-direction: row; overflow-x: auto; padding-bottom: 0.25rem; }
+        .guide-grid, .steps, .interface-supporting, .gallery-explorer { grid-template-columns: minmax(0, 1fr); }
+        .guide-grid > *, .steps > *, .interface-supporting > *, .gallery-explorer > * { min-width: 0; }
+        .gallery-copy { position: static; width: 100%; }
+        .gallery-stage { min-width: 0; width: 100%; }
+        .gallery-tabs { max-width: 100%; flex-direction: row; overflow-x: auto; padding-bottom: 0.25rem; }
         .gallery-tab { width: auto; flex: 0 0 auto; white-space: nowrap; }
         .requirements { grid-template-columns: 1fr; }
         .requirement-list li { display: grid; }

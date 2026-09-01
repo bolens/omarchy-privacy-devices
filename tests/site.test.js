@@ -7,6 +7,17 @@ const { JSDOM } = require("jsdom");
 
 const root = path.resolve(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "docs/index.html"), "utf8");
+function cssBlock(source, marker) {
+  const start = source.indexOf(marker);
+  assert.notEqual(start, -1, `missing ${marker}`);
+  const open = source.indexOf("{", start);
+  let depth = 0;
+  for (let i = open; i < source.length; i++) {
+    if (source[i] === "{") depth++;
+    else if (source[i] === "}" && --depth === 0) return source.slice(open + 1, i);
+  }
+  assert.fail(`unclosed ${marker}`);
+}
 
 function pngDimensions(relativePath) {
   const image = fs.readFileSync(path.join(root, relativePath));
@@ -61,6 +72,13 @@ assert.match(html, /\.site-header\s*\{[^}]*position:\s*sticky/s,
   "primary navigation must remain visible through the long guide");
 assert.match(html, /@media \(max-width: 760px\)[\s\S]*?\.site-header\s*\{\s*position:\s*static;/,
   "mobile navigation must not consume the viewport while scrolling");
+const mobileCss = cssBlock(html, "@media (max-width: 760px)");
+assert.match(mobileCss, /\.gallery-explorer\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\);/,
+  "mobile galleries must use a zero-minimum track");
+assert.match(mobileCss, /\.gallery-explorer > \*\s*\{\s*min-width:\s*0;/,
+  "mobile gallery children must be allowed to shrink");
+assert.match(mobileCss, /\.gallery-stage\s*\{\s*min-width:\s*0;\s*width:\s*100%;/,
+  "mobile gallery stages must stay within the viewport");
 assert.equal(source.querySelectorAll("#screenshots .interface-showcase .screenshot-card").length, 2,
   "bar and notification captures must complement the unrepeated hero activity view");
 assert.equal(source.querySelectorAll("#screenshots [data-gallery]").length, 2,
