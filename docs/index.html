@@ -914,7 +914,7 @@
             </article>
             <article class="card">
               <span aria-hidden="true">◇</span>
-              <h3>Made to fit</h3>
+              <h3>Configurable behavior</h3>
               <p>Customize monitored activity, hardware names and policies, ordering, colors, visibility, actions, and backends.</p>
             </article>
           </div>
@@ -924,7 +924,7 @@
       <section id="screenshots" class="reveal">
         <div class="shell">
           <div class="eyebrow">Current interface</div>
-          <h2>Clear at a glance.<br>Flexible underneath.</h2>
+          <h2>Current state in the bar.<br>Full controls in settings.</h2>
           <div class="interface-showcase">
             <div class="interface-supporting">
               <figure class="screenshot-card bar-shot">
@@ -941,8 +941,8 @@
             <div class="gallery-explorer" data-gallery>
               <div class="gallery-copy">
                 <div class="eyebrow">Settings explorer</div>
-                <h3>Configure by intent.</h3>
-                <p>Keep activity actions, settings navigation, reset controls, and shortcut help anchored while content scrolls beneath neither control. Width stays stable and height fits each view within useful bounds.</p>
+                <h3>Four settings pages.</h3>
+                <p>Activity actions, navigation, reset controls, and shortcut help stay fixed while the settings content scrolls. The panel keeps a stable width and limits its height to the current screen.</p>
                 <div class="gallery-tabs" role="tablist" aria-label="Settings screenshots">
                   <button class="gallery-tab" id="tab-settings-general" type="button" role="tab" aria-selected="true" aria-controls="settings-general" data-target="settings-general">General</button>
                   <button class="gallery-tab" id="tab-settings-appearance" type="button" role="tab" aria-selected="false" aria-controls="settings-appearance" data-target="settings-appearance">Appearance</button>
@@ -960,7 +960,7 @@
             <div class="gallery-explorer" data-gallery>
               <div class="gallery-copy">
                 <div class="eyebrow">Workflow details</div>
-                <h3>Inspect the deeper states.</h3>
+                <h3>Device, history, data, and health views.</h3>
                 <p>Review device customization, local history, private data, and monitoring health on demand.</p>
                 <div class="gallery-tabs" role="tablist" aria-label="Detail screenshots">
                   <button class="gallery-tab" id="tab-detail-device" type="button" role="tab" aria-selected="true" aria-controls="detail-device" data-target="detail-device">Device</button>
@@ -987,7 +987,7 @@
           <div class="install-box">
             <div>
               <div class="eyebrow">Available for Omarchy</div>
-              <h2>Ready for your bar.</h2>
+              <h2>Install and enable the plugin.</h2>
               <p>Install Privacy Devices from the terminal or review its community marketplace listing.</p>
             </div>
             <div class="commands">
@@ -1031,7 +1031,7 @@
       <section id="requirements" class="reveal">
         <div class="shell">
           <div class="eyebrow">Compatibility</div>
-          <h2>Built for Omarchy.</h2>
+          <h2>Requirements and optional controls.</h2>
           <p class="section-intro">Privacy Devices requires Omarchy Quattro with Omarchy Shell, Quickshell, Hyprland, and PipeWire. Optional controls detect their own dependencies and show <strong>Install</strong> only when needed.</p>
           <div class="table-wrap">
             <table>
@@ -1056,7 +1056,7 @@
       <section id="usage" class="reveal">
         <div class="shell">
           <div class="eyebrow">Using the widget</div>
-          <h2>Fast from the bar.</h2>
+          <h2>Open controls from the bar.</h2>
           <p class="section-intro">Add or move Privacy Devices through <strong>Setup → Bar</strong>. Its icons show current activity; the combined widget opens the full activity panel.</p>
           <ol class="steps">
             <li><strong>Left-click</strong> Run the icon’s control, or open details for status-only items.</li>
@@ -1092,7 +1092,7 @@
       <section id="configuration" class="reveal">
         <div class="shell">
           <div class="eyebrow">Configuration</div>
-          <h2>Make it yours.</h2>
+          <h2>Configure monitoring and presentation.</h2>
           <p class="section-intro">Open <strong>Setup → Plugins → Privacy Devices</strong>. Use General, Appearance, Alerts, and Monitoring; press <strong>1–4</strong> to switch pages.</p>
           <div class="guide-grid">
             <article class="guide-card"><h3>General</h3><p>Choose monitored activities, idle visibility, control availability, privacy modes, and alert deduplication.</p></article>
@@ -1116,13 +1116,13 @@
       <section id="privacy" class="reveal">
         <div class="shell">
           <div class="eyebrow">Privacy and security</div>
-          <h2>Local by design.</h2>
+          <h2>Local data and privileged controls.</h2>
           <div class="guide-grid">
             <article class="guide-card"><h3>No telemetry</h3><p>The plugin reads local PipeWire metadata and selected local process state. It sends no activity data over the network.</p></article>
             <article class="guide-card"><h3>Explicit authorization</h3><p>UVC camera and GeoClue controls request Polkit authorization before changing system state.</p></article>
             <article class="guide-card"><h3>Runtime blocking</h3><p>Location and portal masks disappear after reboot. UVC cameras normally rebind after reboot as well.</p></article>
-            <article class="guide-card"><h3>Safer recorder handling</h3><p>wf-recorder PIDs stay in the owner-only runtime directory and are checked for ownership and executable identity before stopping.</p></article>
-            <article class="guide-card"><h3>Honest monitoring state</h3><p>Idle, active, and degraded are distinct states. Session details identify the device, observation source, and whether attribution is confirmed or inferred.</p></article>
+            <article class="guide-card"><h3>Recorder process checks</h3><p>wf-recorder PIDs stay in the owner-only runtime directory and are checked for ownership and executable identity before stopping.</p></article>
+            <article class="guide-card"><h3>Reported monitoring state</h3><p>Idle, active, and degraded are distinct states. Session details identify the device, observation source, and whether attribution is confirmed or inferred.</p></article>
           </div>
           <p class="notice"><strong>Review custom commands before saving them.</strong> Custom screenshot and recording commands run unsandboxed as your user.</p>
         </div>
