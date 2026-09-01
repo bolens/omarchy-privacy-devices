@@ -148,8 +148,8 @@ jobs:
           docker run --rm \
             --volume "$GITHUB_WORKSPACE:/workspace:ro" \
             --workdir /workspace \
-            archlinux@sha256:4bf33b21a715aac0b48ce6e9eaed4782a898eae96f88f5da3635572129c2584a \
-            bash -lc 'pacman -Syu --noconfirm quickshell qt6-declarative >/dev/null && QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy scripts/lint-qml'
+            ghcr.io/bolens/omarchy-plugin-ci@sha256:293b0457198085de5df26519dd4aa336202495c080d253b71ac30e7d8e8d3851 \
+            bash -lc 'QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy scripts/lint-qml'
   plugin-result:
     name: Plugin
     needs: [changes, plugin-fast, plugin-qml]
