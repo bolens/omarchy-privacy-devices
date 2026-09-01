@@ -32,11 +32,18 @@ assert.match(html, /preferredTheme\s*=\s*prefersLight\s*\?\s*"github-light"\s*:\
 assert.match(html, /localStorage\.getItem\(root\.dataset\.themeStorage\)/);
 assert.match(notFound, /URLSearchParams/);
 assert.match(notFound, /root\.dataset\.themeStorage/);
-assert.match(html, /property="og:site_name"/);
-assert.match(html, /name="twitter:title"/);
-for (const contract of ["og:image:width\" content=\"1200", "og:image:height\" content=\"630",
-  "twitter:image:alt", "apple-touch-icon.png", "site.webmanifest"])
-  assert.ok(html.includes(contract), `missing discovery contract: ${contract}`);
+const source = new JSDOM(html).window.document;
+const metaContent = (attribute, value) =>
+  source.querySelector(`meta[${attribute}="${value}"]`)?.getAttribute("content");
+for (const property of ["og:type", "og:url", "og:site_name", "og:title", "og:description", "og:image", "og:image:alt"])
+  assert.ok(metaContent("property", property), `missing Open Graph metadata: ${property}`);
+assert.equal(metaContent("property", "og:image:width"), "1200");
+assert.equal(metaContent("property", "og:image:height"), "630");
+for (const name of ["twitter:card", "twitter:title", "twitter:description", "twitter:image", "twitter:image:alt"])
+  assert.ok(metaContent("name", name), `missing Twitter metadata: ${name}`);
+assert.ok(source.querySelector('link[rel="canonical"][href]'), "missing canonical link");
+assert.ok(source.querySelector('link[rel="apple-touch-icon"][href="apple-touch-icon.png"]'), "missing Apple touch icon link");
+assert.ok(source.querySelector('link[rel="manifest"][href="site.webmanifest"]'), "missing web manifest link");
 for (const asset of ["apple-touch-icon.png", "icon-192.png", "icon-512.png", "site.webmanifest"])
   assert.ok(fs.existsSync(path.join(root, "docs", asset)), `missing discovery asset: ${asset}`);
 assert.deepEqual(pngDimensions("docs/social-card.png"), [1200, 630]);
@@ -73,7 +80,6 @@ for (const image of ["bar", "notification", "general", "appearance", "alerts", "
   assert.match(fs.readFileSync(path.join(root, "README.md"), "utf8"), new RegExp(`docs/${image}\\.png`));
 }
 
-const source = new JSDOM(html).window.document;
 for (const lightTheme of ["github-light", "catppuccin-latte", "solarized-light"])
   assert.ok(source.querySelector(`#theme-select option[value="${lightTheme}"]`), `missing ${lightTheme} option`);
 assert.ok(source.querySelector('nav a[href="#screenshots"]'),
