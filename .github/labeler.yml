@@ -1,0 +1,91 @@
+changed-files-labels-limit: 12
+max-files-changed: 500
+
+bug:
+  - head-branch: ['^(fix|bugfix|hotfix)/']
+
+enhancement:
+  - head-branch: ['^(feat|feature)/']
+
+documentation:
+  - any:
+      - head-branch: ['^docs/']
+      - changed-files:
+          - any-glob-to-any-file:
+              - '**/*.md'
+              - 'docs/**'
+
+dependencies:
+  - any:
+      - head-branch: ['^(dependabot|renovate)/']
+      - changed-files:
+          - any-glob-to-any-file:
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/ci/Dockerfile'
+
+docker:
+  - changed-files:
+      - any-glob-to-any-file: '.github/ci/Dockerfile'
+
+github-actions:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/actions/**'
+          - '.github/dependabot.yml'
+          - '.github/labeler.yml'
+          - '.github/workflows/**'
+
+ci:
+  - any:
+      - head-branch: ['^ci/']
+      - changed-files:
+          - any-glob-to-any-file:
+              - '.github/actions/**'
+              - '.github/ci/**'
+              - '.github/dependabot.yml'
+              - '.github/labeler.yml'
+              - '.github/workflows/**'
+              - '.githooks/**'
+              - 'scripts/pre-commit'
+
+tests:
+  - any:
+      - head-branch: ['^test/']
+      - changed-files:
+          - any-glob-to-any-file: 'tests/**'
+
+qml:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.qml'
+          - '.qmllint.ini'
+          - 'qmldir'
+
+javascript:
+  - changed-files:
+      - any-glob-to-any-file: '**/*.js'
+
+shell:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.sh'
+          - 'scripts/**'
+
+site:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - 'site/**'
+          - 'scripts/build-site.sh'
+
+metadata:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'LICENSE'
+          - 'manifest.json'
+          - 'package.json'
+          - 'qmldir'
+
+release:
+  - head-branch: ['^release/']

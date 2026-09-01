@@ -1,7 +1,7 @@
 name: Detection or classification problem
 description: Report missing, incorrect, or misclassified privacy activity.
 title: "[Detection]: "
-labels: [bug, detection]
+labels: [bug, detection, needs-triage]
 body:
   - type: markdown
     attributes:
