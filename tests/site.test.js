@@ -76,6 +76,10 @@ assert.match(mobileCss, /\.gallery-explorer > \*\s*\{\s*min-width:\s*0;/,
   "mobile gallery children must be allowed to shrink");
 assert.match(mobileCss, /\.gallery-stage\s*\{\s*min-width:\s*0;\s*width:\s*100%;/,
   "mobile gallery stages must stay within the viewport");
+assert.match(html, /\.section-intro,\s*\.keyboard-guide\s*\{[^}]*font-size:\s*1\.05rem;/s,
+  "section guidance must share its typography contract");
+assert.match(html, /\.section-intro\s*\{[^}]*margin:\s*-1rem 0 2\.5rem;/s,
+  "section introductions must retain their heading-adjacent margin");
 assert.match(html, /\.keyboard-guide\s*\{[^}]*margin:\s*1\.5rem 0 2\.5rem;/s,
   "keyboard guidance must clear the action-card grid at every viewport width");
 assert.ok(source.querySelector("#usage .steps + .keyboard-guide"),
