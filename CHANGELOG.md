@@ -7,6 +7,10 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Fixed
+
+- Bound notification bursts and recover queued helper operations after process timeouts.
+
 ## [0.9.15] - 2026-09-01
 
 ### Fixed

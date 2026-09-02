@@ -47,7 +47,7 @@ Item {
     host.historyMutationQueue = queue
     host.historyMutationBusy = true
     historyMutationProc.command = [helperPath()].concat(arguments)
-    historyMutationProc.running = true
+    historyMutationProc.running = true; historyMutationWatchdog.start()
     return true
   }
 
@@ -61,19 +61,20 @@ Item {
     host.historyLoadBusy = true
     host.historyLoadGeneration = host.historyGeneration
     historyLoadProc.command = [helperPath(), "load"]
-    historyLoadProc.running = true
+    historyLoadProc.running = true; historyLoadWatchdog.start()
     return true
   }
 
   function inspect() {
     if (historyInspectProc.running) return false
     historyInspectProc.command = [helperPath(), "inspect"]
-    historyInspectProc.running = true
+    historyInspectProc.running = true; historyInspectWatchdog.start()
     return true
   }
 
   Process {
     id: historyInspectProc
+    onExited: historyInspectWatchdog.stop()
     stdout: StdioCollector {
       onStreamFinished: {
         var status = "attention"
@@ -86,6 +87,7 @@ Item {
   Process {
     id: historyLoadProc
     onExited: function(exitCode) {
+      historyLoadWatchdog.stop()
       controller.host.historyLoadBusy = false
       if (controller.host.historyLoadGeneration === controller.host.historyGeneration)
         controller.host.historyLoaded = controller.host.settings.historyEnabled !== true || exitCode === 0
@@ -112,8 +114,12 @@ Item {
   Process {
     id: historyMutationProc
     onExited: function(_exitCode) {
+      historyMutationWatchdog.stop()
       controller.host.historyMutationBusy = false
       controller.runNextMutation()
     }
   }
+  PrivacyProcessWatchdog { id: historyLoadWatchdog; process: historyLoadProc; timeoutMilliseconds: 15000 }
+  PrivacyProcessWatchdog { id: historyMutationWatchdog; process: historyMutationProc; timeoutMilliseconds: 15000 }
+  PrivacyProcessWatchdog { id: historyInspectWatchdog; process: historyInspectProc; timeoutMilliseconds: 15000 }
 }

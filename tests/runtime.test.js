@@ -183,6 +183,10 @@ assert.match(service, /function monitoringTelemetry\(\)[\s\S]*?lastSessionRefres
   "every exported telemetry timestamp must use the behavior-tested freshness policy")
 assert.match(notificationController, /function requestSettings\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)/,
   "settings IPC routes must pass through the shared page and section allowlist")
+assert.match(notificationController, /maximumQueuedEvents:\s*100[\s\S]*?maximumQueuedEventBytes:\s*262144[\s\S]*?while \(next\.length > maximumQueuedEvents \|\| queuedEventBytes\(next\) > maximumQueuedEventBytes\)/,
+  "notification batches must remain count- and byte-bounded")
+for (const file of ["PrivacyAudioEndpointController.qml", "PrivacyDependencyController.qml", "PrivacyHistoryController.qml", "PrivacySettingsTransferController.qml"])
+  assert.match(fs.readFileSync(path.join(__dirname, "..", file), "utf8"), /PrivacyProcessWatchdog/, `${file} must terminate stalled helpers`)
 assert.match(service, /!historyWasEnabled && settings\.historyEnabled === true\) historyLoaded = false[\s\S]*?loadHistory\(\)/,
   "re-enabling history must invalidate the disabled-state load sentinel")
 assert.match(service, /function protocol\(\): string \{ return "2" \}[\s\S]*?function beginCapture\(payloadB64: string\)[\s\S]*?capturePreviewOwner[\s\S]*?function renew\(owner: string\)[\s\S]*?function endCapture\(owner: string\)/,

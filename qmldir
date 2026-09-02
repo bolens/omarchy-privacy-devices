@@ -29,6 +29,7 @@ PrivacyNotificationController 1.0 PrivacyNotificationController.qml
 PrivacyObserverController 1.0 PrivacyObserverController.qml
 PrivacyObserverWatchdog 1.0 PrivacyObserverWatchdog.qml
 PrivacyPopupNavigationController 1.0 PrivacyPopupNavigationController.qml
+PrivacyProcessWatchdog 1.0 PrivacyProcessWatchdog.qml
 PrivacyPresentationController 1.0 PrivacyPresentationController.qml
 PrivacyPresetController 1.0 PrivacyPresetController.qml
 PrivacySettingToggle 1.0 PrivacySettingToggle.qml

@@ -53,7 +53,7 @@ Item {
     activeKind = kind
     message = "Loading audio endpoints…"
     listProcess.command = [helperPath(), "list", kind]
-    listProcess.running = true
+    listProcess.running = true; listWatchdog.start()
     return true
   }
 
@@ -70,13 +70,14 @@ Item {
     activeKind = kind
     message = muted ? "Blocking selected endpoint…" : "Allowing selected endpoint…"
     setProcess.command = [helperPath(), "set", kind, String(identifier), muted === true ? "true" : "false"]
-    setProcess.running = true
+    setProcess.running = true; setWatchdog.start()
     return true
   }
 
   Process {
     id: listProcess
     onExited: function(exitCode) {
+      listWatchdog.stop()
       if (exitCode !== 0) controller.message = "Audio endpoints could not be read."
       controller.operation = ""
       controller.runPendingRefresh()
@@ -91,6 +92,7 @@ Item {
   Process {
     id: setProcess
     onExited: function(exitCode) {
+      setWatchdog.stop()
       if (exitCode !== 0) controller.message = "Audio endpoint state was not changed."
       controller.operation = ""
       controller.runPendingRefresh()
@@ -101,4 +103,6 @@ Item {
       onStreamFinished: controller.accept(controller.activeKind, setOutput.text)
     }
   }
+  PrivacyProcessWatchdog { id: listWatchdog; process: listProcess; timeoutMilliseconds: 15000 }
+  PrivacyProcessWatchdog { id: setWatchdog; process: setProcess; timeoutMilliseconds: 15000 }
 }

@@ -7,6 +7,8 @@ Item {
   required property var host
 
   property var queue: []
+  readonly property int maximumQueuedEvents: 100
+  readonly property int maximumQueuedEventBytes: 262144
   property bool activityInitialized: false
 
   function resolvedIcon(name, fallback) {
@@ -38,8 +40,15 @@ Item {
 
   function enqueueActivity(phase, session) {
     if (queue.length && queue[0].phase !== phase) flushActivity()
-    queue = queue.concat([{phase: phase, kind: session.kind, application: session.application, icon: session.icon}])
+    var next = queue.concat([{phase: phase, kind: session.kind, application: session.application, icon: session.icon}])
+    while (next.length > maximumQueuedEvents || queuedEventBytes(next) > maximumQueuedEventBytes) next.shift()
+    queue = next
     flushTimer.restart()
+  }
+
+  function queuedEventBytes(events) {
+    try { return unescape(encodeURIComponent(JSON.stringify(events))).length }
+    catch (error) { return Number.POSITIVE_INFINITY }
   }
 
   function flushActivity() {
