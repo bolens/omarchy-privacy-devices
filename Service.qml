@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -77,7 +78,7 @@ Item {
   property alias notificationQueue: notificationController.queue
   property var suppressedObserverStarts: ({})
   property alias controlTransactions: controlTransactionController.transactions
-  property alias privacyPresetState: privacyPresetController.state
+  property alias privacyPresetState: privacyPresetController.operationState
   property alias privacyPresetQueue: privacyPresetController.queue
   property alias privacyPresetActiveKind: privacyPresetController.activeKind
   property alias privacyPresetPrevious: privacyPresetController.previous

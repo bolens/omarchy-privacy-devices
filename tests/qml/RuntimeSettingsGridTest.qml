@@ -1,6 +1,6 @@
+pragma ComponentBehavior: Bound
 import Quickshell
 import QtQuick
-import QtQuick.Layouts
 import qs.Commons
 
 ShellRoot {
@@ -14,7 +14,7 @@ ShellRoot {
       id: constrainedGrid
       objectName: "responsiveSettingsGrid"
       width: constrainedHost.width
-      responsiveWidth: Math.min(width, constrainedHost.configuredWidth)
+      responsiveWidth: Math.min(constrainedHost.width, constrainedHost.configuredWidth)
       Item { implicitWidth: Style.space(420); implicitHeight: 20 }
       Item { implicitWidth: Style.space(420); implicitHeight: 20 }
     }
@@ -27,7 +27,7 @@ ShellRoot {
     PrivacySettingsGrid {
       id: wideGrid
       width: wideHost.width
-      responsiveWidth: Math.min(width, wideHost.configuredWidth)
+      responsiveWidth: Math.min(wideHost.width, wideHost.configuredWidth)
       Item { implicitWidth: Style.space(200); implicitHeight: 20 }
       Item { implicitWidth: Style.space(200); implicitHeight: 20 }
     }

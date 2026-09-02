@@ -20,7 +20,7 @@ if [[ -z $shell_root ]]; then
     if [[ -d "$candidate/Commons" && -d "$candidate/Ui" ]]; then shell_root=$candidate; break; fi
   done
 fi
-runtime_parent="$(mktemp -d)"
+runtime_parent="$(mktemp -d "${TMPDIR:-/tmp}/privacy-qml-runtime.XXXXXX")"
 runtime_dir="$runtime_parent/runtime tree"
 mkdir "$runtime_dir"
 active_harness=""
@@ -30,7 +30,9 @@ cleanup_runtime() {
   fi
   rm -rf -- "$runtime_parent"
 }
-trap cleanup_runtime EXIT INT TERM
+trap cleanup_runtime EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 [[ -d "$shell_root/Commons" && -d "$shell_root/Ui" ]] || {
   printf 'Omarchy Shell modules not found under %s\n' "$shell_root" >&2
@@ -51,7 +53,7 @@ run_harness() {
     output_file="$runtime_parent/harness.log"
     : >"$output_file"
     set +e
-    timeout 4 "$quickshell_bin" --no-color --path "$active_harness" >"$output_file" 2>&1 &
+    timeout 12 "$quickshell_bin" --no-color --path "$active_harness" >"$output_file" 2>&1 &
     runner_pid=$!
     while kill -0 "$runner_pid" 2>/dev/null; do
       if grep -Fq "$marker" "$output_file"; then

@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import "Model.js" as Model
 
@@ -5,7 +6,7 @@ Item {
   id: controller
 
   required property var host
-  property string state: "idle"
+  property string operationState: "idle"
   property var queue: []
   property string activeKind: ""
   property var previous: ({})
@@ -27,9 +28,9 @@ Item {
   }
 
   function start(plan, isRestoring) {
-    if (state === "applying" || state === "restoring") return false
+    if (operationState === "applying" || operationState === "restoring") return false
     restoring = isRestoring === true
-    state = restoring ? "restoring" : "applying"
+    operationState = restoring ? "restoring" : "applying"
     queue = plan.actions.slice()
     results = plan.skipped.slice()
     activeKind = ""
@@ -44,7 +45,7 @@ Item {
   }
 
   function requestLockdown() {
-    if (state === "applying" || state === "restoring") return false
+    if (operationState === "applying" || operationState === "restoring") return false
     var values = entries()
     previous = observedState(values)
     presetName = "Lockdown"
@@ -54,7 +55,7 @@ Item {
   }
 
   function requestMode(mode) {
-    if (state === "applying" || state === "restoring") return false
+    if (operationState === "applying" || operationState === "restoring") return false
     var clean = Model.sanitizePrivacyModes([mode])
     if (!clean.length) return false
     var values = entries()
@@ -79,7 +80,7 @@ Item {
     if (next.action === "wait") return
     if (next.action === "complete") {
       var outcome = Model.privacyPresetOutcome(results)
-      state = outcome.state
+      operationState = outcome.state
       if (!restoring && outcome.changed) {
         undoAvailable = true
         undoTimer.restart()
@@ -116,10 +117,10 @@ Item {
   }
 
   function message() {
-    if (state === "applying") return "Applying " + (presetName || "privacy mode") + "…"
-    if (state === "restoring") return "Restoring previous privacy state…"
-    if (state === "partial") return "Privacy preset finished with unavailable or failed controls."
-    if (state === "succeeded") return undoAvailable ? (presetName || "Privacy mode") + " verified. Undo is available for 30 seconds." : "Privacy mode verified."
+    if (operationState === "applying") return "Applying " + (presetName || "privacy mode") + "…"
+    if (operationState === "restoring") return "Restoring previous privacy state…"
+    if (operationState === "partial") return "Privacy preset finished with unavailable or failed controls."
+    if (operationState === "succeeded") return undoAvailable ? (presetName || "Privacy mode") + " verified. Undo is available for 30 seconds." : "Privacy mode verified."
     return ""
   }
 
@@ -128,13 +129,13 @@ Item {
     interval: 30000
     onTriggered: {
       controller.undoAvailable = false
-      if (controller.state === "succeeded" || controller.state === "partial") controller.state = "idle"
+      if (controller.operationState === "succeeded" || controller.operationState === "partial") controller.operationState = "idle"
     }
   }
 
   Timer {
     id: feedbackTimer
     interval: 8000
-    onTriggered: if (controller.state !== "applying" && controller.state !== "restoring") controller.state = "idle"
+    onTriggered: if (controller.operationState !== "applying" && controller.operationState !== "restoring") controller.operationState = "idle"
   }
 }

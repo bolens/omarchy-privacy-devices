@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -64,25 +65,26 @@ ColumnLayout {
     Repeater {
       model: view.controller.historySummaryRows
       delegate: Rectangle {
+        id: summarySurface
         required property var modelData
         Layout.fillWidth: true
         implicitHeight: summaryRow.implicitHeight + Style.spacing.md * 2
         radius: Style.cornerRadius
-        color: Util.alpha(view.controller.itemColor(view.controller.item(modelData.kind)), 0.045)
+        color: Util.alpha(view.controller.itemColor(view.controller.item(summarySurface.modelData.kind)), 0.045)
         border.width: 1
-        border.color: Util.alpha(view.controller.itemColor(view.controller.item(modelData.kind)), 0.14)
+        border.color: Util.alpha(view.controller.itemColor(view.controller.item(summarySurface.modelData.kind)), 0.14)
         RowLayout {
           id: summaryRow
           anchors.fill: parent
           anchors.margins: Style.spacing.md
           spacing: Style.spacing.md
-          Text { text: view.controller.iconFor(modelData.kind); textFormat: Text.PlainText; color: view.controller.itemColor(view.controller.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.icon * view.controller.popupItemScale }
+          Text { text: view.controller.iconFor(summarySurface.modelData.kind); textFormat: Text.PlainText; color: view.controller.itemColor(view.controller.item(summarySurface.modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.icon * view.controller.popupItemScale }
           ColumnLayout {
             Layout.fillWidth: true
             spacing: Style.spacing.xs
-            Text { Layout.fillWidth: true; text: Model.label(modelData.kind) + " · " + modelData.count + (modelData.count === 1 ? " session" : " sessions") + " · " + Model.formatDuration(modelData.durationMs); textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * view.controller.popupItemScale; font.weight: Font.DemiBold; elide: Text.ElideRight }
-            Text { Layout.fillWidth: true; text: modelData.applications.join(", "); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
-            Text { visible: modelData.newApplications.length > 0; Layout.fillWidth: true; text: "New in retained history: " + modelData.newApplications.join(", "); textFormat: Text.PlainText; color: view.controller.itemColor(view.controller.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; text: Model.label(summarySurface.modelData.kind) + " · " + summarySurface.modelData.count + (summarySurface.modelData.count === 1 ? " session" : " sessions") + " · " + Model.formatDuration(summarySurface.modelData.durationMs); textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * view.controller.popupItemScale; font.weight: Font.DemiBold; elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; text: summarySurface.modelData.applications.join(", "); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
+            Text { visible: summarySurface.modelData.newApplications.length > 0; Layout.fillWidth: true; text: "New in retained history: " + summarySurface.modelData.newApplications.join(", "); textFormat: Text.PlainText; color: view.controller.itemColor(view.controller.item(summarySurface.modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
           }
         }
       }
@@ -194,26 +196,27 @@ ColumnLayout {
     Repeater {
       model: view.controller.filteredHistory
       delegate: SettingsSurface {
+        id: historySurface
         required property var modelData
         required property int index
         Layout.fillWidth: true
-        Layout.columnSpan: view.controller.popupGridColumns === 2 && index === view.controller.filteredHistory.length - 1 && view.controller.filteredHistory.length % 2 === 1 ? 2 : 1
-        accent: view.controller.itemColor(view.controller.item(modelData.kind))
+        Layout.columnSpan: view.controller.popupGridColumns === 2 && historySurface.index === view.controller.filteredHistory.length - 1 && view.controller.filteredHistory.length % 2 === 1 ? 2 : 1
+        accent: view.controller.itemColor(view.controller.item(historySurface.modelData.kind))
         RowLayout {
           Layout.fillWidth: true
           spacing: Style.spacing.md * view.controller.popupItemScale
-          Text { text: view.controller.iconFor(modelData.kind); textFormat: Text.PlainText; color: view.controller.itemColor(view.controller.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.icon * view.controller.popupItemScale }
+          Text { text: view.controller.iconFor(historySurface.modelData.kind); textFormat: Text.PlainText; color: view.controller.itemColor(view.controller.item(historySurface.modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.icon * view.controller.popupItemScale }
           ColumnLayout {
             Layout.fillWidth: true
             spacing: Style.spacing.xs
             RowLayout {
               Layout.fillWidth: true
               spacing: Style.spacing.sm
-              Text { Layout.fillWidth: true; text: modelData.application || "Unknown application"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * view.controller.popupItemScale; font.weight: Font.DemiBold; elide: Text.ElideRight }
-              Text { text: Model.historyPeriodLabel(modelData.endedAt, view.controller.durationNow); textFormat: Text.PlainText; color: view.controller.itemColor(view.controller.item(modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; font.weight: Font.DemiBold }
+              Text { Layout.fillWidth: true; text: historySurface.modelData.application || "Unknown application"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * view.controller.popupItemScale; font.weight: Font.DemiBold; elide: Text.ElideRight }
+              Text { text: Model.historyPeriodLabel(historySurface.modelData.endedAt, view.controller.durationNow); textFormat: Text.PlainText; color: view.controller.itemColor(view.controller.item(historySurface.modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; font.weight: Font.DemiBold }
             }
-            Text { Layout.fillWidth: true; text: Model.label(modelData.kind) + " · " + Model.formatDuration(modelData.durationMs) + " · " + Model.historyAgeLabel(modelData.endedAt, view.controller.durationNow) + (modelData.confidence && String(modelData.confidence).toLowerCase() !== "confirmed" ? " · Inferred" : ""); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, view.controller.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
-            Text { visible: view.controller.popupDensity !== "compact" && Boolean(modelData.device); Layout.fillWidth: true; text: view.controller.deviceLabel(modelData.device); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, view.controller.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; text: Model.label(historySurface.modelData.kind) + " · " + Model.formatDuration(historySurface.modelData.durationMs) + " · " + Model.historyAgeLabel(historySurface.modelData.endedAt, view.controller.durationNow) + (historySurface.modelData.confidence && String(historySurface.modelData.confidence).toLowerCase() !== "confirmed" ? " · Inferred" : ""); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, view.controller.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
+            Text { visible: view.controller.popupDensity !== "compact" && Boolean(historySurface.modelData.device); Layout.fillWidth: true; text: view.controller.deviceLabel(historySurface.modelData.device); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, view.controller.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
           }
         }
       }

@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Io
 import "Model.js" as Model
@@ -32,64 +33,64 @@ Item {
   Process {
     id: microphoneStateProcess
     onExited: function(exitCode) {
-      host.setResult("probe", "microphone", exitCode)
-      host.fallbackMicrophoneMuted = Model.mutedFromExitCode(exitCode, host.fallbackMicrophoneMuted)
-      host.verifyControlTransaction("microphone", !host.fallbackMicrophoneMuted, exitCode === 10 || exitCode === 11)
-      host.microphoneStateBusy = false
-      if (host.microphoneStatePending) host.refreshAudioState("microphone")
+      controller.host.setResult("probe", "microphone", exitCode)
+      controller.host.fallbackMicrophoneMuted = Model.mutedFromExitCode(exitCode, controller.host.fallbackMicrophoneMuted)
+      controller.host.verifyControlTransaction("microphone", !controller.host.fallbackMicrophoneMuted, exitCode === 10 || exitCode === 11)
+      controller.host.microphoneStateBusy = false
+      if (controller.host.microphoneStatePending) controller.host.refreshAudioState("microphone")
     }
   }
 
   Process {
     id: outputStateProcess
     onExited: function(exitCode) {
-      host.setResult("probe", "audio-output", exitCode)
-      host.fallbackOutputMuted = Model.mutedFromExitCode(exitCode, host.fallbackOutputMuted)
-      host.verifyControlTransaction("audio-output", !host.fallbackOutputMuted, exitCode === 10 || exitCode === 11)
-      host.outputStateBusy = false
-      if (host.outputStatePending) host.refreshAudioState("audio-output")
+      controller.host.setResult("probe", "audio-output", exitCode)
+      controller.host.fallbackOutputMuted = Model.mutedFromExitCode(exitCode, controller.host.fallbackOutputMuted)
+      controller.host.verifyControlTransaction("audio-output", !controller.host.fallbackOutputMuted, exitCode === 10 || exitCode === 11)
+      controller.host.outputStateBusy = false
+      if (controller.host.outputStatePending) controller.host.refreshAudioState("audio-output")
     }
   }
 
   Process {
     id: microphoneControlProcess
     onExited: function(exitCode) {
-      host.setResult("control", "microphone", exitCode)
-      host.beginControlVerification("microphone", exitCode)
-      host.refreshMuteState()
+      controller.host.setResult("control", "microphone", exitCode)
+      controller.host.beginControlVerification("microphone", exitCode)
+      controller.host.refreshMuteState()
     }
   }
 
   Process {
     id: outputControlProcess
     onExited: function(exitCode) {
-      host.setResult("control", "audio-output", exitCode)
-      host.beginControlVerification("audio-output", exitCode)
-      host.refreshMuteState()
+      controller.host.setResult("control", "audio-output", exitCode)
+      controller.host.beginControlVerification("audio-output", exitCode)
+      controller.host.refreshMuteState()
     }
   }
 
   Process {
     id: privacyStateProcess
     onExited: function(exitCode) {
-      host.setResult("probe", host.privacyStateKind, exitCode)
-      if (Model.shouldAcceptControlProbe(host.privacyStateKind, host.privacyControlKind)) {
-        host.setAllowed(host.privacyStateKind, Model.mutedFromExitCode(exitCode, host.controlEnabled(host.privacyStateKind)))
-        host.verifyControlTransaction(host.privacyStateKind, host.controlEnabled(host.privacyStateKind), exitCode === 10 || exitCode === 11)
+      controller.host.setResult("probe", controller.host.privacyStateKind, exitCode)
+      if (Model.shouldAcceptControlProbe(controller.host.privacyStateKind, controller.host.privacyControlKind)) {
+        controller.host.setAllowed(controller.host.privacyStateKind, Model.mutedFromExitCode(exitCode, controller.host.controlEnabled(controller.host.privacyStateKind)))
+        controller.host.verifyControlTransaction(controller.host.privacyStateKind, controller.host.controlEnabled(controller.host.privacyStateKind), exitCode === 10 || exitCode === 11)
       }
-      host.privacyStateBusy = false
-      host.runNextPrivacyState()
+      controller.host.privacyStateBusy = false
+      controller.host.runNextPrivacyState()
     }
   }
 
   Process {
     id: privacyControlProcess
     onExited: function(exitCode) {
-      var kind = host.privacyControlKind
-      host.setResult("control", kind, exitCode)
-      host.beginControlVerification(kind, exitCode)
-      host.privacyControlKind = ""
-      host.refreshPreventativeControls()
+      var kind = controller.host.privacyControlKind
+      controller.host.setResult("control", kind, exitCode)
+      controller.host.beginControlVerification(kind, exitCode)
+      controller.host.privacyControlKind = ""
+      controller.host.refreshPreventativeControls()
     }
   }
 }

@@ -1,7 +1,10 @@
+pragma ComponentBehavior: Bound
 import Quickshell
 import QtQuick
 import "Model.js" as Model
 
+// Imported JavaScript namespaces are valid here but Qt treats nested test objects as unqualified.
+// qmllint disable unqualified
 ShellRoot {
   id: root
   property list<string> persistedKinds: ["camera", "location"]

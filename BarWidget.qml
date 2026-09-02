@@ -1,8 +1,8 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Io
 import qs.Commons
 import qs.Ui
 import "Model.js" as Model
@@ -466,7 +466,6 @@ Panel {
     privacyService.toggleControl(entry.kind)
   }
 
-  function enabled(kind) { return presentationController.enabled(kind) }
   function orderedKinds() { return presentationController.orderedKinds() }
   function activeItems() { return presentationController.activeItems() }
   function iconFor(kind) { return presentationController.iconFor(kind) }
@@ -576,26 +575,27 @@ Panel {
       Repeater {
         model: root.barItems
         delegate: WidgetButton {
+          id: barItemButton
           required property var modelData
           bar: root.bar
-          text: root.sharedText(root.barItemText(modelData))
+          text: root.sharedText(root.barItemText(barItemButton.modelData))
           fontSize: Style.font.body * root.barIconScale
-          active: modelData.active
+          active: barItemButton.modelData.active
           dimmed: false
-          foreground: root.itemColor(modelData)
-          activeColor: root.itemColor(modelData)
-          opacity: root.itemVisualState(modelData) === "idle" ? root.itemIdleOpacity(modelData.kind)
-            : (root.itemVisualState(modelData) === "disabled" ? root.disabledOpacity
-            : (root.itemVisualState(modelData) === "blocked-active" ? root.blockedActiveOpacity : root.activeOpacity))
+          foreground: root.itemColor(barItemButton.modelData)
+          activeColor: root.itemColor(barItemButton.modelData)
+          opacity: root.itemVisualState(barItemButton.modelData) === "idle" ? root.itemIdleOpacity(barItemButton.modelData.kind)
+            : (root.itemVisualState(barItemButton.modelData) === "disabled" ? root.disabledOpacity
+            : (root.itemVisualState(barItemButton.modelData) === "blocked-active" ? root.blockedActiveOpacity : root.activeOpacity))
           SequentialAnimation on opacity {
-            running: modelData.pending && root.animatePending
+            running: barItemButton.modelData.pending && root.animatePending
             loops: Animation.Infinite
             NumberAnimation { to: 0.45; duration: 450; easing.type: Easing.InOutQuad }
             NumberAnimation { to: 1; duration: 450; easing.type: Easing.InOutQuad }
           }
-          horizontalMargin: modelData.kind === "summary" ? root.barItemPadding + 3.5 : root.barItemPadding
-          tooltipText: root.itemTooltip(modelData)
-          onPressed: function(buttonCode) { root.pressItem(modelData, buttonCode) }
+          horizontalMargin: barItemButton.modelData.kind === "summary" ? root.barItemPadding + 3.5 : root.barItemPadding
+          tooltipText: root.itemTooltip(barItemButton.modelData)
+          onPressed: function(buttonCode) { root.pressItem(barItemButton.modelData, buttonCode) }
         }
       }
     }
@@ -625,12 +625,12 @@ Panel {
       onTextKey: function(text) {
         if ((text === "h" || text === "H") && root.editingKind === "") root.showHistory()
         else if ((text === "s" || text === "S") && root.editingKind === "") root.showGlobalSettings("general")
-        else if ((text === "r" || text === "R") && !root.showingGlobalSettings && !root.showingHistory && privacyService) privacyService.refreshFallbacks()
+        else if ((text === "r" || text === "R") && !root.showingGlobalSettings && !root.showingHistory && root.privacyService) root.privacyService.refreshFallbacks()
         else if (root.showingGlobalSettings && "1234".indexOf(text) >= 0) {
           root.showGlobalSettings(["general", "appearance", "alerts", "monitoring"][Number(text) - 1], "")
         }
       }
-      onTabRequested: function(direction) { if (bar && typeof bar.switchPanelFrom === "function") bar.switchPanelFrom(root, direction) }
+      onTabRequested: function(direction) { if (root.bar && typeof root.bar.switchPanelFrom === "function") root.bar.switchPanelFrom(root, direction) }
 
       Item {
         id: popupLayout
@@ -710,7 +710,7 @@ Panel {
           PrivacyMessageSurface {
             visible: root.settingsMutationMessage !== ""
             message: root.settingsMutationMessage
-            kind: settingsMutationControl.status === "failed" ? "error" : (settingsMutationControl.status === "saved" ? "success" : "info")
+            kind: root.settingsMutationControl.status === "failed" ? "error" : (root.settingsMutationControl.status === "saved" ? "success" : "info")
           }
 
           Loader {

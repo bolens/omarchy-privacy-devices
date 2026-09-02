@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -8,12 +9,8 @@ ShellRoot {
   readonly property string ipcExecutable: String(Quickshell.env("QUICKSHELL_BIN") || "quickshell")
   readonly property string owner: "runtime_ipc_owner_1234567890"
   readonly property string otherOwner: "runtime_ipc_other_1234567890"
-  readonly property string capturePayload: Qt.btoa(JSON.stringify({
-    owner: owner,
-    settings: {showActivityIndicators:false},
-    history: [{kind:"camera", application:"Runtime Camera"}],
-    sessions: [{kind:"microphone", application:"Runtime Voice", source:"pipewire", confidence:"confirmed", startedAt:1}]
-  }))
+  readonly property string capturePayload: "eyJvd25lciI6InJ1bnRpbWVfaXBjX293bmVyXzEyMzQ1Njc4OTAiLCJzZXR0aW5ncyI6eyJzaG93QWN0aXZpdHlJbmRpY2F0b3JzIjpmYWxzZX0sImhpc3RvcnkiOlt7ImtpbmQiOiJjYW1lcmEiLCJhcHBsaWNhdGlvbiI6IlJ1bnRpbWUgQ2FtZXJhIn1dLCJzZXNzaW9ucyI6W3sia2luZCI6Im1pY3JvcGhvbmUiLCJhcHBsaWNhdGlvbiI6IlJ1bnRpbWUgVm9pY2UiLCJzb3VyY2UiOiJwaXBld2lyZSIsImNvbmZpZGVuY2UiOiJjb25maXJtZWQiLCJzdGFydGVkQXQiOjF9XX0="
+  readonly property string otherCapturePayload: "eyJvd25lciI6InJ1bnRpbWVfaXBjX290aGVyXzEyMzQ1Njc4OTAiLCJzZXR0aW5ncyI6e30sImhpc3RvcnkiOltdLCJzZXNzaW9ucyI6W119"
   property int summons: 0
   property int step: 0
   property var steps: [
@@ -30,7 +27,7 @@ ShellRoot {
     {target:"privacy-devices-capture-v2", method:"openPanel", args:[owner, "DP-1", "device", "microphone", ""], expected:"activity"},
     {target:"privacy-devices-capture-v2", method:"closePanel", args:[owner, "DP-1"], expected:"ok"},
     {target:"privacy-devices-capture-v2", method:"openPanel", args:[otherOwner, "DP-1", "activity", "", ""], expected:"denied"},
-    {target:"privacy-devices-capture-v2", method:"beginCapture", args:[Qt.btoa(JSON.stringify({owner:otherOwner, settings:{}, history:[], sessions:[]}))], expected:"busy"},
+    {target:"privacy-devices-capture-v2", method:"beginCapture", args:[otherCapturePayload], expected:"busy"},
     {target:"privacy-devices-capture-v2", method:"renew", args:[otherOwner], expected:"denied"},
     {target:"privacy-devices-capture-v2", method:"state", args:[owner], validator:"capture-state"},
     {target:"privacy-devices-capture-v2", method:"presentation", args:[owner, "DP-1"], validator:"capture-presentation"},

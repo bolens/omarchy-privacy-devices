@@ -22,6 +22,15 @@ shellcheck \
   tests/run_all.sh tests/run_qml_runtime.sh \
   tests/fixtures/*
 
+omarchy_path=${OMARCHY_PATH:-/home/panda/.local/share/omarchy-overlay}
+qmllint_bin=${QMLLINT:-/usr/lib/qt6/bin/qmllint}
+if [[ -x "$qmllint_bin" ]]; then
+  "$qmllint_bin" -I "$omarchy_path/shell" -I . -i qmldir \
+    -i "$omarchy_path/shell/Commons/qmldir" -i "$omarchy_path/shell/Ui/qmldir" ./*.qml
+else
+  printf 'Qt 6 qmllint unavailable; production QML lint is covered by the dedicated CI job.\n'
+fi
+
 validation_dir=$(mktemp -d)
 trap 'rm -rf -- "$validation_dir"' EXIT
 git archive HEAD | tar -x -C "$validation_dir"

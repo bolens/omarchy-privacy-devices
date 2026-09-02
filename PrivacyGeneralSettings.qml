@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
@@ -39,12 +40,13 @@ ColumnLayout {
     Repeater {
       model: Model.sanitizePrivacyModes(page.controller.setting("privacyModes", []))
       delegate: RowLayout {
+        id: privacyModeRow
         required property var modelData
         required property int index
         Layout.fillWidth: true
-        Text { Layout.fillWidth: true; text: modelData.name; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; font.weight: Font.DemiBold; elide: Text.ElideRight }
-        Button { objectName: "privacyModeApply-" + index; text: "Apply"; enabled: page.controller.privacyService && page.controller.privacyService.privacyPresetState !== "applying" && page.controller.privacyService.privacyPresetState !== "restoring"; onClicked: page.controller.privacyService.requestPrivacyMode(modelData) }
-        Button { objectName: "privacyModeDelete-" + index; iconText: "󰆴"; tooltipText: "Delete mode"; horizontalPadding: Style.spacing.controlGap; onClicked: page.controller.removePrivacyMode(index) }
+        Text { Layout.fillWidth: true; text: privacyModeRow.modelData.name; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; font.weight: Font.DemiBold; elide: Text.ElideRight }
+        Button { objectName: "privacyModeApply-" + privacyModeRow.index; text: "Apply"; enabled: page.controller.privacyService && page.controller.privacyService.privacyPresetState !== "applying" && page.controller.privacyService.privacyPresetState !== "restoring"; onClicked: page.controller.privacyService.requestPrivacyMode(privacyModeRow.modelData) }
+        Button { objectName: "privacyModeDelete-" + privacyModeRow.index; iconText: "󰆴"; tooltipText: "Delete mode"; horizontalPadding: Style.spacing.controlGap; onClicked: page.controller.removePrivacyMode(privacyModeRow.index) }
       }
     }
   }
