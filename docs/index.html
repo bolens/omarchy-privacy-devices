@@ -321,7 +321,8 @@
       }
 
       .theme-picker select {
-        max-width: 9.5rem;
+        width: min(15rem, 100%);
+        max-width: 100%;
         padding: 0.35rem 1.8rem 0.35rem 0.55rem;
         border: 1px solid var(--border);
         border-radius: 6px;
@@ -835,6 +836,12 @@
         .gallery-explorer { grid-template-columns: 17rem minmax(0, 1fr); gap: 2rem; }
         .gallery-panel img, .gallery-panel figcaption { max-width: 720px; }
         .requirements { grid-template-columns: 0.65fr 1.35fr; }
+      }
+
+      @media (max-width: 900px) {
+        nav { flex-wrap: wrap; gap: 0.5rem 1rem; padding: 0.8rem 0; }
+        .theme-picker { flex: 1 0 100%; width: 100%; }
+        .theme-picker select { flex: 0 0 15rem; }
       }
 
       @media (max-width: 760px) {
