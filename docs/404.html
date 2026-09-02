@@ -14,9 +14,12 @@
       let saved = null;
       try { requested = new URLSearchParams(location.search).get("theme"); } catch {}
       try { saved = root.dataset.themeStorage ? localStorage.getItem(root.dataset.themeStorage) : null; } catch {}
-      const preferred = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: light)").matches
-        ? "github-light" : root.dataset.defaultTheme;
-      root.dataset.theme = requested || saved || preferred;
+      const preference = requested || saved || "system";
+      const prefersLight = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: light)").matches;
+      const hour = new Date().getHours();
+      root.dataset.themePreference = preference;
+      root.dataset.theme = preference === "system" ? (prefersLight ? "github-light" : root.dataset.defaultTheme)
+        : preference === "time" ? (hour >= 7 && hour < 19 ? "github-light" : root.dataset.defaultTheme) : preference;
     </script>
     <style>
       :root { color-scheme: dark; --background: #0c0e0c; --text: #f2f4ed; --muted: #a8afa2; --accent: #b9f27c; }

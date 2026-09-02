@@ -31,9 +31,15 @@
       let savedTheme = null;
       try { requestedTheme = new URLSearchParams(location.search).get("theme"); } catch {}
       try { savedTheme = root.dataset.themeStorage ? localStorage.getItem(root.dataset.themeStorage) : null; } catch {}
+      const preference = requestedTheme || savedTheme || "system";
       const prefersLight = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: light)").matches;
-      const preferredTheme = prefersLight ? "github-light" : root.dataset.defaultTheme;
-      root.dataset.theme = requestedTheme || savedTheme || preferredTheme;
+      const hour = new Date().getHours();
+      root.dataset.themePreference = preference;
+      root.dataset.theme = preference === "system"
+        ? (prefersLight ? "github-light" : root.dataset.defaultTheme)
+        : preference === "time"
+          ? (hour >= 7 && hour < 19 ? "github-light" : root.dataset.defaultTheme)
+          : preference;
     </script>
     <script type="application/ld+json">
       {
@@ -883,6 +889,8 @@
         <label class="theme-picker">
           <span>Theme</span>
           <select id="theme-select" aria-label="Site color theme">
+            <option value="system">System</option>
+            <option value="time">Day cycle</option>
             <option value="tokyo-night">Tokyo Night (default)</option>
             <option value="catppuccin">Catppuccin</option>
             <option value="gruvbox">Gruvbox</option>
@@ -1187,11 +1195,17 @@
       const favicon = document.querySelector('link[rel="icon"]');
       const availableThemes = Array.from(themeSelect.options, (option) => option.value);
 
-      if (!availableThemes.includes(document.documentElement.dataset.theme)) {
-        document.documentElement.dataset.theme = "tokyo-night";
-      }
-
-      themeSelect.value = document.documentElement.dataset.theme;
+      const mediaQuery = (query) => typeof matchMedia === "function" ? matchMedia(query) : { matches: false };
+      const darkQuery = mediaQuery("(prefers-color-scheme: dark)");
+      const lightQuery = mediaQuery("(prefers-color-scheme: light)");
+      let themeTimer;
+      const resolveTheme = (preference) => {
+        if (preference === "system") return lightQuery.matches ? "github-light" : root.dataset.defaultTheme;
+        if (preference === "time") { const hour = new Date().getHours(); return hour >= 7 && hour < 19 ? "github-light" : root.dataset.defaultTheme; }
+        return preference;
+      };
+      let themePreference = availableThemes.includes(root.dataset.themePreference) ? root.dataset.themePreference : "system";
+      themeSelect.value = themePreference;
 
       const syncThemeAssets = () => {
         const styles = getComputedStyle(document.documentElement);
@@ -1204,13 +1218,23 @@
         favicon.href = `data:image/svg+xml,${encodeURIComponent(icon)}`;
       };
 
-      syncThemeAssets();
+      const applyTheme = (preference) => {
+        themePreference = preference;
+        root.dataset.themePreference = preference;
+        root.dataset.theme = resolveTheme(preference);
+        themeSelect.value = preference;
+        clearInterval(themeTimer);
+        if (preference === "time") themeTimer = setInterval(() => applyTheme("time"), 60_000);
+        syncThemeAssets();
+      };
+      applyTheme(themePreference);
 
       themeSelect.addEventListener("change", () => {
-        document.documentElement.dataset.theme = themeSelect.value;
         try { localStorage.setItem("privacy-devices-theme", themeSelect.value); } catch {}
-        syncThemeAssets();
+        applyTheme(themeSelect.value);
       });
+      darkQuery.addEventListener?.("change", () => { if (themePreference === "system") applyTheme("system"); });
+      lightQuery.addEventListener?.("change", () => { if (themePreference === "system") applyTheme("system"); });
 
       fetch("manifest.json")
         .then((response) => {
