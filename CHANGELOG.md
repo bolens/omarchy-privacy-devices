@@ -7,6 +7,8 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.9.16] - 2026-09-01
+
 ### Fixed
 
 - Bound notification bursts and recover queued helper operations after process timeouts.
@@ -447,7 +449,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.15...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.16...HEAD
+[0.9.16]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.15...v0.9.16
 [0.9.15]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.14...v0.9.15
 [0.9.14]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.13...v0.9.14
 [0.9.13]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.12...v0.9.13
