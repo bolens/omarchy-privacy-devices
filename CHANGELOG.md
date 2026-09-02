@@ -7,6 +7,13 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+## [0.9.15] - 2026-09-01
+
+### Fixed
+
+- Bound pending history writes by count and size so a stalled helper cannot
+  grow the shared shell process indefinitely.
+
 ## [0.9.14] - 2026-09-01
 
 ### Added
@@ -436,7 +443,8 @@ maintainer guides that define release and validation procedures.
 
 - Canonical plugin identity and UVC interface binding behavior.
 
-[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.14...HEAD
+[Unreleased]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.15...HEAD
+[0.9.15]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.14...v0.9.15
 [0.9.14]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.13...v0.9.14
 [0.9.13]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.12...v0.9.13
 [0.9.12]: https://github.com/bolens/omarchy-privacy-devices/compare/v0.9.11...v0.9.12
