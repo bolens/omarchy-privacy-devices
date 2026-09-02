@@ -6,6 +6,8 @@ Item {
   id: controller
 
   required property var host
+  readonly property int maximumQueuedMutations: 100
+  readonly property int maximumQueuedMutationBytes: 1048576
 
   function helperPath() {
     return host.historyHelperOverride || String(Qt.resolvedUrl("privacy-history")).replace(/^file:\/\//, "")
@@ -22,9 +24,20 @@ Item {
   function enqueueMutation(arguments) {
     var values = Array.isArray(arguments) ? arguments.slice() : []
     if (!values.length || ["append", "clear"].indexOf(values[0]) < 0) return false
-    host.historyMutationQueue = host.historyMutationQueue.concat([values])
+    if (queuedMutationBytes([values]) > maximumQueuedMutationBytes) return false
+    var queue = values[0] === "clear" ? [] : host.historyMutationQueue.slice()
+    queue = queue.concat([values])
+    while (queue.length > maximumQueuedMutations || queuedMutationBytes(queue) > maximumQueuedMutationBytes)
+      queue.shift()
+    if (!queue.length) return false
+    host.historyMutationQueue = queue
     runNextMutation()
     return true
+  }
+
+  function queuedMutationBytes(queue) {
+    try { return unescape(encodeURIComponent(JSON.stringify(queue))).length }
+    catch (error) { return Number.POSITIVE_INFINITY }
   }
 
   function runNextMutation() {

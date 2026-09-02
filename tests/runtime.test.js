@@ -752,8 +752,8 @@ assert.match(historyController, /function clear\(\)[\s\S]*?host\.historyGenerati
   "clearing history must invalidate an in-flight load")
 assert.match(service + historyController, /property bool historyLoadBusy:[\s\S]*?function load\(\)[\s\S]*?host\.historyLoadPending = true[\s\S]*?host\.historyLoadBusy = true/,
   "history loading must use synchronous ownership and retain a superseding reload")
-assert.match(historyController, /function enqueueMutation\(arguments\)[\s\S]*?host\.historyMutationQueue = host\.historyMutationQueue\.concat[\s\S]*?function runNextMutation\(\)[\s\S]*?host\.historyMutationBusy = true/,
-  "history mutations must preserve request order through a service-owned FIFO")
+assert.match(historyController, /maximumQueuedMutations:\s*100[\s\S]*?maximumQueuedMutationBytes:\s*1048576[\s\S]*?function enqueueMutation\(arguments\)[\s\S]*?while \(queue\.length > maximumQueuedMutations \|\| queuedMutationBytes\(queue\) > maximumQueuedMutationBytes\)[\s\S]*?function runNextMutation\(\)[\s\S]*?host\.historyMutationBusy = true/,
+  "history mutations must use a count- and byte-bounded service-owned FIFO")
 assert.match(historyController, /id:\s*historyLoadProc[\s\S]*?Model\.historyLoadAccepted\(controller\.host\.historyLoadGeneration, controller\.host\.historyGeneration, controller\.host\.settings\.historyEnabled\)[\s\S]*?recentHistory = \[\]/,
   "stale history output must not repopulate private data after history is disabled or cleared")
 assert.match(historyController, /id:\s*historyLoadOutput[\s\S]*?onStreamFinished:\s*\{[\s\S]*?JSON\.parse\(String\(historyLoadOutput\.text \|\| "\[\]"\)\)/,
