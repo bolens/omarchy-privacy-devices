@@ -102,7 +102,7 @@ release-branch commit, whose SHA is replaced by the squash merge:
 ```sh
 version=$(git show "$release_sha:manifest.json" | jq -r .version)
 test "$release_sha" = "$(git rev-parse origin/main)"
-git tag -a "v$version" "$release_sha" -m "Privacy Devices $version"
+git tag -s "v$version" "$release_sha" -m "Privacy Devices $version"
 git push origin "v$version"
 ```
 
