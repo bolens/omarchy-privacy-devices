@@ -6,7 +6,7 @@ ShellRoot {
   id: root
   property int stage: 0
   readonly property string fixtureHelper: String(Qt.resolvedUrl("tests/fixtures/privacy-observer-helper")).replace(/^file:\/\//, "")
-  Service { id: service; observerHelperOverride: fixtureHelper }
+  Service { id: service; observerHelperOverride: root.fixtureHelper }
 
   Component.onCompleted: service.configure({
     enabledKinds:["screen-recording", "screenshot", "camera", "microphone"],

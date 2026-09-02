@@ -18,9 +18,9 @@ ShellRoot {
   }
   PrivacySettingsTransferController {
     id: transfer
-    helper: fixtureHelper
+    helper: root.fixtureHelper
     onSucceeded: function(mode, payload) {
-      completed = completed.concat([mode])
+      root.completed = root.completed.concat([mode])
       if (mode === "export") transfer.request("checkpoint", {_privacySettingsVersion:1,showIdle:true})
       else if (mode === "checkpoint") {
         if (!transfer.undoAvailable) throw new Error("checkpoint did not expose undo")
@@ -31,7 +31,7 @@ ShellRoot {
         transfer.request("undo", {})
       } else if (mode === "undo") {
         if (transfer.undoAvailable || JSON.parse(payload).showIdle !== true) throw new Error("undo result not applied")
-        if (completed.join(",") !== "export,checkpoint,import,undo") throw new Error("transfer sequence lost")
+        if (root.completed.join(",") !== "export,checkpoint,import,undo") throw new Error("transfer sequence lost")
         console.log("PRIVACY_QML_SETTINGS_TRANSFER_OK")
         Qt.quit()
       }
