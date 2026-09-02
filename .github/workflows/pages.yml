@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     paths:
+      - CHANGELOG.md
+      - scripts/render-changelog.py
       - docs/**
       - manifest.json
       - scripts/build-site.sh

@@ -1,0 +1,317 @@
+<!doctype html><html lang="en" data-changelog-mode="system" data-color-mode-storage="privacy-devices-changelog-mode"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#09111d"><title>Changelog · Privacy Devices</title><meta name="description" content="Release history for Privacy Devices."><link rel="canonical" href="https://bolens.github.io/omarchy-privacy-devices/changelog/"><meta property="og:type" content="website"><meta property="og:title" content="Changelog · Privacy Devices"><meta property="og:description" content="Release history for Privacy Devices."><meta property="og:url" content="https://bolens.github.io/omarchy-privacy-devices/changelog/"><meta property="og:site_name" content="Privacy Devices"><meta property="og:image" content="https://bolens.github.io/omarchy-privacy-devices/social-card.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Privacy Devices release history"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Changelog · Privacy Devices"><meta name="twitter:description" content="Release history for Privacy Devices."><meta name="twitter:image" content="https://bolens.github.io/omarchy-privacy-devices/social-card.png"><meta name="twitter:image:alt" content="Privacy Devices release history"><link rel="icon" href="../favicon.svg"><script>(()=>{const r=document.documentElement,k='privacy-devices-changelog-mode',q=s=>typeof matchMedia==='function'?matchMedia(s):{matches:false},l=q('(prefers-color-scheme: light)'),d=q('(prefers-color-scheme: dark)');let m;try{m=localStorage.getItem(k)}catch{}if(!['system','time','light','dark'].includes(m))m='system';const x=()=>m==='time'?(new Date().getHours()>=7&&new Date().getHours()<19?'light':'dark'):m==='light'||m==='dark'?m:l.matches?'light':d.matches?'dark':'dark';const apply=()=>{r.dataset.changelogMode=m;r.dataset.changelogScheme=x()};apply();addEventListener('DOMContentLoaded',()=>{const s=document.querySelector('[data-mode]');s.value=m;s.addEventListener('change',()=>{m=s.value;try{localStorage.setItem(k,m)}catch{}apply()})});l.addEventListener?.('change',apply);d.addEventListener?.('change',apply);setInterval(()=>{if(m==='time')apply()},60000)})()</script><style>
+:root{--accent:#c4a7e7;--bg:#09111d;--panel:#111d2d;--ink:#edf5ff;--muted:#9fb0c5;--line:#2a3c53;color-scheme:dark}[data-changelog-scheme=light]{--bg:#f5f7fa;--panel:#fff;--ink:#142033;--muted:#56677d;--line:#c8d2df;color-scheme:light}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 ui-sans-serif,system-ui,sans-serif}a{color:var(--accent)}header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.8rem max(1rem,calc((100vw - 74rem)/2));border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(16px)}header>a{font-weight:800;text-decoration:none;color:var(--ink)}nav,label{display:flex;align-items:center;gap:.75rem}label{color:var(--muted);font-size:.8rem}select{max-width:9rem;padding:.45rem .6rem;border:1px solid var(--line);border-radius:.55rem;background:var(--panel);color:var(--ink)}main{width:min(74rem,calc(100% - 2rem));margin:auto;padding:clamp(2rem,6vw,5rem) 0}.intro{max-width:46rem;margin-bottom:2.5rem}h1{font-size:clamp(2.4rem,7vw,5.4rem);line-height:.95;letter-spacing:-.055em;margin:.2rem 0 1rem}.intro p{color:var(--muted);font-size:1.08rem}h2{display:inline-block;min-width:14rem;margin:2rem 2rem 1rem 0;padding-top:1.5rem;border-top:1px solid var(--line);font-size:1.15rem}h3{margin:1rem 0 .25rem;color:var(--accent);font-size:.78rem;text-transform:uppercase;letter-spacing:.12em}p,ul{max-width:52rem;overflow-wrap:anywhere;margin:.25rem 0 1rem}li+li{margin-top:.6rem}code{padding:.12rem .3rem;border-radius:.3rem;background:var(--panel)}footer{padding:2rem;text-align:center;color:var(--muted);border-top:1px solid var(--line)}@media(max-width:700px){header{align-items:flex-start;flex-wrap:wrap}nav{flex-wrap:wrap}label span{position:absolute;width:1px;height:1px;overflow:hidden}}
+</style></head><body><header><a href="../">Privacy Devices</a><nav><a aria-current="page" href="./">Changelog</a><a href="https://github.com/bolens/omarchy-privacy-devices">GitHub</a><label><span>Theme</span><select data-mode aria-label="Color theme"><option value="system">System</option><option value="time">Day cycle</option><option value="light">Light</option><option value="dark">Dark</option></select></label></nav></header><main><div class="intro"><p>Release notes</p><h1>What changed.</h1><p>Generated from the project changelog whenever its release history changes.</p></div><p>All notable changes to Privacy Devices are documented here. The project follows <a href="https://semver.org/">Semantic Versioning</a>. See the <a href="https://github.com/bolens/omarchy-privacy-devices/blob/main/DOCUMENTATION.md">documentation index</a> for topic ownership and the maintainer guides that define release and validation procedures.</p>
+<h2 id="unreleased">Unreleased</h2>
+<h2 id="0-9-16-2026-09-01">0.9.16 - 2026-09-01</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Bound notification bursts and recover queued helper operations after process timeouts.</li>
+</ul>
+<h2 id="0-9-15-2026-09-01">0.9.15 - 2026-09-01</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Bound pending history writes by count and size so a stalled helper cannot grow the shared shell process indefinitely.</li>
+</ul>
+<h2 id="0-9-14-2026-09-01">0.9.14 - 2026-09-01</h2>
+<h3>Added</h3>
+<ul>
+<li>Pages now include favicons, touch and install icons, a web manifest, and a 1200x630 social card. Regression tests protect the metadata and image dimensions.</li>
+</ul>
+<h2 id="0-9-13-2026-09-01">0.9.13 - 2026-09-01</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Keep all Pages guide sections visible without requiring scroll-triggered JavaScript while retaining intentional hero and interface motion.</li>
+</ul>
+<h2 id="0-9-12-2026-09-01">0.9.12 - 2026-09-01</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Honor injected epoch timestamps in history labels instead of silently substituting the wall clock.</li>
+</ul>
+<h2 id="0-9-11-2026-09-01">0.9.11 - 2026-09-01</h2>
+<h3>Added</h3>
+<ul>
+<li>Pages offer selectable dark and light themes.</li>
+<li>Browsers that prefer light mode start with GitHub Light; browsers without a preference keep the default dark theme.</li>
+</ul>
+<h2 id="0-9-10-2026-09-01">0.9.10 - 2026-09-01</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Keep keyboard guidance below the action cards in the Pages usage section at mobile, tablet, desktop, and ultrawide widths.</li>
+<li>Ensure all nested cards remain visible when reduced motion is requested.</li>
+</ul>
+<h2 id="0-9-9-2026-09-01">0.9.9 - 2026-09-01</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Tag-triggered releases now receive the pull-request metadata required by path-filtered validation.</li>
+</ul>
+<h2 id="0-9-8-2026-09-01">0.9.8 - 2026-09-01</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Validate complete PNG headers before reading screenshot dimensions in tests.</li>
+</ul>
+<h2 id="0-9-7-2026-09-01">0.9.7 - 2026-09-01</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Preserve QML-backed list settings, including enabled device kinds and privacy modes, across sanitization, save, serialization, and reload while rejecting malformed or oversized values with a single bounded length snapshot.</li>
+<li>Keep native privacy-mode arrays on the allocation-free sanitization path.</li>
+<li>Require Qt 6 QML tooling, publish plugin module metadata, and gate reliable semantic lint errors in local and CI validation.</li>
+</ul>
+<h2 id="0-9-6-2026-08-31">0.9.6 - 2026-08-31</h2>
+<h3>Added</h3>
+<ul>
+<li>Add weekly compatibility checks for Omarchy v4.0.1 and the current <code>quattro</code> branch.</li>
+<li>Add release artifact attestations and require a 1.00 accessibility score.</li>
+<li>Add Actionlint and an explicit Node.js version to repository CI.</li>
+<li>Add isolated stable and canary compatibility runs that keep the checkout read-only.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Align CI, release, dependency, runtime, and archive policies with the maintained plugin suite.</li>
+<li>Run canonical QML tests automatically in graphical sessions and improve subprocess failure diagnostics.</li>
+<li>Validate staged release payloads before commits and add a read-only live IPC redaction and payload probe.</li>
+<li>Stop isolated QML harnesses after their unique success marker while retaining timeout and late-error guards.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Use CI&#x27;s pinned Omarchy validator in the canonical behavior suite.</li>
+</ul>
+<h2 id="0-9-5-2026-08-29">0.9.5 - 2026-08-29</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Keep popup width stable between views while fitting height to loaded content, retaining a useful minimum scroll viewport and the configured maximum without leaving large empty regions below short pages.</li>
+</ul>
+<h2 id="0-9-4-2026-08-29">0.9.4 - 2026-08-29</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Isolate fixed popup headers and footers in independently anchored regions so no settings content can render beneath or displace them, and settle visual audit frames before retaining scroll-boundary evidence.</li>
+</ul>
+<h2 id="0-9-3-2026-08-29">0.9.3 - 2026-08-29</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Keep activity and global-settings popups at the configured dimensions across sparse and content-heavy views, preserving a useful scroll viewport without layout jumps between settings pages.</li>
+</ul>
+<h2 id="0-9-2-2026-08-29">0.9.2 - 2026-08-29</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Keep global-settings navigation and reset actions fixed around the scrollable settings body, and prevent activity header actions from overflowing narrow popup layouts.</li>
+</ul>
+<h2 id="0-9-1-2026-08-29">0.9.1 - 2026-08-29</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Keep the activity header and keyboard-help footer visible while the activity cards and policy controls scroll independently between them.</li>
+</ul>
+<h2 id="0-9-0-2026-08-28">0.9.0 - 2026-08-28</h2>
+<h3>Changed</h3>
+<ul>
+<li>Split popup views, settings orchestration, helper processes, control transactions, observers, and presentation state into focused QML controllers while preserving the public service, panel, and runtime-test contracts.</li>
+<li>Use one deterministic QML lint entry point for local and CI validation.</li>
+<li>Share width-driven settings grids across global pages so narrow and wide popup presets reflow from configured panel width instead of implicit child size.</li>
+<li>Add a repository-safe visual audit mode that retains unique top and bottom settings evidence only after monitor-scoped rendering and successful desktop restoration checks.</li>
+<li>Replace unambiguous save, transfer, placement, test, copy, and settings actions with compact glyph controls while preserving explicit tooltips and text for destructive or state-dependent actions.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Preserve the active privacy preset&#x27;s saved state and undo metadata when a concurrent lockdown or mode request is rejected.</li>
+</ul>
+<h2 id="0-8-1-2026-08-27">0.8.1 - 2026-08-27</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Prefer the monitor containing the terminal or launcher process that started a screenshot run before active-window, pointer, and focused-output fallbacks.</li>
+<li>Serialize settings export, import, reset checkpoints, and one-step undo with private durable transactions while keeping missing read-only loads inert.</li>
+<li>Reject retained-history timestamps beyond a bounded clock-skew allowance.</li>
+<li>Roll back newly introduced screenshot assets after partial publication, validate every published view&#x27;s dimensions and uniqueness, and reject duplicate dimensioned screenshot markup.</li>
+</ul>
+<h2 id="0-8-0-2026-08-27">0.8.0 - 2026-08-27</h2>
+<h3>Added</h3>
+<ul>
+<li>Named privacy modes that reapply available controls through the verified serial transaction and undo path.</li>
+<li>Bounded history trends, device and evidence filters, stable sorting, audio-endpoint feedback, and privacy-safe live application inspection.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Screenshot capture is monitor-specific, uses fresh and distinct evidence, and restores desktop state without optional workspace plugins.</li>
+<li>History filters share one responsive row, and new installations hide idle bar icons by default.</li>
+<li>QML runtime harnesses use installed-root import behavior under <code>tests/qml/</code>.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Endpoint refresh, observer restart, history writes, settings actions, confirmations, previews, and verification use observed completion instead of fixed delays.</li>
+<li>Concurrent observer and endpoint operations retain the latest requested state without stale subprocess results.</li>
+<li>Screenshot capture waits for the selected monitor, rendered view, and changed pixels while rejecting blank or duplicate crops.</li>
+<li>GeoClue probes, notification capture, workspace routing, and desktop restoration cannot republish stale state or disturb another monitor.</li>
+</ul>
+<h2 id="0-7-0-2026-08-26">0.7.0 - 2026-08-26</h2>
+<h3>Added</h3>
+<ul>
+<li>Confirmed serial privacy lockdown with verified partial results and a 30-second undo.</li>
+<li>Per-device visibility, notification, color, opacity, and audio-endpoint control policies.</li>
+<li>Today and seven-day summaries from existing bounded local history.</li>
+<li>Actionable alerts, health monitoring, a privacy self-test, menu actions, and validated deep links.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>New installations use a compact bar with idle icons and activity markers disabled.</li>
+<li>Device colors distinguish active, idle, disabled, and blocked states with global and per-device overrides.</li>
+<li>Settings grids and observer-health actions reflow from the configured panel width.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Lockdown, undo, quick actions, and endpoint controls share verified transaction paths and redacted diagnostics.</li>
+</ul>
+<h2 id="0-6-0-2026-08-26">0.6.0 - 2026-08-26</h2>
+<h3>Added</h3>
+<ul>
+<li>Add adaptive, list, and grid activity layouts with configurable popup width, item scale, and idle opacity.</li>
+<li>Add tabbed screenshot explorers to the Pages guide for clearer feature and settings discovery.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Make the activity popup and settings surfaces responsive across narrow, standard, and wide layouts.</li>
+<li>Reuse normalized PipeWire classification policy across stream nodes to reduce reactive refresh work.</li>
+<li>Make screenshot refreshes transactional, hot-reload temporary settings, and verify desktop state before publishing captured assets.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Reload persisted activity history after history is re-enabled.</li>
+<li>Preserve shell, workspace, DND, plugin-settings, and screenshot state across successful or interrupted documentation captures.</li>
+</ul>
+<h2 id="0-5-3-2026-08-25">0.5.3 - 2026-08-25</h2>
+<h3>Changed</h3>
+<ul>
+<li>Keep maintainer-only workflows, tests, tooling, and runtime harnesses out of release archives while preserving installed and marketplace files.</li>
+</ul>
+<h3>Security</h3>
+<ul>
+<li>Launch trusted capture helpers and Omarchy commands with argument arrays; only explicit user-configured custom commands retain shell semantics.</li>
+<li>Strip text controls and Unicode direction overrides from session, history, and imported list metadata, and bound diagnostic clipboard subprocesses.</li>
+</ul>
+<h2 id="0-5-2-2026-08-25">0.5.2 - 2026-08-25</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Content-address README screenshot URLs so GitHub cannot retain stale captures after the screenshot workflow refreshes their files.</li>
+</ul>
+<h2 id="0-5-1-2026-08-25">0.5.1 - 2026-08-25</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Center screenshot crops on measured widget geometry and preserve desktop padding around both panel edges.</li>
+</ul>
+<h2 id="0-5-0-2026-08-25">0.5.0 - 2026-08-25</h2>
+<h3>Added</h3>
+<ul>
+<li>Add one canonical, auto-discovering behavior-suite runner shared by local npm workflows, CI, and contributor documentation.</li>
+<li>Add deep-linked screenshots for private-data and observer-health settings, with complete Pages guidance for keyboard use, transfer undo, and diagnostics.</li>
+<li>Add coalesced settings writes, visible save/failure feedback, shared status surfaces, and an assembled-plugin QML smoke test.</li>
+<li>Unify global boolean controls and settings-transfer result handling behind focused, runtime-tested components.</li>
+<li>Add QML failure and recovery coverage for settings transfer and persistent observers.</li>
+<li>Add a private one-step undo for settings imports and global resets.</li>
+<li>Add validated settings deep links with focused section scrolling from disabled history and per-device status-marker guidance, plus focused-monitor IPC access.</li>
+<li>Add a dedicated, keyboard-accessible history view with clear disabled, loading, and empty states, local search, relative period groups, result count pills, confidence provenance, and confirmed clearing.</li>
+<li>Show a verified application or service icon in activity and control-result notifications, with safe themed fallbacks.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Reject generated archives and credential-like tracked content in CI before release packaging.</li>
+<li>Cancel pending observer retries on manual recovery and ignore buffered snapshots after monitoring is disabled.</li>
+<li>Add real QML interaction coverage for settings navigation, destructive-action confirmation, settings transfer, and observer lifecycle state.</li>
+<li>Establish a silent startup activity baseline so restarting Quickshell does not re-notify sessions that were already using a privacy device.</li>
+<li>Deduplicate replayed history records in both live and persisted retention.</li>
+<li>Make screenshot refreshes restart-safe and location-independent, capture both history states, preserve user history and shell settings, and keep variable image dimensions synchronized with the Pages gallery.</li>
+<li>Discover Quickshell from <code>PATH</code> in the runtime harness instead of relying on a developer-specific installation path.</li>
+<li>Honor vertical bar layouts and the host-provided foreground color contract.</li>
+<li>Resolve localized screenshot and recording directories while rejecting unsafe relative paths.</li>
+</ul>
+<h3>Security</h3>
+<ul>
+<li>Replace inline GeoClue shell probing with structured, bounded <code>busctl</code> calls using fixed arguments and per-call timeouts.</li>
+</ul>
+<h2 id="0-4-0-2026-08-25">0.4.0 - 2026-08-25</h2>
+<h3>Added</h3>
+<ul>
+<li>Add explicit per-device inheritance, customized-state indicators, adjacent navigation, scoped resets, and validated custom-backend save feedback.</li>
+<li>Present device diagnostics as labeled, actionable rows.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Align individual device settings with the global settings structure, clarify shared and inherited behavior, and disable unavailable placement actions.</li>
+<li>Reuse normalized runtime policy and device snapshots, suspend background probes when their device classes are disabled, and coalesce dependency refreshes across in-flight checks.</li>
+<li>Move control acceptance, observer invalidation/recovery, and history-load acceptance behind behavior-tested model policies while retaining QML wiring contracts.</li>
+<li>Replace heartbeat and observer-health implementation checks with boundary, clock-skew, identity, and QML-engine behavior tests backed by shared model policies.</li>
+<li>Replace duplicated dependency and preventative probe scheduling with a shared, behavior-tested FIFO and refresh-supersession policy.</li>
+<li>Replace the activity footer&#x27;s implementation notes with a concise keyboard command guide whose advertised actions are checked against their handlers.</li>
+<li>Make popup selection, activation, editor navigation, and layered dismissal behavior-tested, including empty, stale, and boundary states.</li>
+<li>Behavior-test scroll-deferral semantics and diagnostic row formatting instead of relying on QML implementation and unrelated-label searches.</li>
+<li>Behavior-test monitoring telemetry text, expose fallback-observer heartbeat and retry timing, and render missing values as stable fallbacks.</li>
+<li>Behavior-test tooltip actions and remove the unused duplicate control-guidance implementation from the bar widget.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Select the first activity row on initial keyboard navigation and prevent Enter from opening a selection removed by a reactive update.</li>
+<li>Prevent unsaved device fields and armed shared-reset confirmations from carrying across devices, and make global reset cover every bar appearance default.</li>
+<li>Clear stale direct-device and capture activity when an observer fails, surface fallback observer health, and avoid treating monitoring loss or uncertain recovery as genuine activity transitions.</li>
+<li>Reject unsupported, disabled, unavailable, busy, and duplicate control requests instead of reporting false success; preserve verification probes across concurrent monitoring-setting changes.</li>
+<li>Prevent stale history loads and dependency probes from publishing after their configuration is superseded, serialize history helper transactions, and bound normalized session metadata before identity or presentation.</li>
+</ul>
+<h3>Security</h3>
+<ul>
+<li>Apply printable-text and length bounds consistently to imported and edited device labels, icons, and process identifiers, and discard empty overrides.</li>
+</ul>
+<h2 id="0-3-0-2026-08-25">0.3.0 - 2026-08-25</h2>
+<h3>Added</h3>
+<ul>
+<li>Add a dedicated Appearance settings page with independent bar icon scale, item spacing, padding, status-marker position, and session-count controls.</li>
+<li>Refresh the activity, exact bar footprint, all four settings pages, and social-preview screenshots from the live plugin on the primary monitor.</li>
+<li>Establish a canonical documentation index and cross-linked ownership map to reduce duplicated maintainer guidance.</li>
+<li>Add independent Appearance settings for active, disabled, verifying, and degraded bar-status markers without hiding device icons.</li>
+<li>Add a custom bar-marker mode with sanitized glyph settings for every non-idle status.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Apply settings-page IPC changes while the popup is already open so external navigation can switch among every global settings page.</li>
+</ul>
+<h2 id="0-2-0-2026-08-24">0.2.0 - 2026-08-24</h2>
+<h3>Added</h3>
+<ul>
+<li>Replace screenshot and recorder subprocess polling with a persistent structured observer.</li>
+<li>Route settings IPC through the singleton service and Omarchy&#x27;s focused-monitor panel resolver.</li>
+<li>Coalesce notification bursts and expose explicit control transaction results.</li>
+<li>Add private diagnostic export, inferred-attribution controls, and observer telemetry.</li>
+<li>Extract reusable settings and activity-card components and enforce performance contracts.</li>
+<li>Add configurable semantic icon markers, textual state pills, pending verification feedback, session counts, popup density, per-device marker visibility, and disabled appearance.</li>
+</ul>
+<ul>
+<li>Project website, complete user guide, theme presets, and theme-aware favicon.</li>
+<li>Structured issue forms and repository community guidance.</li>
+<li>Normalized activity sessions with duration, device, source, confidence, and start/stop transitions.</li>
+<li>First-class monitoring health and degraded-state diagnostics.</li>
+<li>Optional same-user direct V4L2 and ALSA capture-handle monitoring.</li>
+<li>Reversible display and notification policies plus bounded, private, opt-in local history.</li>
+<li>Session, health, history, and rescan IPC diagnostics.</li>
+<li>Lower idle process churn through slower dependency, control-state, mute-state, screenshot, and configurable direct-device polling.</li>
+<li>Batched history persistence and allocation-free idle session refreshes.</li>
+<li>Tabbed in-widget global settings with scoped reset, responsive scrolling, and manifest-contract coverage.</li>
+<li>Stable popup settings edits, direct popup IPC, probe invalidation keyed only to monitoring changes, and timestamp-insensitive session updates that avoid needless layout work.</li>
+<li>Prevented main activity-row controls from leaking into global and per-device settings by giving generated delegates a visibility-owning container.</li>
+<li>Replaced constant one-second session polling with debounced reactive reconciliation plus a slow safety pass, and routed alerts through Omarchy&#x27;s DND-aware notification command.</li>
+<li>Direct-device monitoring now uses a persistent inotify observer with heartbeats, stale-health detection, polling fallback, and bounded restart backoff.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Group private history and settings transfer with monitoring diagnostics so global settings have one clear place for private local data.</li>
+<li>Refresh runtime dependency probes when the selected audio backend changes and remove stale configuration-signature keys.</li>
+</ul>
+<h3>Security</h3>
+<ul>
+<li>Allowlist imported visual roles and settings-page IPC targets, bound helper arguments and stored fields, reject non-finite JSON values, and re-sanitize history when loading it.</li>
+<li>Replace predictable persistence temporary files with private, exclusive, atomically replaced files and enforce SHA-pinned external Actions in tests.</li>
+</ul>
+<h2 id="0-1-1-2026-08-21">0.1.1 - 2026-08-21</h2>
+<h3>Added</h3>
+<ul>
+<li>Privacy activity indicators and controls for microphone, audio output, camera, location, screen sharing, screenshots, and screen recording.</li>
+<li>Configurable display, notifications, classification, and capture backends.</li>
+<li>Security checks for camera modules, custom commands, paths, and recorder process identity.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Canonical plugin identity and UVC interface binding behavior.</li>
+</ul></main><footer><a href="../">Back to Privacy Devices</a></footer></body></html>
