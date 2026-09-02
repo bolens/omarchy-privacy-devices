@@ -19,7 +19,7 @@ QtObject {
     process.command = selected === "export" ? [helper, "export", JSON.stringify(currentSettings || {})]
       : (selected === "import" ? [helper, "import", JSON.stringify(currentSettings || {})]
       : (selected === "checkpoint" ? [helper, "checkpoint", JSON.stringify(currentSettings || {})] : [helper, "undo"]))
-    process.running = true
+    process.running = true; watchdog.start()
     return true
   }
 
@@ -28,7 +28,7 @@ QtObject {
     busy = true
     process.mode = "check"
     process.command = [helper, "can-undo"]
-    process.running = true
+    process.running = true; watchdog.start()
     return true
   }
 
@@ -37,6 +37,7 @@ QtObject {
     stdout: StdioCollector { id: output; waitForEnd: true }
     stderr: StdioCollector { id: errorOutput; waitForEnd: true }
     onExited: function(exitCode) {
+      watchdog.stop()
       var completedMode = process.mode
       var payload = String(output.text || "").trim()
       var detail = String(errorOutput.text || "").trim()
@@ -47,6 +48,10 @@ QtObject {
       else if (completedMode === "undo") controller.undoAvailable = false
       controller.succeeded(completedMode, payload)
     }
+  }
+  property PrivacyProcessWatchdog watchdog: PrivacyProcessWatchdog {
+    process: controller.process
+    timeoutMilliseconds: 30000
   }
 
   Component.onCompleted: refreshUndoAvailability()

@@ -47,7 +47,7 @@ Item {
     currentKind = next.kind
     busy = true
     checkProcess.command = [helperPath(), "check", currentKind, host.recordingBackend(), host.audioControlBackend(), host.screenshotBackend()]
-    checkProcess.running = true
+    checkProcess.running = true; watchdog.start()
   }
 
   function install(kind) {
@@ -66,6 +66,7 @@ Item {
   Process {
     id: checkProcess
     onExited: function(exitCode) {
+      watchdog.stop()
       controller.busy = false
       if (!controller.refreshPending) {
         var ready = Object.assign({}, controller.readyMap)
@@ -78,4 +79,5 @@ Item {
       controller.runNext()
     }
   }
+  PrivacyProcessWatchdog { id: watchdog; process: checkProcess; timeoutMilliseconds: 15000 }
 }
