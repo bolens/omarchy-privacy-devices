@@ -141,7 +141,7 @@ Panel {
   })
   readonly property var historySummaryRows: Model.historySummary(privacyService ? privacyService.displayHistory : [], durationNow, historySummaryWindow)
   readonly property var historyTrend: Model.historyTrend(privacyService ? privacyService.displayHistory : [], durationNow, historySummaryWindow, 12)
-  readonly property bool historyPresentationEnabled: privacyService && privacyService.capturePreviewActive && privacyService.requestedView === "history"
+  readonly property bool historyPresentationEnabled: privacyService && privacyService.capturePreviewActive
     ? privacyService.captureHistoryPresentationEnabled !== false : setting("historyEnabled", false) === true
   readonly property var editingSessions: editingKind && privacyService ? privacyService.attributedSessionsFor(editingKind) : []
   readonly property var editingDevices: Model.unique(editingSessions.map(function(session) { return String(session.device || "") }).filter(Boolean))
@@ -175,6 +175,7 @@ Panel {
       settingsPage: globalSettingsPage,
       settingsSection: view === "settings" ? globalSettingsSection : "",
       settingsScroll: view === "settings" ? navigationController.settingsScrollPosition : "",
+      historyEnabled: historyPresentationEnabled,
       ready: opened && !contentFlick.moving && (view !== "settings" || (settingsPageLoaded && pendingSettingsSection === "")),
       requestSerial: handledSettingsRequestSerial
     })
@@ -526,6 +527,7 @@ Panel {
   }
   onShowingGlobalSettingsChanged: Qt.callLater(publishCaptureBarPresentation)
   onShowingHistoryChanged: Qt.callLater(publishCaptureBarPresentation)
+  onHistoryPresentationEnabledChanged: Qt.callLater(publishCaptureBarPresentation)
   onGlobalSettingsPageChanged: Qt.callLater(publishCaptureBarPresentation)
   onGlobalSettingsSectionChanged: Qt.callLater(publishCaptureBarPresentation)
   onPendingSettingsSectionChanged: Qt.callLater(publishCaptureBarPresentation)

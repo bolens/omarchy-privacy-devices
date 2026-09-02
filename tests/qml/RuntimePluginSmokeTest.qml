@@ -51,7 +51,7 @@ ShellRoot {
     sharedService.capturePreviewBarSessions = []
     sharedService.capturePreviewActive = true
     if (!widget.showIdle || sharedService.displayHistory.length !== 1 || sharedService.sessionsFor("camera").length !== 1 || sharedService.barActive("camera")) throw new Error("capture preview did not preserve presentation settings")
-    sharedService.requestedView = "history"
+    sharedService.requestedView = "activity"
     sharedService.captureHistoryPresentationEnabled = false
     if (widget.historyPresentationEnabled || !widget.showIdle || sharedService.sessionsFor("camera").length !== 1)
       throw new Error("disabled-history view changed the immutable bar preview")

@@ -367,13 +367,17 @@ assert.match(bar, /presentationScreen:\s*root\.QsWindow\.window[\s\S]*?presentat
   "bar render acknowledgements must use the window's actual output")
 assert.match(bar, /settingsSection:\s*view === "settings" \? globalSettingsSection : ""/,
   "bar render acknowledgements must describe the displayed navigation section")
+assert.match(bar, /historyEnabled:\s*historyPresentationEnabled[\s\S]*?onHistoryPresentationEnabledChanged:\s*Qt\.callLater\(publishCaptureBarPresentation\)/,
+  "bar render acknowledgements must track the displayed history state")
+assert.match(screenshotWorkflow, /history\) expected_view=history; expected_history_enabled=true[\s\S]*?history-disabled\) expected_view=history; expected_history_enabled=false[\s\S]*?expectedHistoryEnabled/,
+  "history captures must wait for their exact enabled or disabled presentation")
 assert.match(service, /capturePreviewBarSessions = Model\.sanitizeCaptureSessions\(root\.activeSessions, Date\.now\(\)\)/,
   "capture must freeze the real pre-capture bar sessions")
 assert.match(service, /capturePreviewSettings = Object\.assign\(\{\}, Model\.sanitizeSettings\(root\.settings\), previewSettings\)/,
   "capture must freeze the user's full sanitized presentation settings without overriding them")
 assert.match(bar, /barSourceItems:[\s\S]*?barItem\(kind\)[\s\S]*?visibleItems: barSourceItems/,
   "bar rendering must remain isolated from deterministic popup sample sessions")
-assert.match(runtimeSmoke, /requestedView = "history"[\s\S]*?captureHistoryPresentationEnabled = false[\s\S]*?historyPresentationEnabled[\s\S]*?sessionsFor\("camera"\)\.length !== 1/,
+assert.match(runtimeSmoke, /capturePreviewActive = true[\s\S]*?requestedView = "activity"[\s\S]*?captureHistoryPresentationEnabled = false[\s\S]*?historyPresentationEnabled[\s\S]*?sessionsFor\("camera"\)\.length !== 1/,
   "runtime smoke coverage must prove disabled-history rendering preserves bar preview sessions")
 assert.match(screenshotWorkflow, /capture_preview_state=.*[\s\S]*?current_preview_state=.*privacy-devices-capture-v2 state[\s\S]*?current_preview_state == "\$capture_preview_state"/,
   "every capture checkpoint must reject bar preview state drift")
