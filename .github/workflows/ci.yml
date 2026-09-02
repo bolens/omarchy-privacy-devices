@@ -171,6 +171,17 @@ jobs:
           [[ "$SELECTED" == true || "$SELECTED" == false ]]
           [[ "$SELECTED" != true ]] || { [[ "$FAST_RESULT" == success ]] && [[ "$QML_RESULT" == success ]]; }
 
+  workflow-security:
+    name: Workflow security
+    needs: changes
+    if: needs.changes.outputs.repository == 'true'
+    permissions:
+      contents: read
+      security-events: write
+    uses: bolens/.github/.github/workflows/reusable-actionlint.yml@d30ff6a56b47317d3d565e7b4747d133966db8d2
+    with:
+      security-audit: true
+
   repository-checks:
     name: Repository checks
     needs: changes
@@ -185,12 +196,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
-      - name: Lint workflows
-        uses: reviewdog/action-actionlint@dbe5299849118fd6f099ba563d263d770955a64a # v1.73.2
-        with:
-          reporter: github-check
-          fail_level: error
 
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -250,7 +255,7 @@ jobs:
 
   repository-result:
     name: Repository
-    needs: [changes, repository-checks]
+    needs: [changes, repository-checks, workflow-security]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -260,7 +265,9 @@ jobs:
           CHANGES_RESULT: ${{ needs.changes.result }}
           SELECTED: ${{ needs.changes.outputs.repository }}
           REPOSITORY_RESULT: ${{ needs.repository-checks.result }}
+          SECURITY_RESULT: ${{ needs.workflow-security.result }}
         run: |
           [[ "$CHANGES_RESULT" == success ]]
           [[ "$SELECTED" == true || "$SELECTED" == false ]]
           [[ "$SELECTED" != true ]] || [[ "$REPOSITORY_RESULT" == success ]]
+          [[ "$SELECTED" != true ]] || [[ "$SECURITY_RESULT" == success ]]
