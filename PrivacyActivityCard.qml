@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -78,7 +79,7 @@ Rectangle {
   HoverHandler {
     onHoveredChanged: {
       card.hovered = hovered
-      if (hovered) controller.selectedKind = entry.kind
+      if (hovered) card.controller.selectedKind = card.entry.kind
     }
   }
 
@@ -103,43 +104,43 @@ Rectangle {
     RowLayout {
       Layout.fillWidth: true
       spacing: (card.compact ? Style.spacing.sm : Style.spacing.md) * card.itemScale
-      Text { text: entry.icon; textFormat: Text.PlainText; color: controller.itemColor(entry); opacity: card.visualState === "idle" ? Math.max(controller.itemIdleOpacity(entry.kind), controller.popupIdleOpacity) : (card.visualState === "disabled" ? controller.disabledOpacity : 1); font.family: Style.font.family; font.pixelSize: Style.font.icon * card.itemScale }
+      Text { text: card.entry.icon; textFormat: Text.PlainText; color: card.controller.itemColor(card.entry); opacity: card.visualState === "idle" ? Math.max(card.controller.itemIdleOpacity(card.entry.kind), card.controller.popupIdleOpacity) : (card.visualState === "disabled" ? card.controller.disabledOpacity : 1); font.family: Style.font.family; font.pixelSize: Style.font.icon * card.itemScale }
       ColumnLayout {
         Layout.fillWidth: true
         spacing: 1
         RowLayout {
           Layout.fillWidth: true
           spacing: Style.spacing.sm
-          Text { Layout.fillWidth: true; text: entry.label; textFormat: Text.PlainText; color: Color.popups.text; opacity: card.visualState === "idle" ? controller.popupIdleOpacity : 1; font.family: Style.font.family; font.pixelSize: Style.font.body * card.itemScale; font.weight: card.visualState === "active" ? Font.DemiBold : Font.Normal; elide: Text.ElideRight }
+          Text { Layout.fillWidth: true; text: card.entry.label; textFormat: Text.PlainText; color: Color.popups.text; opacity: card.visualState === "idle" ? card.controller.popupIdleOpacity : 1; font.family: Style.font.family; font.pixelSize: Style.font.body * card.itemScale; font.weight: card.visualState === "active" ? Font.DemiBold : Font.Normal; elide: Text.ElideRight }
           Rectangle {
             objectName: "activitySessionCountBadge"
-            visible: controller.itemSessionCount(entry) > 1
+            visible: card.controller.itemSessionCount(card.entry) > 1
             implicitWidth: sessionCountText.implicitWidth + Style.spacing.sm
             implicitHeight: sessionCountText.implicitHeight + 2
             radius: implicitHeight / 2
-            color: Util.alpha(controller.itemColor(entry), 0.18)
-            Text { id: sessionCountText; objectName: "activitySessionCount"; anchors.centerIn: parent; text: String(controller.itemSessionCount(entry)); textFormat: Text.PlainText; color: controller.itemColor(entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
+            color: Util.alpha(card.controller.itemColor(card.entry), 0.18)
+            Text { id: sessionCountText; objectName: "activitySessionCount"; anchors.centerIn: parent; text: String(card.controller.itemSessionCount(card.entry)); textFormat: Text.PlainText; color: card.controller.itemColor(card.entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
           }
         }
         Text {
           objectName: "activityStateDescription"
-          visible: card.visualState !== "idle" || !controller.showStatePills
+          visible: card.visualState !== "idle" || !card.controller.showStatePills
           Layout.fillWidth: true
-          text: card.visualState === "unavailable" ? "Monitoring degraded · " + entry.health.summary
+          text: card.visualState === "unavailable" ? "Monitoring degraded · " + card.entry.health.summary
             : card.visualState === "pending" ? "Waiting for observed state confirmation"
             : card.visualState === "blocked-active" ? "Blocked request observed"
             : card.visualState === "disabled" ? "Blocked by privacy control"
-            : card.visualState === "active" ? (entry.apps.length ? entry.apps.join(", ") : "Activity hidden by policy")
+            : card.visualState === "active" ? (card.entry.apps.length ? card.entry.apps.join(", ") : "Activity hidden by policy")
             : "Available · not in use"
-          textFormat: Text.PlainText; color: card.visualState === "active" ? Color.popups.text : controller.inactiveThemeColor; opacity: card.visualState === "idle" ? controller.popupIdleOpacity : 1; font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; elide: Text.ElideRight
+          textFormat: Text.PlainText; color: card.visualState === "active" ? Color.popups.text : card.controller.inactiveThemeColor; opacity: card.visualState === "idle" ? card.controller.popupIdleOpacity : 1; font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; elide: Text.ElideRight
         }
         Text {
           objectName: "activitySessionSummary"
-          visible: entry.sessions.length > 0
+          visible: card.entry.sessions.length > 0
           Layout.fillWidth: true
-          property var firstSession: entry.sessions.length ? entry.sessions[0] : ({})
+          property var firstSession: card.entry.sessions.length ? card.entry.sessions[0] : ({})
           text: card.sessionSummary(firstSession)
-          textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, controller.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; elide: Text.ElideRight
+          textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, card.controller.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; elide: Text.ElideRight
         }
       }
     }
@@ -158,22 +159,22 @@ Rectangle {
       }
       Menu {
         id: policyMenu
-        MenuItem { visible: entry.active && entry.apps.length > 0; text: "Hide application"; onTriggered: card.hideApplication() }
-        MenuItem { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Hide device"; onTriggered: card.hideDevice() }
-        MenuItem { visible: entry.sessions.length > 0 && Boolean(entry.sessions[0].device); text: "Mute device alerts"; onTriggered: card.muteDeviceAlerts() }
+        MenuItem { visible: card.entry.active && card.entry.apps.length > 0; text: "Hide application"; onTriggered: card.hideApplication() }
+        MenuItem { visible: card.entry.sessions.length > 0 && Boolean(card.entry.sessions[0].device); text: "Hide device"; onTriggered: card.hideDevice() }
+        MenuItem { visible: card.entry.sessions.length > 0 && Boolean(card.entry.sessions[0].device); text: "Mute device alerts"; onTriggered: card.muteDeviceAlerts() }
       }
       Item { visible: card.tiled; Layout.fillWidth: card.tiled }
       Rectangle {
-        visible: controller.showStatePills
+        visible: card.controller.showStatePills
         implicitWidth: stateText.implicitWidth + Style.spacing.md * card.itemScale
         implicitHeight: stateText.implicitHeight + Style.spacing.sm * card.itemScale
         radius: implicitHeight / 2
-        color: controller.statePillStyle === "filled" ? Util.alpha(controller.itemColor(entry), 0.14) : "transparent"
-        border.width: controller.statePillStyle === "minimal" ? 0 : 1
-        border.color: Util.alpha(controller.itemColor(entry), controller.statePillStyle === "outline" ? 0.7 : 0.45)
-        Text { id: stateText; objectName: "activityStatePillText"; anchors.centerIn: parent; text: !entry.dependenciesReady ? "INSTALL" : (entry.kind === "screenshot" ? "CAPTURE" : controller.itemStateLabel(entry)); textFormat: Text.PlainText; color: controller.itemColor(entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
+        color: card.controller.statePillStyle === "filled" ? Util.alpha(card.controller.itemColor(card.entry), 0.14) : "transparent"
+        border.width: card.controller.statePillStyle === "minimal" ? 0 : 1
+        border.color: Util.alpha(card.controller.itemColor(card.entry), card.controller.statePillStyle === "outline" ? 0.7 : 0.45)
+        Text { id: stateText; objectName: "activityStatePillText"; anchors.centerIn: parent; text: !card.entry.dependenciesReady ? "INSTALL" : (card.entry.kind === "screenshot" ? "CAPTURE" : card.controller.itemStateLabel(card.entry)); textFormat: Text.PlainText; color: card.controller.itemColor(card.entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
       }
-      ToggleSwitch { visible: controller.showControls && entry.controllable && entry.kind !== "screenshot" && entry.dependenciesReady; checked: entry.controlEnabled; busy: entry.pending; interactive: false; foreground: Color.popups.text; accent: controller.isAudioControl(entry) ? (entry.controlEnabled ? controller.unmutedThemeColor : controller.mutedThemeColor) : controller.activeThemeColor }
+      ToggleSwitch { visible: card.controller.showControls && card.entry.controllable && card.entry.kind !== "screenshot" && card.entry.dependenciesReady; checked: card.entry.controlEnabled; busy: card.entry.pending; interactive: false; foreground: Color.popups.text; accent: card.controller.isAudioControl(card.entry) ? (card.entry.controlEnabled ? card.controller.unmutedThemeColor : card.controller.mutedThemeColor) : card.controller.activeThemeColor }
     }
   }
 }

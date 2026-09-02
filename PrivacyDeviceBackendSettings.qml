@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -34,16 +35,16 @@ SettingsSurface {
   PanelSectionHeader { Layout.fillWidth: true; text: "Backend" }
 
   Dropdown {
-  visible: root.editingKind === "screen-recording"
+  visible: surface.root.editingKind === "screen-recording"
   Layout.fillWidth: true
   label: "Recording backend"
   options: ["omarchy", "gpu-screen-recorder", "wf-recorder", "custom"]
-  value: String(root.setting("recordingBackend", "omarchy"))
-  onChanged: function(value) { root.persistSettings({recordingBackend: value}) }
+  value: String(surface.root.setting("recordingBackend", "omarchy"))
+  onChanged: function(value) { surface.root.persistSettings({recordingBackend: value}) }
 }
 
   Text {
-  visible: root.editingKind === "screen-recording"
+  visible: surface.root.editingKind === "screen-recording"
   Layout.fillWidth: true
   text: "Omarchy follows the system capture command. Explicit and custom choices keep dependency checks and activity detection tied to that backend."
   textFormat: Text.PlainText
@@ -54,16 +55,16 @@ SettingsSurface {
 }
 
   Dropdown {
-  visible: root.editingKind === "screenshot"
+  visible: surface.root.editingKind === "screenshot"
   Layout.fillWidth: true
   label: "Screenshot backend"
   options: ["omarchy", "grim", "grim-satty", "hyprshot", "flameshot", "custom"]
-  value: String(root.setting("screenshotBackend", "omarchy"))
-  onChanged: function(value) { root.persistSettings({screenshotBackend: value}) }
+  value: String(surface.root.setting("screenshotBackend", "omarchy"))
+  onChanged: function(value) { surface.root.persistSettings({screenshotBackend: value}) }
 }
 
   Text {
-  visible: root.editingKind === "screenshot"
+  visible: surface.root.editingKind === "screenshot"
   Layout.fillWidth: true
   text: "Omarchy uses its smart flow. Grim and Hyprshot capture regions; Grim + Satty and Flameshot add annotation."
   textFormat: Text.PlainText
@@ -74,11 +75,11 @@ SettingsSurface {
 }
 
   ColumnLayout {
-  visible: root.editingKind === "screenshot" && String(root.setting("screenshotBackend", "omarchy")) === "custom"
+  visible: surface.root.editingKind === "screenshot" && String(surface.root.setting("screenshotBackend", "omarchy")) === "custom"
   Layout.fillWidth: true
   spacing: Style.spacing.sm
-  property bool dirty: customScreenshotCommandEditor.text !== String(root.setting("screenshotCustomCommand", ""))
-    || customScreenshotProcessEditor.text !== String(root.setting("screenshotProcessName", ""))
+  property bool dirty: customScreenshotCommandEditor.text !== String(surface.root.setting("screenshotCustomCommand", ""))
+    || customScreenshotProcessEditor.text !== String(surface.root.setting("screenshotProcessName", ""))
   property var validation: Model.deviceBackendValidation("screenshot", {
     screenshotBackend: "custom",
     screenshotCustomCommand: customScreenshotCommandEditor.text,
@@ -89,24 +90,24 @@ SettingsSurface {
     id: customScreenshotCommandEditor
     Layout.fillWidth: true
     placeholderText: "Screenshot command"
-    text: String(root.setting("screenshotCustomCommand", ""))
+    text: String(surface.root.setting("screenshotCustomCommand", ""))
     maximumLength: 4096
     foreground: Color.popups.text
-    accent: root.activeThemeColor
+    accent: surface.root.activeThemeColor
     font.family: Style.font.family
-    onAccepted: if (parent.validation.valid) root.persistSettings({screenshotCustomCommand: text, screenshotProcessName: customScreenshotProcessEditor.text})
+    onAccepted: if (parent.validation.valid) surface.root.persistSettings({screenshotCustomCommand: text, screenshotProcessName: customScreenshotProcessEditor.text})
   }
   Text { Layout.fillWidth: true; text: "Activity process substring (optional)"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
   TextField {
     id: customScreenshotProcessEditor
     Layout.fillWidth: true
     placeholderText: "Activity process substring (optional)"
-    text: String(root.setting("screenshotProcessName", ""))
+    text: String(surface.root.setting("screenshotProcessName", ""))
     maximumLength: 256
     foreground: Color.popups.text
-    accent: root.activeThemeColor
+    accent: surface.root.activeThemeColor
     font.family: Style.font.family
-    onAccepted: if (parent.validation.valid) root.persistSettings({screenshotCustomCommand: customScreenshotCommandEditor.text, screenshotProcessName: text})
+    onAccepted: if (parent.validation.valid) surface.root.persistSettings({screenshotCustomCommand: customScreenshotCommandEditor.text, screenshotProcessName: text})
   }
   Text {
     Layout.fillWidth: true
@@ -120,7 +121,7 @@ SettingsSurface {
   Button {
     text: "Save custom backend"
     enabled: parent.dirty && parent.validation.valid
-    onClicked: root.persistSettings({
+    onClicked: surface.root.persistSettings({
       screenshotCustomCommand: customScreenshotCommandEditor.text,
       screenshotProcessName: customScreenshotProcessEditor.text
     })
@@ -128,12 +129,12 @@ SettingsSurface {
 }
 
   ColumnLayout {
-  visible: root.editingKind === "screen-recording" && String(root.setting("recordingBackend", "omarchy")) === "custom"
+  visible: surface.root.editingKind === "screen-recording" && String(surface.root.setting("recordingBackend", "omarchy")) === "custom"
   Layout.fillWidth: true
   spacing: Style.spacing.sm
-  property bool dirty: customRecorderProcessEditor.text !== String(root.setting("recordingProcessName", ""))
-    || customRecorderStartEditor.text !== String(root.setting("recordingCustomStartCommand", ""))
-    || customRecorderStopEditor.text !== String(root.setting("recordingCustomStopCommand", ""))
+  property bool dirty: customRecorderProcessEditor.text !== String(surface.root.setting("recordingProcessName", ""))
+    || customRecorderStartEditor.text !== String(surface.root.setting("recordingCustomStartCommand", ""))
+    || customRecorderStopEditor.text !== String(surface.root.setting("recordingCustomStopCommand", ""))
   property var validation: Model.deviceBackendValidation("screen-recording", {
     recordingBackend: "custom",
     recordingProcessName: customRecorderProcessEditor.text,
@@ -145,36 +146,36 @@ SettingsSurface {
     id: customRecorderProcessEditor
     Layout.fillWidth: true
     placeholderText: "Process command substring"
-    text: String(root.setting("recordingProcessName", ""))
+    text: String(surface.root.setting("recordingProcessName", ""))
     maximumLength: 256
     foreground: Color.popups.text
-    accent: root.activeThemeColor
+    accent: surface.root.activeThemeColor
     font.family: Style.font.family
-    onAccepted: if (parent.validation.valid) root.persistSettings({recordingProcessName: text, recordingCustomStartCommand: customRecorderStartEditor.text, recordingCustomStopCommand: customRecorderStopEditor.text})
+    onAccepted: if (parent.validation.valid) surface.root.persistSettings({recordingProcessName: text, recordingCustomStartCommand: customRecorderStartEditor.text, recordingCustomStopCommand: customRecorderStopEditor.text})
   }
   Text { Layout.fillWidth: true; text: "Start command"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
   TextField {
     id: customRecorderStartEditor
     Layout.fillWidth: true
     placeholderText: "Start command"
-    text: String(root.setting("recordingCustomStartCommand", ""))
+    text: String(surface.root.setting("recordingCustomStartCommand", ""))
     maximumLength: 4096
     foreground: Color.popups.text
-    accent: root.activeThemeColor
+    accent: surface.root.activeThemeColor
     font.family: Style.font.family
-    onAccepted: if (parent.validation.valid) root.persistSettings({recordingProcessName: customRecorderProcessEditor.text, recordingCustomStartCommand: text, recordingCustomStopCommand: customRecorderStopEditor.text})
+    onAccepted: if (parent.validation.valid) surface.root.persistSettings({recordingProcessName: customRecorderProcessEditor.text, recordingCustomStartCommand: text, recordingCustomStopCommand: customRecorderStopEditor.text})
   }
   Text { Layout.fillWidth: true; text: "Stop command"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
   TextField {
     id: customRecorderStopEditor
     Layout.fillWidth: true
     placeholderText: "Stop command"
-    text: String(root.setting("recordingCustomStopCommand", ""))
+    text: String(surface.root.setting("recordingCustomStopCommand", ""))
     maximumLength: 4096
     foreground: Color.popups.text
-    accent: root.activeThemeColor
+    accent: surface.root.activeThemeColor
     font.family: Style.font.family
-    onAccepted: if (parent.validation.valid) root.persistSettings({recordingProcessName: customRecorderProcessEditor.text, recordingCustomStartCommand: customRecorderStartEditor.text, recordingCustomStopCommand: text})
+    onAccepted: if (parent.validation.valid) surface.root.persistSettings({recordingProcessName: customRecorderProcessEditor.text, recordingCustomStartCommand: customRecorderStartEditor.text, recordingCustomStopCommand: text})
   }
   Text {
     Layout.fillWidth: true
@@ -188,7 +189,7 @@ SettingsSurface {
   Button {
     text: "Save custom backend"
     enabled: parent.dirty && parent.validation.valid
-    onClicked: root.persistSettings({
+    onClicked: surface.root.persistSettings({
       recordingProcessName: customRecorderProcessEditor.text,
       recordingCustomStartCommand: customRecorderStartEditor.text,
       recordingCustomStopCommand: customRecorderStopEditor.text
@@ -197,16 +198,16 @@ SettingsSurface {
 }
 
   Dropdown {
-  visible: root.isAudioControl({kind: root.editingKind})
+  visible: surface.root.isAudioControl({kind: surface.root.editingKind})
   Layout.fillWidth: true
   label: "Audio control backend"
   options: ["auto", "pactl", "wpctl"]
-  value: String(root.setting("audioControlBackend", "auto"))
-  onChanged: function(value) { root.persistSettings({audioControlBackend: value}) }
+  value: String(surface.root.setting("audioControlBackend", "auto"))
+  onChanged: function(value) { surface.root.persistSettings({audioControlBackend: value}) }
 }
 
   Text {
-  visible: root.isAudioControl({kind: root.editingKind})
+  visible: surface.root.isAudioControl({kind: surface.root.editingKind})
   Layout.fillWidth: true
   text: "Shared by microphone and audio output. Auto prefers pactl and falls back to wpctl. This changes mute control only; activity detection remains PipeWire-native."
   textFormat: Text.PlainText

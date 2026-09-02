@@ -70,7 +70,7 @@ const runtimeSmoke = fs.readFileSync(path.join(__dirname, "qml", "RuntimePluginS
 const serviceEntryPoint = service.trimStart()
 const barEntryPoint = bar.trimStart()
 
-assert.match(serviceEntryPoint, /^import[\s\S]*?\nItem\s*\{/, "the service entry point must remain an embeddable Item")
+assert.match(serviceEntryPoint, /^(?:pragma ComponentBehavior: Bound\n)?import[\s\S]*?\nItem\s*\{/, "the service entry point must remain an embeddable Item")
 assert.doesNotMatch(serviceEntryPoint, /\nShellRoot\s*\{/, "the service entry point must not create a second shell root")
 assert.doesNotMatch(barEntryPoint, /\nShellRoot\s*\{/, "the bar entry point must not create a second shell root")
 assert.match(bar, /PrivacyHistoryView\s*\{[\s\S]*?id:\s*historyView[\s\S]*?controller:\s*root/,
@@ -158,10 +158,14 @@ assert.doesNotMatch(qmlRuntime, /\/home\/[^/]+\//,
   "the QML runtime test must not contain a developer-specific executable path")
 assert.match(qmlRuntime, /QUICKSHELL_BIN:-quickshell/,
   "the QML runtime test should use PATH discovery while retaining an explicit override")
-assert.match(qmlRuntime, /active_harness=.*[\s\S]*?cleanup_runtime\(\)[\s\S]*?kill --path "\$active_harness" --any-display[\s\S]*?trap cleanup_runtime EXIT INT TERM/,
-  "QML runtime harnesses must terminate their exact Quickshell instance on exit or interruption")
+assert.match(qmlRuntime, /active_harness=.*[\s\S]*?cleanup_runtime\(\)[\s\S]*?kill --path "\$active_harness" --any-display[\s\S]*?trap cleanup_runtime EXIT/,
+  "QML runtime harnesses must terminate their exact Quickshell instance on exit")
+assert.match(qmlRuntime, /privacy-qml-runtime\.XXXXXX/,
+  "the QML runtime suite must use a collision-resistant temporary namespace")
 assert.match(qmlRuntime, /runtime_dir="\$runtime_parent\/runtime tree"/,
   "the QML runtime suite must exercise relocatable plugin paths containing spaces")
+assert.match(qmlRuntime, /trap 'exit 130' INT[\s\S]*?trap 'exit 143' TERM/,
+  "QML runtime signal handlers must exit after cleanup")
 assert.match(qmlRuntime, /QML_RUNTIME_HARNESS/,
   "the QML runtime suite must support focused harness runs")
 assert.match(qmlRuntime, /Requested QML runtime harness not found/,
@@ -176,6 +180,8 @@ assert.match(qmlRuntime, /grep -Fq "\$marker" "\$output_file"[\s\S]*?kill --path
   "QML runtime harnesses must stop their exact instance after success")
 assert.match(qmlRuntime, /QML_RUNTIME_REPEAT/,
   "the QML runtime suite must support bounded repeated harness runs")
+assert.match(qmlRuntime, /timeout 12 /,
+  "QML runtime harnesses must allow bounded IPC suites enough time to complete")
 assert.match(qmlRuntime, /repeat count must be an integer from 1 to 10/,
   "invalid QML runtime repeat counts must fail closed")
 
@@ -579,7 +585,7 @@ assert.match(historyView, /model:\s*view\.controller\.filteredHistory/,
   "history delegates must render only filtered entries")
 assert.match(historyView, /No history matches your search\./,
   "history must distinguish a filtered-empty result from an empty store")
-assert.match(historyView, /Model\.historyPeriodLabel\(modelData\.endedAt, view\.controller\.durationNow\)/,
+assert.match(historyView, /Model\.historyPeriodLabel\(historySurface\.modelData\.endedAt, view\.controller\.durationNow\)/,
   "history entries must expose behavior-tested relative period groups")
 assert.match(bar, /function requestHistoryClear\(\)[\s\S]*?confirmationState\.request\("history"\)[\s\S]*?privacyService\.clearHistory\(\)/,
   "destructive history clearing must use the runtime-tested confirmation controller")
@@ -619,7 +625,7 @@ assert.match(service, /readonly property var sessionPolicies:\s*\(\{/,
   "session policy arrays must be normalized once per settings update")
 assert.match(service, /id:\s*sessionSafetyTimer[\s\S]*?running:\s*root\.enabledKindList\.length > 0/,
   "safety reconciliation must sleep when monitoring is disabled")
-assert.match(dependencyController, /interval:\s*300000[\s\S]*?running:\s*host\.enabledKindList\.length > 0/,
+assert.match(dependencyController, /interval:\s*300000[\s\S]*?running:\s*controller\.host\.enabledKindList\.length > 0/,
   "dependency polling must sleep when no devices are enabled")
 assert.match(dependencyController, /function refresh\(\)[\s\S]*?Model\.scheduleProbeRefresh\(busy, host\.enabledKinds\(\)\)/,
   "dependency refreshes must use explicit synchronous ownership and the behavior-tested supersession policy")

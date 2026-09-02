@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -59,7 +60,7 @@ Item {
   Timer {
     interval: 300000
     repeat: true
-    running: host.enabledKindList.length > 0
+    running: controller.host.enabledKindList.length > 0
     onTriggered: controller.refresh()
   }
 

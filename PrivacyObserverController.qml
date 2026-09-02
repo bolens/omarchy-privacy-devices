@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Io
 import "Model.js" as Model
@@ -176,32 +177,32 @@ Item {
   PrivacyObserverWatchdog {
     id: directWatchdog
     interval: controller.directRetryMilliseconds
-    enabled: host.settings.directDeviceMonitoring === true
+    enabled: controller.host.settings.directDeviceMonitoring === true
     processRunning: directProcess.running
     retiring: controller.directRetiring
     lastSeen: controller.directLastSeen
     startedAt: controller.directStartedAt
-    heartbeatSeconds: host.boundedSeconds(host.settings.directDevicePollSeconds, 5, 2, 60)
+    heartbeatSeconds: controller.host.boundedSeconds(controller.host.settings.directDevicePollSeconds, 5, 2, 60)
     onRetryRequested: controller.refreshDirect()
     onHeartbeatStale: {
       controller.clearDirect()
-      host.setObserverHealth("direct-device", "degraded", "heartbeat_stale", "observer heartbeat is stale")
+      controller.host.setObserverHealth("direct-device", "degraded", "heartbeat_stale", "observer heartbeat is stale")
     }
   }
 
   PrivacyObserverWatchdog {
     id: fallbackWatchdog
     interval: controller.fallbackRetryMilliseconds
-    enabled: host.kindEnabled("screen-recording") || host.kindEnabled("screenshot")
+    enabled: controller.host.kindEnabled("screen-recording") || controller.host.kindEnabled("screenshot")
     processRunning: fallbackProcess.running
     retiring: controller.fallbackRetiring
     lastSeen: controller.fallbackLastSeen
     startedAt: controller.fallbackStartedAt
-    heartbeatSeconds: host.boundedSeconds(host.settings.recordingPollSeconds, 2, 1, 60)
+    heartbeatSeconds: controller.host.boundedSeconds(controller.host.settings.recordingPollSeconds, 2, 1, 60)
     onRetryRequested: controller.refreshFallback()
     onHeartbeatStale: {
       controller.clearFallback()
-      host.setObserverHealth("fallback-observer", "degraded", "heartbeat_stale", "fallback observer heartbeat is stale")
+      controller.host.setObserverHealth("fallback-observer", "degraded", "heartbeat_stale", "fallback observer heartbeat is stale")
     }
   }
 
@@ -211,12 +212,12 @@ Item {
       controller.directOwned = false
       if (controller.directRetiring) {
         controller.directRetiring = false
-        if (controller.directRestartPending && host.settings.directDeviceMonitoring === true) controller.refreshDirect()
+        if (controller.directRestartPending && controller.host.settings.directDeviceMonitoring === true) controller.refreshDirect()
         return
       }
-      if (host.settings.directDeviceMonitoring !== true) return
+      if (controller.host.settings.directDeviceMonitoring !== true) return
       controller.clearDirect()
-      host.setObserverHealth("direct-device", "degraded", "observer_exited", "observer exited with code " + exitCode)
+      controller.host.setObserverHealth("direct-device", "degraded", "observer_exited", "observer exited with code " + exitCode)
       directWatchdog.interval = controller.directRetryMilliseconds
       controller.directRetryMilliseconds = Math.min(controller.directRetryMilliseconds * 2, 60000)
       directWatchdog.restart()
@@ -230,12 +231,12 @@ Item {
       controller.fallbackOwned = false
       if (controller.fallbackRetiring) {
         controller.fallbackRetiring = false
-        if (controller.fallbackRestartPending && (host.kindEnabled("screen-recording") || host.kindEnabled("screenshot"))) controller.refreshFallback()
+        if (controller.fallbackRestartPending && (controller.host.kindEnabled("screen-recording") || controller.host.kindEnabled("screenshot"))) controller.refreshFallback()
         return
       }
-      if (!host.kindEnabled("screen-recording") && !host.kindEnabled("screenshot")) return
+      if (!controller.host.kindEnabled("screen-recording") && !controller.host.kindEnabled("screenshot")) return
       controller.clearFallback()
-      host.setObserverHealth("fallback-observer", "degraded", "observer_exited", "observer exited with code " + exitCode)
+      controller.host.setObserverHealth("fallback-observer", "degraded", "observer_exited", "observer exited with code " + exitCode)
       controller.fallbackRetryMilliseconds = Math.min(controller.fallbackRetryMilliseconds * 2, 60000)
       fallbackWatchdog.restart()
     }

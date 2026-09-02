@@ -1,6 +1,6 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Commons
-import qs.Ui
 import "Model.js" as Model
 
 Item {
@@ -97,7 +97,7 @@ Item {
       ? themeColor(String(override.active || host.setting("activeColorRole", "accent")), true)
       : themeColor(String(override.inactive || host.setting("inactiveColorRole", "foreground")), false)
   }
-  function enabled(kind) {
+  function kindEnabled(kind) {
     return host.privacyService ? host.privacyService.kindEnabled(kind) : Model.arraySetting(host.setting("enabledKinds", Model.KINDS), Model.KINDS).indexOf(kind) !== -1
   }
 
@@ -105,11 +105,11 @@ Item {
     var result = []
     for (var index = 0; index < host.configuredOrder.length; index++) {
       var kind = host.configuredOrder[index]
-      if (enabled(kind) && result.indexOf(kind) === -1) result.push(kind)
+      if (kindEnabled(kind) && result.indexOf(kind) === -1) result.push(kind)
     }
     for (var fallbackIndex = 0; fallbackIndex < Model.KINDS.length; fallbackIndex++) {
       var fallbackKind = Model.KINDS[fallbackIndex]
-      if (enabled(fallbackKind) && result.indexOf(fallbackKind) === -1) result.push(fallbackKind)
+      if (kindEnabled(fallbackKind) && result.indexOf(fallbackKind) === -1) result.push(fallbackKind)
     }
     return result
   }
