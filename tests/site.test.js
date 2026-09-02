@@ -82,6 +82,10 @@ for (const image of ["bar", "notification", "general", "appearance", "alerts", "
 
 for (const lightTheme of ["github-light", "catppuccin-latte", "solarized-light"])
   assert.ok(source.querySelector(`#theme-select option[value="${lightTheme}"]`), `missing ${lightTheme} option`);
+assert.match(html, /\.theme-picker select\s*\{[^}]*width:\s*min\(15rem, 100%\)/s,
+  "theme selector must fit long labels at its preferred width");
+assert.match(html, /@media \(max-width: 900px\)[\s\S]*?\.theme-picker \{[^}]*flex:\s*1 0 100%/s,
+  "tablet header must wrap before clipping the selector");
 assert.ok(source.querySelector('nav a[href="#screenshots"]'),
   "primary navigation must expose the interface gallery");
 assert.ok(html.indexOf('id="screenshots"') < html.indexOf('id="install"') &&
