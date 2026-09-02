@@ -5,8 +5,9 @@ const path = require("node:path")
 const { spawnSync } = require("node:child_process")
 
 const sourceRoot = path.join(__dirname, "..")
-const gitEnvironment = { ...process.env }
-for (const name of ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_PREFIX"]) delete gitEnvironment[name]
+const gitEnvironment = Object.fromEntries(
+  Object.entries(process.env).filter(([name]) => !name.startsWith("GIT_")),
+)
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "privacy-site-build-"))
 try {
   fs.mkdirSync(path.join(temporary, "scripts"))
