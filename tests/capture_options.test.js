@@ -17,7 +17,8 @@ for (const width of ["399", "801", "not-a-number"]) {
   assert.match(result.stderr, /Panel width must be an integer from 400 through 800/)
 }
 
-let result = run("--audit-dir", path.join(root, "audit"))
+const outsideTmp = path.join(path.parse(os.tmpdir()).root, "var", "tmp", "privacy-audit-options")
+let result = run("--audit-dir", outsideTmp)
 assert.equal(result.status, 2, "audit evidence escaped the temporary filesystem")
 assert.match(result.stderr, /Audit output must be below \/tmp/)
 
