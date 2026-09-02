@@ -1,6 +1,8 @@
 name: Pages
 
 on:
+  release:
+    types: [published]
   push:
     branches: [main]
     paths:
@@ -36,6 +38,14 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Resolve latest published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([+-].*)?$ ]]
+          echo "SITE_RELEASE_VERSION=${tag#v}" >> "$GITHUB_ENV"
 
       - name: Build static artifact
         run: scripts/build-site.sh
