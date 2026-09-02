@@ -827,6 +827,16 @@
         }
       }
 
+      @media (min-width: 100rem) {
+        .shell { width: min(1440px, calc(100% - 4rem)); }
+        .hero { grid-template-columns: 1.05fr 0.95fr; gap: 7rem; min-height: min(760px, calc(100svh - 72px)); }
+        .preview { max-width: 680px; justify-self: end; }
+        .section-intro, .keyboard-guide { max-width: 800px; }
+        .gallery-explorer { grid-template-columns: 17rem minmax(0, 1fr); gap: 2rem; }
+        .gallery-panel img, .gallery-panel figcaption { max-width: 720px; }
+        .requirements { grid-template-columns: 0.65fr 1.35fr; }
+      }
+
       @media (max-width: 760px) {
         .site-header { position: static; }
         nav { flex-wrap: wrap; gap: 0.5rem 1rem; padding: 0.8rem 0; }
