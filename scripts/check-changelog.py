@@ -31,6 +31,7 @@ def main() -> int:
     release_bullets: dict[str, int] = {}
     active_releases: list[str] = []
     saw_unreleased = False
+    release_heading_count = 0
 
     def fail(line: int, message: str) -> None:
         errors.append(f"CHANGELOG.md:{line}: {message}")
@@ -57,6 +58,11 @@ def main() -> int:
     for number, line in enumerate(lines, 1):
         if line.startswith("## "):
             finish_bullet()
+            release_heading_count += 1
+            if release_heading_count == 1 and line != "## [Unreleased]":
+                fail(number, "first release heading must be '## [Unreleased]'")
+            if line == "## [Unreleased]" and saw_unreleased:
+                fail(number, "duplicate '## [Unreleased]' heading")
             if not RELEASE_RE.fullmatch(line):
                 fail(number, "use '## [version] - YYYY-MM-DD' or '## [Unreleased]'")
             release = line
@@ -68,6 +74,8 @@ def main() -> int:
             continue
         if line.startswith("### "):
             finish_bullet()
+            if not release:
+                fail(number, "category appears before a release heading")
             group = line[4:]
             if group not in ALLOWED_GROUPS:
                 fail(number, f"unsupported category '{group}'")
@@ -87,6 +95,8 @@ def main() -> int:
                 bullet_parts.append(line)
             continue
         finish_bullet()
+        if line and release in active_releases and not (line.startswith("[") and "]: " in line):
+            fail(number, "active releases may contain only headings, bullets, and indented bullet continuations")
 
     finish_bullet()
     if not saw_unreleased:

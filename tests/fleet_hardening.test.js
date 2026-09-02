@@ -20,7 +20,7 @@ const capture = fs.existsSync("scripts/capture-screenshots")
 const runner = read("tests/run_all.sh")
 const preCommit = read("scripts/pre-commit")
 
-assert.match(ci, /bolens\/.github\/.github\/workflows\/reusable-actionlint\.yml@d30ff6a56b47317d3d565e7b4747d133966db8d2/)
+assert.match(ci, /bolens\/.github\/.github\/workflows\/reusable-actionlint\.yml@3f2e5f3e61c419f3678ea8f472d24562254624c6/)
 assert.match(ci, /security-audit: true/)
 assert.match(ci, /dorny\/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d/)
 assert.equal((ci.match(/'\.github\/labeler\.yml'/g) || []).length, 2)
