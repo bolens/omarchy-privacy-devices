@@ -55,12 +55,11 @@ conversations, and both strict CI checks:
 - `Repository`: issue forms, documentation, links, site behavior, and
   accessibility.
 
-Only rebase merges are enabled. After all checks pass and conversations are
-resolved, rebase the focused commits onto protected `main` and delete the
-release branch:
+Only squash merges are enabled. After all checks pass and conversations are
+resolved, squash-merge onto protected `main` and delete the release branch:
 
 ```sh
-gh pr merge "$pr" --rebase --delete-branch
+gh pr merge "$pr" --squash --delete-branch
 ```
 
 If CI fails, fix forward on the same release branch and rerun the full matrix.
@@ -68,9 +67,9 @@ Do not bypass protection or push the release commits directly to `main`.
 
 ## 4. Validate the merged candidate
 
-The rebase merge creates new commit SHAs on protected `main` while preserving
-the focused commit sequence. Fetch the resulting release candidate, confirm the
-pull request's final commit is at the tip of `main`, fast-forward the clean local
+The squash merge creates one reviewed commit on protected `main`. Fetch the
+resulting release candidate, confirm the pull request's final commit is at the tip of
+`main`, fast-forward the clean local
 branch, and wait for the push-triggered CI runs on that exact commit:
 
 ```sh
@@ -98,7 +97,7 @@ pull request and use its merged SHA as the new candidate.
 ## 5. Tag and publish
 
 Create an annotated tag on the validated remote candidate. Do not tag a
-pre-rebase release-branch commit, whose SHA is replaced during the merge:
+release-branch commit, whose SHA is replaced by the squash merge:
 
 ```sh
 version=$(git show "$release_sha:manifest.json" | jq -r .version)
