@@ -5,6 +5,8 @@ const path = require("node:path")
 const { spawnSync } = require("node:child_process")
 
 const sourceRoot = path.join(__dirname, "..")
+const gitEnvironment = { ...process.env }
+for (const name of ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_PREFIX"]) delete gitEnvironment[name]
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "privacy-site-build-"))
 try {
   fs.mkdirSync(path.join(temporary, "scripts"))
@@ -18,7 +20,7 @@ try {
   fs.mkdirSync(path.join(temporary, "_site"))
   fs.writeFileSync(path.join(temporary, "_site", "stale.txt"), "stale\n")
   for (const arguments of [["init", "-q"], ["config", "user.email", "test@example.test"], ["config", "user.name", "Test"], ["add", "."], ["commit", "-qm", "fixture"]]) {
-    const git = spawnSync("git", arguments, { cwd: temporary, encoding: "utf8" })
+    const git = spawnSync("git", arguments, { cwd: temporary, encoding: "utf8", env: gitEnvironment })
     assert.equal(git.status, 0, git.error?.message ?? git.stderr ?? "git exited without diagnostics")
   }
 

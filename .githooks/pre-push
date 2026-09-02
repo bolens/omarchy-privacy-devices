@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+npm ci
+npm test
+npm run test:docs
+npm run build:site
+python3 scripts/check-changelog.py
+ruby scripts/validate-issue-forms.rb
+actionlint
+zizmor --offline --min-severity medium --min-confidence medium .github
