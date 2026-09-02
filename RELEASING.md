@@ -68,8 +68,8 @@ Do not bypass protection or push the release commits directly to `main`.
 ## 4. Validate the merged candidate
 
 The squash merge creates one reviewed commit on protected `main`. Fetch the
-resulting release candidate, confirm the pull request's final commit is at the tip of
-`main`, fast-forward the clean local
+resulting release candidate, confirm the pull request's final commit is at
+the tip of `main`, fast-forward the clean local
 branch, and wait for the push-triggered CI runs on that exact commit:
 
 ```sh
@@ -159,3 +159,5 @@ again.
 
 See the [documentation index](DOCUMENTATION.md), [changelog](CHANGELOG.md),
 [testing guide](TESTING.md), and release [security checklist](SECURITY.md#release-security-checklist).
+
+Fleet policy: <https://github.com/bolens/.github/blob/main/RELEASING.md>.
