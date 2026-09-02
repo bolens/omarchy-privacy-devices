@@ -11,8 +11,11 @@ CHANGELOG = Path("CHANGELOG.md")
 ALLOWED_GROUPS = {"Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"}
 MAX_RELEASE_BULLETS = 12
 MAX_BULLET_CHARS = 280
-RELEASE_RE = re.compile(r"^## \[(?:Unreleased|\d+\.\d+\.\d+)\](?: - \d{4}-\d{2}-\d{2})?$")
-LINK_RE = re.compile(r"^\[(?:Unreleased|\d+\.\d+\.\d+)\]: https://")
+RELEASE_RE = re.compile(
+    r"^## (?:\[Unreleased\]|\[\d+\.\d+\.\d+\] - \d{4}-\d{2}-\d{2})$"
+)
+LINK_LABEL_RE = re.compile(r"^\[(?:Unreleased|\d+\.\d+\.\d+)\]:")
+LINK_RE = re.compile(r"^\[(?:Unreleased|\d+\.\d+\.\d+)\]:\s+https://")
 PR_RE = re.compile(r"\(#\d+\)")
 SCOPE_RE = re.compile(r"^- \*\([^)]*\)\*")
 
@@ -95,7 +98,7 @@ def main() -> int:
                 bullet_parts.append(line)
             continue
         finish_bullet()
-        if line and release in active_releases and not (line.startswith("[") and "]: " in line):
+        if line and release in active_releases and not LINK_LABEL_RE.match(line):
             fail(number, "active releases may contain only headings, bullets, and indented bullet continuations")
 
     finish_bullet()
@@ -104,10 +107,9 @@ def main() -> int:
     for heading, count in release_bullets.items():
         if heading in active_releases and count > MAX_RELEASE_BULLETS:
             fail(lines.index(heading) + 1, f"{count} bullets; limit is {MAX_RELEASE_BULLETS}")
-    if any(line.startswith("[Unreleased]:") for line in lines):
-        for number, line in enumerate(lines, 1):
-            if line.startswith("[") and "]: " in line and not LINK_RE.match(line):
-                fail(number, "comparison links must use HTTPS")
+    for number, line in enumerate(lines, 1):
+        if LINK_LABEL_RE.match(line) and not LINK_RE.match(line):
+            fail(number, "comparison links must use HTTPS")
 
     if errors:
         print("\n".join(errors), file=sys.stderr)
