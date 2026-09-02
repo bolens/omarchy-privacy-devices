@@ -269,26 +269,29 @@ expect_ipc_reply() {
 }
 
 wait_for_panel_presentation() {
-  local mode=$1 page=${2:-} section=${3:-} attempt state expected_view
+  local mode=$1 page=${2:-} section=${3:-} attempt state expected_view expected_history_enabled=""
   case "$mode" in
     settings|settings-section) expected_view=settings ;;
     device) expected_view=device ;;
-    history|history-disabled) expected_view=history ;;
+    history) expected_view=history; expected_history_enabled=true ;;
+    history-disabled) expected_view=history; expected_history_enabled=false ;;
     activity) expected_view=activity ;;
     *) return 1 ;;
   esac
   for attempt in {1..40}; do
     check_capture_environment || return 1
     state=$(qs ipc --pid "$shell_pid" call privacy-devices-capture-v2 presentation "$capture_owner" "$monitor" 2>/dev/null || true)
-    if jq -e --arg view "$expected_view" --arg page "$page" --arg section "$section" '
+    if jq -e --arg view "$expected_view" --arg page "$page" --arg section "$section" \
+      --arg expectedHistoryEnabled "$expected_history_enabled" '
       .opened == true and .ready == true and .view == $view
       and ($view != "device" or .argument == $page)
       and ($view != "settings" or (.settingsPage == $page and .settingsSection == $section))
+      and ($expectedHistoryEnabled == "" or (.historyEnabled | tostring) == $expectedHistoryEnabled)
     ' <<<"${state:-null}" >/dev/null 2>&1; then return 0; fi
     sleep 0.1
   done
   printf 'Panel did not acknowledge %s view on %s: %s\n' "$expected_view" "$monitor" \
-    "$(jq -c '{opened,ready,view,argument,settingsPage,settingsSection,settingsScroll,requestSerial}' <<<"${state:-null}" 2>/dev/null || printf unavailable)" >&2
+    "$(jq -c '{opened,ready,view,argument,settingsPage,settingsSection,settingsScroll,historyEnabled,requestSerial}' <<<"${state:-null}" 2>/dev/null || printf unavailable)" >&2
   return 1
 }
 

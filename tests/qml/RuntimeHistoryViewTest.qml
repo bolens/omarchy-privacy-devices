@@ -88,6 +88,7 @@ ShellRoot {
           if (widget.confirmationPending !== "history") throw new Error("history clear did not require confirmation")
           widget.showActivity()
           if (widget.confirmationPending !== "") throw new Error("leaving history did not cancel destructive confirmation")
+          service.requestedView = "activity"
           service.captureHistoryPresentationEnabled = false
           widget.showHistory()
           Qt.callLater(function() {

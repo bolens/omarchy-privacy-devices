@@ -36,7 +36,7 @@ Activity notifications use the detected application icon when available:
 | Individual device settings | Activity history |
 | <img src="docs/device.png?v=99a96937055a" alt="Individual privacy-device settings page" width="360"> | <img src="docs/history.png?v=1ef5c5219702" alt="Completed privacy activity history view" width="360"> |
 | History disabled | |
-| <img src="docs/history-disabled.png?v=c2b66980df44" alt="Activity history disabled state" width="360"> | |
+| <img src="docs/history-disabled.png?v=74b0876b9c4e" alt="Activity history disabled state" width="360"> | |
 
 </details>
 
