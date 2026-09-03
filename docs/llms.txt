@@ -1,0 +1,13 @@
+# Omarchy Privacy Devices
+
+Omarchy Privacy Devices is an Omarchy plugin for inspecting and controlling supported camera, microphone, and privacy-device state. The site covers installation, controls, status, and safety behavior.
+
+## Documentation
+
+- Overview: https://bolens.github.io/omarchy-privacy-devices/
+- Changelog: https://bolens.github.io/omarchy-privacy-devices/changelog/
+
+## Source
+
+- Repository: https://github.com/bolens/omarchy-privacy-devices
+- Issues: https://github.com/bolens/omarchy-privacy-devices/issues
