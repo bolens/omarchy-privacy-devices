@@ -88,7 +88,8 @@ assert.match(release, /persist-credentials:\s*false/)
 
 assert.equal(packageMetadata.engines.node, ">=24.19.0")
 assert.equal(packageMetadata.packageManager, "npm@11.19.0")
-assert.equal((dependabot.match(/interval:\s*weekly/g) || []).length, 2)
+assert.equal((dependabot.match(/interval:\s*weekly/g) || []).length, 3)
+assert.match(dependabot, /package-ecosystem:\s*docker[\s\S]*directory:\s*["']?\/\.devcontainer/)
 
 assert.ok(fs.statSync("scripts/capture-screenshots").mode & 0o100)
 assert.match(capture, /trap .*?(cleanup|restore)/)
