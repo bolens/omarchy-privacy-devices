@@ -1,5 +1,7 @@
 # Development environments
 
+[Documentation](../DOCUMENTATION.md)
+
 Install [Nix and devenv](https://devenv.sh/getting-started/), then run from this checkout:
 
 ```sh
