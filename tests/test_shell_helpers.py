@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import tempfile
 import time
@@ -17,6 +18,16 @@ class ShellHelperTests(unittest.TestCase):
             command = fake_bin / name
             command.write_text("#!/bin/sh\nset -eu\n" + body + "\n")
             command.chmod(0o755)
+        # Resolve the fixtures' GNU utilities from the development environment;
+        # /usr/bin contains BSD variants on macOS. Keep service commands mocked.
+        for name in (
+            "awk", "basename", "cat", "chmod", "date", "grep", "id",
+            "mkdir", "mv", "readlink", "rm", "stat",
+        ):
+            if name not in (commands or {}):
+                executable = shutil.which(name)
+                self.assertIsNotNone(executable, f"fixture requires {name}")
+                (fake_bin / name).symlink_to(executable)
         environment = os.environ.copy()
         environment.update({
             "PATH": f"{fake_bin}:/usr/bin:/bin",
