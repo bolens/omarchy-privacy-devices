@@ -16,3 +16,6 @@
 /devenv.nix export-ignore
 /devenv.yaml export-ignore
 /devenv.lock export-ignore
+
+# Editor settings are not part of the installed plugin.
+/.editorconfig export-ignore

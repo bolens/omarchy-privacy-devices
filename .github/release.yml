@@ -1,0 +1,15 @@
+# Used by the existing release workflow. Unlabelled PRs stay in Other changes.
+changelog:
+  categories:
+    - title: Breaking changes
+      labels: [breaking-change, breaking]
+    - title: Features
+      labels: [enhancement, feature]
+    - title: Fixes
+      labels: [bug, fix]
+    - title: Dependencies
+      labels: [dependencies]
+    - title: Documentation
+      labels: [documentation]
+    - title: Other changes
+      labels: ["*"]
