@@ -1,5 +1,7 @@
 # omarchy-privacy-devices Spec Kit project guide
 
+[Documentation](../../DOCUMENTATION.md)
+
 Privacy-device observation and explicit control with honest state, bounded subprocesses,
 and serialized settings.
 
