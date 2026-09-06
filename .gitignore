@@ -6,3 +6,11 @@ __pycache__/
 
 # Local tooling and runtime artifacts
 .ruff_cache/
+
+# devenv state and local overrides
+/.devenv/
+/.direnv/
+/devenv.local.nix
+/devenv.local.yaml
+/.devenv.flake.nix
+/.devenv.*/

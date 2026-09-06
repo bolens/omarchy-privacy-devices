@@ -1,0 +1,83 @@
+name: Development environment
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: devenv-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      environment: ${{ steps.paths.outputs.environment }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
+        id: paths
+        with:
+          filters: |
+            environment:
+              - 'devenv.*'
+              - '.github/workflows/devenv.yml'
+              - 'backend/**'
+              - '*.js'
+              - 'privacy-*'
+              - '*.qml'
+              - 'manifest.json'
+              - 'package*.json'
+              - 'scripts/**'
+              - 'tests/**'
+
+  validate:
+    name: devenv (${{ matrix.os }})
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.environment == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+        with:
+          extra_nix_config: |
+            extra-substituters = https://devenv.cachix.org
+            extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
+      - name: Install pinned devenv
+        run: nix profile install github:cachix/devenv/42246161fa3bf7cd18f8334d08c73d6aaa8762d3
+      - name: Validate native development environment
+        run: devenv test
+      - name: Validate Docker development image
+        if: runner.os == 'Linux'
+        run: |
+          python3 scripts/development-container.py build docker
+          python3 scripts/development-container.py run docker -- bash -c 'npm ci --ignore-scripts --no-audit && npm test'
+
+  result:
+    name: Development environment
+    if: always()
+    needs: [changes, validate]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require selected environment checks
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          VALIDATE: ${{ needs.validate.result }}
+        run: |
+          test "$CHANGES" = success
+          case "$VALIDATE" in success|skipped) ;; *) exit 1 ;; esac
