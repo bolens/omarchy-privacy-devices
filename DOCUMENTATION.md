@@ -83,3 +83,5 @@ Update the narrowest canonical document and link to it elsewhere:
 | Security scope, trust boundary, or disclosure process | `SECURITY.md` |
 | Support routing or diagnostic-sharing guidance | `SUPPORT.md` |
 | User-visible release history | `CHANGELOG.md` |
+
+- [Editor setup](.vscode/README.md)
