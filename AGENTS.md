@@ -4,13 +4,16 @@ Before Spec Kit planning or implementation, read
 `.specify/memory/project-guide.md` with the project constitution. It maps
 requirements to this repository's source, acceptance evidence, and validation.
 
-Read `.specify/memory/constitution.md`, `SECURITY.md`, `ARCHITECTURE.md`, `TESTING.md`, and `CONTRIBUTING.md` when present.
+For behavior or architecture changes, read `.specify/memory/constitution.md`
+and the relevant parts of `ARCHITECTURE.md`. Use `TESTING.md` to select and run
+checks, and `CONTRIBUTING.md` for commit and contribution requirements. Read
+`SECURITY.md` before changing detection, control, commands, or trust boundaries.
 
 - Never manipulate live camera, microphone, screen-capture, PipeWire, or compositor state during tests without explicit authorization.
 - Treat unknown, pending, unsupported, and degraded observations distinctly; never infer a safe state without evidence.
 - Serialize owned settings changes, preserve unrelated configuration, and verify save/reload behavior with regression tests.
 - Update QML metadata, properties, defaults, settings UI, IPC, docs, adapters, and tests together.
-- Run focused tests, the QML harness, and the full local gate; use visual evidence for screenshot or Pages changes.
+- Run focused tests and the full local gate; include the QML harness for QML runtime behavior changes. Use visual evidence for screenshot or Pages changes.
 
 ## Spec-driven changes
 
