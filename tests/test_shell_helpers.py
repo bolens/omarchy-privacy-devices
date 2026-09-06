@@ -20,7 +20,7 @@ class ShellHelperTests(unittest.TestCase):
             command.chmod(0o755)
         # Resolve only the text utilities required by these fixtures. Nix does
         # not place them in /usr/bin; never inherit arbitrary service commands.
-        for name in ("awk", "grep"):
+        for name in ("awk", "grep", "stat"):
             if name not in (commands or {}):
                 executable = shutil.which(name)
                 self.assertIsNotNone(executable, f"fixture requires {name}")
