@@ -22,7 +22,8 @@ let result = run("--audit-dir", outsideTmp)
 assert.equal(result.status, 2, "audit evidence escaped the temporary filesystem")
 assert.match(result.stderr, /Audit output must be below \/tmp/)
 
-const occupied = fs.mkdtempSync(path.join(os.tmpdir(), "privacy-audit-options-"))
+// The capture contract explicitly accepts /tmp, regardless of the shell TMPDIR.
+const occupied = fs.mkdtempSync("/tmp/privacy-audit-options-")
 fs.writeFileSync(path.join(occupied, "stale.png"), "stale")
 result = run("--audit-dir", occupied)
 assert.equal(result.status, 2, "an occupied audit directory was accepted")

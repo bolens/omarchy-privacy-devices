@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import tempfile
 import time
@@ -17,6 +18,13 @@ class ShellHelperTests(unittest.TestCase):
             command = fake_bin / name
             command.write_text("#!/bin/sh\nset -eu\n" + body + "\n")
             command.chmod(0o755)
+        # Resolve only the text utilities required by these fixtures. Nix does
+        # not place them in /usr/bin; never inherit arbitrary service commands.
+        for name in ("awk", "grep"):
+            if name not in (commands or {}):
+                executable = shutil.which(name)
+                self.assertIsNotNone(executable, f"fixture requires {name}")
+                (fake_bin / name).symlink_to(executable)
         environment = os.environ.copy()
         environment.update({
             "PATH": f"{fake_bin}:/usr/bin:/bin",
