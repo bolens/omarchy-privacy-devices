@@ -39,7 +39,8 @@ Run [TESTING.md](TESTING.md) before submitting. Review
 - Add or update tests for behavior, parsing, process handling, and security
   boundaries.
 - Never include secrets, personal device names, or unredacted diagnostic data.
-- Run the graphical QML test required by [TESTING.md](TESTING.md).
+- For QML runtime behavior changes, run the graphical tests required by
+  [TESTING.md](TESTING.md).
 - Document user-visible changes on the Pages site and in `CHANGELOG.md`.
 - Keep custom commands clearly identified as unsandboxed user-controlled code.
 - Include screenshots for visible interface changes.
