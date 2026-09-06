@@ -31,6 +31,7 @@ jobs:
         with:
           filters: |
             plugin:
+              - '.gitattributes'
               - '*.js'
               - '*.qml'
               - '.githooks/**'
