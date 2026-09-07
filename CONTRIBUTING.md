@@ -59,3 +59,8 @@ and [code of conduct](CODE_OF_CONDUCT.md).
 ## Reproducible tools
 
 Use the [development environment guide](docs/development-environments.md) for devenv and local Docker, Podman, or Apple container validation. Desktop and device integration remain explicit host checks.
+
+## Devcontainer
+
+See [the devcontainer guide](.devcontainer/README.md) for the repository toolchain,
+setup, checks and platform limits.
