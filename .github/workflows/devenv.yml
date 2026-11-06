@@ -28,6 +28,7 @@ jobs:
         with:
           filters: |
             environment:
+              - '.devcontainer/**'
               - 'devenv.*'
               - '.github/workflows/devenv.yml'
               - 'backend/**'
@@ -53,7 +54,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b
         with:
           extra_nix_config: |
             extra-substituters = https://devenv.cachix.org
@@ -67,6 +68,20 @@ jobs:
         run: |
           python3 scripts/development-container.py build docker
           python3 scripts/development-container.py run docker -- bash -c 'npm ci --ignore-scripts --no-audit && npm test'
+
+      - name: Build and initialize the editor devcontainer
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          image="localhost/plugin-editor:${GITHUB_SHA}"
+          trap 'docker image rm "$image" >/dev/null' EXIT
+          docker build --tag "$image" --file .devcontainer/Dockerfile .devcontainer
+          docker run --rm --read-only --cap-drop ALL \
+            --security-opt no-new-privileges --pids-limit 128 --memory 1g \
+            --cpus 2 --user "$(id -u):$(id -g)" --tmpfs /tmp:rw,size=256m \
+            --env HOME=/tmp/editor-home \
+            --mount "type=bind,source=${GITHUB_WORKSPACE},target=/workspace" \
+            --workdir /workspace "$image" bash .devcontainer/post-create.sh
 
   result:
     name: Development environment
