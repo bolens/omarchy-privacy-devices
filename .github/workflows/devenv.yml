@@ -57,10 +57,11 @@ jobs:
       - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b
         with:
           extra_nix_config: |
+            build-users-group = nixbld
             extra-substituters = https://devenv.cachix.org
             extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
       - name: Install pinned devenv
-        run: nix profile install github:cachix/devenv/42246161fa3bf7cd18f8334d08c73d6aaa8762d3
+        run: nix profile add --accept-flake-config github:cachix/devenv/b904dcb51fe48c30db250038241507f60752f222
       - name: Validate native development environment
         run: devenv test
       - name: Validate Docker development image

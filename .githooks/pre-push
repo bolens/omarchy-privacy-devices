@@ -3,7 +3,7 @@ set -euo pipefail
 root=$(git rev-parse --show-toplevel)
 cd "$root"
 npm ci
-npm test
+PRIVACY_RUNTIME_TESTS="${PRIVACY_RUNTIME_TESTS:-never}" npm test
 npm run test:docs
 npm run build:site
 python3 scripts/check-changelog.py

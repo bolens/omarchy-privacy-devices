@@ -1,0 +1,32 @@
+# Public site acceptance; no credentials, host access, or extra capabilities.
+labels:
+  platform: linux/amd64
+  backend: docker
+clone:
+  git:
+    image: docker.io/woodpeckerci/plugin-git@sha256:9802cb7852dcf31f9c5c1d1ddeadfb9002d4fae85751f7b6a792eedb267bcc59
+    settings:
+      depth: 0
+      partial: false
+when:
+  - event: push
+    branch: main
+  - event:
+      - pull_request
+      - manual
+steps:
+  - name: build-site
+    image: ghcr.io/bolens/omarchy-plugin-ci@sha256:293b0457198085de5df26519dd4aa336202495c080d253b71ac30e7d8e8d3851
+    commands:
+      - umask 022
+      - npm ci --ignore-scripts --no-audit --no-fund
+      - npm run build:site
+      - npm run test:site
+  - name: accessibility
+    image: ghcr.io/puppeteer/puppeteer@sha256:956a72e3d523c76606efaad23392fbe33950370189f749715222c7427f57392b
+    environment:
+      HOME: /tmp/owned-home
+      PUPPETEER_CACHE_DIR: /home/pptruser/.cache/puppeteer
+    commands:
+      - mkdir -p "$HOME"
+      - node scripts/audit-site.mjs

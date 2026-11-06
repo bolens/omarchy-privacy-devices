@@ -35,6 +35,25 @@ class DevelopmentContainerTests(unittest.TestCase):
         run.return_value.returncode = 19
         self.assertEqual(MODULE.main(["run", "docker", "--", "false"]), 19)
 
+    @patch.object(MODULE.shutil, "which", return_value="/fixture/docker")
+    @patch.object(MODULE.platform, "machine", return_value="x86_64")
+    @patch.object(MODULE.subprocess, "run")
+    def test_build_uses_copy_subcommand_registry_option(self, run, _machine, _which):
+        import tempfile
+        run.return_value.returncode = 0
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            for engine, transport in (("docker", "docker-archive"), ("podman", "oci-archive")):
+                run.reset_mock()
+                with patch.object(MODULE, "__file__", str(root / "scripts" / "development-container.py")):
+                    self.assertEqual(MODULE.main(["build", engine]), 0)
+                archive = root / ".devenv" / "containers" / f"{engine}.tar"
+                self.assertEqual(run.call_args_list[0].args[0], [
+                    "devenv", "--system", "x86_64-linux", "container", "copy", "shell",
+                    "--registry", f"{transport}:{archive}:",
+                ])
+                self.assertEqual(run.call_args_list[1].args[0], MODULE.command(engine, "load", root))
+
     @patch.object(MODULE.shutil, "which", return_value=None)
     def test_missing_engine_fails_before_running(self, _which):
         with self.assertRaises(SystemExit) as result:
