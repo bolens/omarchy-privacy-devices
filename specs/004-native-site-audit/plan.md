@@ -21,3 +21,13 @@ Stock-bar, monitor state, motion, and settings contracts are unchanged. Isolated
 ## Delivery
 
 Review source and immutable manifest provenance, then execute one actual image probe on an authorized worker. Push only after ordinary hooks pass and independent review. Require real native PR and genuine-main proof. Hosted retirement is a later reviewed change after policy agreement.
+
+## Hosted browser handoff
+
+After genuine native main acceptance and the required site context, condition only
+the hosted Lighthouse step on release validation or manual GitHub dispatch. Keep
+all real site, HTML/XML, link and workflow-security checks, aggregate failure
+checks, native event selection, and publishing/platform workflows. The existing
+boolean remains default true for reusable callers and explicitly true for signed
+releases. Native configuration edits select repository checks. Source-contract
+regressions cover unsafe release/manual selection and disabled real checks.

@@ -28,6 +28,8 @@ A maintainer adopts native browser acceptance without losing existing repository
 
 1. Given the initial native proposal, when a PR runs, then hosted browser validation remains active.
 2. Given a fork PR, when approved validation runs, then it receives no publishing secrets or privileged host access.
+3. Given accepted native PR/main evidence and a required site context, ordinary GitHub PR/main runs retain real repository checks and use native browser acceptance.
+4. Given a reusable release caller or manual GitHub dispatch, hosted browser validation remains available; reusable defaults and the explicit signed-release input stay true.
 
 ### Edge Cases
 
