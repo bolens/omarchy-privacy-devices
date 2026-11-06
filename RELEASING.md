@@ -182,8 +182,13 @@ GitHub CI. The entry point is `bash scripts/woodpecker-plugin.sh` inside that
 image. It requires network access only to fetch the pinned public imports
 and any lockfile-based test dependencies; it receives no publishing secrets.
 
-GitHub checks remain during the protected-check transition. Repository links,
-HTML/XML, browser accessibility, workflow security, compatibility canaries,
-macOS, development-image builds, Pages, and signed release publication retain
-their existing GitHub workflows. Native plugin success does not replace those
-checks or prove live desktop behavior. No version or release is created by CI.
+Require `ci/woodpecker/pr/plugin` for ordinary pull requests, alongside the
+existing Repository, source-lint, and development-environment checks. GitHub
+retains full plugin validation for reusable callers by default through the typed
+`release_validation` input; the signed-release workflow explicitly enables it.
+Ordinary PR and main workflows skip the duplicate hosted plugin jobs.
+
+Repository links, HTML/XML, browser accessibility, workflow security, compatibility
+canaries, macOS, development-image builds, Pages, and signed release publication
+retain their existing GitHub workflows. Native plugin success does not prove live
+desktop behavior. No version or release is created by CI.

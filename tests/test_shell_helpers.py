@@ -304,6 +304,7 @@ esac
             directory = Path(raw)
             unsafe = directory / "runtime"
             unsafe.mkdir(mode=0o755)
+            unsafe.chmod(0o755)  # Preserve the unsafe fixture even under a restrictive umask.
             environment = self.environment(directory)
             environment["XDG_RUNTIME_DIR"] = str(unsafe)
             self.assertEqual(self.run_helper("privacy-recording", "start", "wf-recorder", environment=environment).returncode, 2)

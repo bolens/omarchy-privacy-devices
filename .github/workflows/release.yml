@@ -15,6 +15,8 @@ jobs:
   validate:
     name: Validate
     uses: ./.github/workflows/ci.yml
+    with:
+      release_validation: true
     permissions:
       contents: read
       checks: write

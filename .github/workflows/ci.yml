@@ -6,6 +6,11 @@ on:
   pull_request:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      release_validation:
+        description: Run the hosted plugin checks for reusable and signed-release callers
+        type: boolean
+        default: true
 
 permissions: {}
 
@@ -63,7 +68,7 @@ jobs:
   plugin-fast:
     name: Plugin fast and behavior checks
     needs: changes
-    if: needs.changes.outputs.plugin == 'true'
+    if: inputs.release_validation && needs.changes.outputs.plugin == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -130,7 +135,7 @@ jobs:
   plugin-qml:
     name: Plugin QML
     needs: changes
-    if: needs.changes.outputs.plugin == 'true'
+    if: inputs.release_validation && needs.changes.outputs.plugin == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -157,7 +162,7 @@ jobs:
   plugin-result:
     name: Plugin
     needs: [changes, plugin-fast, plugin-qml]
-    if: always()
+    if: always() && inputs.release_validation
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
