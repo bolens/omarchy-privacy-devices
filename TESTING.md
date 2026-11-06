@@ -265,3 +265,19 @@ desktop behavior. No version or release is created by CI.
 The pre-push hook defaults to deterministic checks even on a graphical desktop.
 Set `PRIVACY_RUNTIME_TESTS=always` explicitly when pushing with an owned graphical
 test session. Calling `npm test` directly retains its documented runtime selection.
+
+## Woodpecker site accessibility
+
+The native `site` workflow builds the existing Pages payload, runs its structure
+tests, then runs `node scripts/audit-site.mjs` in the pinned official
+Puppeteer/Chrome image. It requires an accessibility score exactly 1. The helper
+awaits its own loopback HTTP listener and Chrome DevTools readiness, uses ephemeral
+ports, and closes only its owned browser, profile, and server. It receives no
+secrets or extra host capabilities.
+
+The hosted browser check remains required during adoption. A source review or
+local build does not establish runner success: verify the final-head native site
+pipeline and genuine merged-main run before retiring hosted coverage or changing
+its required checks. Publishing, signed releases, and platform checks keep their
+current workflows. Review the manual browser-image digest pin alongside the
+other native image pins; Dependabot does not update Woodpecker YAML.

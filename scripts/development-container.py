@@ -55,7 +55,7 @@ def main(argv=None):
         transport = "docker-archive" if options.engine == "docker" else "oci-archive"
         result = subprocess.run([
             "devenv", "--system", f"{machine}-linux", "container",
-            "--registry", f"{transport}:{archive}:", "copy", "shell",
+            "copy", "shell", "--registry", f"{transport}:{archive}:",
         ], cwd=root, check=False)
         if result.returncode:
             return result.returncode

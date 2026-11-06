@@ -41,3 +41,16 @@ python3 scripts/development-container.py run apple -- bash -c 'npm ci --ignore-s
 The helper exports an OCI archive and uses `container image load`. Native ARM Macs target `aarch64-linux`; x86 Linux builds target `x86_64-linux`. [Building Linux images from macOS requires a Linux builder](https://devenv.sh/containers/). This workflow does not assume Apple container implements Docker Compose or Docker's daemon API.
 
 Apple execution is not verified by Linux tests. Quickshell, Wayland, and privacy-device behavior require a supported Linux/Omarchy host. Successful container validation does not establish those capabilities.
+
+The tracked inputs use devenv 2.4.0. Its installed CLI is pinned to the same
+reviewed commit in CI. The scoped `--accept-flake-config` belongs only to that
+immutable outer CLI flake; it does not globally trust repository flake settings.
+Keep the standard `nixbld` build group. Explicit hook inputs preserve the existing
+locked hook graph after the 2.x migration. The reviewed nix2container revision is
+pinned for the compatible archive-copy implementation; keep all other root
+inputs unchanged during this update.
+
+The local helper uses `devenv container copy shell --registry ...` with the
+registry option on the copy subcommand. Docker and OCI exports retain their
+existing engine load and non-root checkout contracts. Updating a lockfile is
+separate from proving the actual native and generated-image development checks.
