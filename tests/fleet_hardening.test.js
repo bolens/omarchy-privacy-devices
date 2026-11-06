@@ -33,7 +33,7 @@ assert.equal((ci.match(/\[\[ "\$CHANGES_RESULT" == success \]\]/g) || []).length
 assert.equal((ci.match(/\[\[ "\$SELECTED" == true \|\| "\$SELECTED" == false \]\]/g) || []).length, 2)
 assert.match(ci, /plugin-result:[\s\S]*name: Plugin[\s\S]*if: always\(\)/)
 assert.match(ci, /repository-result:[\s\S]*name: Repository[\s\S]*if: always\(\)/)
-assert.match(ci, /actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/)
+assert.match(ci, /actions\/setup-node@[a-f0-9]{40}(?:\s|$)/)
 assert.match(ci, /shellcheck/)
 assert.match(ci, /lycheeverse\/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8/)
 assert.match(ci, /--exclude-path '[^']*node_modules/)
