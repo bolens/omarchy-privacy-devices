@@ -42,7 +42,7 @@ class DevelopmentContainerTests(unittest.TestCase):
         import tempfile
         run.return_value.returncode = 0
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             for engine, transport in (("docker", "docker-archive"), ("podman", "oci-archive")):
                 run.reset_mock()
                 with patch.object(MODULE, "__file__", str(root / "scripts" / "development-container.py")):
