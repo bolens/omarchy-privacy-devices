@@ -188,7 +188,7 @@ retains full plugin validation for reusable callers by default through the typed
 `release_validation` input; the signed-release workflow explicitly enables it.
 Ordinary PR and main workflows skip the duplicate hosted plugin jobs.
 
-Repository links, HTML/XML, browser accessibility, workflow security, compatibility
+Repository links, HTML/XML, workflow security, compatibility
 canaries, macOS, development-image builds, Pages, and signed release publication
 retain their existing GitHub workflows. Native plugin success does not prove live
 desktop behavior. No version or release is created by CI.
@@ -202,9 +202,14 @@ awaits its own loopback HTTP listener and Chrome DevTools readiness, uses epheme
 ports, and closes only its owned browser, profile, and server. It receives no
 secrets or extra host capabilities.
 
-The hosted browser check remains required during adoption. A source review or
-local build does not establish runner success: verify the final-head native site
-pipeline and genuine merged-main run before retiring hosted coverage or changing
-its required checks. Publishing, signed releases, and platform checks keep their
-current workflows. Review the manual browser-image digest pin alongside the
-other native image pins; Dependabot does not update Woodpecker YAML.
+Require `ci/woodpecker/pr/site` alongside the native plugin and existing hosted
+checks. Ordinary PR and main runs use the pinned native browser audit; GitHub
+continues the site build, structure, HTML/XML, link, and workflow-security checks.
+Reusable callers retain hosted browser validation through `release_validation`
+with its default `true`; signed releases explicitly enable it. Manual GitHub
+workflow dispatch also retains the hosted audit, and Woodpecker supports a manual
+site run. Forks still require native approval and receive no publishing secrets.
+
+Publishing and platform checks retain their current workflows. Review the manual
+browser-image digest pin alongside the other native image pins; Dependabot does
+not update Woodpecker YAML.

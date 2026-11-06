@@ -1,0 +1,32 @@
+const assert = require("node:assert/strict")
+const fs = require("node:fs")
+const ci = fs.readFileSync(".github/workflows/ci.yml", "utf8")
+const release = fs.readFileSync(".github/workflows/release.yml", "utf8")
+const native = fs.readFileSync(".woodpecker/site.yml", "utf8")
+const repository = ci.match(/^  (?:pages|repository-checks):\n[\s\S]*?(?=^  \S)/m)
+assert.ok(repository, "retain the real repository validation job")
+const steps = repository[0].split(/(?=^      - )/m).slice(1)
+const browser = steps.filter(step => /^      - name: Audit (?:site )?accessibility$/m.test(step))
+assert.equal(browser.length, 1, "retain one hosted browser step for releases and manual runs")
+assert.match(browser[0], /^        if: inputs\.release_validation \|\| github\.event_name == 'workflow_dispatch'$/m)
+assert.match(browser[0], /npx lighthouse/)
+assert.match(browser[0], /score\s*===\s*1/)
+for (const step of steps.filter(step => step !== browser[0])) {
+  assert.doesNotMatch(step, /^(?:      - |        )if:/m, "real repository checks must remain active independently of browser selection")
+}
+for (const command of [/tidy -errors/, /xmllint --noout/, /lycheeverse\/lychee-action@[a-f0-9]{40}/, /npm run build:site/, /npm run test:site/]) {
+  assert.match(repository[0], command, "retain real HTML, XML, links and site checks")
+}
+assert.match(ci, /workflow_call:\n    inputs:\n      release_validation:[\s\S]*?type: boolean\n        default: true/)
+assert.match(release, /uses: \.\/\.github\/workflows\/ci\.yml\n    with:\n      release_validation: true/)
+const filter = ci.split("            repository:\n")[1]
+assert.ok(filter)
+assert.match(filter.split(/^\n  \S/m)[0], /'\.woodpecker\/\*\*'/)
+const aggregate = ci.match(/^  repository-result:\n[\s\S]*/m)
+assert.ok(aggregate)
+assert.match(aggregate[0], /\[\[ "\$REPOSITORY_RESULT" == success \]\]/)
+assert.match(aggregate[0], /\[\[ "\$SECURITY_RESULT" == success \]\]/)
+assert.match(native, /event: push\n    branch: main/)
+assert.match(native, /- pull_request\n      - manual/)
+assert.match(native, /node scripts\/audit-site\.mjs/)
+console.log("Site CI handoff preserves real repository, release and manual coverage")
