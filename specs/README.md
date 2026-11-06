@@ -7,3 +7,5 @@ Installation validation alone does not establish feature completion.
 
 - [Development environments](002-development-environments/spec.md): [plan](002-development-environments/plan.md),
   [tasks and delivery evidence](002-development-environments/tasks.md).
+
+- [Woodpecker plugin validation](003-woodpecker-plugin-ci/spec.md): [plan](003-woodpecker-plugin-ci/plan.md), [acceptance tasks](003-woodpecker-plugin-ci/tasks.md).

@@ -241,3 +241,18 @@ Do not copy unredacted diagnostics into issues or CI logs.
 See the [documentation index](DOCUMENTATION.md),
 [contribution expectations](CONTRIBUTING.md), and
 [release playbook](RELEASING.md).
+
+## Woodpecker plugin validation
+
+[Woodpecker](https://woodpecker.bolens.dev/repos) runs the plugin archive,
+ShellCheck, behavior and QML lint checks on pull requests and pushes to `main`.
+It uses the same immutable Omarchy toolchain image and v4.0.1 imports as
+GitHub CI. The entry point is `bash scripts/woodpecker-plugin.sh` inside that
+image. It requires network access only to fetch the pinned public imports
+and any lockfile-based test dependencies; it receives no publishing secrets.
+
+GitHub checks remain during the protected-check transition. Repository links,
+HTML/XML, browser accessibility, workflow security, compatibility canaries,
+macOS, development-image builds, Pages, and signed release publication retain
+their existing GitHub workflows. Native plugin success does not replace those
+checks or prove live desktop behavior. No version or release is created by CI.

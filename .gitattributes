@@ -19,3 +19,7 @@
 
 # Editor settings are not part of the installed plugin.
 /.editorconfig export-ignore
+
+# CI definitions are maintainer-only.
+/.woodpecker export-ignore
+/.woodpecker/** export-ignore
