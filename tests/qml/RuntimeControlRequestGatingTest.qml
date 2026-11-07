@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.settings = {enabledKinds:["camera", "location", "screen-recording"], blockableKinds:["camera", "location"], notifyOnControlChanges:false}
     if (service.controlRequestStatus("not-a-kind") !== "unsupported")
       throw new Error("unknown control was not rejected")
@@ -48,5 +48,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_CONTROL_REQUEST_GATING_OK")
     Qt.quit()
-  }
+  })
 }

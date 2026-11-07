@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     var now = Date.now()
     service.settings = {enabledKinds:[], directDeviceMonitoring:true}
     service.lastSessionRefreshAt = now - 2100
@@ -29,5 +29,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_MONITORING_TELEMETRY_OK")
     Qt.quit()
-  }
+  })
 }

@@ -9,7 +9,7 @@ ShellRoot {
   id: root
   property list<string> persistedKinds: ["camera", "location"]
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     var raw = {showIdle:"yes", statusMarkerMode:"invalid", popupMaxHeight:9999, enabledKinds:["camera", "camera", "bogus"], unknown:"discard"}
     var clean = Model.sanitizeSettings(raw)
     if (clean.showIdle !== true || clean.popupMaxHeight !== 900 || clean.statusMarkerMode !== "off") throw new Error("settings normalization failed")
@@ -60,5 +60,5 @@ ShellRoot {
       throw new Error("item tooltip action policy failed")
     console.log("PRIVACY_QML_RUNTIME_OK")
     Qt.quit()
-  }
+  })
 }

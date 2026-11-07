@@ -70,8 +70,8 @@ Item {
       watchdog.stop()
       controller.busy = false
       if (!controller.refreshPending) {
-        var ready = Object.assign({}, controller.readyMap)
-        var checked = Object.assign({}, controller.checkedMap)
+        let ready = Object.assign({}, controller.readyMap)
+        let checked = Object.assign({}, controller.checkedMap)
         ready[controller.currentKind] = exitCode === 0
         checked[controller.currentKind] = true
         controller.readyMap = ready

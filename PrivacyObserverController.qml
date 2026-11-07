@@ -105,11 +105,11 @@ Item {
   function acceptFallback(line) {
     if (fallbackRetiring || (!host.kindEnabled("screen-recording") && !host.kindEnabled("screenshot"))) return
     try {
-      var payload = JSON.parse(String(line || "{}"))
+      let payload = JSON.parse(String(line || "{}"))
       if (payload.type !== "fallback-snapshot" || payload.version !== 1 || !payload.activities)
         throw new Error("invalid fallback payload")
-      var recordings = Array.isArray(payload.activities["screen-recording"]) ? payload.activities["screen-recording"] : []
-      var screenshots = Array.isArray(payload.activities.screenshot) ? payload.activities.screenshot : []
+      let recordings = Array.isArray(payload.activities["screen-recording"]) ? payload.activities["screen-recording"] : []
+      let screenshots = Array.isArray(payload.activities.screenshot) ? payload.activities.screenshot : []
       recordingApps = recordings
       recordingActive = recordings.length > 0
       host.verifyControlTransaction("screen-recording", recordingActive, true)
@@ -160,7 +160,7 @@ Item {
   function acceptDirect(text) {
     if (directRetiring || host.settings.directDeviceMonitoring !== true) return
     try {
-      var result = JSON.parse(String(text || "{}"))
+      let result = JSON.parse(String(text || "{}"))
       if (result.type !== "snapshot") throw new Error("invalid direct payload")
       directObservations = Array.isArray(result.observations) ? result.observations : []
       directLastSeen = Date.now()

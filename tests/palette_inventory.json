@@ -1,0 +1,122 @@
+{
+  "Style.spacing": {
+    "scale": "real",
+    "hairline": "int",
+    "xxs": "int",
+    "xs": "int",
+    "sm": "int",
+    "md": "int",
+    "lg": "int",
+    "xl": "int",
+    "xxl": "int",
+    "xxxl": "int",
+    "huge": "int",
+    "controlGap": "int",
+    "controlPaddingX": "int",
+    "controlPaddingY": "int",
+    "inputPaddingY": "int",
+    "controlHeight": "int",
+    "popupRowHeight": "int",
+    "dropdownWidth": "int",
+    "searchableDropdownWidth": "int",
+    "numberFieldWidth": "int",
+    "searchablePopupMinHeight": "int",
+    "rowGap": "int",
+    "rowPaddingX": "int",
+    "labelGap": "int",
+    "panelGap": "int",
+    "panelPadding": "int",
+    "popupPadding": "int",
+    "objectName": "string"
+  },
+  "Style.font": {
+    "family": "string",
+    "resolvedFamily": "string",
+    "menuFamily": "string",
+    "baseSize": "int",
+    "caption": "int",
+    "bodySmall": "int",
+    "body": "int",
+    "subtitle": "int",
+    "title": "int",
+    "heading": "int",
+    "display": "int",
+    "displayLarge": "int",
+    "iconSmall": "int",
+    "icon": "int",
+    "iconLarge": "int",
+    "objectName": "string"
+  },
+  "Style.bar": {
+    "sizeHorizontal": "int",
+    "sizeVertical": "int",
+    "iconSlot": "int",
+    "iconCanvas": "int",
+    "iconFont": "int",
+    "statusSlot": "int",
+    "objectName": "string"
+  },
+  "Color.bar": {
+    "background": "color",
+    "text": "color",
+    "active": "color",
+    "objectName": "string"
+  },
+  "Color.popups": {
+    "background": "color",
+    "text": "color",
+    "border": "color",
+    "objectName": "string"
+  },
+  "Color.tooltip": {
+    "background": "color",
+    "text": "color",
+    "border": "color",
+    "objectName": "string"
+  },
+  "Color.notifications": {
+    "background": "color",
+    "text": "color",
+    "border": "color",
+    "countdown": "color",
+    "objectName": "string"
+  },
+  "Color.menu": {
+    "background": "color",
+    "text": "color",
+    "border": "color",
+    "scrim": "color",
+    "selectedBackground": "color",
+    "selectedText": "color",
+    "selectedBorder": "color",
+    "objectName": "string"
+  },
+  "Color.polkit": {
+    "background": "color",
+    "text": "color",
+    "textError": "color",
+    "border": "color",
+    "borderError": "color",
+    "accent": "color",
+    "scrim": "color",
+    "objectName": "string"
+  },
+  "Color.lock": {
+    "background": "color",
+    "text": "color",
+    "placeholder": "color",
+    "textError": "color",
+    "border": "color",
+    "borderActive": "color",
+    "borderError": "color",
+    "selection": "color",
+    "objectName": "string"
+  },
+  "Color.imagePicker": {
+    "scrim": "color",
+    "text": "color",
+    "selectedBorder": "color",
+    "unselectedBorder": "color",
+    "objectName": "string"
+  }
+}

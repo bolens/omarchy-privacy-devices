@@ -14,8 +14,8 @@ Item {
 
   function resolvedIcon(name, fallback) {
     var candidates = [Model.notificationIconName(name), Model.notificationIconName(fallback)]
-    for (var index = 0; index < candidates.length; index++) {
-      var candidate = candidates[index]
+    for (let index = 0; index < candidates.length; index++) {
+      let candidate = candidates[index]
       if (candidate && Quickshell.iconPath(candidate, true)) return candidate
     }
     return ""

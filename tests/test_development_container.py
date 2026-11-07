@@ -1,5 +1,7 @@
 """CLI contracts for local development image adapters."""
+import contextlib
 import importlib.util
+import io
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -56,9 +58,13 @@ class DevelopmentContainerTests(unittest.TestCase):
 
     @patch.object(MODULE.shutil, "which", return_value=None)
     def test_missing_engine_fails_before_running(self, _which):
-        with self.assertRaises(SystemExit) as result:
-            MODULE.main(["run", "docker"])
+        stderr = io.StringIO()
+        with patch.object(MODULE.subprocess, "run") as child, contextlib.redirect_stderr(stderr):
+            with self.assertRaises(SystemExit) as result:
+                MODULE.main(["run", "docker"])
         self.assertEqual(result.exception.code, 2)
+        self.assertIn("docker is not installed or is not on PATH", stderr.getvalue())
+        child.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -24,3 +24,6 @@ __pycache__/
 !/.vscode/launch.json
 !/.vscode/*.code-snippets
 !/.vscode/README.md
+
+# Public immutable input shared between native CI container steps.
+/.woodpecker-qml-input/

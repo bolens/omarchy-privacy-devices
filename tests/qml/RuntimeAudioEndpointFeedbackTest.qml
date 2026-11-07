@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import Quickshell
 import QtQuick
-import qs.Commons
+import qs.Commons as Commons
 
 ShellRoot {
   id: root
@@ -17,25 +17,25 @@ ShellRoot {
     id: controllerMock
     property var privacyService: serviceMock
     property string editingKind: "audio-output"
-    property color activeThemeColor: Color.accent
+    property color activeThemeColor: Commons.Color.accent
   }
 
-  AudioEndpointSettings { id: settings; width: 500; controller: controllerMock }
+  AudioEndpointSettings { id: endpointSettings; width: 500; controller: controllerMock }
 
   function descendant(item, name) {
     if (!item) return null
     if (item.objectName === name) return item
     var children = item.children || []
-    for (var index = 0; index < children.length; index++) {
-      var found = descendant(children[index], name)
+    for (let index = 0; index < children.length; index++) {
+      let found = descendant(children[index], name)
       if (found) return found
     }
     return null
   }
 
   Component.onCompleted: Qt.callLater(function() {
-    var feedback = descendant(settings, "audioEndpointFeedback")
-    var icon = descendant(settings, "messageSurfaceIcon")
+    var feedback = descendant(endpointSettings, "audioEndpointFeedback")
+    var icon = descendant(endpointSettings, "messageSurfaceIcon")
     if (!feedback || !icon) throw new Error("audio endpoint feedback is not addressable")
     if (!feedback.visible || feedback.kind !== "error" || feedback.message !== "Audio endpoint state was not changed." || icon.text !== "!")
       throw new Error("audio endpoint failure feedback rendered incorrectly")

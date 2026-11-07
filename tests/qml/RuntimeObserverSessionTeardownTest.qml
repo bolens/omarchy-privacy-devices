@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     var direct = {id:"direct", kind:"camera", application:"Camera", device:"Camera 1", source:"direct-device", confidence:"confirmed", startedAt:1}
     var fallback = {id:"fallback", kind:"screen-recording", application:"Recorder", device:"Desktop", source:"process-probe", confidence:"inferred", startedAt:2}
     var pipewire = {id:"pipewire", kind:"microphone", application:"Voice", device:"Mic", source:"pipewire", confidence:"confirmed", startedAt:3}
@@ -37,5 +37,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_OBSERVER_SESSION_TEARDOWN_OK")
     Qt.quit()
-  }
+  })
 }

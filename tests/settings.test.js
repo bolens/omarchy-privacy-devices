@@ -87,7 +87,7 @@ for (const key of globalKeys) {
 
 assert.match(settingsNavigation, /value:"appearance"/, "appearance settings need a dedicated page")
 assert.match(settingsNavigation, /objectName: "settingsPageButton-" \+ modelData\.value/, "settings tabs must be addressable by runtime interaction tests")
-assert.match(bar, /iconText: "󰑐"[\s\S]*?tooltipText: "Reset all global settings"[\s\S]*?bordered: true[\s\S]*?onClicked: root\.requestGlobalSettingsReset\(\)/,
+assert.match(bar, /iconText: "󰑐"[\s\S]*?tooltipText: "Reset all global settings"[\s\S]*?bordered: true[\s\S]*?onClicked: privacyWidget\.requestGlobalSettingsReset\(\)/,
   "the global reset action must use the guarded request path")
 assert.match(settingsController, /function requestGlobalSettingsReset\(\)[\s\S]*?requestTransfer\("checkpoint"/,
   "the global reset request must preserve an undo point before reset policy")
@@ -102,17 +102,17 @@ assert.match(activityView, /delegate:\s*PrivacyActivityCard\s*\{[\s\S]*?entry:\s
 assert.match(bar, /manageIpc:\s*false/, "per-monitor panels must delegate IPC routing to the singleton service and focused-monitor shell router")
 assert.match(navigationController, /settingsRequestSerial <= handledSettingsRequestSerial[\s\S]*?requestedView === "history"[\s\S]*?showHistory\(\)[\s\S]*?showSettings\(service\.requestedSettingsPage, service\.requestedSettingsSection\)/,
   "the focused widget must consume singleton history and settings requests")
-assert.match(bar, /onSettingsRequestSerialChanged\(\) \{ root\.handleSettingsRequest\(\) \}/,
+assert.match(bar, /onSettingsRequestSerialChanged\(\) \{ privacyWidget\.handleSettingsRequest\(\) \}/,
   "settings IPC page changes must apply while the popup remains open")
 assert.match(surface, /default property alias content:/, "settings groups need a reusable visual surface")
-assert.match(integer, /NumberField[\s\S]*?from: field\.minimum[\s\S]*?to: field\.maximum[\s\S]*?stepSize: field\.stepSize[\s\S]*?onModified:/,
+assert.match(integer, /NumberField[\s\S]*?from: integerField\.minimum[\s\S]*?to: integerField\.maximum[\s\S]*?stepSize: integerField\.stepSize[\s\S]*?onModified:/,
   "integer settings must use the native bounded numeric control")
 assert.match(bar, /Loader\s*\{\s*id:\s*globalSettingsPageLoader[\s\S]*?sourceComponent:[\s\S]*?globalSettingsPage/, "only the active settings page should be instantiated")
 assert.match(navigationController, /function showSettings\(page, section\)[\s\S]*?Model\.settingsDeepLink\(page, section\)[\s\S]*?pendingSettingsSection = target\.section[\s\S]*?Qt\.callLater\(controller\.scrollToSettingsSection\)/,
   "settings navigation must preserve a validated section deep link until layout completes")
 assert.match(navigationController, /function scrollToSettingsSection\(\)[\s\S]*?page\.sectionItems[\s\S]*?mapToItem\(host\.contentViewport\.contentItem[\s\S]*?Model\.settingsScrollPosition/,
   "deep links must resolve the live lazy-loaded section and clamp its scroll position")
-assert.match(bar, /id:\s*globalSettingsPageLoader[\s\S]*?onLoaded:\s*\{[\s\S]*?Qt\.callLater\(root\.scrollToSettingsSection\)/,
+assert.match(bar, /id:\s*globalSettingsPageLoader[\s\S]*?onLoaded:\s*\{[\s\S]*?Qt\.callLater\(privacyWidget\.scrollToSettingsSection\)/,
   "lazy settings pages must complete pending deep links after loading")
 assert.match(historyView, /History is off[\s\S]*?Open monitoring settings[\s\S]*?showGlobalSettings\("monitoring", "private-data"\)/,
   "disabled history must link directly to its opt-in control")
@@ -123,7 +123,7 @@ assert.match(globalSettings, /PanelSectionHeader \{ Layout\.fillWidth: true; tex
   "the Monitoring page must render live observer telemetry in its health section")
 assert.match(bar, /function monitoringTelemetryText\(\)[\s\S]*?Model\.monitoringTelemetryText\(data\)/,
   "observer telemetry copy must use the behavior-tested formatter")
-assert.match(settingsController + bar, /function commit\(candidate\)[\s\S]*?mutationPending = true[\s\S]*?onOpenedChanged:[\s\S]*?else if \(settingsMutationPending\) Qt\.callLater\(root\.open\)/,
+assert.match(settingsController + bar, /function commit\(candidate\)[\s\S]*?mutationPending = true[\s\S]*?onOpenedChanged:[\s\S]*?else if \(settingsMutationPending\) Qt\.callLater\(privacyWidget\.open\)/,
   "settings writes must preserve the open editor across shell config reloads")
 assert.match(bar + settingsController, /function persistSettings\(values\)[\s\S]*?settingsController\.persist\(values\)[\s\S]*?function persist\(values\)[\s\S]*?mutation\.submit\(host\.effectiveSettings, values\)/,
   "settings edits must enter the coalescing mutation boundary")
@@ -180,7 +180,7 @@ assert.match(monitoringSettings, /GridLayout\s*\{[\s\S]*?columns: width >= Style
   "wide monitoring settings must pair related sections while keeping private data full-width")
 assert.match(bar, /"1234"[\s\S]*?\["general", "appearance", "alerts", "monitoring"\]/, "settings keyboard shortcuts must cover all pages")
 assert.match(presentationController, /var count = Model\.privacySessionCount\(entry, host\.showBarSessionCounts\)/, "bar counts must not depend on popup-count visibility")
-assert.match(bar, /Grid\s*\{\s*id:\s*iconGrid[\s\S]*?columns:\s*root\.verticalBar \? 1/,
+assert.match(bar, /Grid\s*\{\s*id:\s*iconGrid[\s\S]*?columns:\s*privacyWidget\.verticalBar \? 1/,
   "bar items must stack on vertical Omarchy bars")
 assert.match(presentationController, /role === "foreground"[\s\S]*?host\.bar[\s\S]*?host\.bar\.foreground/,
   "theme-role fallback must use the documented Omarchy bar foreground")
@@ -207,7 +207,7 @@ assert.match(audioEndpointSettings, /PanelSectionHeader[\s\S]*?iconText: "󰑓"[
   "endpoint refresh must stay compact in the section header")
 assert.match(audioEndpointSettings, /delegate: Rectangle[\s\S]*?border\.color:[\s\S]*?Blocked · muted[\s\S]*?horizontalPadding: Style\.spacing\.md/,
   "endpoint controls must remain visually grouped with readable action targets")
-assert.match(bar, /root\.editingKind !== "" && dx !== 0[\s\S]*?root\.moveDeviceEditor\(dx\)/,
+assert.match(bar, /privacyWidget\.editingKind !== "" && dx !== 0[\s\S]*?privacyWidget\.moveDeviceEditor\(dx\)/,
   "left and right keys must navigate device editors")
 assert.match(navigationController, /function moveDeviceEditor\(delta\)[\s\S]*?Model\.nextNavigationKind\(order, editingKind, delta\)/,
   "device editor navigation must use behavior-tested boundary handling")
@@ -216,7 +216,7 @@ assert.match(deviceView, /text: view\.confirmationState\.pending === "all" \? "C
   "the complete device reset must invoke its scoped reset policy after confirmation")
 assert.match(deviceView, /view\.confirmationState\.pending === "backend"[\s\S]*?Confirm shared backend reset[\s\S]*?view\.confirmationState\.pending === "all"[\s\S]*?Confirm reset all/,
   "shared audio resets must require an explicit second action")
-assert.match(deviceView, /function syncEditors\(\)[\s\S]*?labelEditor\.text = root\.labelFor\(root\.editingKind\)[\s\S]*?backendSettings\.item[\s\S]*?backendSettings\.item\.syncEditors\(\)/,
+assert.match(deviceView, /function syncEditors\(\)[\s\S]*?labelEditor\.text = root\.labelFor\(root\.editingKind\)[\s\S]*?backendSettings\.item as PrivacyDeviceBackendSettings[\s\S]*?backendEditor\.syncEditors\(\)/,
   "changing devices must replace every editable field instead of retaining stale input")
 assert.match(deviceBackendSettings, /function syncEditors\(\)[\s\S]*?customScreenshotCommandEditor\.text[\s\S]*?customRecorderStopEditor\.text/,
   "backend synchronization must replace every custom command field")
@@ -274,8 +274,8 @@ assert.match(activityCard, /function sessionSummary\(session\)[\s\S]*?session\.d
   "activity summaries must prioritize device, duration, and attribution quality over backend jargon")
 assert.match(activityView, /Layout\.columnSpan: view\.controller\.popupGridColumns === 2[\s\S]*?view\.controller\.displayedActivityItems\.length % 2 === 1 \? 2 : 1/,
   "an odd final grid card must consume the otherwise empty column")
-assert.match(bar, /running:\s*barItemButton\.modelData\.pending && root\.animatePending/, "pending animation must honor its visual setting")
-assert.match(bar, /Timer \{[\s\S]*?running: root\.opened[\s\S]*?onTriggered: if \(!contentFlick\.moving\) root\.durationNow = Date\.now\(\)/,
+assert.match(bar, /running:\s*barItemButton\.modelData\.pending && privacyWidget\.animatePending/, "pending animation must honor its visual setting")
+assert.match(bar, /Timer \{[\s\S]*?running: privacyWidget\.opened[\s\S]*?onTriggered: if \(!contentFlick\.moving\) privacyWidget\.durationNow = Date\.now\(\)/,
   "the duration timer must pause rendered time updates while the user scrolls")
 assert.match(settingsGrid, /property real responsiveWidth:[\s\S]*?property real breakpoint:[\s\S]*?responsiveWidth >= breakpoint/,
   "settings grids must derive responsive columns from an explicit container width")

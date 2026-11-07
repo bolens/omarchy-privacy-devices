@@ -53,14 +53,14 @@ Item {
     interval: 500
     repeat: true
     running: {
-      for (var kind in controller.transactions)
+      for (let kind in controller.transactions)
         if (controller.transactions[kind].status === "verifying") return true
       return false
     }
     onTriggered: {
       var now = Date.now()
-      for (var kind in controller.transactions) {
-        var transaction = controller.transactions[kind]
+      for (let kind in controller.transactions) {
+        let transaction = controller.transactions[kind]
         if (transaction.status === "verifying" && now >= transaction.deadline)
           controller.transition(kind, {type: "timeout"}, now)
       }

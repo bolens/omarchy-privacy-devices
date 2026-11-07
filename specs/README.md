@@ -11,3 +11,5 @@ Installation validation alone does not establish feature completion.
 - [Woodpecker plugin validation](003-woodpecker-plugin-ci/spec.md): [plan](003-woodpecker-plugin-ci/plan.md), [acceptance tasks](003-woodpecker-plugin-ci/tasks.md).
 
 - [Native site accessibility audit](004-native-site-audit/spec.md): [plan](004-native-site-audit/plan.md), [tasks](004-native-site-audit/tasks.md).
+
+- [Reliable QML validation and palette compatibility](005-qml-warning-validation/spec.md): [plan](005-qml-warning-validation/plan.md), [acceptance tasks](005-qml-warning-validation/tasks.md).

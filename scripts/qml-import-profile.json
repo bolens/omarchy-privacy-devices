@@ -1,0 +1,1408 @@
+{
+  "revision": "13f18b2cb7286fb54f87daf571a031aa6af3d8f0",
+  "repository": "https://github.com/omacom/omarchy",
+  "source_tree": "c458272b5d2b895185633255de88a3ce563c5028",
+  "palette_upstream": "b83d3df0840504299d3099ebf391eb8110527edd",
+  "files": {
+    "Commons/Border.qml": {
+      "sha256": "b98c82530126fc10a287845e8df574ae26fa05b6064d93451d93d0ee9c3f7166",
+      "git_blob": "948aa782174afd108bf6c3d691823794b6f8fc5d",
+      "bytes": 10094,
+      "mode": "100644",
+      "palette_sha256": "4062986c0226eed4a7e054381ddf3f5bdbe20081a0c2f5efd7803a8606ea4b07",
+      "palette_references": 6
+    },
+    "Commons/BorderGeometry.js": {
+      "sha256": "8b99fb8d32a2f4ccb72f09a1c6421771d7329555c59bff69d181f1218033c85d",
+      "git_blob": "0a9090351c69b7ac5042cd86ae44b87d4885937f",
+      "bytes": 12503,
+      "mode": "100644",
+      "palette_sha256": "8b99fb8d32a2f4ccb72f09a1c6421771d7329555c59bff69d181f1218033c85d",
+      "palette_references": 0
+    },
+    "Commons/Color.qml": {
+      "sha256": "cc9b62e2eaf8c307aa02206d9320c3d0ca349cf8feed452a6eddf387adaa5320",
+      "git_blob": "54163a4008141c568e4d76a6baab9ef153165fc0",
+      "bytes": 12779,
+      "mode": "100644",
+      "palette_sha256": "cc9b62e2eaf8c307aa02206d9320c3d0ca349cf8feed452a6eddf387adaa5320",
+      "palette_references": 0
+    },
+    "Commons/Style.qml": {
+      "sha256": "f5901092617ae62645597199270afd4dfb0644d596bdfff16e1834fca6ad7243",
+      "git_blob": "ec61252b7626fead302a2b69012e548b06982e88",
+      "bytes": 23547,
+      "mode": "100644",
+      "palette_sha256": "caf904bebf91a82007aa1106baa179ce97058c23c173157ce51ef01e5d6667c5",
+      "palette_references": 40
+    },
+    "Commons/Util.qml": {
+      "sha256": "6894c63190973b5dbe50b13b3f7a99dd5770e143699f3aae1650fb65ca3ebe9b",
+      "git_blob": "ca265acda4e2aecb1257444ce683bdbf2040f3df",
+      "bytes": 5770,
+      "mode": "100644",
+      "palette_sha256": "6894c63190973b5dbe50b13b3f7a99dd5770e143699f3aae1650fb65ca3ebe9b",
+      "palette_references": 0
+    },
+    "Commons/qmldir": {
+      "sha256": "5593fa25d33b1e2d3ed8628ca2e0dce5074497608f2bad6652689e390727e5e8",
+      "git_blob": "4bfd0b7838128144312a52dc33368df64e0968c3",
+      "bytes": 138,
+      "mode": "100644",
+      "palette_sha256": "5593fa25d33b1e2d3ed8628ca2e0dce5074497608f2bad6652689e390727e5e8",
+      "palette_references": 0
+    },
+    "README.md": {
+      "sha256": "e946c56db6ee1c6f31deb6429e777c9854da8d42ab8e72a1687d3c5f85cfc654",
+      "git_blob": "e72d02ceba17e880219349b9fa885c5ea0a2cda2",
+      "bytes": 13052,
+      "mode": "100644",
+      "palette_sha256": "e946c56db6ee1c6f31deb6429e777c9854da8d42ab8e72a1687d3c5f85cfc654",
+      "palette_references": 0
+    },
+    "Ui/BarIconButton.qml": {
+      "sha256": "bae9894d021655105b67d4ae7dec734bcd36ebf3b17a4aaef2c462e0cfa0c874",
+      "git_blob": "e2af8808a769ff404bd99130b83e3f1ef21c987a",
+      "bytes": 1814,
+      "mode": "100644",
+      "palette_sha256": "bae9894d021655105b67d4ae7dec734bcd36ebf3b17a4aaef2c462e0cfa0c874",
+      "palette_references": 0
+    },
+    "Ui/BarIndicator.qml": {
+      "sha256": "5ed0ecd4be63cbe51a732900ffe7a06ed02f89e176207a42258021d2631e6d4a",
+      "git_blob": "67709e1d87128b6a2312a9830ded84074ee80969",
+      "bytes": 2024,
+      "mode": "100644",
+      "palette_sha256": "5ed0ecd4be63cbe51a732900ffe7a06ed02f89e176207a42258021d2631e6d4a",
+      "palette_references": 0
+    },
+    "Ui/BarWidget.qml": {
+      "sha256": "8be00e2553a486b3dbfcb4f99de976035f323c4061b993dbc1842c75ff8b9022",
+      "git_blob": "a0c9584d4ace606cc6435114d45b191655e740a1",
+      "bytes": 1988,
+      "mode": "100644",
+      "palette_sha256": "8be00e2553a486b3dbfcb4f99de976035f323c4061b993dbc1842c75ff8b9022",
+      "palette_references": 0
+    },
+    "Ui/BorderOverlay.qml": {
+      "sha256": "c0aaf4f8a080712bf8dce2360d496ba1a63dcacb982a0fd9ed15bc51be333d66",
+      "git_blob": "f67c9e5fa3ce7dc786e6c09558e226048067cc90",
+      "bytes": 2697,
+      "mode": "100644",
+      "palette_sha256": "c0aaf4f8a080712bf8dce2360d496ba1a63dcacb982a0fd9ed15bc51be333d66",
+      "palette_references": 0
+    },
+    "Ui/BorderSurface.qml": {
+      "sha256": "e17d8150d0b0e60f431bd6df5e661f5d9fe1f5eec9c2e2420f6eff2179a45baf",
+      "git_blob": "50714e52133b1efc6ff304431baac474f456e682",
+      "bytes": 1443,
+      "mode": "100644",
+      "palette_sha256": "e17d8150d0b0e60f431bd6df5e661f5d9fe1f5eec9c2e2420f6eff2179a45baf",
+      "palette_references": 0
+    },
+    "Ui/Button.qml": {
+      "sha256": "590b6c80daaadc913013a7d0800bf9bb58d825cb5440a03907fa25ef3a129ed1",
+      "git_blob": "2c093b4b90839194dcb435abfcd5edd5549d462a",
+      "bytes": 8459,
+      "mode": "100644",
+      "palette_sha256": "5ef1c181ded4920065b0f6fc0863b092ff83f9877797ac924b745ba4e0e7a1cb",
+      "palette_references": 6
+    },
+    "Ui/ButtonGroup.qml": {
+      "sha256": "4af792f394534b7d61b270fcb44203bba8d88ed25f8822e0b90e456e35487542",
+      "git_blob": "f4870dea64acf8f26986d581425beb8b1be034b8",
+      "bytes": 4815,
+      "mode": "100644",
+      "palette_sha256": "daecdccb8529c9d17e61b470571dac3fa41b2b0e6a888c5b7ca10205b17d4428",
+      "palette_references": 3
+    },
+    "Ui/ConfirmDialog.qml": {
+      "sha256": "a536b5e69e800a9bbfa0820d25ba6f2064b148f643f69d2af03acdf9982e639f",
+      "git_blob": "ed4f8c98d9773dc6b693eff5c3e12e40cfa707a9",
+      "bytes": 4246,
+      "mode": "100644",
+      "palette_sha256": "50cee80b77aad1d879cf7f5dab1ed68edfa231f806df7115063bd9148ebc1385",
+      "palette_references": 9
+    },
+    "Ui/CursorSurface.qml": {
+      "sha256": "27844a40fbe378e84c0aea35654dd8b396afb7e331c86be80852e1529da4f5b2",
+      "git_blob": "58e46d0629fa3884a0b0332b19b49208de5ef322",
+      "bytes": 1523,
+      "mode": "100644",
+      "palette_sha256": "4c3a8eb239d05b1e1d9261ba389c8ec0feb2811fae2a382c0f1d2c442e86d1c5",
+      "palette_references": 2
+    },
+    "Ui/Dropdown.qml": {
+      "sha256": "212299663b89ba8ddfd2d0cf35325ec9c968e30c6da89d7bb163314f327b5d44",
+      "git_blob": "214a7fe4afd43b48c0f80b794b70f903e38afbe6",
+      "bytes": 8994,
+      "mode": "100644",
+      "palette_sha256": "5a94b599be5707e3956f9e2450723d80dffcb29c7f1509219049c8eeff37e1c6",
+      "palette_references": 5
+    },
+    "Ui/KeyboardPanel.qml": {
+      "sha256": "96245f2da8d38baa0017caa285d596c485bd19a3a4d2cd1675bee9d84ffba42d",
+      "git_blob": "b2fb218f46b40dd7f907fc123e714d09319ed2f8",
+      "bytes": 17563,
+      "mode": "100644",
+      "palette_sha256": "c8b3b0fd52d8a79469675e925ff851e1dd0588eb1eeb90bd4df004a4c7d72a0a",
+      "palette_references": 2
+    },
+    "Ui/MultiSelect.qml": {
+      "sha256": "256eda4947e20d0996278d3dad619bf6946c87ebb2270fb016c87d616da11fb1",
+      "git_blob": "f759b66dfde4cf37f57897ae2a90a295cacf1d44",
+      "bytes": 22323,
+      "mode": "100644",
+      "palette_sha256": "9976aac4b6f6d65a2fa84e635c77f31c02644d64c94d2239597e5a1e573c7514",
+      "palette_references": 5
+    },
+    "Ui/NumberField.qml": {
+      "sha256": "d4f6a684a7b194cd41c90f2e4392d457c27efbf89ef852bb7b6200f99809c560",
+      "git_blob": "24b70f5be68e38e1b6649ad3e849118ca375f8fc",
+      "bytes": 2453,
+      "mode": "100644",
+      "palette_sha256": "26074ed28063a2fc95ca99c9953787ab121c68ac9e6926399587c07543fd6bb4",
+      "palette_references": 2
+    },
+    "Ui/OpticalGlyph.qml": {
+      "sha256": "9a5b6041db2da15382b5dde8400df71b61076f4a546b216ec9c48484d8ae9374",
+      "git_blob": "d446a52ce346fd58d3e55a4b76827d11a10768ec",
+      "bytes": 1552,
+      "mode": "100644",
+      "palette_sha256": "7109bf2e1b3b333bd63b98beaa55463205a7d7f466b719f582fb3531846e86cd",
+      "palette_references": 1
+    },
+    "Ui/Panel.qml": {
+      "sha256": "e6588b3d7c1075d68c6392d028483fcc5d4d2bcb29180758fe265a957cbdc71d",
+      "git_blob": "b8866b5be2316440c7cb6db7ec4c1ff55a817484",
+      "bytes": 1886,
+      "mode": "100644",
+      "palette_sha256": "c5c9fff24d3fd294efc23aff8000c39542228d481837f79d2b5f82af7f1ed1ae",
+      "palette_references": 1
+    },
+    "Ui/PanelActionButton.qml": {
+      "sha256": "200a413ad7983125f783c679dcad1c0643ed2c2e4c41a01ef29fd6924e9ad2d8",
+      "git_blob": "8a1b10bce09d0d6cab2f4588663250b157e19d38",
+      "bytes": 3522,
+      "mode": "100644",
+      "palette_sha256": "fd1d963b23514fb241035147809129b5371cb4ef5d8572bae24a3d9719622c4c",
+      "palette_references": 2
+    },
+    "Ui/PanelController.qml": {
+      "sha256": "4c08895559a2a7634f6513cb08eda6e05f6ac0bf3d940085229d594b2f383108",
+      "git_blob": "c386640b7a3ca7104cb23dad2ec04a1659f65ade",
+      "bytes": 436,
+      "mode": "100644",
+      "palette_sha256": "4c08895559a2a7634f6513cb08eda6e05f6ac0bf3d940085229d594b2f383108",
+      "palette_references": 0
+    },
+    "Ui/PanelHero.qml": {
+      "sha256": "a47c93afb3daa9ca2e8fb95cd4b1fb7120a371b384f157592eb49b1cfff5c2c2",
+      "git_blob": "7d663f37751302e8c08d68972363346f22d02b39",
+      "bytes": 3230,
+      "mode": "100644",
+      "palette_sha256": "6d215003f2604c16a4703b19d0f34bf828cdfa5f0cd3d8463547c25a3b8a6581",
+      "palette_references": 2
+    },
+    "Ui/PanelKeyCatcher.qml": {
+      "sha256": "76abaf157317ea260b81591a614460dfbc7173f545963be25558ed5a8cddedb4",
+      "git_blob": "bac394e5247381ac5de95ad05e33fe6255901236",
+      "bytes": 2885,
+      "mode": "100644",
+      "palette_sha256": "76abaf157317ea260b81591a614460dfbc7173f545963be25558ed5a8cddedb4",
+      "palette_references": 0
+    },
+    "Ui/PanelSectionHeader.qml": {
+      "sha256": "95fc1c3153348d7660e90910e42c4c9ee0eee5c5c35be22113dbe31038ffba18",
+      "git_blob": "5559248e4a714a8c76ddfa06cf1df643da84f8a8",
+      "bytes": 993,
+      "mode": "100644",
+      "palette_sha256": "48573a689d8bc2d933fad420f3bf0e350408f4a31d068a9cdc1303382ef64297",
+      "palette_references": 1
+    },
+    "Ui/PanelSeparator.qml": {
+      "sha256": "667cd49e89c5911fbe564904720b3d4073057e0b6fa38f03e55fa5949ccd195c",
+      "git_blob": "27a81ec3a281bbccaa5c254153b9b23a239a8225",
+      "bytes": 480,
+      "mode": "100644",
+      "palette_sha256": "54b970d6a6e5683583906517c808f271227f5b47a3a1ac3a58faa3f41d822316",
+      "palette_references": 1
+    },
+    "Ui/PanelSlider.qml": {
+      "sha256": "aa8fcf167324ff9eb60a219f037004482adbe2a30369af123d53956a81a93068",
+      "git_blob": "d7bf1303b438cd00242d1d697e1d0f498547dbd3",
+      "bytes": 4843,
+      "mode": "100644",
+      "palette_sha256": "e1a56b744e89ccb9abee22557e062e23f6ba11b18b081508577165178bb49841",
+      "palette_references": 4
+    },
+    "Ui/PanelToolTip.qml": {
+      "sha256": "7304518b9f813e31535c4ff0e30bea530fc74b0d9b7b12cd5a30b1ca16eb4a23",
+      "git_blob": "139b6cf041840602e01134cd3a2fab4cf5e004f9",
+      "bytes": 1679,
+      "mode": "100644",
+      "palette_sha256": "527888ae79d06194b3498cd329c004abf8b8d2539533994487ab8e8e1ba68d68",
+      "palette_references": 4
+    },
+    "Ui/PointerMoveGate.qml": {
+      "sha256": "6f494aadb3b7963c35167cf1b07505c237f27ef07e4fd386f7d041ec302af51a",
+      "git_blob": "e97b9d83e45c286c811f77b5c0e130646b0857bb",
+      "bytes": 1554,
+      "mode": "100644",
+      "palette_sha256": "6f494aadb3b7963c35167cf1b07505c237f27ef07e4fd386f7d041ec302af51a",
+      "palette_references": 0
+    },
+    "Ui/PopupCard.qml": {
+      "sha256": "b3751c78dba9d3b6383c072c915c3d1ecf5e2227cc8417127323077df1f0af5a",
+      "git_blob": "058b068f9a2858341373ef991392f3af1e99221f",
+      "bytes": 6676,
+      "mode": "100644",
+      "palette_sha256": "e29abfcde9db314a9ebce3c7640ff6be996badc168ad5a862f63678dabfdd809",
+      "palette_references": 3
+    },
+    "Ui/ScreenMoveRemap.qml": {
+      "sha256": "ae09782672877502015e517c6f58565cf79b82e0aa1dc56ee5655989863ad8a7",
+      "git_blob": "44d2308ad025fc0501f70b3680faf1fc6d13d45c",
+      "bytes": 1439,
+      "mode": "100644",
+      "palette_sha256": "ae09782672877502015e517c6f58565cf79b82e0aa1dc56ee5655989863ad8a7",
+      "palette_references": 0
+    },
+    "Ui/SearchableDropdown.qml": {
+      "sha256": "deb1d31c60255698b036b3f5d0f476cfa100e01b63e7ad090a43fcd61d74055d",
+      "git_blob": "9cf0aa49e7c5b16ab5d70e2568cb48b5a403cdfe",
+      "bytes": 12997,
+      "mode": "100644",
+      "palette_sha256": "734d0a1760fa0be4be8691966e9931675bc4016ff7da889a1f3926fb87cf529f",
+      "palette_references": 5
+    },
+    "Ui/SpeedTestOverlay.qml": {
+      "sha256": "310fc3b45ed10220ba183be9d5ebe1bc58656a45276bab6fd7a6d20a4d055d60",
+      "git_blob": "1216f34806e74986bcafbb3d096a5f1a31851b5f",
+      "bytes": 13645,
+      "mode": "100644",
+      "palette_sha256": "9271edd64189430bcf2ef01190a4ada90b7b78daec5754d5aa06bb86cb76be94",
+      "palette_references": 6
+    },
+    "Ui/TextField.qml": {
+      "sha256": "b3ad72f56f86c2df164e347d64205c099f77c5fb90933fabea3b0f2a9e2b3778",
+      "git_blob": "8d4183f65084348adb804eab84fdd613fa79fec8",
+      "bytes": 2490,
+      "mode": "100644",
+      "palette_sha256": "08c8141e74b7791060461939626f08453a28fe97eed4f4339dabde9d6a6edb3b",
+      "palette_references": 2
+    },
+    "Ui/Toggle.qml": {
+      "sha256": "cf37c109af286e0f552e2b4fe40f8f5d12263b1d86add6c8f6ceacb5e410b611",
+      "git_blob": "26a5cf9617a16338c787a06a1fb96231823f23c7",
+      "bytes": 3639,
+      "mode": "100644",
+      "palette_sha256": "4ea8a335cbfcd70443c546d62df79dc0df6fbe40bf2758a91dbcfca0b8872203",
+      "palette_references": 2
+    },
+    "Ui/ToggleSwitch.qml": {
+      "sha256": "6bfae25396c1d03979efd9a27130e03f11edc2c7062d1f0c0c252b30e60a9898",
+      "git_blob": "22e6461abe3546fe40eeb64c998c149a9694fd2f",
+      "bytes": 4506,
+      "mode": "100644",
+      "palette_sha256": "97ef05b8a752ededda041485f42a57bc578e0a58acd4a3696ac0d253c77c8741",
+      "palette_references": 2
+    },
+    "Ui/WidgetButton.qml": {
+      "sha256": "06efda92afd9ff567a6e165d49e83d280711a562e53a579befe4f3f861e129ec",
+      "git_blob": "02d843ab7b4b96c94b5c565ec8841575c0ddf6c1",
+      "bytes": 4467,
+      "mode": "100644",
+      "palette_sha256": "5f90c535486d91d51acfb8b9e3f288f9eef04be868155c1d256575a5f369fa79",
+      "palette_references": 2
+    },
+    "Ui/qmldir": {
+      "sha256": "d6b4ac284aea719458cfdcf66afc18c63b69c20a400317ad307d029865a96886",
+      "git_blob": "b25bf5ca00b27be9f3ee189d4326a1a522c464e2",
+      "bytes": 1106,
+      "mode": "100644",
+      "palette_sha256": "d6b4ac284aea719458cfdcf66afc18c63b69c20a400317ad307d029865a96886",
+      "palette_references": 0
+    },
+    "plugins/README.md": {
+      "sha256": "5af90f436f96cb0f9e1c138209197331fb11e24b6d98bf03bcfbe0f3adfdf8e1",
+      "git_blob": "d42525150a6a5fe6e68c60f1b99b84b702f42a2f",
+      "bytes": 7037,
+      "mode": "100644",
+      "palette_sha256": "5af90f436f96cb0f9e1c138209197331fb11e24b6d98bf03bcfbe0f3adfdf8e1",
+      "palette_references": 0
+    },
+    "plugins/agents/Agent.qml": {
+      "sha256": "9fa9a8650ecbc2f2f691b01da7419fa0620b6066c423eea8d50f6253ddf6f4e3",
+      "git_blob": "c9ba4c5bd5f10ff557c40357780c7542e5ba7f98",
+      "bytes": 874,
+      "mode": "100644",
+      "palette_sha256": "9fa9a8650ecbc2f2f691b01da7419fa0620b6066c423eea8d50f6253ddf6f4e3",
+      "palette_references": 0
+    },
+    "plugins/agents/Main.qml": {
+      "sha256": "fc61e5e06325dd6eb3d100b1f3eead4c6ed8b62b58bda209c70a82084e23f3c7",
+      "git_blob": "cb8e8c2d3c7b66fa9f181179254c759638b023d0",
+      "bytes": 26714,
+      "mode": "100644",
+      "palette_sha256": "fc61e5e06325dd6eb3d100b1f3eead4c6ed8b62b58bda209c70a82084e23f3c7",
+      "palette_references": 0
+    },
+    "plugins/agents/Panel.qml": {
+      "sha256": "b45143d843858a7ae1aeaef7def36c722a7bfb74557063bd1ad5dbb63952fb41",
+      "git_blob": "6637531a38089494e0d0cd234cbe2679108114f0",
+      "bytes": 32307,
+      "mode": "100644",
+      "palette_sha256": "dc2753d808aad61248b3bd5d11f2e8dc49d463a56407c8460f1f4905fdf7a8bf",
+      "palette_references": 5
+    },
+    "plugins/agents/README.md": {
+      "sha256": "34160fb26e62609839b6b0019a5d79fdd31b4f8f48c148eaf7fec3372c2a910e",
+      "git_blob": "51ad4e43c2d25f897892dd72e73244a332b2fe38",
+      "bytes": 7429,
+      "mode": "100644",
+      "palette_sha256": "34160fb26e62609839b6b0019a5d79fdd31b4f8f48c148eaf7fec3372c2a910e",
+      "palette_references": 0
+    },
+    "plugins/agents/assets/claude.svg": {
+      "sha256": "0df6dad23995f5a76c6db8cc2a4e646ff45bd7a0626ef98662a7025646e5eea1",
+      "git_blob": "d3007012b79a7a0217ea442cb1a7666fb7e5b47e",
+      "bytes": 1999,
+      "mode": "100644",
+      "palette_sha256": "0df6dad23995f5a76c6db8cc2a4e646ff45bd7a0626ef98662a7025646e5eea1",
+      "palette_references": 0
+    },
+    "plugins/agents/assets/codex-light.svg": {
+      "sha256": "dc510dda4e7e43c214e6a5a023b9909bc645b45f2fdde537ee6d6b09f1bbc111",
+      "git_blob": "62b66865c61271efb53561edb882d6a135cb5935",
+      "bytes": 1354,
+      "mode": "100644",
+      "palette_sha256": "dc510dda4e7e43c214e6a5a023b9909bc645b45f2fdde537ee6d6b09f1bbc111",
+      "palette_references": 0
+    },
+    "plugins/agents/assets/codex.svg": {
+      "sha256": "f1aeeba6d631feca31129bbc06ac7f813078d6bafa3837061e0ead173f36b857",
+      "git_blob": "1716a1316693e3384c3a313337041e8d7a369ea4",
+      "bytes": 1354,
+      "mode": "100644",
+      "palette_sha256": "f1aeeba6d631feca31129bbc06ac7f813078d6bafa3837061e0ead173f36b857",
+      "palette_references": 0
+    },
+    "plugins/agents/assets/fireworks.svg": {
+      "sha256": "842f35cc7d5f20f8a6f08fddc78f206812a3b9f2c104e09916a5f536058941ed",
+      "git_blob": "a659bed9fa9145712d2d5ccb42fe24412a92b15f",
+      "bytes": 328,
+      "mode": "100644",
+      "palette_sha256": "842f35cc7d5f20f8a6f08fddc78f206812a3b9f2c104e09916a5f536058941ed",
+      "palette_references": 0
+    },
+    "plugins/agents/manifest.json": {
+      "sha256": "11bbc83df813fc5862a2ca34399486f19772ebdffe56ee1fe5dde9265a40703f",
+      "git_blob": "1743a7982141378e939fef86a28a9eae5aaaf5bf",
+      "bytes": 1943,
+      "mode": "100644",
+      "palette_sha256": "11bbc83df813fc5862a2ca34399486f19772ebdffe56ee1fe5dde9265a40703f",
+      "palette_references": 0
+    },
+    "plugins/background/Background.qml": {
+      "sha256": "505c7d4af8323bdb201cd816aa8332248dcfd4c056ec8f64b5c0a2ae1776c58a",
+      "git_blob": "21e1b0a98077e3a064a028d4da38f480c80a0451",
+      "bytes": 9844,
+      "mode": "100644",
+      "palette_sha256": "0314c87c5ea3482978cc9e2fd7b5e4ca3fe8efefbc4f7780f31a4c3d226b0bf9",
+      "palette_references": 2
+    },
+    "plugins/background/manifest.json": {
+      "sha256": "f1e3eeb5ebd67738bb3a6ed24cfefe831d0fd5785c7d85f8b050c18788b8f265",
+      "git_blob": "aa00a22c457b0020967cef688e20c0d705015b60",
+      "bytes": 296,
+      "mode": "100644",
+      "palette_sha256": "f1e3eeb5ebd67738bb3a6ed24cfefe831d0fd5785c7d85f8b050c18788b8f265",
+      "palette_references": 0
+    },
+    "plugins/bar/Bar.qml": {
+      "sha256": "a9db2da058c2822dd0f47547f5fb4b07252de91c75445874e4ef39e0e2779786",
+      "git_blob": "5dcd205fe99db3c1fe2abe2481757cb235ad744d",
+      "bytes": 60053,
+      "mode": "100644",
+      "palette_sha256": "ffd433b09d736960d887b696b5dfacb2933524485e7a4d5dc1a6da7b87335c7e",
+      "palette_references": 10
+    },
+    "plugins/bar/BarModel.js": {
+      "sha256": "908f30edce60dcba46d2039ba3d501fd0faa35fa1f90b7dbda69439288f8a8d0",
+      "git_blob": "36900e5b48259528b250aa1ddd6228c56cd6b707",
+      "bytes": 8198,
+      "mode": "100644",
+      "palette_sha256": "908f30edce60dcba46d2039ba3d501fd0faa35fa1f90b7dbda69439288f8a8d0",
+      "palette_references": 0
+    },
+    "plugins/bar/README.md": {
+      "sha256": "566f36439f8a90eeb56cf1e23b66cae972e9f47d4de9b0ee25b5f531bb1f3c27",
+      "git_blob": "6ffdcc466ffdf2689ffa61792e539b31bf02678f",
+      "bytes": 8743,
+      "mode": "100644",
+      "palette_sha256": "566f36439f8a90eeb56cf1e23b66cae972e9f47d4de9b0ee25b5f531bb1f3c27",
+      "palette_references": 0
+    },
+    "plugins/bar/indicators/Dictation.qml": {
+      "sha256": "581498154ecbfaa64dcc0612dbac417968b8567404c0cabb13fa092f339c7ac6",
+      "git_blob": "57f3c3196ebe048f724c16dc6e5581ab65eb4832",
+      "bytes": 778,
+      "mode": "100644",
+      "palette_sha256": "581498154ecbfaa64dcc0612dbac417968b8567404c0cabb13fa092f339c7ac6",
+      "palette_references": 0
+    },
+    "plugins/bar/indicators/Dnd.qml": {
+      "sha256": "ef3dfda58d9a874d304d6c7742508535957d99e388d2140ca90d14f1b29050d1",
+      "git_blob": "052469bf7dc86f6d567640aa3587fc1a5ef84009",
+      "bytes": 581,
+      "mode": "100644",
+      "palette_sha256": "ef3dfda58d9a874d304d6c7742508535957d99e388d2140ca90d14f1b29050d1",
+      "palette_references": 0
+    },
+    "plugins/bar/indicators/NightLight.qml": {
+      "sha256": "9a7d5dbbcf5f2b1612d673cef8fba26c53584364e12b43935f1d02a66fb404d2",
+      "git_blob": "b15744c7eadda914578a5737f774afdd1fe058f6",
+      "bytes": 488,
+      "mode": "100644",
+      "palette_sha256": "9a7d5dbbcf5f2b1612d673cef8fba26c53584364e12b43935f1d02a66fb404d2",
+      "palette_references": 0
+    },
+    "plugins/bar/indicators/Reminder.qml": {
+      "sha256": "51cef554abf4b4b28692cee73add20e2c34bd9883bfed74be10b5334d73f7c7b",
+      "git_blob": "3441edbecf37213642190a4cee55adc1261bda80",
+      "bytes": 1253,
+      "mode": "100644",
+      "palette_sha256": "51cef554abf4b4b28692cee73add20e2c34bd9883bfed74be10b5334d73f7c7b",
+      "palette_references": 0
+    },
+    "plugins/bar/indicators/ScreenRecording.qml": {
+      "sha256": "e336f4e14e0875fe56cb0c1008799506eb5023051c80e530b9e1f35fedbce2df",
+      "git_blob": "271e1c399c2823f700980866a28c51112420e6c5",
+      "bytes": 950,
+      "mode": "100644",
+      "palette_sha256": "e336f4e14e0875fe56cb0c1008799506eb5023051c80e530b9e1f35fedbce2df",
+      "palette_references": 0
+    },
+    "plugins/bar/indicators/StayAwake.qml": {
+      "sha256": "0701f2231d292af5ab500cb7be574222d0be82a7831eb8188da038f2347bdd13",
+      "git_blob": "70a7829e50aacb4b863d1af038b84fc5572c062b",
+      "bytes": 473,
+      "mode": "100644",
+      "palette_sha256": "0701f2231d292af5ab500cb7be574222d0be82a7831eb8188da038f2347bdd13",
+      "palette_references": 0
+    },
+    "plugins/bar/manifest.json": {
+      "sha256": "cdb1e824279ff44d8e48d8aea4e17a4dd9c115d6cc8d3ddf5c964fba12b143bb",
+      "git_blob": "d929c0a1deed41fc0f31f81bb2d1a5a00f67c010",
+      "bytes": 227,
+      "mode": "100644",
+      "palette_sha256": "cdb1e824279ff44d8e48d8aea4e17a4dd9c115d6cc8d3ddf5c964fba12b143bb",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/ActiveWindow.manifest.json": {
+      "sha256": "b329d7bbec36086c2f72f904029229b71d4c3ad3afb96ce0ff3cf05b9eda9b80",
+      "git_blob": "ab274f7aa2e670b71305453b000cd1b94e64eb44",
+      "bytes": 468,
+      "mode": "100644",
+      "palette_sha256": "b329d7bbec36086c2f72f904029229b71d4c3ad3afb96ce0ff3cf05b9eda9b80",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/ActiveWindow.qml": {
+      "sha256": "d06b4fe11d73957e77f0d17e97b5596a2b99ce46122efb041d076e15706ed9d0",
+      "git_blob": "97ccce8d42737535be53f2d47d22cef86856083d",
+      "bytes": 1780,
+      "mode": "100644",
+      "palette_sha256": "3956e2c4a87a8525d3795ff4ff17f8e306b3315c2581b8329f991b18a791b6e4",
+      "palette_references": 1
+    },
+    "plugins/bar/widgets/Indicators.manifest.json": {
+      "sha256": "3eea8a52c46d7e2436f8967abb4347d56163f7cef622caf0fe2d69bf6858d59b",
+      "git_blob": "4d8f74204c0ab81a5dbc7944d6b4933b87582123",
+      "bytes": 2056,
+      "mode": "100644",
+      "palette_sha256": "3eea8a52c46d7e2436f8967abb4347d56163f7cef622caf0fe2d69bf6858d59b",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/Indicators.qml": {
+      "sha256": "f64fc3a122d71e6cc1f9a8b8284416df29cac070306fa6df55e9f1053fe4cf65",
+      "git_blob": "cb35c5a23ce3522a1ad753590bc4e3006eb2d859",
+      "bytes": 13812,
+      "mode": "100644",
+      "palette_sha256": "f64fc3a122d71e6cc1f9a8b8284416df29cac070306fa6df55e9f1053fe4cf65",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/KeyboardLayout.manifest.json": {
+      "sha256": "51613070b3b2774c4b7ab4a7c5b2b52319a030f5350485e95dba62fae819723a",
+      "git_blob": "cc5ad783cd4a7593c60f5742bcc6edef2fb90045",
+      "bytes": 605,
+      "mode": "100644",
+      "palette_sha256": "51613070b3b2774c4b7ab4a7c5b2b52319a030f5350485e95dba62fae819723a",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/KeyboardLayout.qml": {
+      "sha256": "9a80f7e73da4c2c280268d1e9152045697cf1c4f118e2be5cb32a43c07e8f6bb",
+      "git_blob": "5457d88e4e1db59a9876077b92de8af432db8272",
+      "bytes": 8272,
+      "mode": "100644",
+      "palette_sha256": "9a80f7e73da4c2c280268d1e9152045697cf1c4f118e2be5cb32a43c07e8f6bb",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/KeyboardLayoutModel.js": {
+      "sha256": "722e0e4eeaac0fa01660175d2da7fc6a2ba5f2b01d71843a8c731591979d2c2d",
+      "git_blob": "f46ee555c44de02866d6a6d7e02d3b4ccd3084ca",
+      "bytes": 5107,
+      "mode": "100644",
+      "palette_sha256": "722e0e4eeaac0fa01660175d2da7fc6a2ba5f2b01d71843a8c731591979d2c2d",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/Microphone.manifest.json": {
+      "sha256": "58f9f212d3a840bc4ebe276076ec37ba19977f96808e8a8c2ce00aa2a35b8055",
+      "git_blob": "7cc837c55144c1fbea89e22b1047c0904ac4f009",
+      "bytes": 430,
+      "mode": "100644",
+      "palette_sha256": "58f9f212d3a840bc4ebe276076ec37ba19977f96808e8a8c2ce00aa2a35b8055",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/Microphone.qml": {
+      "sha256": "29b9aa5143074c8cbcaee32bbff291204e5358c8fb07bb2e82f53f84a2568dad",
+      "git_blob": "4f1bf211cf2ab40e3a3939ed98613bb056c394b1",
+      "bytes": 1661,
+      "mode": "100644",
+      "palette_sha256": "29b9aa5143074c8cbcaee32bbff291204e5358c8fb07bb2e82f53f84a2568dad",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/Spacer.manifest.json": {
+      "sha256": "760ef0a8c95587453907b621ca04ec7349311a154fb5d1b86bac9b1fa3a370fa",
+      "git_blob": "a258f1471159d1c735604b6e8c7a0d3797813cca",
+      "bytes": 438,
+      "mode": "100644",
+      "palette_sha256": "760ef0a8c95587453907b621ca04ec7349311a154fb5d1b86bac9b1fa3a370fa",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/Spacer.qml": {
+      "sha256": "85abd1cd06755e57194b86d30df9c31e7521e5c91f5a663d9cd6420b9e91c545",
+      "git_blob": "542d7d732262aeb99f0ed88d5e84a45a17556329",
+      "bytes": 293,
+      "mode": "100644",
+      "palette_sha256": "85abd1cd06755e57194b86d30df9c31e7521e5c91f5a663d9cd6420b9e91c545",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/SystemUpdate.manifest.json": {
+      "sha256": "daf0806360b5c8ffd71a0d08d9ef0e0f69048ea85c4b10f45b4a8e30b4601328",
+      "git_blob": "855cac7bc0441ef665900cf3714217484da867fd",
+      "bytes": 452,
+      "mode": "100644",
+      "palette_sha256": "daf0806360b5c8ffd71a0d08d9ef0e0f69048ea85c4b10f45b4a8e30b4601328",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/SystemUpdate.qml": {
+      "sha256": "d615dbfb9c9cfd1557f98db1e78a812ba81847209ca87b98dc1f6539aa8fb3de",
+      "git_blob": "a4f9020f1febfe9d2667c1f7bf49a3cbf3a2141d",
+      "bytes": 1286,
+      "mode": "100644",
+      "palette_sha256": "d615dbfb9c9cfd1557f98db1e78a812ba81847209ca87b98dc1f6539aa8fb3de",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/Tray.manifest.json": {
+      "sha256": "ece62a8a728bf5903b344f293711379df62088b94532237ca42f432c84230fb2",
+      "git_blob": "c3bc4180c8a6415878bd0bc46b700c7088af18ad",
+      "bytes": 530,
+      "mode": "100644",
+      "palette_sha256": "ece62a8a728bf5903b344f293711379df62088b94532237ca42f432c84230fb2",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/Tray.qml": {
+      "sha256": "36d26f81d8e37561cdd4addc3ccd0df0490415d196d518ead88ea95af0d02466",
+      "git_blob": "d0d07f578ac30cfd370e5606e6f39050282bc90e",
+      "bytes": 30111,
+      "mode": "100644",
+      "palette_sha256": "ae7b87ee91f67654dbd88ad36ac858231db30e5e6bac7392ce2cdf6ffe27aa08",
+      "palette_references": 3
+    },
+    "plugins/bar/widgets/TrayModel.js": {
+      "sha256": "925a879daf505071608094664c7c53679eaa77b74c169434be026499ccf6c27e",
+      "git_blob": "98a41da64e2a4155ce0cbe27f81e57447721b4d6",
+      "bytes": 1432,
+      "mode": "100644",
+      "palette_sha256": "925a879daf505071608094664c7c53679eaa77b74c169434be026499ccf6c27e",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/Workspaces.manifest.json": {
+      "sha256": "4f381b91cd9e6306870e7ac03ce10ad20248178b45c7cd5d738fda6924df5da3",
+      "git_blob": "e51f7a0aeeda1e20973522344390e3a18e6789e7",
+      "bytes": 427,
+      "mode": "100644",
+      "palette_sha256": "4f381b91cd9e6306870e7ac03ce10ad20248178b45c7cd5d738fda6924df5da3",
+      "palette_references": 0
+    },
+    "plugins/bar/widgets/Workspaces.qml": {
+      "sha256": "d0509e734d76d3c8cb68502a657ebae52e66bcc06988f2930567d67004f28325",
+      "git_blob": "ec0482a59ea06c0fc7b0dc2d1e35d6ecf2b7022a",
+      "bytes": 2084,
+      "mode": "100644",
+      "palette_sha256": "d0509e734d76d3c8cb68502a657ebae52e66bcc06988f2930567d67004f28325",
+      "palette_references": 0
+    },
+    "plugins/clipboard/Clipboard.qml": {
+      "sha256": "f48951bab2216ab1c603f3e5816709428205b710b79bda4b39541ee25e9e2f10",
+      "git_blob": "fde49b3fba7eccfdc8fc3012ee631e4349752785",
+      "bytes": 20539,
+      "mode": "100644",
+      "palette_sha256": "60e505df088181a4b725d02ec5a32810cc9012bd2cbe163e5c4c1a9355b1441a",
+      "palette_references": 6
+    },
+    "plugins/clipboard/ClipboardHistory.js": {
+      "sha256": "57d467477e146f636bb5639dd9badf3bce178eff56bb79acdee8be08b48382c8",
+      "git_blob": "49008ccc32dd5ca4bc4094bf71cbf3e57f9686dc",
+      "bytes": 6736,
+      "mode": "100644",
+      "palette_sha256": "57d467477e146f636bb5639dd9badf3bce178eff56bb79acdee8be08b48382c8",
+      "palette_references": 0
+    },
+    "plugins/clipboard/capture.sh": {
+      "sha256": "513af53f2c89aac4c4dbf96835c9a31b8f2731668524f4cd37862fa3208f598b",
+      "git_blob": "d6ce2b286ca2d4ea4182fd92bd7aa0f61559a3a6",
+      "bytes": 3315,
+      "mode": "100755",
+      "palette_sha256": "513af53f2c89aac4c4dbf96835c9a31b8f2731668524f4cd37862fa3208f598b",
+      "palette_references": 0
+    },
+    "plugins/clipboard/manifest.json": {
+      "sha256": "13a7a3b174a333a8c0ec91a586b35617fbb70e03e0124f63916c3783fb64ca75",
+      "git_blob": "ba366b8fcadbfa2adda7c742c69bb778626c8067",
+      "bytes": 297,
+      "mode": "100644",
+      "palette_sha256": "13a7a3b174a333a8c0ec91a586b35617fbb70e03e0124f63916c3783fb64ca75",
+      "palette_references": 0
+    },
+    "plugins/dev-gallery/GalleryPanel.qml": {
+      "sha256": "1a3d7fb249b772632e18b7b0ebdf01ed3074153f777c138e9379474390654288",
+      "git_blob": "945b62527dee8a65514a8b401f6d6a70c5509b8e",
+      "bytes": 78056,
+      "mode": "100644",
+      "palette_sha256": "33a41e4465ccac53ee60c2eacee1b91278c0c22387fd274fb763ef33101e92af",
+      "palette_references": 4
+    },
+    "plugins/dev-gallery/manifest.json": {
+      "sha256": "5e17304ee1689c76240cf66850981cc6d6411bffc2608cad3b93dbb12135e86a",
+      "git_blob": "5491a9be1bab8f17cfefca0139d48e796b77137f",
+      "bytes": 388,
+      "mode": "100644",
+      "palette_sha256": "5e17304ee1689c76240cf66850981cc6d6411bffc2608cad3b93dbb12135e86a",
+      "palette_references": 0
+    },
+    "plugins/emojis/EmojiSearch.js": {
+      "sha256": "6d27be1181c3e79f149e0b2b0385826ff3037fe68ed4488160c7ada1b4a77e15",
+      "git_blob": "b36fa58c2d5d6483342668d316045c6c55cce505",
+      "bytes": 1051,
+      "mode": "100644",
+      "palette_sha256": "6d27be1181c3e79f149e0b2b0385826ff3037fe68ed4488160c7ada1b4a77e15",
+      "palette_references": 0
+    },
+    "plugins/emojis/Emojis.qml": {
+      "sha256": "4c588755ed0568d8feb2826405271a0ce4ca29126a60f868e5aec67635b142cd",
+      "git_blob": "cbdf541d063b608b4356b5e0b80757febb6fbb7d",
+      "bytes": 11242,
+      "mode": "100644",
+      "palette_sha256": "b465e9db0934ba7babded7dd6f080f26de7bf1674cf19a147bcd47e35ce6be2d",
+      "palette_references": 6
+    },
+    "plugins/emojis/emojis.json": {
+      "sha256": "48c9e885e2c1b948170d0508e34433fb5d15ad1946d171a12f746005c6f8664f",
+      "git_blob": "27c7a252445dd5bb8e7c52a1cff08c80e5c384bd",
+      "bytes": 107827,
+      "mode": "100644",
+      "palette_sha256": "48c9e885e2c1b948170d0508e34433fb5d15ad1946d171a12f746005c6f8664f",
+      "palette_references": 0
+    },
+    "plugins/emojis/manifest.json": {
+      "sha256": "6d4873361e50ff25318f103db4d52d79bdfcb090a705ab71ea3b5c4ae466b7b4",
+      "git_blob": "f04b47f257dcba00658a148fb8b39c6407cad5d3",
+      "bytes": 272,
+      "mode": "100644",
+      "palette_sha256": "6d4873361e50ff25318f103db4d52d79bdfcb090a705ab71ea3b5c4ae466b7b4",
+      "palette_references": 0
+    },
+    "plugins/image-picker/ImagePicker.qml": {
+      "sha256": "0d882dcb6fc593d35fdfa6a9c4a87f04f5876dc2d221aac3eebf854f96dccedf",
+      "git_blob": "672a5d16505b9882058c7bff34f01a7ca581f764",
+      "bytes": 19894,
+      "mode": "100644",
+      "palette_sha256": "78c79d8b4f510c8b9aa7fec0a1c8cbbf6bcf1d536c3df913148d4efa8acc220a",
+      "palette_references": 5
+    },
+    "plugins/image-picker/ImagePickerModel.js": {
+      "sha256": "2eecf32b70811d0a39981e351ebe9843384aaf97b43dad1216651d2535a9a5da",
+      "git_blob": "f34fdcaba9898aa4656e1d29d718b815fe16ab52",
+      "bytes": 2688,
+      "mode": "100644",
+      "palette_sha256": "2eecf32b70811d0a39981e351ebe9843384aaf97b43dad1216651d2535a9a5da",
+      "palette_references": 0
+    },
+    "plugins/image-picker/list.sh": {
+      "sha256": "6f6b800fba3c5c3b98a80dfa6b1606fb14b69d3ca37035a8c163135a7d74ce5b",
+      "git_blob": "a30e47438027ca17e15806bbebae46c1da4d3cf4",
+      "bytes": 1442,
+      "mode": "100755",
+      "palette_sha256": "6f6b800fba3c5c3b98a80dfa6b1606fb14b69d3ca37035a8c163135a7d74ce5b",
+      "palette_references": 0
+    },
+    "plugins/image-picker/manifest.json": {
+      "sha256": "b255a60b42c927b1d6e191ca5a70a30fb537601a1a13b95c4bcc0646f7d6f64b",
+      "git_blob": "debd18777c05fddd8d7ac9e9af1b6c57b85574a6",
+      "bytes": 350,
+      "mode": "100644",
+      "palette_sha256": "b255a60b42c927b1d6e191ca5a70a30fb537601a1a13b95c4bcc0646f7d6f64b",
+      "palette_references": 0
+    },
+    "plugins/lock/LockView.qml": {
+      "sha256": "ddc05881b571c1ffc526d751a83002649d873969a2fd66297b347c152ac6111b",
+      "git_blob": "7b0b0ae050e5cf42a991b29af653f9a2cae206a1",
+      "bytes": 8190,
+      "mode": "100644",
+      "palette_sha256": "070a079e4f668d78bc4ff2e554fdb705d09be1f14ed68f217c3cb56bc251d491",
+      "palette_references": 12
+    },
+    "plugins/lock/Service.qml": {
+      "sha256": "3f0a265a09f7957e8f5d74666595d3136ec64899c414426190460f9e2098e701",
+      "git_blob": "9ecb1cc09be0541d00f87f462b653bd4cd0d8064",
+      "bytes": 15301,
+      "mode": "100644",
+      "palette_sha256": "79fe6348955047cd18183a4e2f5bbb020289a62d2f761ede13e71fb58d784f3b",
+      "palette_references": 1
+    },
+    "plugins/lock/manifest.json": {
+      "sha256": "4a0658bff8ac1cb8d428cf32e7eb05027709e2d49beed0b2482c63cca9c5b3f4",
+      "git_blob": "87acd93930c52d5796d74fc94d9b743201734486",
+      "bytes": 320,
+      "mode": "100644",
+      "palette_sha256": "4a0658bff8ac1cb8d428cf32e7eb05027709e2d49beed0b2482c63cca9c5b3f4",
+      "palette_references": 0
+    },
+    "plugins/menu/BarWidget.qml": {
+      "sha256": "ad201156483711ba77ec97303183bc02922248e97ac0c0b8ea30d250e57cd0af",
+      "git_blob": "8fa7e1b37ddd36d434cb06198ccec755d4b6c882",
+      "bytes": 541,
+      "mode": "100644",
+      "palette_sha256": "ad201156483711ba77ec97303183bc02922248e97ac0c0b8ea30d250e57cd0af",
+      "palette_references": 0
+    },
+    "plugins/menu/Menu.qml": {
+      "sha256": "7fef6394cce563f188324386738a55e3bde36187ba6d1341ac2d4d46e1879df9",
+      "git_blob": "044d4bbc0c6907fa24e2cdea04981b42b43ec712",
+      "bytes": 51931,
+      "mode": "100644",
+      "palette_sha256": "0409484206ea97122703e44ca0c8e650a3d16b9f1c50e5b4cacc657a88be52aa",
+      "palette_references": 7
+    },
+    "plugins/menu/MenuModel.js": {
+      "sha256": "ff6b265ca477d0d04297b0d9a5d9715960069db6da44603160d329e087e55fd8",
+      "git_blob": "c6dc7ed378ffa055daeff42fcc200aa1bc5781d6",
+      "bytes": 18099,
+      "mode": "100644",
+      "palette_sha256": "ff6b265ca477d0d04297b0d9a5d9715960069db6da44603160d329e087e55fd8",
+      "palette_references": 0
+    },
+    "plugins/menu/manifest.json": {
+      "sha256": "2cf1fe472ac75116c221a01999864bc2227f567ab42d6b61565b96551a44c060",
+      "git_blob": "4227a227e3a512d0f0ebced87e66cddc44d86bf8",
+      "bytes": 492,
+      "mode": "100644",
+      "palette_sha256": "2cf1fe472ac75116c221a01999864bc2227f567ab42d6b61565b96551a44c060",
+      "palette_references": 0
+    },
+    "plugins/notifications/NotificationLogic.js": {
+      "sha256": "1769f0c74737af720d9333ecf33d895cf3bf75f7f356e9d04942895733219336",
+      "git_blob": "9bad602d9f53e43cea619e44affb2969e7c3878f",
+      "bytes": 14638,
+      "mode": "100644",
+      "palette_sha256": "1769f0c74737af720d9333ecf33d895cf3bf75f7f356e9d04942895733219336",
+      "palette_references": 0
+    },
+    "plugins/notifications/Service.qml": {
+      "sha256": "11665542e70df80ccd3c785a6143dee2daefd2082e4f75c740adc2c9947cf7c2",
+      "git_blob": "0122310ee7d6f4847269c8a3c7d9a0eec40311d1",
+      "bytes": 42956,
+      "mode": "100644",
+      "palette_sha256": "11665542e70df80ccd3c785a6143dee2daefd2082e4f75c740adc2c9947cf7c2",
+      "palette_references": 0
+    },
+    "plugins/notifications/components/NotificationCard.qml": {
+      "sha256": "3ffb66ebc065886fc05b6215bd6fff9cd9e5769fac15f807748d550c91efc2f4",
+      "git_blob": "70c5b88da1568273e034620d4c5d56bc40a41745",
+      "bytes": 7016,
+      "mode": "100644",
+      "palette_sha256": "1394dd9cbf9ce027ee39f2b6877159aeb7954cc78e03ffcd7a2de90e1d96927e",
+      "palette_references": 9
+    },
+    "plugins/notifications/manifest.json": {
+      "sha256": "82ed1a26f0040ddff78dd0ed1f12c5e4b49929ec5d0efc7ea62bedabbf48e910",
+      "git_blob": "be71e3c2aa20543dfc4a7fa95ca7741944cf8260",
+      "bytes": 303,
+      "mode": "100644",
+      "palette_sha256": "82ed1a26f0040ddff78dd0ed1f12c5e4b49929ec5d0efc7ea62bedabbf48e910",
+      "palette_references": 0
+    },
+    "plugins/osd/Osd.qml": {
+      "sha256": "5f7ddd16e8c3d2fcd25e0c3ae5f0a1d65e74344185b04090abe7224fb4fea589",
+      "git_blob": "abf53e22a0cc440e883d355aeafec41132979898",
+      "bytes": 7567,
+      "mode": "100644",
+      "palette_sha256": "102fe215575812c41c58480b5f57064641593381a56ba819da8524a699fc23f8",
+      "palette_references": 6
+    },
+    "plugins/osd/OsdModel.js": {
+      "sha256": "ad8cc27c204587a9aac9a7ec0513c72a1a33fe6e83090ee91b4e2c2bfe5fe35c",
+      "git_blob": "a29ca81b5d7612092dad314d4abfc127cda69f3e",
+      "bytes": 2620,
+      "mode": "100644",
+      "palette_sha256": "ad8cc27c204587a9aac9a7ec0513c72a1a33fe6e83090ee91b4e2c2bfe5fe35c",
+      "palette_references": 0
+    },
+    "plugins/osd/manifest.json": {
+      "sha256": "a000056d0e7e372b2a46960a24fa578ab39a20cfd620d423688536fe68b40054",
+      "git_blob": "b2026048a16ccf422e572d7d866bfa717fda4ebb",
+      "bytes": 272,
+      "mode": "100644",
+      "palette_sha256": "a000056d0e7e372b2a46960a24fa578ab39a20cfd620d423688536fe68b40054",
+      "palette_references": 0
+    },
+    "plugins/panels/audio/Model.js": {
+      "sha256": "9e15d94b2076b039418339ea4e5f4bd305d80d8129a53fd6d3dfb67d1817e4b0",
+      "git_blob": "94b7cda39ea39bb01f4448b8376717703863de7a",
+      "bytes": 8311,
+      "mode": "100644",
+      "palette_sha256": "9e15d94b2076b039418339ea4e5f4bd305d80d8129a53fd6d3dfb67d1817e4b0",
+      "palette_references": 0
+    },
+    "plugins/panels/audio/Panel.qml": {
+      "sha256": "a2b636a2b430316eed47315f0c18c5e5e860c3e5985e238bceb5a1fc9fd509a9",
+      "git_blob": "f8a86c6f413eb5e6c8db22322203e5f81071a14c",
+      "bytes": 42638,
+      "mode": "100644",
+      "palette_sha256": "49f9b5041e06459164f28f040f546c37e6eb28455deb684119528e43a4bcf87c",
+      "palette_references": 2
+    },
+    "plugins/panels/audio/manifest.json": {
+      "sha256": "8322d00019751f81d80c8748be736b380d8cb375721806aa8987ee5200b6e487",
+      "git_blob": "3e130f27c771aa04cbd7d8895c4aac47bf434f9d",
+      "bytes": 434,
+      "mode": "100644",
+      "palette_sha256": "8322d00019751f81d80c8748be736b380d8cb375721806aa8987ee5200b6e487",
+      "palette_references": 0
+    },
+    "plugins/panels/bluetooth/Model.js": {
+      "sha256": "b34f3259c6553f20ce37619d2f390cd3293303266f89f2a6df0b6810da384417",
+      "git_blob": "55b29bf0bfa6f17bab09c6f1b58a8ce80324b61d",
+      "bytes": 5202,
+      "mode": "100644",
+      "palette_sha256": "b34f3259c6553f20ce37619d2f390cd3293303266f89f2a6df0b6810da384417",
+      "palette_references": 0
+    },
+    "plugins/panels/bluetooth/Panel.qml": {
+      "sha256": "fbec0abcd991d3210cd3a9b0ab8c5d554e508e95d7537d9e52dd702005053a69",
+      "git_blob": "343357b4db56c22f64f088719e1112ab21054378",
+      "bytes": 36288,
+      "mode": "100644",
+      "palette_sha256": "678ddaa916bdfbf491ab113029dc3e274e7e62fa7314ece13cbf863db6f18dbd",
+      "palette_references": 2
+    },
+    "plugins/panels/bluetooth/manifest.json": {
+      "sha256": "c15c51ab8a6cb82df8ebe3a5195b8d69c69d2ff9bbd00d748204d81a3ddc1d8a",
+      "git_blob": "6c87c6d997093a3c35ae862092ed03db459631d9",
+      "bytes": 452,
+      "mode": "100644",
+      "palette_sha256": "c15c51ab8a6cb82df8ebe3a5195b8d69c69d2ff9bbd00d748204d81a3ddc1d8a",
+      "palette_references": 0
+    },
+    "plugins/panels/clock/BarWidget.qml": {
+      "sha256": "cfcdaeedc4ae5832b37271a84bb92ee762301022e2443a0f769992fa792acf28",
+      "git_blob": "92f0ae56488a05be46f51f7ab06ee35612724428",
+      "bytes": 6134,
+      "mode": "100644",
+      "palette_sha256": "cfcdaeedc4ae5832b37271a84bb92ee762301022e2443a0f769992fa792acf28",
+      "palette_references": 0
+    },
+    "plugins/panels/clock/Model.js": {
+      "sha256": "4d1182e294e46779452e3cb9d15d1fbbafe441883c8179679840a1108b55248a",
+      "git_blob": "9607a4a6dcff477173b443bdf66b8b595e49b0cc",
+      "bytes": 10983,
+      "mode": "100644",
+      "palette_sha256": "4d1182e294e46779452e3cb9d15d1fbbafe441883c8179679840a1108b55248a",
+      "palette_references": 0
+    },
+    "plugins/panels/clock/Panel.qml": {
+      "sha256": "cb5c264e19edd2c9072f8c25c12c78f2ca6a83230ae7f0163bf76c5fd500f1a6",
+      "git_blob": "f0dff3ae635c545a90c64d95cf9bf392345c9daf",
+      "bytes": 29617,
+      "mode": "100644",
+      "palette_sha256": "34ffe549fb798b58bdc78dc6a5b930f1b7e090b54f341de22109f731903471ee",
+      "palette_references": 8
+    },
+    "plugins/panels/clock/manifest.json": {
+      "sha256": "81d320cae7a86c14f961cf3586dbfeecbe689cd002e0a37a502a01c6da781d26",
+      "git_blob": "1640121687c6871cd0514feb9c3a7be37f6c49d7",
+      "bytes": 425,
+      "mode": "100644",
+      "palette_sha256": "81d320cae7a86c14f961cf3586dbfeecbe689cd002e0a37a502a01c6da781d26",
+      "palette_references": 0
+    },
+    "plugins/panels/disk-speedtest/Panel.qml": {
+      "sha256": "b9cffa6c2036a9d3ca1bc53999e62a19ae2577339602239f44dc462fdecc198c",
+      "git_blob": "3b86f5be04e384a29177c964aace4349748ad98e",
+      "bytes": 4417,
+      "mode": "100644",
+      "palette_sha256": "b9cffa6c2036a9d3ca1bc53999e62a19ae2577339602239f44dc462fdecc198c",
+      "palette_references": 0
+    },
+    "plugins/panels/disk-speedtest/manifest.json": {
+      "sha256": "038287260f646ab66b23d17acd4ba68f611b92b076dcfa9df569abdbd1f1891f",
+      "git_blob": "2c7e5bc49f8c937cbc1cbc26138889cc891046d2",
+      "bytes": 333,
+      "mode": "100644",
+      "palette_sha256": "038287260f646ab66b23d17acd4ba68f611b92b076dcfa9df569abdbd1f1891f",
+      "palette_references": 0
+    },
+    "plugins/panels/dropbox/DropboxIcon.qml": {
+      "sha256": "3367632df6a80998e377a085483deb61175bf572138db81bd8f71423d06ca349",
+      "git_blob": "6302b87cc321862707f397694b7d924024d04c05",
+      "bytes": 1167,
+      "mode": "100644",
+      "palette_sha256": "82e161b779678ef45d1a3a663435e905b13e4dc9a362e79acd3088afd6778a36",
+      "palette_references": 1
+    },
+    "plugins/panels/dropbox/Model.js": {
+      "sha256": "3f4eefeafefbd360766069ca7e05cb89bdff9b36322c80178b221163e3d956f8",
+      "git_blob": "f2eaea74caa965ef8547c029b4fa3568100e07e5",
+      "bytes": 3967,
+      "mode": "100644",
+      "palette_sha256": "3f4eefeafefbd360766069ca7e05cb89bdff9b36322c80178b221163e3d956f8",
+      "palette_references": 0
+    },
+    "plugins/panels/dropbox/Panel.qml": {
+      "sha256": "5067febbcdfb6395818cfd2911f6db68d2b78d4fffecfb3287947a81f7cb2e2f",
+      "git_blob": "f1dc23017652a7291fa7b587b5c82f9448e5f770",
+      "bytes": 16528,
+      "mode": "100644",
+      "palette_sha256": "b440bd2138bcd74c713acdd6c1055a6009212bb291320dce1134a5a7a0d38d03",
+      "palette_references": 2
+    },
+    "plugins/panels/dropbox/Service.qml": {
+      "sha256": "7bfdb9cbedcb374adf150453f918f36468b5ab4c600d0c990f6a61324d6900ae",
+      "git_blob": "f4d56f4fccf9514c2f35ad1097634e4a5e7851b7",
+      "bytes": 8726,
+      "mode": "100644",
+      "palette_sha256": "7bfdb9cbedcb374adf150453f918f36468b5ab4c600d0c990f6a61324d6900ae",
+      "palette_references": 0
+    },
+    "plugins/panels/dropbox/manifest.json": {
+      "sha256": "03860bd138fd4dc87a2a683444018d506e542b408d43618866ae9010ba32f094",
+      "git_blob": "76bfdfd9efbc4cf696567cc29128070e82454e89",
+      "bytes": 846,
+      "mode": "100644",
+      "palette_sha256": "03860bd138fd4dc87a2a683444018d506e542b408d43618866ae9010ba32f094",
+      "palette_references": 0
+    },
+    "plugins/panels/dropbox/status.py": {
+      "sha256": "32a9be54c2149622bb96c2fc0742f490ea75f637bac13f07255c7c0095fcf835",
+      "git_blob": "70e4a93f151edffe57287bd5cdd49d8c9deaac40",
+      "bytes": 3579,
+      "mode": "100644",
+      "palette_sha256": "32a9be54c2149622bb96c2fc0742f490ea75f637bac13f07255c7c0095fcf835",
+      "palette_references": 0
+    },
+    "plugins/panels/monitor/Model.js": {
+      "sha256": "9dd9cb7f7dc11f16e571a48bf2a7c51be75ddaef3d4d5f35c511be8f91ecd2ec",
+      "git_blob": "215972b9b525c40e987ea53e4ddd64906addf230",
+      "bytes": 3464,
+      "mode": "100644",
+      "palette_sha256": "9dd9cb7f7dc11f16e571a48bf2a7c51be75ddaef3d4d5f35c511be8f91ecd2ec",
+      "palette_references": 0
+    },
+    "plugins/panels/monitor/Panel.qml": {
+      "sha256": "5087f41e5cee0d4925efab19bf370539db4440c5fc1b2f913bbb729b3606ec75",
+      "git_blob": "1753906ea8933953532eb0ef7119a9af1318b7c9",
+      "bytes": 32016,
+      "mode": "100644",
+      "palette_sha256": "caf9214097fd40cc651090dfe66ecce0e5b9fb49195be750b370cc6cd4128269",
+      "palette_references": 2
+    },
+    "plugins/panels/monitor/manifest.json": {
+      "sha256": "d79086c49ae4a4bf377421f0d48cb4149b2a86974dae253e2ad8bf8abd0538fa",
+      "git_blob": "190e3ff0e6e3044ec6f0acd5935ebb13fe90cc20",
+      "bytes": 445,
+      "mode": "100644",
+      "palette_sha256": "d79086c49ae4a4bf377421f0d48cb4149b2a86974dae253e2ad8bf8abd0538fa",
+      "palette_references": 0
+    },
+    "plugins/panels/network/Model.js": {
+      "sha256": "344c5d34397840e3a059ddfacb2ce3281b7dafea0d0adcc050e03f6648fe4185",
+      "git_blob": "b4c84c68962e7b159664d341e59020bf2f0880c0",
+      "bytes": 12585,
+      "mode": "100644",
+      "palette_sha256": "344c5d34397840e3a059ddfacb2ce3281b7dafea0d0adcc050e03f6648fe4185",
+      "palette_references": 0
+    },
+    "plugins/panels/network/Panel.qml": {
+      "sha256": "b6fe8c8b75460074c8bf4942ed541e650f72102cdb4b6f772b6da9ace9bb15b9",
+      "git_blob": "dea1d280a66c0929deb8f745be7e6ebb9bd90fdc",
+      "bytes": 72459,
+      "mode": "100644",
+      "palette_sha256": "db5176184d4d243dde60f25fc8635b1d6dce70a40569236a4f9a55d0d22a81f4",
+      "palette_references": 3
+    },
+    "plugins/panels/network/manifest.json": {
+      "sha256": "cd18affe2e42fb65bf5fe624d78d843876d5bdb3e097ce954ee92dd327fe5419",
+      "git_blob": "576bdc9c12ed78cafc7b920aba9c62ef9c3868c0",
+      "bytes": 418,
+      "mode": "100644",
+      "palette_sha256": "cd18affe2e42fb65bf5fe624d78d843876d5bdb3e097ce954ee92dd327fe5419",
+      "palette_references": 0
+    },
+    "plugins/panels/power/Model.js": {
+      "sha256": "5ed21781bcd315742b8eda1aa72f415f72217a38e03c659fe40095ed939f7ed2",
+      "git_blob": "8a11dfe7ee574a1566f9ab7117626d6c06a92827",
+      "bytes": 3206,
+      "mode": "100644",
+      "palette_sha256": "5ed21781bcd315742b8eda1aa72f415f72217a38e03c659fe40095ed939f7ed2",
+      "palette_references": 0
+    },
+    "plugins/panels/power/Panel.qml": {
+      "sha256": "bbd4da9ef5cf07bb8023806c56ed2f51c64d881319c31117c176e9f9bbc3fa5f",
+      "git_blob": "871ee2f6ef7dabe00c4001d8fb644336b0679caa",
+      "bytes": 17673,
+      "mode": "100644",
+      "palette_sha256": "bcbe248bb77feb447877a1f62aaeab571c706272bc3bbb17826a4b1917ff0049",
+      "palette_references": 1
+    },
+    "plugins/panels/power/manifest.json": {
+      "sha256": "7e1a3d83a1ffd85f4a9ee2df9ccfd2cb63de794f100c5e2ec11156be7df83bb5",
+      "git_blob": "64a1eac40dfa26bd991f812c2ebdf0c17accabca",
+      "bytes": 429,
+      "mode": "100644",
+      "palette_sha256": "7e1a3d83a1ffd85f4a9ee2df9ccfd2cb63de794f100c5e2ec11156be7df83bb5",
+      "palette_references": 0
+    },
+    "plugins/panels/speedtest/Panel.qml": {
+      "sha256": "f1b3ebc595cebe8ecd7d5302a1ae3b8fe2517fd136368a721bd684499f9ad15b",
+      "git_blob": "6805aa05199536ce1f173ea317b2414f919b9686",
+      "bytes": 5675,
+      "mode": "100644",
+      "palette_sha256": "f1b3ebc595cebe8ecd7d5302a1ae3b8fe2517fd136368a721bd684499f9ad15b",
+      "palette_references": 0
+    },
+    "plugins/panels/speedtest/manifest.json": {
+      "sha256": "9f5840bbac773f7897d20f329ff7f30e55ac3d5cd8834cc7c6b735f5593b6ef8",
+      "git_blob": "05898d45d4ddc7fb20b28ac174f57abe084a4718",
+      "bytes": 273,
+      "mode": "100644",
+      "palette_sha256": "9f5840bbac773f7897d20f329ff7f30e55ac3d5cd8834cc7c6b735f5593b6ef8",
+      "palette_references": 0
+    },
+    "plugins/panels/tailscale/Model.js": {
+      "sha256": "fa8837858942d32bc5d2a6c28bfaef8003f83fd7d7f58148d2e6d25d7b4bd643",
+      "git_blob": "bddf7153bb09334f4c3297ded1f6d7a6fe841e9c",
+      "bytes": 10757,
+      "mode": "100644",
+      "palette_sha256": "fa8837858942d32bc5d2a6c28bfaef8003f83fd7d7f58148d2e6d25d7b4bd643",
+      "palette_references": 0
+    },
+    "plugins/panels/tailscale/Panel.qml": {
+      "sha256": "f455d61d969acd562a7ce4ba09445d136575428fcdf8cc1d8756b7642fc4ca7c",
+      "git_blob": "34278eda9938641d280aa865854789962a00f2a1",
+      "bytes": 44145,
+      "mode": "100644",
+      "palette_sha256": "735491676e203f16af6f382c09eb9d31e19a69e5f3649565e4289441907f2a3e",
+      "palette_references": 5
+    },
+    "plugins/panels/tailscale/README.md": {
+      "sha256": "aaa4285a80d41a63b089773479d0772e67d72e2c47d577dab7d5736041ad5e84",
+      "git_blob": "a15e692ee90e013ecd53572081f112a0d9fd03c0",
+      "bytes": 1622,
+      "mode": "100644",
+      "palette_sha256": "aaa4285a80d41a63b089773479d0772e67d72e2c47d577dab7d5736041ad5e84",
+      "palette_references": 0
+    },
+    "plugins/panels/tailscale/Service.qml": {
+      "sha256": "ebf79b1e95c4268de7d40cfd69a25e6fb67306d1caa4c13b1684468668f81d7e",
+      "git_blob": "13fbfbc5a54f5a55dc2315b8438a485047f07787",
+      "bytes": 21222,
+      "mode": "100644",
+      "palette_sha256": "ebf79b1e95c4268de7d40cfd69a25e6fb67306d1caa4c13b1684468668f81d7e",
+      "palette_references": 0
+    },
+    "plugins/panels/tailscale/TailscaleIcon.qml": {
+      "sha256": "f3e35a849425b3400891726ca06a12681853a17599ccb66da2a788c0e0261beb",
+      "git_blob": "8de7933cbbd0b35ba925562dcab23059f091469e",
+      "bytes": 1981,
+      "mode": "100644",
+      "palette_sha256": "05142bf1863a671c3b6b39f4a2455d556e2a75b4a373aa1a559c36c918aa8329",
+      "palette_references": 4
+    },
+    "plugins/panels/tailscale/manifest.json": {
+      "sha256": "523813d1e469f20bdf595900f4a74608375fcd69f48f3dcc971d8cfbb7c8743d",
+      "git_blob": "8de297089083e5ccf3b820459c3f229b954046de",
+      "bytes": 889,
+      "mode": "100644",
+      "palette_sha256": "523813d1e469f20bdf595900f4a74608375fcd69f48f3dcc971d8cfbb7c8743d",
+      "palette_references": 0
+    },
+    "plugins/panels/weather/BarWidget.qml": {
+      "sha256": "ab3e32b97cf37847ff880a44013133eef9b9f04fe7258b692b30e7b24c6de4ca",
+      "git_blob": "1203c5039b621190044352f9e5da5dd873d06e8c",
+      "bytes": 2593,
+      "mode": "100644",
+      "palette_sha256": "ab3e32b97cf37847ff880a44013133eef9b9f04fe7258b692b30e7b24c6de4ca",
+      "palette_references": 0
+    },
+    "plugins/panels/weather/Model.js": {
+      "sha256": "66d2aa5e81bfe12b1b1b53b499a09968bc9ad660d066bc60af9b18102e836d17",
+      "git_blob": "6562f83d0acd3be3c688fa01671e8b157142e1c0",
+      "bytes": 11385,
+      "mode": "100644",
+      "palette_sha256": "66d2aa5e81bfe12b1b1b53b499a09968bc9ad660d066bc60af9b18102e836d17",
+      "palette_references": 0
+    },
+    "plugins/panels/weather/Panel.qml": {
+      "sha256": "d3075ce315fbd3d31ddae3d776ed506c40bbe929e9d174ca1553ed59a39b583d",
+      "git_blob": "dacb4ac941940d98f99232b389252c7f358581f1",
+      "bytes": 30432,
+      "mode": "100644",
+      "palette_sha256": "0e26008c1223f6c3a203d1f33b769eff0f9687a1aec381afa43f1dbb34808eed",
+      "palette_references": 3
+    },
+    "plugins/panels/weather/manifest.json": {
+      "sha256": "74a2a679dfab7df793d24d96322bdad8f087385756bd8f1c0cd63aef9243a87c",
+      "git_blob": "23fa84f8b909c6c931740e31233d6e2121bae4f4",
+      "bytes": 456,
+      "mode": "100644",
+      "palette_sha256": "74a2a679dfab7df793d24d96322bdad8f087385756bd8f1c0cd63aef9243a87c",
+      "palette_references": 0
+    },
+    "plugins/panels/wifiqr/Model.js": {
+      "sha256": "a5e771a51c034aaa84c46ebf3b6740eb58d5cbf0d14b3ae62dcf73a5f7bde1a1",
+      "git_blob": "b76e4fa29ab8270229463551ea77256891d38fe8",
+      "bytes": 1196,
+      "mode": "100644",
+      "palette_sha256": "a5e771a51c034aaa84c46ebf3b6740eb58d5cbf0d14b3ae62dcf73a5f7bde1a1",
+      "palette_references": 0
+    },
+    "plugins/panels/wifiqr/Panel.qml": {
+      "sha256": "5b94680dfb81b619db3d1a8866356b20991c016920f6be07c7ef9809cc0cd89d",
+      "git_blob": "276434a829d9d9ab1baf13ce99b054111327d554",
+      "bytes": 12820,
+      "mode": "100644",
+      "palette_sha256": "5b94680dfb81b619db3d1a8866356b20991c016920f6be07c7ef9809cc0cd89d",
+      "palette_references": 0
+    },
+    "plugins/panels/wifiqr/manifest.json": {
+      "sha256": "9d71877a2112500dc1bb7b834bb08f9d75204a11e734c4b46b8b0ce1997cfb78",
+      "git_blob": "10ab984bdc0419243c75d3e15e018180de09483b",
+      "bytes": 274,
+      "mode": "100644",
+      "palette_sha256": "9d71877a2112500dc1bb7b834bb08f9d75204a11e734c4b46b8b0ce1997cfb78",
+      "palette_references": 0
+    },
+    "plugins/polkit/PolkitAgent.qml": {
+      "sha256": "2307127c7c600d1f2844298dbd6b12e0f3fc029acc9382cbb321cca1c96fd805",
+      "git_blob": "8ce95973da5cb27401f26d666d42ddd14f04deb8",
+      "bytes": 12993,
+      "mode": "100644",
+      "palette_sha256": "babb901f72e73a0898fd591fb1a256e701f5e2f06a37d9e1b923a527f24dcfba",
+      "palette_references": 11
+    },
+    "plugins/polkit/PolkitModel.js": {
+      "sha256": "29c0b96b25fea18d8dcc1e61912f8906ff75c599b07f9bf8b0f8cc4f6fb985c9",
+      "git_blob": "7ce71c78f830259555650d7a204db8618b3cd1fc",
+      "bytes": 1247,
+      "mode": "100644",
+      "palette_sha256": "29c0b96b25fea18d8dcc1e61912f8906ff75c599b07f9bf8b0f8cc4f6fb985c9",
+      "palette_references": 0
+    },
+    "plugins/polkit/manifest.json": {
+      "sha256": "17a06c3a933708130f3ef8bf3ee28586855708e6085bf799dbf10a46df9cbec6",
+      "git_blob": "1e80b655c7335fc87bd125fe713a8641f908e7a1",
+      "bytes": 311,
+      "mode": "100644",
+      "palette_sha256": "17a06c3a933708130f3ef8bf3ee28586855708e6085bf799dbf10a46df9cbec6",
+      "palette_references": 0
+    },
+    "plugins/reminders/ReminderFlow.qml": {
+      "sha256": "c5b1b14d204c90af1873f40d9f6bdef5404eb86b27901f2969e7e1e425786504",
+      "git_blob": "bc6616db6fdacf6f8ce90ee7473072deb0473224",
+      "bytes": 5243,
+      "mode": "100644",
+      "palette_sha256": "130f77392f6dedef9bc271995df4740b39806eab8317c03b13dd965717fb5f9d",
+      "palette_references": 4
+    },
+    "plugins/reminders/ReminderFlowModel.js": {
+      "sha256": "fd3135f84e7a549db9ba4d9259336f5ef587ed72d60c7b8e888bf7284604f97a",
+      "git_blob": "05b94c8cce6bd3e724d66d76107d5ffb35a6554c",
+      "bytes": 491,
+      "mode": "100644",
+      "palette_sha256": "fd3135f84e7a549db9ba4d9259336f5ef587ed72d60c7b8e888bf7284604f97a",
+      "palette_references": 0
+    },
+    "plugins/reminders/manifest.json": {
+      "sha256": "b8eba9cd89a59d458516c2e93c5a6fba12312774379a9687dc1038e8d211d376",
+      "git_blob": "5745d444ba9d880d10800e76c00579af7c475dfd",
+      "bytes": 286,
+      "mode": "100644",
+      "palette_sha256": "b8eba9cd89a59d458516c2e93c5a6fba12312774379a9687dc1038e8d211d376",
+      "palette_references": 0
+    },
+    "plugins/services/battery/BatteryModel.js": {
+      "sha256": "f6d8d07487d50fe16d104348c832b17fa0b789c00a5c94288d4971c80e768e57",
+      "git_blob": "2aca5dbd92b84e49316330aa9c841bc6eba9c379",
+      "bytes": 893,
+      "mode": "100644",
+      "palette_sha256": "f6d8d07487d50fe16d104348c832b17fa0b789c00a5c94288d4971c80e768e57",
+      "palette_references": 0
+    },
+    "plugins/services/battery/Service.qml": {
+      "sha256": "5557460d74ad329c53dea5850cf8178af106a0e47e09ef7963ce25f4fc2d1b45",
+      "git_blob": "37fdf5c72f180c0b5f0e5d1c95d3322884db1d1e",
+      "bytes": 2013,
+      "mode": "100644",
+      "palette_sha256": "5557460d74ad329c53dea5850cf8178af106a0e47e09ef7963ce25f4fc2d1b45",
+      "palette_references": 0
+    },
+    "plugins/services/battery/manifest.json": {
+      "sha256": "bf6cc1c9eaca2b6830cff592230677d20a26698a79830f273b11380a59bc2899",
+      "git_blob": "1dc2e731f0d87dee04ba8274fbddfa4313fc6015",
+      "bytes": 251,
+      "mode": "100644",
+      "palette_sha256": "bf6cc1c9eaca2b6830cff592230677d20a26698a79830f273b11380a59bc2899",
+      "palette_references": 0
+    },
+    "plugins/services/idle/IdleModel.js": {
+      "sha256": "58226a67d5fc2f33b1a23b55cb32764a8b2091cc94c4d02af1b67f369440b9b8",
+      "git_blob": "8e2315d0375a824fb6ab64179ff20a0a6cf2cf45",
+      "bytes": 1122,
+      "mode": "100644",
+      "palette_sha256": "58226a67d5fc2f33b1a23b55cb32764a8b2091cc94c4d02af1b67f369440b9b8",
+      "palette_references": 0
+    },
+    "plugins/services/idle/Service.qml": {
+      "sha256": "c61f91b55adf864e4ce571526644727b7a2e9f672964af8098b9fd9a4913eee2",
+      "git_blob": "488f29611c34b1da5eee073c26415ccf9ae8ba59",
+      "bytes": 11705,
+      "mode": "100644",
+      "palette_sha256": "c61f91b55adf864e4ce571526644727b7a2e9f672964af8098b9fd9a4913eee2",
+      "palette_references": 0
+    },
+    "plugins/services/idle/manifest.json": {
+      "sha256": "bb8a5f55257dc49c2b7632304dad19aa12bbc7ad641828f09481909232f30a6f",
+      "git_blob": "65b777b3879c93d4f9ed85c4d27ce8a89ed0fa75",
+      "bytes": 312,
+      "mode": "100644",
+      "palette_sha256": "bb8a5f55257dc49c2b7632304dad19aa12bbc7ad641828f09481909232f30a6f",
+      "palette_references": 0
+    },
+    "plugins/services/media/BarWidget.qml": {
+      "sha256": "4269994a88893e37f98308b803b6cabf017e00da25436f48ca539f522b9ef333",
+      "git_blob": "52793c16cca853a18cfdd0c7f145a2844efda8ea",
+      "bytes": 11054,
+      "mode": "100644",
+      "palette_sha256": "7c8daee908eead00761c5f53f347258caaa91f74e1bef592484a8211e89788b3",
+      "palette_references": 4
+    },
+    "plugins/services/media/MediaModel.js": {
+      "sha256": "663eeb35c2ecd4488395259a7047d7a12089fa7d9dfaf918e3e15d54ebfdf627",
+      "git_blob": "3edd3a084030d979b14cb3645365136b61efcb80",
+      "bytes": 4428,
+      "mode": "100644",
+      "palette_sha256": "663eeb35c2ecd4488395259a7047d7a12089fa7d9dfaf918e3e15d54ebfdf627",
+      "palette_references": 0
+    },
+    "plugins/services/media/Service.qml": {
+      "sha256": "92237e82b280903dae296d9e876532058083299a65459e2bf3cacce3be644139",
+      "git_blob": "1cfeb9c9043caba64524938ba93c8a98f040209b",
+      "bytes": 15215,
+      "mode": "100644",
+      "palette_sha256": "92237e82b280903dae296d9e876532058083299a65459e2bf3cacce3be644139",
+      "palette_references": 0
+    },
+    "plugins/services/media/manifest.json": {
+      "sha256": "7d31e2e9cb8476fca4703e44b29e0e5faed4f44ed0565b58ecd7b36a78757cd0",
+      "git_blob": "661c65a56587942afbc1ccb2bc0a50da9e114b39",
+      "bytes": 486,
+      "mode": "100644",
+      "palette_sha256": "7d31e2e9cb8476fca4703e44b29e0e5faed4f44ed0565b58ecd7b36a78757cd0",
+      "palette_references": 0
+    },
+    "plugins/services/nightlight/NightlightModel.js": {
+      "sha256": "2273119d8dbc2a0c2b6faf76d5786c521f910b98c06dee6603ec1237737db8e1",
+      "git_blob": "7db5bdcd28eb6aed8829057b66e6cbdf7b443793",
+      "bytes": 689,
+      "mode": "100644",
+      "palette_sha256": "2273119d8dbc2a0c2b6faf76d5786c521f910b98c06dee6603ec1237737db8e1",
+      "palette_references": 0
+    },
+    "plugins/services/nightlight/Service.qml": {
+      "sha256": "721cd63d2404859918e28f92420e87369328c26fcef7df821443baa16d0b1897",
+      "git_blob": "388b779812039dc3d8c6e7bd94cf8d8abfea76b2",
+      "bytes": 2724,
+      "mode": "100644",
+      "palette_sha256": "721cd63d2404859918e28f92420e87369328c26fcef7df821443baa16d0b1897",
+      "palette_references": 0
+    },
+    "plugins/services/nightlight/manifest.json": {
+      "sha256": "af58d98507b745efc437747f1288670b638d9450c973769722ab5a34b6b2b87e",
+      "git_blob": "0b1a4da5b4adae186db38154b91b4b70a6d860aa",
+      "bytes": 305,
+      "mode": "100644",
+      "palette_sha256": "af58d98507b745efc437747f1288670b638d9450c973769722ab5a34b6b2b87e",
+      "palette_references": 0
+    },
+    "services/AppLibrary.qml": {
+      "sha256": "68dd83a2141e9a8eda01a9ec5e2fbaaecf5d02d969178512cc6fec118fa23a31",
+      "git_blob": "738529de428e6b39eb1de326b7fe69600b08a241",
+      "bytes": 9846,
+      "mode": "100644",
+      "palette_sha256": "68dd83a2141e9a8eda01a9ec5e2fbaaecf5d02d969178512cc6fec118fa23a31",
+      "palette_references": 0
+    },
+    "services/AppSearch.js": {
+      "sha256": "bbc4965f7b46932bd7127b5d921b977679f2a892e6bd9672f29049d340821bd7",
+      "git_blob": "f9e53cde5b2da00e2d08fe3631f197b235654d06",
+      "bytes": 3824,
+      "mode": "100644",
+      "palette_sha256": "bbc4965f7b46932bd7127b5d921b977679f2a892e6bd9672f29049d340821bd7",
+      "palette_references": 0
+    },
+    "services/BarWidgetRegistry.qml": {
+      "sha256": "e59391d65904febf95399748c3866b6065d2cfceb9a15cc7c28a72eef6356799",
+      "git_blob": "694912898dd595761b6ad04af753f7f3b26a13cb",
+      "bytes": 1209,
+      "mode": "100644",
+      "palette_sha256": "e59391d65904febf95399748c3866b6065d2cfceb9a15cc7c28a72eef6356799",
+      "palette_references": 0
+    },
+    "services/PluginRegistry.qml": {
+      "sha256": "63371e4224f948e5444531282ad9f7c74ca2e578470b549f4c6b898c3a15c50f",
+      "git_blob": "f08bf7652e41ae20cb2558de1054eaf5c05c247b",
+      "bytes": 29178,
+      "mode": "100644",
+      "palette_sha256": "63371e4224f948e5444531282ad9f7c74ca2e578470b549f4c6b898c3a15c50f",
+      "palette_references": 0
+    },
+    "services/hidden-entries.sh": {
+      "sha256": "ca3675606d94935c808f6487e967f757be273c4c3b48a99d633c2e70feebd85b",
+      "git_blob": "041fd8cc79c7f9a8310441b09641cbad34d64555",
+      "bytes": 2171,
+      "mode": "100755",
+      "palette_sha256": "ca3675606d94935c808f6487e967f757be273c4c3b48a99d633c2e70feebd85b",
+      "palette_references": 0
+    },
+    "shell.qml": {
+      "sha256": "9f1db77dcc3c111ceccc860ac472d19b35d385958a63d270ea51e413ab86f1f0",
+      "git_blob": "71a9834f79f68fe1e9e1773d6539204943bc65ad",
+      "bytes": 38395,
+      "mode": "100644",
+      "palette_sha256": "b333be4a8e1bb997fd2ef36f98314991911eb525dee6511ed76ea494c6806033",
+      "palette_references": 2
+    }
+  }
+}

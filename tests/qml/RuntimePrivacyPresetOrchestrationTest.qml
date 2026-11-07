@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.settings = {enabledKinds:[], notifyOnControlChanges:false}
 
     if (!service.startPrivacyPreset({actions:[], skipped:[{kind:"camera", reason:"unavailable"}]}, false)
@@ -31,7 +31,7 @@ ShellRoot {
         || service.privacyPresetPrevious.microphone !== true || service.privacyPresetPrevious.camera !== true
         || service.privacyPresetMessage() !== "Privacy mode verified.")
       throw new Error("unsupported-only lockdown did not complete deterministically")
-    for (var index = 0; index < service.privacyPresetResults.length; index++) {
+    for (let index = 0; index < service.privacyPresetResults.length; index++) {
       if (service.privacyPresetResults[index].reason !== "unsupported")
         throw new Error("disabled controls were not recorded as unsupported")
     }
@@ -46,5 +46,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_PRIVACY_PRESET_ORCHESTRATION_OK")
     Qt.quit()
-  }
+  })
 }

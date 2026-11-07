@@ -13,7 +13,7 @@ ShellRoot {
 
   Service { id: service; shell: shellMock }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.updateBarPresentation("DP-1", {opened:true})
     var accepted = service.notificationAction("open-activity", "microphone")
     if (!accepted || accepted.name !== "open-activity" || accepted.argument !== "microphone")
@@ -49,5 +49,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_NOTIFICATION_ACTION_ROUTING_OK")
     Qt.quit()
-  }
+  })
 }

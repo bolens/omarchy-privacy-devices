@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import Quickshell
 import QtQuick
-import qs.Commons
+import qs.Commons as Commons
 
 ShellRoot {
   id: root
@@ -11,7 +11,7 @@ ShellRoot {
   QtObject { id: serviceMock; function sendTestNotification() { root.testNotifications++ } }
   QtObject {
     id: controllerMock
-    property color activeThemeColor: Color.accent
+    property color activeThemeColor: Commons.Color.accent
     property string popupWidth: "standard"
     property var privacyService: serviceMock
     property var kindOptions: [{label:"Microphone",value:"microphone"},{label:"Camera",value:"camera"}]
@@ -34,8 +34,8 @@ ShellRoot {
     if (!item) return null
     if (item.objectName === name) return item
     var children = item.children || []
-    for (var index = 0; index < children.length; index++) {
-      var found = descendant(children[index], name)
+    for (let index = 0; index < children.length; index++) {
+      let found = descendant(children[index], name)
       if (found) return found
     }
     return null

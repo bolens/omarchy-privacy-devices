@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 
@@ -17,7 +18,7 @@ GridLayout {
     Layout.fillWidth: true
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Enhanced coverage" }
-    MultiSelect { objectName: "monitoringBlockableKindsSetting"; Layout.fillWidth: true; label: "Preventative controls"; options: page.controller.kindOptions.filter(function(option) { return ["camera", "screen-share", "location"].indexOf(option.value) !== -1 }); values: Model.arraySetting(page.controller.setting("blockableKinds", ["camera", "screen-share", "location"]), []); foreground: Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { page.controller.persistSettings({blockableKinds: values}) } }
+    MultiSelect { objectName: "monitoringBlockableKindsSetting"; Layout.fillWidth: true; label: "Preventative controls"; options: page.controller.kindOptions.filter(function(option) { return ["camera", "screen-share", "location"].indexOf(option.value) !== -1 }); values: Model.arraySetting(page.controller.setting("blockableKinds", ["camera", "screen-share", "location"]), []); foreground: Commons.Color.popups.text; accent: page.controller.activeThemeColor; fontFamily: Style.font.family; onChanged: function(values) { page.controller.persistSettings({blockableKinds: values}) } }
     PrivacySettingsGrid {
       responsiveWidth: Math.min(width, page.controller.configuredPanelWidth !== undefined ? page.controller.configuredPanelWidth : page.width)
       Layout.fillWidth: true
@@ -43,7 +44,7 @@ GridLayout {
       IntegerSetting { controller: page.controller; controlObjectName: "monitoringLocationPollSetting"; settingKey: "locationPollSeconds"; label: "Location interval, s"; minimum: 5; maximum: 300; fallback: 15; stepSize: 5 }
       IntegerSetting { controller: page.controller; controlObjectName: "monitoringRecordingPollSetting"; settingKey: "recordingPollSeconds"; label: "Recorder interval, s"; minimum: 1; maximum: 60; fallback: 2 }
     }
-    Text { Layout.fillWidth: true; text: "PipeWire activity remains event-backed. These intervals affect only enhanced and fallback observers."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+    Text { Layout.fillWidth: true; text: "PipeWire activity remains event-backed. These intervals affect only enhanced and fallback observers."; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
   }
   SettingsSurface {
     id: privateDataSettings
@@ -53,7 +54,7 @@ GridLayout {
     PanelSectionHeader { Layout.fillWidth: true; text: "Private data" }
     PrivacySettingToggle { objectName: "historyEnabledToggle"; controller: page.controller; settingKey: "historyEnabled"; fallback: false; label: "Keep recent activity"; description: "Store private metadata for seven days or 100 completed sessions." }
     Button { objectName: "privateDataClearHistoryButton"; text: "Clear stored history"; bordered: true; background: Util.alpha(page.controller.activeThemeColor, 0.06); enabled: page.controller.privacyService !== null; onClicked: page.controller.privacyService.clearHistory() }
-    Text { Layout.fillWidth: true; text: "Export or restore a versioned settings file stored privately in your user data directory."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+    Text { Layout.fillWidth: true; text: "Export or restore a versioned settings file stored privately in your user data directory."; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
     RowLayout {
       Layout.fillWidth: true
       spacing: Style.spacing.sm
@@ -69,15 +70,15 @@ GridLayout {
     Layout.fillWidth: true
     accent: page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Status legend" }
-    Text { Layout.fillWidth: true; text: "● Active    ⊘ Disabled    … Verifying    ! Degraded    Idle uses no marker"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-    Text { Layout.fillWidth: true; text: "Color, opacity, text, and markers reinforce each other so status never depends on color alone."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+    Text { Layout.fillWidth: true; text: "● Active    ⊘ Disabled    … Verifying    ! Degraded    Idle uses no marker"; textFormat: Text.PlainText; color: Commons.Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+    Text { Layout.fillWidth: true; text: "Color, opacity, text, and markers reinforce each other so status never depends on color alone."; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
   }
   SettingsSurface {
     id: observerHealthSettings
     Layout.fillWidth: true
-    accent: page.controller.monitoringDegraded ? Color.urgent : page.controller.activeThemeColor
+    accent: page.controller.monitoringDegraded ? Commons.Color.urgent : page.controller.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Observer health" }
-    Text { Layout.fillWidth: true; text: page.controller.monitoringTelemetryText(); textFormat: Text.PlainText; color: page.controller.monitoringDegraded ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+    Text { Layout.fillWidth: true; text: page.controller.monitoringTelemetryText(); textFormat: Text.PlainText; color: page.controller.monitoringDegraded ? Commons.Color.urgent : Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
     RowLayout {
       Layout.fillWidth: true
       spacing: Style.spacing.sm

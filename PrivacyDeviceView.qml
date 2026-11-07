@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 
@@ -20,7 +21,8 @@ DeviceSettingsEditor {
     if (!root.editingKind) return
     labelEditor.text = root.labelFor(root.editingKind)
     iconEditor.text = root.iconFor(root.editingKind)
-    if (backendSettings.item) backendSettings.item.syncEditors()
+    const backendEditor = backendSettings.item as PrivacyDeviceBackendSettings
+    if (backendEditor) backendEditor.syncEditors()
   }
 
   visible: root.editingKind !== "" && !root.showingGlobalSettings && !root.showingHistory
@@ -50,7 +52,7 @@ DeviceSettingsEditor {
         Layout.fillWidth: true
         text: view.root.labelFor(view.root.editingKind)
         textFormat: Text.PlainText
-        color: Color.popups.text
+        color: Commons.Color.popups.text
         font.family: Style.font.family
         font.pixelSize: Style.font.body
         font.weight: Font.DemiBold
@@ -73,7 +75,7 @@ DeviceSettingsEditor {
       Layout.fillWidth: true
       text: appearanceSurface.labelDirty || appearanceSurface.iconDirty ? "Unsaved changes" : (view.root.deviceAppearanceCustomized(view.root.editingKind) ? "Customized" : "Using global defaults")
       textFormat: Text.PlainText
-      color: appearanceSurface.labelDirty || appearanceSurface.iconDirty ? Color.accent : Color.muted
+      color: appearanceSurface.labelDirty || appearanceSurface.iconDirty ? Commons.Color.accent : Commons.Color.muted
       font.family: Style.font.family
       font.pixelSize: Style.font.caption
     }
@@ -85,20 +87,20 @@ DeviceSettingsEditor {
       ColumnLayout {
         Layout.fillWidth: true
         spacing: Style.spacing.xs
-        Text { Layout.fillWidth: true; text: "Display label"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+        Text { Layout.fillWidth: true; text: "Display label"; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
         RowLayout {
           Layout.fillWidth: true
-          TextField { id: labelEditor; Layout.fillWidth: true; placeholderText: "Display label"; text: view.root.editingKind ? view.root.labelFor(view.root.editingKind) : ""; maximumLength: 128; foreground: Color.popups.text; accent: view.root.activeThemeColor; font.family: Style.font.family; onAccepted: view.root.persistLabel(view.root.editingKind, text) }
+          TextField { id: labelEditor; Layout.fillWidth: true; placeholderText: "Display label"; text: view.root.editingKind ? view.root.labelFor(view.root.editingKind) : ""; maximumLength: 128; foreground: Commons.Color.popups.text; accent: view.root.activeThemeColor; font.family: Style.font.family; onAccepted: view.root.persistLabel(view.root.editingKind, text) }
           Button { objectName: "deviceLabelSaveButton"; iconText: "󰆓"; bordered: true; tooltipText: "Save display label"; horizontalPadding: Style.spacing.controlGap; enabled: appearanceSurface.labelDirty; onClicked: view.root.persistLabel(view.root.editingKind, labelEditor.text) }
         }
       }
       ColumnLayout {
         Layout.fillWidth: true
         spacing: Style.spacing.xs
-        Text { Layout.fillWidth: true; text: "Device icon"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+        Text { Layout.fillWidth: true; text: "Device icon"; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
         RowLayout {
           Layout.fillWidth: true
-          TextField { id: iconEditor; Layout.fillWidth: true; placeholderText: "Icon"; text: view.root.editingKind ? view.root.iconFor(view.root.editingKind) : ""; maximumLength: 8; foreground: Color.popups.text; accent: view.root.activeThemeColor; font.family: Style.font.family; onAccepted: view.root.persistIcon(view.root.editingKind, text) }
+          TextField { id: iconEditor; Layout.fillWidth: true; placeholderText: "Icon"; text: view.root.editingKind ? view.root.iconFor(view.root.editingKind) : ""; maximumLength: 8; foreground: Commons.Color.popups.text; accent: view.root.activeThemeColor; font.family: Style.font.family; onAccepted: view.root.persistIcon(view.root.editingKind, text) }
           Button { objectName: "deviceIconSaveButton"; iconText: "󰆓"; bordered: true; tooltipText: "Save device icon"; horizontalPadding: Style.spacing.controlGap; enabled: appearanceSurface.iconDirty; onClicked: view.root.persistIcon(view.root.editingKind, iconEditor.text) }
         }
       }
@@ -149,7 +151,7 @@ DeviceSettingsEditor {
         to: 100
         stepSize: 5
         value: Math.round(view.root.itemIdleOpacity(view.root.editingKind) * 100)
-        foreground: Color.popups.text
+        foreground: Commons.Color.popups.text
         accent: view.root.activeThemeColor
         fontFamily: Style.font.family
         onModified: function(value) { view.root.persistItemIdleOpacity(view.root.editingKind, value) }
@@ -173,7 +175,7 @@ DeviceSettingsEditor {
     }
     RowLayout {
       Layout.fillWidth: true
-      Text { Layout.fillWidth: true; text: "Global status-marker rules still apply when this device is set to show."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+      Text { Layout.fillWidth: true; text: "Global status-marker rules still apply when this device is set to show."; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
       Button { objectName: "deviceGlobalMarkerSettingsButton"; iconText: "󰒓"; tooltipText: "Open global marker settings"; horizontalPadding: Style.spacing.controlGap; onClicked: view.root.showGlobalSettings("appearance", "status-presentation") }
     }
   }
@@ -219,13 +221,14 @@ DeviceSettingsEditor {
       model: view.root.editingDevices
       delegate: ColumnLayout {
         id: deviceRow
+        required property int index
         required property string modelData
         Layout.fillWidth: true
         spacing: Style.spacing.xs
-        Text { Layout.fillWidth: true; text: deviceRow.modelData; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; elide: Text.ElideMiddle }
+        Text { Layout.fillWidth: true; text: deviceRow.modelData; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; elide: Text.ElideMiddle }
         RowLayout {
           Layout.fillWidth: true
-          TextField { id: deviceLabelEditor; Layout.fillWidth: true; text: view.root.deviceLabel(deviceRow.modelData); placeholderText: "Friendly device name"; maximumLength: 128; foreground: Color.popups.text; accent: view.root.activeThemeColor; font.family: Style.font.family; onAccepted: view.root.persistDeviceLabel(deviceRow.modelData, text) }
+          TextField { id: deviceLabelEditor; Layout.fillWidth: true; text: view.root.deviceLabel(deviceRow.modelData); placeholderText: "Friendly device name"; maximumLength: 128; foreground: Commons.Color.popups.text; accent: view.root.activeThemeColor; font.family: Style.font.family; onAccepted: view.root.persistDeviceLabel(deviceRow.modelData, text) }
           Button { objectName: "deviceHardwareNameSave-" + deviceRow.index; iconText: "󰆓"; tooltipText: "Save hardware name"; horizontalPadding: Style.spacing.controlGap; enabled: deviceLabelEditor.text.trim() !== view.root.deviceLabel(deviceRow.modelData); onClicked: view.root.persistDeviceLabel(deviceRow.modelData, deviceLabelEditor.text) }
         }
       }
@@ -237,7 +240,7 @@ DeviceSettingsEditor {
     Layout.fillWidth: true
     accent: view.root.activeThemeColor
     PanelSectionHeader { Layout.fillWidth: true; text: "Live inspection" }
-    Text { Layout.fillWidth: true; text: "Copy a live application target into X-Ray or another process inspector. Process IDs are never added to retained history."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+    Text { Layout.fillWidth: true; text: "Copy a live application target into X-Ray or another process inspector. Process IDs are never added to retained history."; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
     Repeater {
       model: view.root.editingApplications
       delegate: RowLayout {
@@ -245,7 +248,7 @@ DeviceSettingsEditor {
         required property string modelData
         required property int index
         Layout.fillWidth: true
-        Text { Layout.fillWidth: true; text: inspectionRow.modelData; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; elide: Text.ElideRight }
+        Text { Layout.fillWidth: true; text: inspectionRow.modelData; textFormat: Text.PlainText; color: Commons.Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; elide: Text.ElideRight }
         Button { objectName: "inspectionTargetCopy-" + inspectionRow.index; iconText: "󰆏"; tooltipText: "Copy inspection target"; horizontalPadding: Style.spacing.controlGap; onClicked: view.root.privacyService.copyInspectionTarget(inspectionRow.modelData) }
       }
     }

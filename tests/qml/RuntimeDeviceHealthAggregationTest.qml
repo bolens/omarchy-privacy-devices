@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.settings = {enabledKinds:["screenshot", "location"], directDeviceMonitoring:false}
     service.observerHealth = Object.assign({}, service.observerHealth, {
       "fallback-observer":{status:"degraded", source:"fallback-observer", code:"invalid_payload", reason:"invalid observer response"}
@@ -31,5 +31,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_DEVICE_HEALTH_AGGREGATION_OK")
     Qt.quit()
-  }
+  })
 }

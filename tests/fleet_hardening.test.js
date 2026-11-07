@@ -58,8 +58,14 @@ for (const label of ["bug", "enhancement", "documentation", "dependencies", "doc
   assert.match(labeler, new RegExp(`^${label}:`, "m"))
 assert.ok(issueForms.length >= 2)
 for (const form of issueForms) assert.match(form, /^labels: .*needs-triage/m)
-assert.equal((ci.match(/ghcr\.io\/bolens\/omarchy-plugin-ci@sha256:293b0457198085de5df26519dd4aa336202495c080d253b71ac30e7d8e8d3851/g) || []).length, 1)
-assert.equal((compatibility.match(/ghcr\.io\/bolens\/omarchy-plugin-ci@sha256:293b0457198085de5df26519dd4aa336202495c080d253b71ac30e7d8e8d3851/g) || []).length, 1)
+// Keep every native and retained consumer on the same immutable toolchain.
+const nativeToolchain = read(".woodpecker/plugin.yml").match(/ghcr\.io\/bolens\/omarchy-plugin-ci@sha256:[0-9a-f]{64}/g) || []
+assert.equal(nativeToolchain.length, 2, "preparation and offline validation require pinned images")
+assert.equal(new Set(nativeToolchain).size, 1, "native steps must use the same admitted image")
+for (const consumer of [ci, compatibility, read(".woodpecker/site.yml")]) {
+  const images = consumer.match(/ghcr\.io\/bolens\/omarchy-plugin-ci@sha256:[0-9a-f]{64}/g) || []
+  assert.deepEqual(images, [nativeToolchain[0]], "every consumer must share the native immutable image")
+}
 assert.doesNotMatch(ci, /\bpacman\s+-Syu\b/)
 assert.doesNotMatch(compatibility, /\bpacman\s+-Syu\b/)
 assert.match(compatibility, /13f18b2cb7286fb54f87daf571a031aa6af3d8f0/)

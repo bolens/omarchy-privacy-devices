@@ -1,4 +1,5 @@
 module io.github.bolens.privacy_devices
+BarHostAccess 1.0 BarHostAccess.qml
 AudioEndpointSettings 1.0 AudioEndpointSettings.qml
 BarWidget 1.0 BarWidget.qml
 Button 1.0 Button.qml

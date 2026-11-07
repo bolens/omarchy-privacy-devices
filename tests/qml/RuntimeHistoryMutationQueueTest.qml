@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.historyMutationBusy = true
     if (!service.enqueueHistoryMutation(["append", "first"])
         || !service.enqueueHistoryMutation(["clear"])
@@ -15,7 +15,7 @@ ShellRoot {
     if (JSON.stringify(service.historyMutationQueue) !== JSON.stringify([
       ["clear"], ["append", "second"]
     ])) throw new Error("history clear did not supersede obsolete queued appends")
-    for (var index = 0; index < 150; index++)
+    for (let index = 0; index < 150; index++)
       if (!service.enqueueHistoryMutation(["append", String(index)]))
         throw new Error("bounded history mutation queue rejected normal work")
     if (service.historyMutationQueue.length !== 100
@@ -31,5 +31,5 @@ ShellRoot {
       throw new Error("clear did not supersede obsolete queued history mutations")
     console.log("PRIVACY_QML_HISTORY_MUTATION_QUEUE_OK")
     Qt.quit()
-  }
+  })
 }

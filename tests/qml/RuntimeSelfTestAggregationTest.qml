@@ -6,12 +6,12 @@ ShellRoot {
   Service { id: service }
 
   function check(label) {
-    for (var index = 0; index < service.selfTestResult.checks.length; index++)
+    for (let index = 0; index < service.selfTestResult.checks.length; index++)
       if (service.selfTestResult.checks[index].label === label) return service.selfTestResult.checks[index]
     return null
   }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.settings = {enabledKinds:["screen-recording"], directDeviceMonitoring:true, historyEnabled:false}
     service.dependencyCheckedMap = {"screen-recording":true}
     service.dependencyReadyMap = {"screen-recording":false}
@@ -38,5 +38,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_SELF_TEST_AGGREGATION_OK")
     Qt.quit()
-  }
+  })
 }

@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 
 SettingsSurface {
@@ -18,7 +19,7 @@ SettingsSurface {
     PanelSectionHeader { Layout.fillWidth: true; text: surface.kind === "microphone" ? "Microphone devices" : "Audio output devices" }
     Button { objectName: "audioEndpointRefreshButton"; iconText: "󰑓"; tooltipText: "Refresh devices"; horizontalPadding: Style.spacing.controlGap; enabled: surface.service !== null; onClicked: surface.service.refreshAudioEndpoints(surface.kind) }
   }
-  Text { Layout.fillWidth: true; text: "Mute or unmute one hardware endpoint without changing the other devices."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+  Text { Layout.fillWidth: true; text: "Mute or unmute one hardware endpoint without changing the other devices."; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
   Repeater {
     model: surface.service ? surface.service.deviceChangesFor(surface.kind) : []
     delegate: Text {
@@ -28,7 +29,7 @@ SettingsSurface {
       Layout.fillWidth: true
       text: modelData.label + " " + modelData.change + " during this session"
       textFormat: Text.PlainText
-      color: modelData.change === "disappeared" ? Color.urgent : Color.muted
+      color: modelData.change === "disappeared" ? Commons.Color.urgent : Commons.Color.muted
       font.family: Style.font.family
       font.pixelSize: Style.font.caption
       elide: Text.ElideRight
@@ -43,20 +44,20 @@ SettingsSurface {
       Layout.fillWidth: true
       implicitHeight: endpointRow.implicitHeight + Style.spacing.md * 2
       radius: Style.cornerRadius
-      color: Util.alpha(endpointSurface.modelData.muted ? Color.urgent : Color.popups.text, endpointSurface.modelData.muted ? 0.08 : 0.035)
+      color: Util.alpha(endpointSurface.modelData.muted ? Commons.Color.urgent : Commons.Color.popups.text, endpointSurface.modelData.muted ? 0.08 : 0.035)
       border.width: 1
-      border.color: Util.alpha(endpointSurface.modelData.muted ? Color.urgent : Color.popups.text, endpointSurface.modelData.muted ? 0.3 : 0.12)
+      border.color: Util.alpha(endpointSurface.modelData.muted ? Commons.Color.urgent : Commons.Color.popups.text, endpointSurface.modelData.muted ? 0.3 : 0.12)
       RowLayout {
         id: endpointRow
         anchors.fill: parent
         anchors.margins: Style.spacing.md
         spacing: Style.spacing.md
-        Rectangle { implicitWidth: Style.spacing.sm; implicitHeight: implicitWidth; radius: implicitWidth / 2; color: endpointSurface.modelData.muted ? Color.urgent : surface.accent }
+        Rectangle { implicitWidth: Style.spacing.sm; implicitHeight: implicitWidth; radius: implicitWidth / 2; color: endpointSurface.modelData.muted ? Commons.Color.urgent : surface.accent }
         ColumnLayout {
           Layout.fillWidth: true
           spacing: Style.spacing.xs
-          Text { Layout.fillWidth: true; text: endpointSurface.modelData.label; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; font.weight: Font.DemiBold; elide: Text.ElideRight }
-          Text { objectName: "audioEndpointStatus-" + endpointSurface.modelData.id; Layout.fillWidth: true; text: endpointSurface.modelData.muted ? "Blocked · muted" : "Allowed · unmuted"; textFormat: Text.PlainText; color: endpointSurface.modelData.muted ? Color.urgent : Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+          Text { Layout.fillWidth: true; text: endpointSurface.modelData.label; textFormat: Text.PlainText; color: Commons.Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body; font.weight: Font.DemiBold; elide: Text.ElideRight }
+          Text { objectName: "audioEndpointStatus-" + endpointSurface.modelData.id; Layout.fillWidth: true; text: endpointSurface.modelData.muted ? "Blocked · muted" : "Allowed · unmuted"; textFormat: Text.PlainText; color: endpointSurface.modelData.muted ? Commons.Color.urgent : Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
         }
         Button { objectName: "audioEndpointAction-" + endpointSurface.modelData.id; text: endpointSurface.modelData.muted ? "Allow" : "Block"; horizontalPadding: Style.spacing.md; onClicked: surface.service.setAudioEndpointMuted(surface.kind, endpointSurface.modelData.id, !endpointSurface.modelData.muted) }
       }

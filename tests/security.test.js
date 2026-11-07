@@ -22,7 +22,7 @@ if (!(bar + popupViews).includes("textFormat: Text.PlainText")) throw new Error(
 if (!presentationController.includes("Model.autoTextSafe(value)")) throw new Error("shared AutoText boundary missing")
 if (!notificationController.includes("Model.autoTextSafe(body)")) throw new Error("notification markup boundary missing")
 
-const shellRunCalls = [...bar.matchAll(/bar\.run\(([^\n]+)\)/g)].map(match => match[1].trim())
+const shellRunCalls = [...bar.matchAll(/\b(?:bar|barHost)\.run\(([^\n]+)\)/g)].map(match => match[1].trim())
 if (shellRunCalls.length !== 2 || !shellRunCalls.every(call => call === "command" || call === "screenshotCommand"))
   throw new Error("only explicit user custom commands may cross the bar shell-string boundary")
 for (const required of [

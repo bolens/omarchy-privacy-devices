@@ -2,12 +2,13 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 
 Rectangle {
   id: surface
   required property string message
   property string kind: "info"
-  readonly property color tone: kind === "error" ? Color.urgent : (kind === "success" ? Color.accent : Color.muted)
+  readonly property color tone: kind === "error" ? Commons.Color.urgent : (kind === "success" ? Commons.Color.accent : Commons.Color.muted)
   readonly property string icon: kind === "error" ? "!" : (kind === "success" ? "✓" : "󰋼")
   Layout.fillWidth: true
   implicitHeight: row.implicitHeight + Style.spacing.md * 2
@@ -21,6 +22,6 @@ Rectangle {
     anchors.margins: Style.spacing.md
     spacing: Style.spacing.sm
     Text { objectName: "messageSurfaceIcon"; text: surface.icon; textFormat: Text.PlainText; color: surface.tone; font.family: Style.font.family; font.pixelSize: Style.font.body; font.weight: Font.DemiBold }
-    Text { objectName: "messageSurfaceText"; Layout.fillWidth: true; text: surface.message; textFormat: Text.PlainText; color: Color.popups.text; wrapMode: Text.WordWrap; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+    Text { objectName: "messageSurfaceText"; Layout.fillWidth: true; text: surface.message; textFormat: Text.PlainText; color: Commons.Color.popups.text; wrapMode: Text.WordWrap; font.family: Style.font.family; font.pixelSize: Style.font.caption }
   }
 }

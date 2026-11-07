@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 
@@ -28,7 +29,7 @@ ColumnLayout {
       Layout.fillWidth: true
       text: editor.controller ? Model.label(editor.controller.editingKind) + " settings" : "Device settings"
       textFormat: Text.PlainText
-      color: Color.popups.text
+      color: Commons.Color.popups.text
       font.family: Style.font.family
       font.pixelSize: Style.font.title
       font.weight: Font.DemiBold

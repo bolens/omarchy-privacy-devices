@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.settings = {
       enabledKinds:["microphone", "camera"],
       showInferredAttribution:false,
@@ -43,5 +43,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_SERVICE_PROJECTION_OK")
     Qt.quit()
-  }
+  })
 }

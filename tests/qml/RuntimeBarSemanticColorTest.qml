@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import Quickshell
 import QtQuick
-import qs.Commons
+import qs.Commons as Commons
 
 ShellRoot {
   id: root
@@ -52,13 +52,13 @@ ShellRoot {
     var idle = Object.assign({}, base, {active:false,controlEnabled:true})
     var disabled = Object.assign({}, base, {active:false,controlEnabled:false})
     var blocked = Object.assign({}, base, {active:true,controlEnabled:false})
-    if (colorName(widget.itemColor(active)) !== colorName(Color.accent))
+    if (colorName(widget.itemColor(active)) !== colorName(Commons.Color.accent))
       throw new Error("legacy microphone unmuted role shadowed the global active color")
     if (colorName(widget.itemColor(idle)) !== colorName(barMock.foreground))
       throw new Error("idle device did not use the global foreground role")
-    if (colorName(widget.itemColor(disabled)) !== colorName(Color.muted))
+    if (colorName(widget.itemColor(disabled)) !== colorName(Commons.Color.muted))
       throw new Error("disabled device did not use the global muted role")
-    if (widget.itemVisualState(blocked) !== "blocked-active" || colorName(widget.itemColor(blocked)) !== colorName(Color.urgent))
+    if (widget.itemVisualState(blocked) !== "blocked-active" || colorName(widget.itemColor(blocked)) !== colorName(Commons.Color.urgent))
       throw new Error("observable blocked request did not use the urgent semantic state")
     widget.settings = Object.assign({}, widget.settings, {
       statusMarkerMode:"letters", barMarkerPosition:"before", showBarSessionCounts:true,

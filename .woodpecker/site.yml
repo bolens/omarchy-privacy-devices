@@ -16,7 +16,7 @@ when:
       - manual
 steps:
   - name: build-site
-    image: ghcr.io/bolens/omarchy-plugin-ci@sha256:293b0457198085de5df26519dd4aa336202495c080d253b71ac30e7d8e8d3851
+    image: ghcr.io/bolens/omarchy-plugin-ci@sha256:af5a6ae41d7c531e18fc0a2f260af8abafa4b0f5e5c9b224fda9f86d3af84b6b
     commands:
       - umask 022
       - npm ci --ignore-scripts --no-audit --no-fund

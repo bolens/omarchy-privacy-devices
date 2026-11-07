@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import Quickshell
 import QtQuick
-import qs.Commons
+import qs.Commons as Commons
 import "Model.js" as Model
 // Imported JavaScript namespaces are valid here but Qt treats nested test objects as unqualified.
 // qmllint disable unqualified
@@ -23,12 +23,12 @@ ShellRoot {
     property string selectedKind: ""
     property string editingKind: ""
     property double durationNow: 10000
-    property color inactiveThemeColor: Color.muted
-    property color activeThemeColor: Color.accent
-    property color mutedThemeColor: Color.urgent
-    property color unmutedThemeColor: Color.foreground
+    property color inactiveThemeColor: Commons.Color.muted
+    property color activeThemeColor: Commons.Color.accent
+    property color mutedThemeColor: Commons.Color.urgent
+    property color unmutedThemeColor: Commons.Color.foreground
     function itemVisualState(entry) { return Model.privacyVisualState(entry) }
-    function itemColor(_entry) { return Color.accent }
+    function itemColor(_entry) { return Commons.Color.accent }
     function itemIdleOpacity(_kind) { return 0.45 }
     function itemSessionCount(_entry) { return 1 }
     function itemStateLabel(entry) { return Model.privacyStateLabel(entry) }

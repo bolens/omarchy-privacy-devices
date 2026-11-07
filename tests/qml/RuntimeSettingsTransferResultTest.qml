@@ -11,7 +11,7 @@ ShellRoot {
     function resetGlobalSettings() { root.events = root.events.concat([{kind:"reset"}]) }
   }
   PrivacySettingsTransferResult { id: result; controller: mockController }
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     if (!result.apply("export", "exported") || result.status !== "Settings exported privately") throw new Error("export result failed")
     if (!result.apply("checkpoint", "checkpointed") || root.events[0].kind !== "reset") throw new Error("checkpoint result failed")
     if (!result.apply("import", '{"_privacySettingsVersion":1,"showIdle":false}') || root.events[1].settings.showIdle !== false) throw new Error("import result failed")
@@ -22,5 +22,5 @@ ShellRoot {
     if (result.status !== "Transfer failed: fixture failed") throw new Error("transfer failure detail was lost")
     console.log("PRIVACY_QML_SETTINGS_TRANSFER_RESULT_OK")
     Qt.quit()
-  }
+  })
 }

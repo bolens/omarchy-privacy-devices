@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     if (service.boundedSeconds("bad", 5, 2, 60) !== 5
         || service.boundedSeconds(-10, 5, 2, 60) !== 2
         || service.boundedSeconds(100, 5, 2, 60) !== 60
@@ -39,5 +39,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_SERVICE_STATE_MUTATION_OK")
     Qt.quit()
-  }
+  })
 }

@@ -39,7 +39,9 @@ scripts/lint-qml
 
 The lint entry point discovers every root component and `tests/qml/` harness in
 sorted order. CI calls the same script with its pinned Qt executable and
-checked-out Omarchy import path.
+checked-out Omarchy import path. It copies harnesses beside the plugin's QML and
+JavaScript files in a temporary directory, matching their runtime import layout,
+and removes that directory after linting, including failed runs.
 
 In a graphical session, `npm test` also runs the real-engine QML suite when a
 usable Wayland session and Quickshell executable are present. To require that
@@ -98,6 +100,10 @@ Settings transfer, rollback, confirmation expiry, capture-preview expiry,
 verification timeout, and reactive refresh harnesses follow the same rule;
 one event-loop deferral is used only when an assertion must run outside the
 QML binding stack that emitted its completion signal.
+Completion-only harnesses also defer their body through `Qt.callLater` so
+Quickshell connects its quit receiver before the test calls `Qt.quit()`. The
+command-construction harness disables monitored kinds and asserts that it owns
+no observers; separate lifecycle harnesses exercise actual observer processes.
 
 This runs shared policy, the assembled plugin, semantic appearance bindings,
 rendered bar and activity-card states, per-endpoint audio controls, validated
@@ -245,11 +251,13 @@ See the [documentation index](DOCUMENTATION.md),
 ## Woodpecker plugin validation
 
 [Woodpecker](https://woodpecker.bolens.dev/repos) runs the plugin archive,
-ShellCheck, behavior and QML lint checks on pull requests and pushes to `main`.
-It uses the same immutable Omarchy toolchain image and v4.0.1 imports as
-GitHub CI. The entry point is `bash scripts/woodpecker-plugin.sh` inside that
-image. It requires network access only to fetch the pinned public imports
-and any lockfile-based test dependencies; it receives no publishing secrets.
+ShellCheck, behavior, strict QML controls and complete canonical headless runtime
+suite on pull requests and pushes to `main`. Its pinned toolchain and v4.0.1
+imports also serve retained GitHub callers. Preparation runs
+`bash scripts/woodpecker-plugin.sh --prepare` to fetch only immutable public
+imports. The required `--offline` phase runs as container user 10042 with
+networking disabled; test dependencies are already in the image. Neither phase
+receives publishing secrets.
 
 Require `ci/woodpecker/pr/plugin` for ordinary pull requests, alongside the
 existing Repository, source-lint, and development-environment checks. GitHub
@@ -286,3 +294,77 @@ site run. Forks still require native approval and receive no publishing secrets.
 Publishing and platform checks retain their current workflows. Review the manual
 browser-image digest pin alongside the other native image pins; Dependabot does
 not update Woodpecker YAML.
+
+## Strict QML import preparation
+
+Inside the qualified CI toolchain, use the same preparation entry point as the
+native and retained hosted gates:
+
+```sh
+bash scripts/with-qml-imports.sh "$OMARCHY_PATH/shell" bash tests/run_all.sh
+```
+
+Use the clean `shell` subtree from Omarchy commit
+`13f18b2cb7286fb54f87daf571a031aa6af3d8f0`. The source profile checks every one of
+its 175 files, including Git blob hashes and executable modes, before copying it
+into an owned temporary directory. It backports the upstream
+[`b83d3df` palette qualification](https://github.com/omacom/omarchy/commit/b83d3df0840504299d3099ebf391eb8110527edd)
+and gives the eleven existing anonymous token objects named component types.
+Every field body and readonly slot is preserved. The installed shell is unchanged.
+Unknown source contents fail preparation; the experimental compatibility canary
+reports that gap rather than silently adapting an unreviewed upstream revision.
+
+The tooling helper verifies the exact Quickshell/Qt package versions and all 72
+Quickshell import files. Its private metadata copy resolves source-backed core
+Margins, PopupAnchor, ObjectModel and flag typedefs; installed package files remain unchanged.
+`QML_TOOLING_IMPORT_ROOT` selects that copy first with `qmllint --bare` and explicit
+system imports. Runtime engines use the real installed package metadata.
+
+The policy rejects warnings. Real-linter controls must accept a supported nested
+font field and reject an invalid property, nested field and type with the expected
+diagnostic. A successful subprocess with the wrong diagnostic does not pass.
+Preparation, source lint and these controls are separate from the explicit QML
+runtime suite; a static pass does not prove live desktop behavior. Run runtime
+harnesses only with owned HOME/XDG roots and an isolated display appropriate to
+the harnesses. Window tests require a real layer-shell compositor, not the
+offscreen backend. See the QML warning validation feature's
+[acceptance plan](specs/005-qml-warning-validation/plan.md).
+
+If Qt 6.12 `qmllint` fails with empty text output, repeat its exact command with
+`--json -` to read the structured diagnostics. Keep the same inputs, policy and
+import arguments. Loop-analysis diagnostics can remain in the structured result
+when Qt's text output is empty; an empty log never overrides a failing exit code.
+Acceptance requires the complete target inventory and zero structured diagnostics.
+
+## Required native QML validation
+
+Woodpecker prepares the immutable public Omarchy source and installs locked site-test
+dependencies with `npm ci --ignore-scripts` in its networked first step. It makes
+those public inputs readable by the following ordinary container user.
+The required plugin step then runs as container user 10042 with networking
+disabled. It validates the source and tooling profiles, portable checks, strict
+QML lint and real invalid controls before running every harness registered in
+`tests/run_qml_runtime.sh` through `scripts/qml-runtime-fixture.py`. Optional
+desktop-test selection variables do not skip this owned runtime gate.
+
+Woodpecker 3.x reads `network_mode: none` as a direct step field; placing it
+under `backend_options.docker` is ignored by the agent. Docker backend options
+retain the ordinary `10042:10042` user. The server must accept the legacy
+step-level field in its workflow schema. Verify the actual plugin container has
+`HostConfig.NetworkMode=none` and no attached workflow network before claiming
+offline acceptance; YAML lint and source assertions alone do not prove this.
+Preparation and cloning retain their network access and public immutable inputs.
+
+The fixture uses private HOME/XDG roots, canonical default typography and the
+packaged font resolver. Window tests use a software headless compositor; Privacy
+tests also use an isolated PipeWire registry without hardware nodes. Protocol
+roundtrips establish readiness. Existing harness deadlines and natural exits
+remain required; Privacy shutdown also checks the owned configuration is absent.
+No host display, audio socket, device, Docker socket or privilege is required.
+
+Each result retains its raw output in CI logs. Only exact, source-bound warnings
+from explicitly asserted negative tests may pass; additional Qt, binding, type
+or deprecation warnings fail. The palette contract checks all 87 declared token
+fields plus eleven inherited object names, stable identities, readonly owners,
+permitted child writes and reactive restoration. A missing harness, marker or
+cleanup result fails validation.
