@@ -1,7 +1,9 @@
 """The native QML gate must execute offline as an ordinary container user."""
+import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -83,7 +85,7 @@ class NativeQmlContract(unittest.TestCase):
     def test_only_exact_ephemeral_input_is_ignored(self):
         self.assertIn("/.woodpecker-qml-input/", (ROOT / ".gitignore").read_text().splitlines())
 
-    def test_public_locked_dependencies_are_prepared_readable_before_offline(self):
+    def prepare_dependencies(self, exit_code):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "scripts").mkdir()
@@ -94,15 +96,56 @@ class NativeQmlContract(unittest.TestCase):
             fakegit = bindir / "git"
             fakegit.write_text('#!/bin/sh\nif [ "$1" = init ]; then mkdir -p "$3/.git"; fi\nif [ "$3" = rev-parse ]; then printf "%s\\n" 13f18b2cb7286fb54f87daf571a031aa6af3d8f0; fi\n')
             fakegit.chmod(0o700)
+            captured = root / "npm-call.json"
+            temporary = root / "temporary"
+            temporary.mkdir(mode=0o700)
             fakenpm = bindir / "npm"
-            fakenpm.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$NATIVE_TEST_NPM_CALL"\nmkdir node_modules\nprintf public > node_modules/readable\n')
+            fakenpm.write_text(f"#!{sys.executable}\n" + r'''
+import json
+import os
+from pathlib import Path
+import stat
+import sys
+configs = [Path(os.environ[key]) for key in ("NPM_CONFIG_USERCONFIG", "NPM_CONFIG_GLOBALCONFIG")]
+assert configs[0] != configs[1] and configs[0].resolve() != configs[1].resolve()
+assert not configs[0].samefile(configs[1])
+assert configs[0].parent == configs[1].parent
+assert stat.S_IMODE(configs[0].parent.stat().st_mode) == 0o700
+for path in configs:
+    assert path.is_file() and not path.is_symlink()
+    assert path.read_bytes() == b"" and stat.S_IMODE(path.stat().st_mode) == 0o600
+for key in ("NPM_TOKEN", "NODE_AUTH_TOKEN", "npm_config_registry", "NPM_CONFIG_REGISTRY"):
+    assert key not in os.environ
+''' + f"Path({str(captured)!r}).write_text(json.dumps({{'args':sys.argv[1:], 'configs':[str(path) for path in configs]}}))\n"
+                + ("Path('node_modules').mkdir()\nPath('node_modules/readable').write_text('public')\n" if exit_code == 0 else "")
+                + f"sys.exit({exit_code})\n")
             fakenpm.chmod(0o700)
-            captured = root / "npm-args"
             result = subprocess.run(["bash", str(script), "--prepare"], text=True, capture_output=True, timeout=3,
-                                    umask=0o077, env={**os.environ, "PATH": str(bindir) + ":/usr/bin:/bin", "NATIVE_TEST_NPM_CALL": str(captured)})
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(captured.read_text().splitlines(), ["ci", "--ignore-scripts"])
-            self.assertEqual((root / "node_modules/readable").stat().st_mode & 0o777, 0o644)
+                                    umask=0o077, env={**os.environ, "PATH": str(bindir) + ":/usr/bin:/bin", "TMPDIR": str(temporary),
+                                                     "NPM_TOKEN": "ambient-fixture", "NODE_AUTH_TOKEN": "ambient-fixture",
+                                                     "NPM_CONFIG_REGISTRY": "https://invalid.example", "npm_config_registry": "https://invalid.example"})
+            self.assertEqual(result.returncode, exit_code, result.stderr)
+            observed = json.loads(captured.read_text())
+            self.assertEqual(observed["args"], ["ci", "--ignore-scripts"])
+            self.assertTrue(all(not Path(path).exists() for path in observed["configs"]), "private NPM configs survive invocation")
+            self.assertEqual(list(temporary.iterdir()), [], "private NPM home/cache/temp survives invocation")
+            if exit_code == 0:
+                self.assertEqual((root / "node_modules/readable").stat().st_mode & 0o777, 0o644)
+
+    def test_public_locked_dependencies_are_prepared_readable_before_offline(self):
+        self.prepare_dependencies(0)
+
+    def test_failed_npm_preserves_status_and_cleans_private_configuration(self):
+        self.prepare_dependencies(37)
+
+    def test_offline_dependencies_are_checked_without_install_or_fetch(self):
+        script = (ROOT / "scripts/woodpecker-plugin.sh").read_text()
+        offline = script.split("esac\n", 1)[1]
+        self.assertIn("run_public_npm ls --all --offline", offline)
+        self.assertNotRegex(offline, r"\bnpm (?:ci|install|update|exec|view|fetch)\b")
+        self.assertLess(offline.index("run_public_npm ls --all --offline"), offline.index("\ntests/run_all.sh\n"))
+        self.assertIn("scripts/lint-qml", offline)
+        self.assertIn("scripts/qml-runtime-fixture.py --execute", offline)
 
 
 if __name__ == "__main__":

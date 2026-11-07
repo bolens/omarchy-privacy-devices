@@ -5,6 +5,21 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 input_dir="$PWD/.woodpecker-qml-input"
 omarchy_dir="$input_dir/omarchy"
 omarchy_revision=13f18b2cb7286fb54f87daf571a031aa6af3d8f0
+# NPM 11 loads user/global files separately. Give each invocation distinct,
+# empty private configs and no ambient authentication or configuration variables.
+run_public_npm() (
+  npm_config_dir=$(mktemp -d)
+  trap 'rm -rf -- "$npm_config_dir"' EXIT
+  mkdir -m 700 -- "$npm_config_dir/home" "$npm_config_dir/cache" "$npm_config_dir/tmp"
+  install -m 600 /dev/null "$npm_config_dir/user.npmrc"
+  install -m 600 /dev/null "$npm_config_dir/global.npmrc"
+  env -i PATH="$PATH" LANG="${LANG:-C.UTF-8}" \
+    HOME="$npm_config_dir/home" TMPDIR="$npm_config_dir/tmp" \
+    NPM_CONFIG_CACHE="$npm_config_dir/cache" \
+    NPM_CONFIG_USERCONFIG="$npm_config_dir/user.npmrc" \
+    NPM_CONFIG_GLOBALCONFIG="$npm_config_dir/global.npmrc" npm "$@"
+)
+
 case "${1:-}" in
   --prepare)
     [[ $# == 1 ]] || exit 2
@@ -19,7 +34,7 @@ case "${1:-}" in
     git -C "$omarchy_dir" checkout --quiet --detach FETCH_HEAD
     [[ $(git -C "$omarchy_dir" rev-parse HEAD) == "$omarchy_revision" ]]
     # Install exact public locked site-test dependencies before the offline step.
-    NPM_CONFIG_USERCONFIG=/dev/null NPM_CONFIG_GLOBALCONFIG=/dev/null npm ci --ignore-scripts
+    run_public_npm ci --ignore-scripts
     exit 0
     ;;
   --offline)
@@ -72,7 +87,8 @@ if git grep -IlE -- 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gh[pousr]_[A-Za-z0-9_
   exit 1
 fi
 
-npm ci --ignore-scripts --no-audit
+# The networked preparation owns installation; this step only checks the locked tree.
+run_public_npm ls --all --offline
 
 tests/run_all.sh
 
