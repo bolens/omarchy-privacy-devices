@@ -22,8 +22,8 @@ ShellRoot {
     if (!item) return null
     if (item.objectName === name) return item
     var children = item.children || []
-    for (var index = 0; index < children.length; index++) {
-      var match = descendant(children[index], name)
+    for (let index = 0; index < children.length; index++) {
+      let match = descendant(children[index], name)
       if (match) return match
     }
     return null

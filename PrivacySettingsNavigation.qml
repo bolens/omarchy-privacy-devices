@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 
 ColumnLayout {
@@ -13,7 +14,7 @@ ColumnLayout {
   RowLayout {
     Layout.fillWidth: true
     Button { objectName: "settingsBackButton"; iconText: "󰁍"; tooltipText: "Back"; horizontalPadding: Style.spacing.controlGap; onClicked: navigation.controller.showActivity() }
-    Text { Layout.fillWidth: true; text: "Global settings"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
+    Text { Layout.fillWidth: true; text: "Global settings"; textFormat: Text.PlainText; color: Commons.Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
   }
 
   GridLayout {

@@ -19,7 +19,7 @@ ShellRoot {
     function applySettingsScroll(position) { scrollPosition = position; return view.indexOf("settings:") === 0 ? "ok" : "settings closed" }
   }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.configure({enabledKinds:[],historyEnabled:false,directDeviceMonitoring:false})
     service.recentHistory = [{kind:"location",application:"Maps",startedAt:1,endedAt:2}]
     service.activeSessions = [{kind:"microphone",application:"Recorder",startedAt:10}]
@@ -69,5 +69,5 @@ ShellRoot {
     if (service.anyBarOpen()) throw new Error("closed multi-monitor bar presentation remained open")
     console.log("PRIVACY_QML_CAPTURE_PREVIEW_LIFECYCLE_OK")
     Qt.quit()
-  }
+  })
 }

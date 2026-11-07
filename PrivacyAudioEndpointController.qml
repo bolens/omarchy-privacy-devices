@@ -25,16 +25,16 @@ Item {
 
   function accept(kind, text) {
     try {
-      var rows = JSON.parse(String(text || "[]"))
+      let rows = JSON.parse(String(text || "[]"))
       if (!Array.isArray(rows)) throw new Error("invalid endpoint list")
       rows = Model.sanitizeAudioEndpoints(rows, 64)
-      var changes = initializedKinds[kind] === true
+      let changes = initializedKinds[kind] === true
         ? Model.deviceInventoryChanges(kind, endpoints(kind), rows, Date.now()) : []
       if (changes.length) host.recentDeviceChanges = changes.concat(host.recentDeviceChanges).slice(0, 24)
-      var initialized = Object.assign({}, initializedKinds)
+      let initialized = Object.assign({}, initializedKinds)
       initialized[kind] = true
       initializedKinds = initialized
-      var next = Object.assign({}, endpointMap)
+      let next = Object.assign({}, endpointMap)
       next[kind] = rows
       endpointMap = next
       message = rows.length ? "" : "No audio endpoints detected."

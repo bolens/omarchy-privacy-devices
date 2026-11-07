@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.settings = {
       enabledKinds:["screenshot", "screen-recording", "microphone"],
       screenshotBackend:"grim",
@@ -40,5 +40,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_DIAGNOSTIC_PROJECTION_OK")
     Qt.quit()
-  }
+  })
 }

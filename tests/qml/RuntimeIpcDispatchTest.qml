@@ -78,14 +78,14 @@ ShellRoot {
   function responseAccepted(current, response) {
     if (current.validator === "capture-presentation") {
       try {
-        var presentation = JSON.parse(response)
+        let presentation = JSON.parse(response)
         return presentation.opened === true && presentation.view === "device"
           && presentation.argument === "microphone" && presentation.ready === true
       } catch (error) { return false }
     }
     if (current.validator !== "capture-state") return response === current.expected
     try {
-      var state = JSON.parse(response)
+      let state = JSON.parse(response)
       return state.settings.showActivityIndicators === false
         && state.sessions.length === 1 && state.sessions[0].application === "Runtime Voice"
         && Array.isArray(state.barSessions)

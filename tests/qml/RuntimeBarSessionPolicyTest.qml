@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.settings = {
       enabledKinds:["microphone"],
       hiddenApps:["Hidden app"],
@@ -42,5 +42,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_BAR_SESSION_POLICY_OK")
     Qt.quit()
-  }
+  })
 }

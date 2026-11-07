@@ -18,7 +18,7 @@ ShellRoot {
   }
 
   QtObject {
-    id: host
+    id: hostMock
     property var confirmationController: confirmation
     property var contentViewport: viewport
     property var settingsPageItem: null
@@ -27,7 +27,7 @@ ShellRoot {
     function publishCaptureBarPresentation() { presentations++ }
   }
 
-  PrivacyPopupNavigationController { id: navigation; host: host }
+  PrivacyPopupNavigationController { id: navigation; host: hostMock }
 
   Component.onCompleted: Qt.callLater(function() {
     navigation.showSettings("monitoring", "observer-health")

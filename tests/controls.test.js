@@ -94,6 +94,40 @@ assert.equal(timedOut.status, "failed")
 assert.equal(timedOut.code, "verification_timeout")
 assert.equal(timedOut.exitCode, 14)
 
+// Probes before the deadline retain their existing success/failure semantics.
+for (const [event, expectedCode] of [
+  [{type: "observation", valid: true, enabled: false}, "verified"],
+  [{type: "observation", valid: false}, "verification_probe_failed"],
+]) {
+  assert.equal(model.controlTransactionTransition(verifying, event, 6_099).code, expectedCode)
+}
+assert.equal(model.controlTransactionTransition(verifying,
+  {type: "observation", valid: true, enabled: true}, 6_099), verifying)
+
+// At and after expiry, matching, mismatching and invalid probes all time out.
+// Applying the watchdog and probe in either order preserves the first terminal object.
+for (const timestamp of [6_100, 6_101]) {
+  for (const probe of [
+    {type: "observation", valid: true, enabled: false},
+    {type: "observation", valid: true, enabled: true},
+    {type: "observation", valid: false},
+  ]) {
+    const timeout = {type: "timeout"}
+    for (const [first, second] of [[probe, timeout], [timeout, probe]]) {
+      const terminal = model.controlTransactionTransition(verifying, first, timestamp)
+      assert.deepEqual(JSON.parse(JSON.stringify(terminal)), {
+        status: "failed", expectedEnabled: false, startedAt: 1_000,
+        finishedAt: timestamp, exitCode: 14, code: "verification_timeout",
+      })
+      assert.equal(model.controlTransactionTransition(terminal, second, timestamp + 1), terminal)
+    }
+  }
+}
+for (const terminal of [verified, invalidProbe, timedOut, commandFailed]) {
+  for (const event of [{type: "observation", valid: true, enabled: false}, {type: "timeout"}])
+    assert.equal(model.controlTransactionTransition(terminal, event, 7_000), terminal)
+}
+
 const request = (overrides = {}) => Object.assign({
   known: true, enabled: true, serviceOwned: true, dependenciesReady: true,
   pending: false, processBusy: false

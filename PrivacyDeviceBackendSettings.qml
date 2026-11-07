@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 
@@ -48,7 +49,7 @@ SettingsSurface {
   Layout.fillWidth: true
   text: "Omarchy follows the system capture command. Explicit and custom choices keep dependency checks and activity detection tied to that backend."
   textFormat: Text.PlainText
-  color: Color.muted
+  color: Commons.Color.muted
   font.family: Style.font.family
   font.pixelSize: Style.font.caption
   wrapMode: Text.WordWrap
@@ -68,7 +69,7 @@ SettingsSurface {
   Layout.fillWidth: true
   text: "Omarchy uses its smart flow. Grim and Hyprshot capture regions; Grim + Satty and Flameshot add annotation."
   textFormat: Text.PlainText
-  color: Color.muted
+  color: Commons.Color.muted
   font.family: Style.font.family
   font.pixelSize: Style.font.caption
   wrapMode: Text.WordWrap
@@ -85,26 +86,26 @@ SettingsSurface {
     screenshotCustomCommand: customScreenshotCommandEditor.text,
     screenshotProcessName: customScreenshotProcessEditor.text
   })
-  Text { Layout.fillWidth: true; text: "Screenshot command"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+  Text { Layout.fillWidth: true; text: "Screenshot command"; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
   TextField {
     id: customScreenshotCommandEditor
     Layout.fillWidth: true
     placeholderText: "Screenshot command"
     text: String(surface.root.setting("screenshotCustomCommand", ""))
     maximumLength: 4096
-    foreground: Color.popups.text
+    foreground: Commons.Color.popups.text
     accent: surface.root.activeThemeColor
     font.family: Style.font.family
     onAccepted: if (parent.validation.valid) surface.root.persistSettings({screenshotCustomCommand: text, screenshotProcessName: customScreenshotProcessEditor.text})
   }
-  Text { Layout.fillWidth: true; text: "Activity process substring (optional)"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+  Text { Layout.fillWidth: true; text: "Activity process substring (optional)"; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
   TextField {
     id: customScreenshotProcessEditor
     Layout.fillWidth: true
     placeholderText: "Activity process substring (optional)"
     text: String(surface.root.setting("screenshotProcessName", ""))
     maximumLength: 256
-    foreground: Color.popups.text
+    foreground: Commons.Color.popups.text
     accent: surface.root.activeThemeColor
     font.family: Style.font.family
     onAccepted: if (parent.validation.valid) surface.root.persistSettings({screenshotCustomCommand: customScreenshotCommandEditor.text, screenshotProcessName: text})
@@ -113,7 +114,7 @@ SettingsSurface {
     Layout.fillWidth: true
     text: !parent.validation.valid ? parent.validation.message : (parent.dirty ? "Unsaved changes" : "Saved")
     textFormat: Text.PlainText
-    color: !parent.validation.valid ? Color.urgent : (parent.dirty ? Color.accent : Color.muted)
+    color: !parent.validation.valid ? Commons.Color.urgent : (parent.dirty ? Commons.Color.accent : Commons.Color.muted)
     font.family: Style.font.family
     font.pixelSize: Style.font.caption
     wrapMode: Text.WordWrap
@@ -141,38 +142,38 @@ SettingsSurface {
     recordingCustomStartCommand: customRecorderStartEditor.text,
     recordingCustomStopCommand: customRecorderStopEditor.text
   })
-  Text { Layout.fillWidth: true; text: "Recorder process name"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+  Text { Layout.fillWidth: true; text: "Recorder process name"; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
   TextField {
     id: customRecorderProcessEditor
     Layout.fillWidth: true
     placeholderText: "Process command substring"
     text: String(surface.root.setting("recordingProcessName", ""))
     maximumLength: 256
-    foreground: Color.popups.text
+    foreground: Commons.Color.popups.text
     accent: surface.root.activeThemeColor
     font.family: Style.font.family
     onAccepted: if (parent.validation.valid) surface.root.persistSettings({recordingProcessName: text, recordingCustomStartCommand: customRecorderStartEditor.text, recordingCustomStopCommand: customRecorderStopEditor.text})
   }
-  Text { Layout.fillWidth: true; text: "Start command"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+  Text { Layout.fillWidth: true; text: "Start command"; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
   TextField {
     id: customRecorderStartEditor
     Layout.fillWidth: true
     placeholderText: "Start command"
     text: String(surface.root.setting("recordingCustomStartCommand", ""))
     maximumLength: 4096
-    foreground: Color.popups.text
+    foreground: Commons.Color.popups.text
     accent: surface.root.activeThemeColor
     font.family: Style.font.family
     onAccepted: if (parent.validation.valid) surface.root.persistSettings({recordingProcessName: customRecorderProcessEditor.text, recordingCustomStartCommand: text, recordingCustomStopCommand: customRecorderStopEditor.text})
   }
-  Text { Layout.fillWidth: true; text: "Stop command"; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
+  Text { Layout.fillWidth: true; text: "Stop command"; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption }
   TextField {
     id: customRecorderStopEditor
     Layout.fillWidth: true
     placeholderText: "Stop command"
     text: String(surface.root.setting("recordingCustomStopCommand", ""))
     maximumLength: 4096
-    foreground: Color.popups.text
+    foreground: Commons.Color.popups.text
     accent: surface.root.activeThemeColor
     font.family: Style.font.family
     onAccepted: if (parent.validation.valid) surface.root.persistSettings({recordingProcessName: customRecorderProcessEditor.text, recordingCustomStartCommand: customRecorderStartEditor.text, recordingCustomStopCommand: text})
@@ -181,7 +182,7 @@ SettingsSurface {
     Layout.fillWidth: true
     text: !parent.validation.valid ? parent.validation.message : (parent.dirty ? "Unsaved changes" : "Saved")
     textFormat: Text.PlainText
-    color: !parent.validation.valid ? Color.urgent : (parent.dirty ? Color.accent : Color.muted)
+    color: !parent.validation.valid ? Commons.Color.urgent : (parent.dirty ? Commons.Color.accent : Commons.Color.muted)
     font.family: Style.font.family
     font.pixelSize: Style.font.caption
     wrapMode: Text.WordWrap
@@ -211,7 +212,7 @@ SettingsSurface {
   Layout.fillWidth: true
   text: "Shared by microphone and audio output. Auto prefers pactl and falls back to wpctl. This changes mute control only; activity detection remains PipeWire-native."
   textFormat: Text.PlainText
-  color: Color.muted
+  color: Commons.Color.muted
   font.family: Style.font.family
   font.pixelSize: Style.font.caption
   wrapMode: Text.WordWrap

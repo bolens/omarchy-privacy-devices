@@ -85,6 +85,7 @@ run_harness() {
   done
 }
 
+run_harness RuntimePaletteContractTest.qml PALETTE_QML_CONTRACT_OK
 run_harness RuntimeModelTest.qml PRIVACY_QML_RUNTIME_OK
 run_harness RuntimeSettingsNavigationTest.qml PRIVACY_QML_SETTINGS_NAVIGATION_OK
 run_harness RuntimeConfirmationTest.qml PRIVACY_QML_CONFIRMATION_OK
@@ -157,6 +158,7 @@ run_harness RuntimeObserverWatchdogTest.qml PRIVACY_QML_OBSERVER_WATCHDOG_OK
 run_harness RuntimeObserverReconfigurationTest.qml PRIVACY_QML_OBSERVER_RECONFIGURATION_OK
 run_harness RuntimeObserverStartupOwnershipTest.qml PRIVACY_QML_OBSERVER_STARTUP_OWNERSHIP_OK
 run_harness RuntimeLocationProbeSupersessionTest.qml PRIVACY_QML_LOCATION_PROBE_SUPERSESSION_OK
+run_harness RuntimeLocationCollectorTest.qml PRIVACY_QML_LOCATION_COLLECTOR_OK
 run_harness RuntimeIpcDispatchTest.qml PRIVACY_QML_IPC_DISPATCH_OK
 run_harness RuntimeAccessibilityTest.qml PRIVACY_QML_ACCESSIBILITY_OK
 

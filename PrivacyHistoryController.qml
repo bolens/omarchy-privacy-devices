@@ -103,7 +103,7 @@ Item {
           return
         }
         try {
-          var value = JSON.parse(String(historyLoadOutput.text || "[]"))
+          let value = JSON.parse(String(historyLoadOutput.text || "[]"))
           controller.host.recentHistory = Array.isArray(value) ? value : []
         } catch (error) {
           controller.host.recentHistory = []

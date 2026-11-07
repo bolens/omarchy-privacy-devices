@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 
@@ -111,7 +112,7 @@ Rectangle {
         RowLayout {
           Layout.fillWidth: true
           spacing: Style.spacing.sm
-          Text { Layout.fillWidth: true; text: card.entry.label; textFormat: Text.PlainText; color: Color.popups.text; opacity: card.visualState === "idle" ? card.controller.popupIdleOpacity : 1; font.family: Style.font.family; font.pixelSize: Style.font.body * card.itemScale; font.weight: card.visualState === "active" ? Font.DemiBold : Font.Normal; elide: Text.ElideRight }
+          Text { Layout.fillWidth: true; text: card.entry.label; textFormat: Text.PlainText; color: Commons.Color.popups.text; opacity: card.visualState === "idle" ? card.controller.popupIdleOpacity : 1; font.family: Style.font.family; font.pixelSize: Style.font.body * card.itemScale; font.weight: card.visualState === "active" ? Font.DemiBold : Font.Normal; elide: Text.ElideRight }
           Rectangle {
             objectName: "activitySessionCountBadge"
             visible: card.controller.itemSessionCount(card.entry) > 1
@@ -132,7 +133,7 @@ Rectangle {
             : card.visualState === "disabled" ? "Blocked by privacy control"
             : card.visualState === "active" ? (card.entry.apps.length ? card.entry.apps.join(", ") : "Activity hidden by policy")
             : "Available · not in use"
-          textFormat: Text.PlainText; color: card.visualState === "active" ? Color.popups.text : card.controller.inactiveThemeColor; opacity: card.visualState === "idle" ? card.controller.popupIdleOpacity : 1; font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; elide: Text.ElideRight
+          textFormat: Text.PlainText; color: card.visualState === "active" ? Commons.Color.popups.text : card.controller.inactiveThemeColor; opacity: card.visualState === "idle" ? card.controller.popupIdleOpacity : 1; font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; elide: Text.ElideRight
         }
         Text {
           objectName: "activitySessionSummary"
@@ -140,7 +141,7 @@ Rectangle {
           Layout.fillWidth: true
           property var firstSession: card.entry.sessions.length ? card.entry.sessions[0] : ({})
           text: card.sessionSummary(firstSession)
-          textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, card.controller.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; elide: Text.ElideRight
+          textFormat: Text.PlainText; color: Commons.Color.muted; opacity: Math.max(0.75, card.controller.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; elide: Text.ElideRight
         }
       }
     }
@@ -174,7 +175,7 @@ Rectangle {
         border.color: Util.alpha(card.controller.itemColor(card.entry), card.controller.statePillStyle === "outline" ? 0.7 : 0.45)
         Text { id: stateText; objectName: "activityStatePillText"; anchors.centerIn: parent; text: !card.entry.dependenciesReady ? "INSTALL" : (card.entry.kind === "screenshot" ? "CAPTURE" : card.controller.itemStateLabel(card.entry)); textFormat: Text.PlainText; color: card.controller.itemColor(card.entry); font.family: Style.font.family; font.pixelSize: Style.font.caption * card.itemScale; font.weight: Font.DemiBold }
       }
-      ToggleSwitch { visible: card.controller.showControls && card.entry.controllable && card.entry.kind !== "screenshot" && card.entry.dependenciesReady; checked: card.entry.controlEnabled; busy: card.entry.pending; interactive: false; foreground: Color.popups.text; accent: card.controller.isAudioControl(card.entry) ? (card.entry.controlEnabled ? card.controller.unmutedThemeColor : card.controller.mutedThemeColor) : card.controller.activeThemeColor }
+      ToggleSwitch { visible: card.controller.showControls && card.entry.controllable && card.entry.kind !== "screenshot" && card.entry.dependenciesReady; checked: card.entry.controlEnabled; busy: card.entry.pending; interactive: false; foreground: Commons.Color.popups.text; accent: card.controller.isAudioControl(card.entry) ? (card.entry.controlEnabled ? card.controller.unmutedThemeColor : card.controller.mutedThemeColor) : card.controller.activeThemeColor }
     }
   }
 }

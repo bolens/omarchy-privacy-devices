@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import Quickshell
 import QtQuick
-import qs.Commons
+import qs.Commons as Commons
 
 ShellRoot {
   id: root
@@ -19,8 +19,8 @@ ShellRoot {
     if (!item) return null
     if (item.objectName === name) return item
     var children = item.children || []
-    for (var index = 0; index < children.length; index++) {
-      var found = descendant(children[index], name)
+    for (let index = 0; index < children.length; index++) {
+      let found = descendant(children[index], name)
       if (found) return found
     }
     return null
@@ -34,11 +34,11 @@ ShellRoot {
     root.currentKind = "error"
     root.currentMessage = "Observer failed"
     Qt.callLater(function() {
-      if (icon.text !== "!" || text.text !== "Observer failed" || surface.tone !== Color.urgent)
+      if (icon.text !== "!" || text.text !== "Observer failed" || surface.tone !== Commons.Color.urgent)
         throw new Error("error feedback did not react to state changes")
       root.currentKind = "success"
       Qt.callLater(function() {
-        if (icon.text !== "✓" || surface.tone !== Color.accent) throw new Error("success feedback rendered incorrectly")
+        if (icon.text !== "✓" || surface.tone !== Commons.Color.accent) throw new Error("success feedback rendered incorrectly")
         console.log("PRIVACY_QML_MESSAGE_SURFACE_OK")
         Qt.quit()
       })

@@ -25,7 +25,7 @@ Item {
 
   function anyBarOpen() {
     var names = Object.keys(presentations)
-    for (var index = 0; index < names.length; index++) if (presentations[names[index]].opened === true) return true
+    for (let index = 0; index < names.length; index++) if (presentations[names[index]].opened === true) return true
     return false
   }
 

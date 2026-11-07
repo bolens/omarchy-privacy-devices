@@ -26,28 +26,28 @@ ShellRoot {
     property color activeThemeColor: "#55aaff"
   }
 
-  AudioEndpointSettings { id: settings; width: 500; controller: controllerMock }
+  AudioEndpointSettings { id: audioSettings; width: 500; controller: controllerMock }
 
   function descendant(item, name) {
     if (!item) return null
     if (item.objectName === name) return item
     var children = item.children || []
-    for (var index = 0; index < children.length; index++) {
-      var found = descendant(children[index], name)
+    for (let index = 0; index < children.length; index++) {
+      let found = descendant(children[index], name)
       if (found) return found
     }
     return null
   }
 
   Component.onCompleted: Qt.callLater(function() {
-    var refresh = descendant(settings, "audioEndpointRefreshButton")
-    var allowedRow = descendant(settings, "audioEndpointRow-alsa_input.usb-desk")
-    var blockedRow = descendant(settings, "audioEndpointRow-alsa_input.usb-chat")
-    var allowedStatus = descendant(settings, "audioEndpointStatus-alsa_input.usb-desk")
-    var blockedStatus = descendant(settings, "audioEndpointStatus-alsa_input.usb-chat")
-    var allowedAction = descendant(settings, "audioEndpointAction-alsa_input.usb-desk")
-    var blockedAction = descendant(settings, "audioEndpointAction-alsa_input.usb-chat")
-    var deviceChange = descendant(settings, "audioEndpointChange-0")
+    var refresh = descendant(audioSettings, "audioEndpointRefreshButton")
+    var allowedRow = descendant(audioSettings, "audioEndpointRow-alsa_input.usb-desk")
+    var blockedRow = descendant(audioSettings, "audioEndpointRow-alsa_input.usb-chat")
+    var allowedStatus = descendant(audioSettings, "audioEndpointStatus-alsa_input.usb-desk")
+    var blockedStatus = descendant(audioSettings, "audioEndpointStatus-alsa_input.usb-chat")
+    var allowedAction = descendant(audioSettings, "audioEndpointAction-alsa_input.usb-desk")
+    var blockedAction = descendant(audioSettings, "audioEndpointAction-alsa_input.usb-chat")
+    var deviceChange = descendant(audioSettings, "audioEndpointChange-0")
     if (!refresh || !allowedRow || !blockedRow || !allowedStatus || !blockedStatus || !allowedAction || !blockedAction || !deviceChange)
       throw new Error("audio endpoint controls are not addressable")
     if (deviceChange.text !== "USB microphone appeared during this session") throw new Error("device discovery feedback was not specific")
@@ -64,16 +64,16 @@ ShellRoot {
     serviceMock.audioEndpointMessage = "Endpoint state updated"
     serviceMock.endpoints = [{id:"alsa_input.usb-desk",label:"Desk microphone",muted:true}]
     Qt.callLater(function() {
-      var updatedStatus = descendant(settings, "audioEndpointStatus-alsa_input.usb-desk")
-      var updatedAction = descendant(settings, "audioEndpointAction-alsa_input.usb-desk")
-      var removedRow = descendant(settings, "audioEndpointRow-alsa_input.usb-chat")
-      var message = descendant(settings, "messageSurfaceText")
+      var updatedStatus = descendant(audioSettings, "audioEndpointStatus-alsa_input.usb-desk")
+      var updatedAction = descendant(audioSettings, "audioEndpointAction-alsa_input.usb-desk")
+      var removedRow = descendant(audioSettings, "audioEndpointRow-alsa_input.usb-chat")
+      var message = descendant(audioSettings, "messageSurfaceText")
       if (!updatedStatus || updatedStatus.text !== "Blocked · muted" || !updatedAction || updatedAction.text !== "Allow"
           || removedRow || !message || message.text !== "Endpoint state updated")
         throw new Error("audio endpoint surface did not react to observed state changes")
       controllerMock.privacyService = null
       Qt.callLater(function() {
-        if (refresh.enabled || descendant(settings, "audioEndpointRow-alsa_input.usb-desk"))
+        if (refresh.enabled || descendant(audioSettings, "audioEndpointRow-alsa_input.usb-desk"))
           throw new Error("audio endpoint controls remained active without a service")
         console.log("PRIVACY_QML_AUDIO_ENDPOINT_SETTINGS_OK")
         Qt.quit()

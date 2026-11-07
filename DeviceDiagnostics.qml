@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 
 SettingsSurface {
@@ -11,7 +12,7 @@ SettingsSurface {
   readonly property var diagnostic: controller.deviceDiagnostic(kind)
 
   Layout.fillWidth: true
-  accent: diagnostics.diagnostic.healthStatus === "healthy" ? controller.activeThemeColor : Color.urgent
+  accent: diagnostics.diagnostic.healthStatus === "healthy" ? controller.activeThemeColor : Commons.Color.urgent
 
   PanelSectionHeader { Layout.fillWidth: true; text: "Diagnostics" }
 
@@ -26,7 +27,7 @@ SettingsSurface {
         Layout.preferredWidth: 110
         text: diagnosticRow.modelData.label
         textFormat: Text.PlainText
-        color: Color.muted
+        color: Commons.Color.muted
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
       }
@@ -35,7 +36,7 @@ SettingsSurface {
         Layout.fillWidth: true
         text: diagnosticRow.modelData.value
         textFormat: Text.PlainText
-        color: diagnosticRow.modelData.urgent ? Color.urgent : Color.popups.text
+        color: diagnosticRow.modelData.urgent ? Commons.Color.urgent : Commons.Color.popups.text
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
         wrapMode: Text.WordWrap

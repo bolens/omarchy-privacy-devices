@@ -141,7 +141,7 @@ Item {
   function resetAllDeviceSettings(kind) {
     var values = itemResetValues(kind)
     var backend = deviceBackendDefaults(kind)
-    for (var key in backend) values[key] = backend[key]
+    for (let key in backend) values[key] = backend[key]
     host.persistSettings(values)
     Qt.callLater(host.syncDeviceEditors)
   }

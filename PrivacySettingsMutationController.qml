@@ -15,7 +15,7 @@ QtObject {
   function submit(current, patch) {
     var next = JSON.parse(JSON.stringify(pending || current || {}))
     var values = patch || {}
-    for (var key in values) next[key] = values[key]
+    for (let key in values) next[key] = values[key]
     pending = next
     status = "saving"
     detail = ""

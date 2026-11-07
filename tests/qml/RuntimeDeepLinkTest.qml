@@ -18,7 +18,7 @@ ShellRoot {
 
   Service { id: service; shell: shellMock }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     if (service.requestDeviceView("microphone") !== "activity" || service.requestedViewArgument !== "microphone" || root.summons !== 1)
       throw new Error("device deep link did not route through the service")
     service.updateBarPresentation("DP-1", {opened:true})
@@ -39,5 +39,5 @@ ShellRoot {
       throw new Error("closed-bar deep link did not preserve requested state after summon failure")
     console.log("PRIVACY_QML_DEEP_LINK_OK")
     Qt.quit()
-  }
+  })
 }

@@ -4,15 +4,26 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
+import "BarHostProtocol.js" as HostProtocol
 
 Panel {
-  id: root
+  id: privacyWidget
+  BarHostAccess {
+    id: barHost
+    host: privacyWidget.bar
+    fallbackBarSize: Style.bar.sizeHorizontal
+    fallbackUrgent: Commons.Color.urgent
+    fallbackForeground: Commons.Color.popups.text
+    fallbackBarForeground: Commons.Color.foreground
+  }
+
   moduleName: "io.github.bolens.privacy-devices"
   manageIpc: false
 
-  readonly property var privacyService: bar && bar.shell ? bar.shell.serviceFor(moduleName) : null
+  readonly property var privacyService: barHost.serviceFor(moduleName)
   readonly property var effectiveSettings: privacyService && privacyService.capturePreviewActive
     ? Object.assign({}, settings || {}, privacyService.capturePreviewSettings || {}) : settings
   readonly property var configuredOrder: Model.arraySetting(setting("order", []), Model.KINDS)
@@ -99,7 +110,7 @@ Panel {
   property var captureFrozenBarItems: []
   readonly property var barItems: privacyService && privacyService.capturePreviewActive && captureFrozenBarItems.length > 0
     ? captureFrozenBarItems : liveBarItems
-  readonly property bool verticalBar: bar && bar.vertical === true
+  readonly property bool verticalBar: barHost.vertical
   readonly property int barFlowColumns: iconGrid.columns
   property alias editingKind: navigationController.editingKind
   property alias showingGlobalSettings: navigationController.showingGlobalSettings
@@ -147,7 +158,7 @@ Panel {
   readonly property var editingDevices: Model.unique(editingSessions.map(function(session) { return String(session.device || "") }).filter(Boolean))
   readonly property var editingApplications: Model.unique(editingSessions.map(function(session) { return String(session.application || "") }).filter(Boolean))
   readonly property real openPanelIndicatorWidth: button.labelWidth
-  readonly property var presentationScreen: root.QsWindow.window ? root.QsWindow.window.screen : null
+  readonly property var presentationScreen: HostProtocol.windowScreen(privacyWidget.QsWindow.window)
   readonly property string presentationScreenName: presentationScreen ? presentationScreen.name : "unknown"
   property string registeredPresentationScreen: ""
 
@@ -163,10 +174,10 @@ Panel {
   function publishCaptureBarPresentation() {
     if (!privacyService) return
     if (registeredPresentationScreen !== presentationScreenName) {
-      if (registeredPresentationScreen) privacyService.unregisterBarInstance(registeredPresentationScreen, root)
+      if (registeredPresentationScreen) privacyService.unregisterBarInstance(registeredPresentationScreen, privacyWidget)
       registeredPresentationScreen = presentationScreenName
     }
-    privacyService.registerBarInstance(presentationScreenName, root)
+    privacyService.registerBarInstance(presentationScreenName, privacyWidget)
     var view = showingGlobalSettings ? "settings" : (showingHistory ? "history" : (editingKind ? "device" : "activity"))
     privacyService.updateBarPresentation(presentationScreenName, {
       opened: opened,
@@ -211,7 +222,7 @@ Panel {
     if (!privacyService || privacyService.privacyPresetState === "applying" || privacyService.privacyPresetState === "restoring") return false
     var presentation = Model.lockdownActionPresentation(privacyService.privacyPresetUndoAvailable, confirmationState.pending === "lockdown")
     if (presentation.action === "restore") {
-      var restored = privacyService.restorePrivacyLockdown()
+      let restored = privacyService.restorePrivacyLockdown()
       confirmationState.clear()
       return restored
     }
@@ -438,28 +449,28 @@ Panel {
     }
     if (entry.kind === "screen-recording") {
       if (!privacyService.beginExternalControl("screen-recording", !entry.controlEnabled)) return
-      var backend = String(setting("recordingBackend", "omarchy"))
+      let backend = String(setting("recordingBackend", "omarchy"))
       if (backend === "wf-recorder") {
-        var recordingHelper = privacyService.dependencyHelperPath().replace("privacy-deps", "privacy-recording")
+        let recordingHelper = privacyService.dependencyHelperPath().replace("privacy-deps", "privacy-recording")
         Quickshell.execDetached([recordingHelper, entry.controlEnabled ? "stop" : "start", "wf-recorder"])
       }
       else if (backend === "custom") {
-        var command = String(setting(entry.controlEnabled ? "recordingCustomStopCommand" : "recordingCustomStartCommand", ""))
-        if (command) bar.run(command)
+        let command = String(setting(entry.controlEnabled ? "recordingCustomStopCommand" : "recordingCustomStartCommand", ""))
+        if (command) barHost.run(command)
       }
       else if (entry.controlEnabled) Quickshell.execDetached(["omarchy-capture-screenrecording", "--stop-recording"])
       else Quickshell.execDetached(["omarchy-menu", "toggle", "trigger.capture.screenrecord"])
       return
     }
     if (entry.kind === "screenshot") {
-      var screenshotBackend = String(setting("screenshotBackend", "omarchy"))
+      let screenshotBackend = String(setting("screenshotBackend", "omarchy"))
       if (screenshotBackend === "custom") {
-        var screenshotCommand = String(setting("screenshotCustomCommand", ""))
-        if (screenshotCommand) bar.run(screenshotCommand)
+        let screenshotCommand = String(setting("screenshotCustomCommand", ""))
+        if (screenshotCommand) barHost.run(screenshotCommand)
       }
       else if (screenshotBackend === "omarchy") Quickshell.execDetached(["omarchy-capture-screenshot"])
       else {
-        var screenshotHelper = privacyService.dependencyHelperPath().replace("privacy-deps", "privacy-screenshot")
+        let screenshotHelper = privacyService.dependencyHelperPath().replace("privacy-deps", "privacy-screenshot")
         Quickshell.execDetached([screenshotHelper, "capture", screenshotBackend])
       }
       return
@@ -481,22 +492,22 @@ Panel {
     if (buttonCode === Qt.MiddleButton) {
       if (entry.kind === "summary") showGlobalSettings("general")
       else { showingGlobalSettings = false; showingHistory = false; editingKind = entry.kind }
-      root.open()
+      privacyWidget.open()
       return
     }
     if (buttonCode === Qt.RightButton || entry.kind === "summary" || !entry.controllable) {
       editingKind = ""
       showingGlobalSettings = false
       showingHistory = false
-      root.toggle()
+      privacyWidget.toggle()
       return
     }
-    root.toggleEntry(entry)
+    privacyWidget.toggleEntry(entry)
   }
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
-  visible: root.barItems.length > 0
+  visible: privacyWidget.barItems.length > 0
 
   onSettingsChanged: Qt.callLater(syncService)
   onEditingKindChanged: {
@@ -505,9 +516,9 @@ Panel {
     if (privacyService && isAudioControl({kind: editingKind})) privacyService.refreshAudioEndpoints(editingKind)
   }
   onPrivacyServiceChanged: Qt.callLater(function() {
-    if (!root) return
-    root.syncService()
-    root.publishCaptureBarPresentation()
+    if (!privacyWidget) return
+    privacyWidget.syncService()
+    privacyWidget.publishCaptureBarPresentation()
   })
   onActivitySourceItemsChanged: syncDisplayedItems()
   onOpenedChanged: {
@@ -516,7 +527,7 @@ Panel {
       durationNow = Date.now()
       handleSettingsRequest()
     }
-    else if (settingsMutationPending) Qt.callLater(root.open)
+    else if (settingsMutationPending) Qt.callLater(privacyWidget.open)
     else {
       editingKind = ""
       showingGlobalSettings = false
@@ -535,69 +546,69 @@ Panel {
   onHandledSettingsRequestSerialChanged: Qt.callLater(publishCaptureBarPresentation)
   onPresentationScreenNameChanged: Qt.callLater(publishCaptureBarPresentation)
   Connections {
-    target: root.privacyService
+    target: privacyWidget.privacyService
     function onCapturePreviewActiveChanged() {
-      root.captureFrozenBarItems = root.privacyService && root.privacyService.capturePreviewActive
-        ? root.liveBarItems.map(function(entry) { return Object.assign({}, entry) }) : []
+      privacyWidget.captureFrozenBarItems = privacyWidget.privacyService && privacyWidget.privacyService.capturePreviewActive
+        ? privacyWidget.liveBarItems.map(function(entry) { return Object.assign({}, entry) }) : []
     }
   }
   Connections {
-    target: root.privacyService
-    function onSettingsRequestSerialChanged() { root.handleSettingsRequest() }
+    target: privacyWidget.privacyService
+    function onSettingsRequestSerialChanged() { privacyWidget.handleSettingsRequest() }
   }
   Component.onCompleted: { syncDisplayedItems(); Qt.callLater(syncService) }
-  Component.onDestruction: if (privacyService) privacyService.unregisterBarInstance(registeredPresentationScreen, root)
+  Component.onDestruction: if (privacyService) privacyService.unregisterBarInstance(registeredPresentationScreen, privacyWidget)
 
   PrivacyConfirmationController { id: confirmationState }
-  PrivacyPopupNavigationController { id: navigationController; host: root }
-  PrivacySettingsController { id: settingsController; host: root }
-  PrivacyDeviceSettingsController { id: deviceSettingsController; host: root }
-  PrivacyPresentationController { id: presentationController; host: root }
+  PrivacyPopupNavigationController { id: navigationController; host: privacyWidget }
+  PrivacySettingsController { id: settingsController; host: privacyWidget }
+  PrivacyDeviceSettingsController { id: deviceSettingsController; host: privacyWidget }
+  PrivacyPresentationController { id: presentationController; host: privacyWidget }
 
   Timer {
     interval: 1000
     repeat: true
-    running: root.opened
+    running: privacyWidget.opened
     triggeredOnStart: true
-    onTriggered: if (!contentFlick.moving) root.durationNow = Date.now()
+    onTriggered: if (!contentFlick.moving) privacyWidget.durationNow = Date.now()
   }
 
   Item {
     id: button
-    implicitWidth: root.verticalBar && root.bar ? root.bar.barSize : iconGrid.implicitWidth
-    implicitHeight: root.verticalBar ? iconGrid.implicitHeight : (root.bar ? root.bar.barSize : Style.bar.sizeHorizontal)
+    implicitWidth: privacyWidget.verticalBar && privacyWidget.bar ? barHost.barSize : iconGrid.implicitWidth
+    implicitHeight: privacyWidget.verticalBar ? iconGrid.implicitHeight : barHost.barSize
     property real labelWidth: implicitWidth
 
     Grid {
       id: iconGrid
       anchors.centerIn: parent
-      columns: root.verticalBar ? 1 : Math.max(1, root.barItems.length)
-      spacing: root.barItemSpacing
+      columns: privacyWidget.verticalBar ? 1 : Math.max(1, privacyWidget.barItems.length)
+      spacing: privacyWidget.barItemSpacing
 
       Repeater {
-        model: root.barItems
+        model: privacyWidget.barItems
         delegate: WidgetButton {
           id: barItemButton
           required property var modelData
-          bar: root.bar
-          text: root.sharedText(root.barItemText(barItemButton.modelData))
-          fontSize: Style.font.body * root.barIconScale
+          bar: privacyWidget.bar
+          text: privacyWidget.sharedText(privacyWidget.barItemText(barItemButton.modelData))
+          fontSize: Style.font.body * privacyWidget.barIconScale
           active: barItemButton.modelData.active
           dimmed: false
-          foreground: root.itemColor(barItemButton.modelData)
-          activeColor: root.itemColor(barItemButton.modelData)
-          opacity: root.itemVisualState(barItemButton.modelData) === "idle" ? root.itemIdleOpacity(barItemButton.modelData.kind)
-            : (root.itemVisualState(barItemButton.modelData) === "disabled" ? root.disabledOpacity
-            : (root.itemVisualState(barItemButton.modelData) === "blocked-active" ? root.blockedActiveOpacity : root.activeOpacity))
+          foreground: privacyWidget.itemColor(barItemButton.modelData)
+          activeColor: privacyWidget.itemColor(barItemButton.modelData)
+          opacity: privacyWidget.itemVisualState(barItemButton.modelData) === "idle" ? privacyWidget.itemIdleOpacity(barItemButton.modelData.kind)
+            : (privacyWidget.itemVisualState(barItemButton.modelData) === "disabled" ? privacyWidget.disabledOpacity
+            : (privacyWidget.itemVisualState(barItemButton.modelData) === "blocked-active" ? privacyWidget.blockedActiveOpacity : privacyWidget.activeOpacity))
           SequentialAnimation on opacity {
-            running: barItemButton.modelData.pending && root.animatePending
+            running: barItemButton.modelData.pending && privacyWidget.animatePending
             loops: Animation.Infinite
             NumberAnimation { to: 0.45; duration: 450; easing.type: Easing.InOutQuad }
             NumberAnimation { to: 1; duration: 450; easing.type: Easing.InOutQuad }
           }
-          horizontalMargin: barItemButton.modelData.kind === "summary" ? root.barItemPadding + 3.5 : root.barItemPadding
-          tooltipText: root.itemTooltip(barItemButton.modelData)
-          onPressed: function(buttonCode) { root.pressItem(barItemButton.modelData, buttonCode) }
+          horizontalMargin: barItemButton.modelData.kind === "summary" ? privacyWidget.barItemPadding + 3.5 : privacyWidget.barItemPadding
+          tooltipText: privacyWidget.itemTooltip(barItemButton.modelData)
+          onPressed: function(buttonCode) { privacyWidget.pressItem(barItemButton.modelData, buttonCode) }
         }
       }
     }
@@ -606,38 +617,38 @@ Panel {
   KeyboardPanel {
     id: popup
     anchorItem: button
-    owner: root
-    bar: root.bar
-    open: root.opened
+    owner: privacyWidget
+    bar: privacyWidget.bar
+    open: privacyWidget.opened
     focusTarget: keyCatcher
-    contentWidth: fittedContentWidth(Style.space(root.popupBaseWidth))
-    contentHeight: fittedContentHeight(root.desiredPopupHeight, root.configuredPopupHeight)
+    contentWidth: fittedContentWidth(Style.space(privacyWidget.popupBaseWidth))
+    contentHeight: fittedContentHeight(privacyWidget.desiredPopupHeight, privacyWidget.configuredPopupHeight)
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      onCloseRequested: root.closeCurrentLayer()
+      onCloseRequested: privacyWidget.closeCurrentLayer()
       onMoveRequested: function(dx, dy) {
-        if (root.editingKind !== "" && dx !== 0) root.moveDeviceEditor(dx)
-        else if (dy !== 0 && root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory) root.moveActivitySelection(dy)
+        if (privacyWidget.editingKind !== "" && dx !== 0) privacyWidget.moveDeviceEditor(dx)
+        else if (dy !== 0 && privacyWidget.editingKind === "" && !privacyWidget.showingGlobalSettings && !privacyWidget.showingHistory) privacyWidget.moveActivitySelection(dy)
       }
       onActivateRequested: {
-        if (root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory) root.activateActivitySelection()
+        if (privacyWidget.editingKind === "" && !privacyWidget.showingGlobalSettings && !privacyWidget.showingHistory) privacyWidget.activateActivitySelection()
       }
       onTextKey: function(text) {
-        if ((text === "h" || text === "H") && root.editingKind === "") root.showHistory()
-        else if ((text === "s" || text === "S") && root.editingKind === "") root.showGlobalSettings("general")
-        else if ((text === "r" || text === "R") && !root.showingGlobalSettings && !root.showingHistory && root.privacyService) root.privacyService.refreshFallbacks()
-        else if (root.showingGlobalSettings && "1234".indexOf(text) >= 0) {
-          root.showGlobalSettings(["general", "appearance", "alerts", "monitoring"][Number(text) - 1], "")
+        if ((text === "h" || text === "H") && privacyWidget.editingKind === "") privacyWidget.showHistory()
+        else if ((text === "s" || text === "S") && privacyWidget.editingKind === "") privacyWidget.showGlobalSettings("general")
+        else if ((text === "r" || text === "R") && !privacyWidget.showingGlobalSettings && !privacyWidget.showingHistory && privacyWidget.privacyService) privacyWidget.privacyService.refreshFallbacks()
+        else if (privacyWidget.showingGlobalSettings && "1234".indexOf(text) >= 0) {
+          privacyWidget.showGlobalSettings(["general", "appearance", "alerts", "monitoring"][Number(text) - 1], "")
         }
       }
-      onTabRequested: function(direction) { if (root.bar && typeof root.bar.switchPanelFrom === "function") root.bar.switchPanelFrom(root, direction) }
+      onTabRequested: function(direction) { barHost.switchPanel(privacyWidget, direction) }
 
       Item {
-        id: popupLayout
+        id: popupContentLayout
         anchors.fill: parent
-        implicitHeight: root.desiredPopupHeight
+        implicitHeight: privacyWidget.desiredPopupHeight
 
         ColumnLayout {
           id: popupHeaderChrome
@@ -648,21 +659,21 @@ Panel {
 
         PrivacyActivityHeader {
           id: activityHeader
-          visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory
-          controller: root
+          visible: privacyWidget.editingKind === "" && !privacyWidget.showingGlobalSettings && !privacyWidget.showingHistory
+          controller: privacyWidget
           Layout.fillWidth: true
         }
 
         PrivacySettingsNavigation {
-          visible: root.showingGlobalSettings
-          controller: root
+          visible: privacyWidget.showingGlobalSettings
+          controller: privacyWidget
           Layout.fillWidth: true
         }
 
         PanelSeparator {
-          visible: root.showingGlobalSettings
+          visible: privacyWidget.showingGlobalSettings
           Layout.fillWidth: true
-          foreground: root.bar ? root.bar.foreground : Color.popups.text
+          foreground: barHost.foreground
         }
         }
 
@@ -686,7 +697,7 @@ Panel {
         boundsBehavior: Flickable.StopAtBounds
         flickableDirection: Flickable.VerticalFlick
         interactive: contentHeight > height
-        onMovementEnded: root.flushDeferredItems()
+        onMovementEnded: privacyWidget.flushDeferredItems()
         ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
         ColumnLayout {
@@ -696,34 +707,34 @@ Panel {
 
         PrivacyActivityView {
           id: activityView
-          controller: root
+          controller: privacyWidget
         }
 
         PrivacyHistoryView {
           id: historyView
-          controller: root
+          controller: privacyWidget
         }
         ColumnLayout {
           id: globalSettingsEditor
-          visible: root.showingGlobalSettings
+          visible: privacyWidget.showingGlobalSettings
           Layout.fillWidth: true
           spacing: Style.spacing.md
 
           PrivacyMessageSurface {
-            visible: root.settingsMutationMessage !== ""
-            message: root.settingsMutationMessage
-            kind: root.settingsMutationControl.status === "failed" ? "error" : (root.settingsMutationControl.status === "saved" ? "success" : "info")
+            visible: privacyWidget.settingsMutationMessage !== ""
+            message: privacyWidget.settingsMutationMessage
+            kind: privacyWidget.settingsMutationControl.status === "failed" ? "error" : (privacyWidget.settingsMutationControl.status === "saved" ? "success" : "info")
           }
 
           Loader {
             id: globalSettingsPageLoader
             Layout.fillWidth: true
-            sourceComponent: root.globalSettingsPage === "general" ? generalSettingsPage
-              : (root.globalSettingsPage === "appearance" ? appearanceSettingsPage
-              : (root.globalSettingsPage === "alerts" ? alertsSettingsPage : monitoringSettingsPage))
+            sourceComponent: privacyWidget.globalSettingsPage === "general" ? generalSettingsPage
+              : (privacyWidget.globalSettingsPage === "appearance" ? appearanceSettingsPage
+              : (privacyWidget.globalSettingsPage === "alerts" ? alertsSettingsPage : monitoringSettingsPage))
             onLoaded: {
-              Qt.callLater(root.scrollToSettingsSection)
-              Qt.callLater(function() { root.popupContentRevision += 1 })
+              Qt.callLater(privacyWidget.scrollToSettingsSection)
+              Qt.callLater(function() { privacyWidget.popupContentRevision += 1 })
             }
           }
 
@@ -731,7 +742,7 @@ Panel {
 
         PrivacyDeviceView {
           id: deviceView
-          controller: root
+          controller: privacyWidget
         }
 
         }
@@ -746,29 +757,29 @@ Panel {
           spacing: Style.spacing.md
 
         PanelSeparator {
-          visible: root.showingGlobalSettings
+          visible: privacyWidget.showingGlobalSettings
           Layout.fillWidth: true
-          foreground: root.bar ? root.bar.foreground : Color.popups.text
+          foreground: barHost.foreground
         }
 
         Button {
-          visible: root.showingGlobalSettings
+          visible: privacyWidget.showingGlobalSettings
           Layout.alignment: Qt.AlignRight
           iconText: "󰑐"
           tooltipText: "Reset all global settings"
           horizontalPadding: Style.spacing.controlGap
           bordered: true
-          background: Util.alpha(root.activeThemeColor, 0.06)
-          enabled: !root.settingsTransferRunning
-          onClicked: root.requestGlobalSettingsReset()
+          background: Util.alpha(privacyWidget.activeThemeColor, 0.06)
+          enabled: !privacyWidget.settingsTransferRunning
+          onClicked: privacyWidget.requestGlobalSettingsReset()
         }
 
         Text {
-          visible: root.editingKind === "" && !root.showingGlobalSettings && !root.showingHistory
+          visible: privacyWidget.editingKind === "" && !privacyWidget.showingGlobalSettings && !privacyWidget.showingHistory
           Layout.fillWidth: true
           text: "Keyboard: ↑/↓ select · Enter open · H history · S settings · R refresh · Esc close"
           textFormat: Text.PlainText
-          color: Color.muted
+          color: Commons.Color.muted
           font.family: Style.font.family
           font.pixelSize: Style.font.caption
           wrapMode: Text.WordWrap
@@ -778,8 +789,8 @@ Panel {
     }
   }
 
-  Component { id: generalSettingsPage; PrivacyGeneralSettings { controller: root } }
-  Component { id: appearanceSettingsPage; PrivacyAppearanceSettings { controller: root } }
-  Component { id: alertsSettingsPage; PrivacyAlertsSettings { controller: root } }
-  Component { id: monitoringSettingsPage; PrivacyMonitoringSettings { controller: root } }
+  Component { id: generalSettingsPage; PrivacyGeneralSettings { controller: privacyWidget } }
+  Component { id: appearanceSettingsPage; PrivacyAppearanceSettings { controller: privacyWidget } }
+  Component { id: alertsSettingsPage; PrivacyAlertsSettings { controller: privacyWidget } }
+  Component { id: monitoringSettingsPage; PrivacyMonitoringSettings { controller: privacyWidget } }
 }

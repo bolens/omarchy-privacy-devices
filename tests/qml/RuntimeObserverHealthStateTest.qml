@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.settings = {notifyOnObserverHealth:false}
     var initial = service.observerHealth
     service.setObserverHealth("direct-device", "healthy", "ok", "")
@@ -32,5 +32,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_OBSERVER_HEALTH_STATE_OK")
     Qt.quit()
-  }
+  })
 }

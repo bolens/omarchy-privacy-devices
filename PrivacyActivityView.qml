@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 
@@ -52,7 +53,7 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: Style.spacing.sm
     PanelSectionHeader { Layout.fillWidth: true; text: "Hidden applications" }
-    Text { Layout.fillWidth: true; text: Model.arraySetting(view.controller.setting("hiddenApps", []), []).join(", "); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+    Text { Layout.fillWidth: true; text: Model.arraySetting(view.controller.setting("hiddenApps", []), []).join(", "); textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
     Button { text: "Restore all"; onClicked: view.controller.clearPolicy("hiddenApps") }
   }
 
@@ -61,8 +62,8 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: Style.spacing.sm
     PanelSectionHeader { Layout.fillWidth: true; text: "Device policies" }
-    Text { Layout.fillWidth: true; text: "Hidden: " + (Model.arraySetting(view.controller.setting("hiddenDevices", []), []).join(", ") || "None"); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
-    Text { Layout.fillWidth: true; text: "Alerts muted: " + (Model.arraySetting(view.controller.setting("notificationSuppressedDevices", []), []).join(", ") || "None"); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+    Text { Layout.fillWidth: true; text: "Hidden: " + (Model.arraySetting(view.controller.setting("hiddenDevices", []), []).join(", ") || "None"); textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+    Text { Layout.fillWidth: true; text: "Alerts muted: " + (Model.arraySetting(view.controller.setting("notificationSuppressedDevices", []), []).join(", ") || "None"); textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
     RowLayout {
       Button { text: "Restore hidden"; onClicked: view.controller.clearPolicy("hiddenDevices") }
       Button { text: "Restore alerts"; onClicked: view.controller.clearPolicy("notificationSuppressedDevices") }

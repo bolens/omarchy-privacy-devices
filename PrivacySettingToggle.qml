@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 
 Toggle {
@@ -10,7 +11,7 @@ Toggle {
 
   Layout.fillWidth: true
   checked: controller.setting(settingKey, fallback) === true
-  foreground: Color.popups.text
+  foreground: Commons.Color.popups.text
   accent: controller.activeThemeColor
   fontFamily: Style.font.family
   onClicked: {

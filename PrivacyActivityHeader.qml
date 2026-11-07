@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 
@@ -17,7 +18,7 @@ RowLayout {
   Text {
     text: "Privacy activity"
     textFormat: Text.PlainText
-    color: Color.popups.text
+    color: Commons.Color.popups.text
     font.family: Style.font.family
     font.pixelSize: Style.font.title
     font.weight: Font.DemiBold
@@ -28,15 +29,15 @@ RowLayout {
     implicitWidth: statusText.implicitWidth + Style.spacing.md * 2
     implicitHeight: statusText.implicitHeight + Style.spacing.sm
     radius: implicitHeight / 2
-    color: Util.alpha(header.controller.monitoringDegraded ? Color.urgent : (header.controller.activeCount > 0 ? header.controller.activeThemeColor : header.controller.inactiveThemeColor), 0.14)
+    color: Util.alpha(header.controller.monitoringDegraded ? Commons.Color.urgent : (header.controller.activeCount > 0 ? header.controller.activeThemeColor : header.controller.inactiveThemeColor), 0.14)
     border.width: 1
-    border.color: Util.alpha(header.controller.monitoringDegraded ? Color.urgent : (header.controller.activeCount > 0 ? header.controller.activeThemeColor : header.controller.inactiveThemeColor), 0.32)
+    border.color: Util.alpha(header.controller.monitoringDegraded ? Commons.Color.urgent : (header.controller.activeCount > 0 ? header.controller.activeThemeColor : header.controller.inactiveThemeColor), 0.32)
     Text {
       id: statusText
       anchors.centerIn: parent
       text: header.controller.monitoringDegraded ? "󰀦  Degraded" : (header.controller.activeCount > 0 ? header.controller.activeCount + " active" : "All idle")
       textFormat: Text.PlainText
-      color: header.controller.monitoringDegraded ? Color.urgent : (header.controller.activeCount > 0 ? header.controller.activeThemeColor : header.controller.inactiveThemeColor)
+      color: header.controller.monitoringDegraded ? Commons.Color.urgent : (header.controller.activeCount > 0 ? header.controller.activeThemeColor : header.controller.inactiveThemeColor)
       font.family: Style.font.family
       font.pixelSize: Style.font.caption
       font.weight: Font.DemiBold

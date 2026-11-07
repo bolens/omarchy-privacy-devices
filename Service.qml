@@ -139,8 +139,8 @@ Item {
   readonly property bool outputMuted: fallbackOutputMuted
   readonly property var streamNodes: {
     var result = []
-    for (var index = 0; index < nodes.length; index++) {
-      var node = nodes[index]
+    for (let index = 0; index < nodes.length; index++) {
+      let node = nodes[index]
       if (node && node.isStream) result.push(node)
     }
     return result
@@ -165,8 +165,8 @@ Item {
   readonly property var preventativeProbeKinds: {
     var result = enabledPreventativeKinds.slice()
     var kinds = ["camera", "screen-share", "location"]
-    for (var index = 0; index < kinds.length; index++) {
-      var kind = kinds[index]
+    for (let index = 0; index < kinds.length; index++) {
+      let kind = kinds[index]
       if (controlPending(kind) && result.indexOf(kind) === -1) result.push(kind)
     }
     return result
@@ -220,10 +220,10 @@ Item {
     if (next !== observerHealth) {
       observerHealth = next
       if (settings.notifyOnObserverHealth === true) {
-        var now = Date.now()
-        var notice = Model.observerHealthNotice(previous, next[source], now, observerHealthLastNotifiedAt[source] || 0, 60000)
+        let now = Date.now()
+        let notice = Model.observerHealthNotice(previous, next[source], now, observerHealthLastNotifiedAt[source] || 0, 60000)
         if (notice) {
-          var notified = Object.assign({}, observerHealthLastNotifiedAt)
+          let notified = Object.assign({}, observerHealthLastNotifiedAt)
           notified[source] = now
           observerHealthLastNotifiedAt = notified
           notify(notice.title, notice.body, "dialog-warning-symbolic", "security-high-symbolic", "open-diagnostics", "")
@@ -298,13 +298,13 @@ Item {
 
   function pipewireObservations() {
     var result = []
-    for (var index = 0; index < streamNodes.length; index++) {
-      var node = streamNodes[index]
-      var kind = Model.classifyNode(node, settings, pipewireClassificationPolicy)
+    for (let index = 0; index < streamNodes.length; index++) {
+      let node = streamNodes[index]
+      let kind = Model.classifyNode(node, settings, pipewireClassificationPolicy)
       if (!kind) continue
-      var props = Model.properties(node)
-      var application = Model.appName(node)
-      var applicationIcon = props["application.icon-name"] || props["application.id"] || props["application.process.binary"]
+      let props = Model.properties(node)
+      let application = Model.appName(node)
+      let applicationIcon = props["application.icon-name"] || props["application.id"] || props["application.process.binary"]
       if (!applicationIcon && String(application).toLowerCase() === "pipewire") applicationIcon = "pipewire-symbolic"
       result.push({
         kind: kind,
@@ -355,13 +355,13 @@ Item {
     var publishable = Model.publishableSessionTransitions({started: recovery.notifyable, stopped: transition.stopped}, activityInitialized)
     var index
     for (index = 0; index < publishable.started.length; index++) {
-      var started = publishable.started[index]
+      let started = publishable.started[index]
       if (settings.notifyOnActivity !== false
           && notificationKindList.indexOf(started.kind) !== -1 && Model.shouldNotifyForSession(started, policies()))
         enqueueActivityNotification("started", started)
     }
     for (index = 0; index < publishable.stopped.length; index++) {
-      var stopped = publishable.stopped[index]
+      let stopped = publishable.stopped[index]
       if (settings.historyEnabled === true && !capturePreviewActive) {
         recentHistory = Model.appendHistory(recentHistory, stopped, Date.now(), {maxEntries: 100, maxAgeMs: 7 * 24 * 60 * 60 * 1000})
         stoppedForHistory.push(stopped)
@@ -385,7 +385,7 @@ Item {
 
   function monitoringDegraded() {
     var kinds = enabledKinds()
-    for (var index = 0; index < kinds.length; index++) if (healthFor(kinds[index]).status !== "healthy") return true
+    for (let index = 0; index < kinds.length; index++) if (healthFor(kinds[index]).status !== "healthy") return true
     return false
   }
 
@@ -418,7 +418,7 @@ Item {
     })
     var health = {}
     var kinds = enabledKinds()
-    for (var index = 0; index < kinds.length; index++) health[kinds[index]] = healthFor(kinds[index])
+    for (let index = 0; index < kinds.length; index++) health[kinds[index]] = healthFor(kinds[index])
     return {version: 1, redacted: redact === true, telemetry: monitoringTelemetry(), health: health, sessions: rows,
       probeExitCodes: lastProbeExitCodes, controlExitCodes: lastControlExitCodes, controlTransactions: controlTransactions}
   }
@@ -694,8 +694,8 @@ Item {
 
   function selfTestInput(historyStatus) {
     var dependencies = {}, controls = {}
-    for (var index = 0; index < enabledKindList.length; index++) {
-      var kind = enabledKindList[index]
+    for (let index = 0; index < enabledKindList.length; index++) {
+      let kind = enabledKindList[index]
       dependencies[kind] = dependenciesReady(kind)
       if (serviceControllable(kind)) controls[kind] = controlRequestStatus(kind) !== "unsupported" && controlRequestStatus(kind) !== "dependency-unavailable"
     }
@@ -777,8 +777,8 @@ Item {
   function snapshot() {
     var result = []
     var kinds = enabledKinds()
-    for (var index = 0; index < kinds.length; index++) {
-      var kind = kinds[index]
+    for (let index = 0; index < kinds.length; index++) {
+      let kind = kinds[index]
       result.push({
         kind: kind,
         label: Model.label(kind),
@@ -817,7 +817,7 @@ Item {
   function parseLocation(text) {
     if (locationProbeGeneration !== locationGeneration || !kindEnabled("location")) return false
     try {
-      var result = JSON.parse(String(text || "{}"))
+      let result = JSON.parse(String(text || "{}"))
       if (result.type !== "location-snapshot" || !Array.isArray(result.applications)) throw new Error("invalid location payload")
       locationActive = result.active === true
       locationApps = locationActive ? Model.unique(result.applications.map(Model.autoTextSafe).filter(Boolean)) : []
@@ -888,7 +888,11 @@ Item {
       root.locationProbeBusy = false
       if (root.locationProbePending && root.kindEnabled("location")) root.refreshLocation()
     }
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: function(text) { root.parseLocation(text) } }
+    stdout: StdioCollector {
+      id: locationOutput
+      waitForEnd: true
+      onStreamFinished: root.parseLocation(locationOutput.text)
+    }
   }
 
   PrivacyHistoryController { id: historyController; host: root }
@@ -911,7 +915,7 @@ Item {
     function health(): string {
       var result = {}
       var kinds = root.enabledKinds()
-      for (var index = 0; index < kinds.length; index++) result[kinds[index]] = root.healthFor(kinds[index])
+      for (let index = 0; index < kinds.length; index++) result[kinds[index]] = root.healthFor(kinds[index])
       return JSON.stringify(result)
     }
     function history(): string { return JSON.stringify(root.recentHistory) }
@@ -939,11 +943,11 @@ Item {
     function protocol(): string { return "2" }
     function beginCapture(payloadB64: string): string {
       try {
-        var payload = JSON.parse(Qt.atob(payloadB64 || ""))
-        var owner = String(payload.owner || "")
-        var previewSettings = payload.settings
-        var previewHistory = payload.history
-        var previewSessions = payload.sessions === undefined ? [] : payload.sessions
+        let payload = JSON.parse(Qt.atob((payloadB64 || "").replace(/[^A-Za-z0-9+/]/g, "").split("")).toString())
+        let owner = String(payload.owner || "")
+        let previewSettings = payload.settings
+        let previewHistory = payload.history
+        let previewSessions = payload.sessions === undefined ? [] : payload.sessions
         if (!/^[A-Za-z0-9_-]{24,128}$/.test(owner) || !previewSettings || typeof previewSettings !== "object" || Array.isArray(previewSettings) || !Array.isArray(previewHistory) || !Array.isArray(previewSessions)) return "invalid"
         if (root.capturePreviewActive && root.capturePreviewOwner !== owner) return "busy"
         root.capturePreviewHistory = previewHistory

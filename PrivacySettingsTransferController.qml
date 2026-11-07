@@ -33,8 +33,11 @@ QtObject {
     return true
   }
 
-  property Process process: Process {
+  component TransferProcess: Process {
     property string mode: ""
+  }
+
+  property TransferProcess process: TransferProcess {
     stdout: StdioCollector { id: output; waitForEnd: true }
     stderr: StdioCollector { id: errorOutput; waitForEnd: true }
     onExited: function(exitCode) {

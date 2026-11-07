@@ -642,6 +642,14 @@ function controlTransactionTransition(current, event, now) {
       deadline: timestamp + 5000, code: "verifying"
     }
   }
+  // The deadline bounds verification itself, not just the watchdog callback.
+  // A late probe must have the same outcome whichever callback arrives first.
+  if (current.status === "verifying" && (event.type === "observation" || event.type === "timeout")
+      && timestamp >= Number(current.deadline)) return {
+    status: "failed", expectedEnabled: current.expectedEnabled === true,
+    startedAt: current.startedAt, finishedAt: timestamp,
+    exitCode: 14, code: "verification_timeout"
+  }
   if (event.type === "observation" && current.status === "verifying") {
     if (event.valid !== true) return {
       status: "failed", expectedEnabled: current.expectedEnabled === true,
@@ -654,11 +662,6 @@ function controlTransactionTransition(current, event, now) {
       startedAt: current.startedAt, finishedAt: timestamp,
       exitCode: 0, code: "verified"
     }
-  }
-  if (event.type === "timeout" && current.status === "verifying" && timestamp >= Number(current.deadline)) return {
-    status: "failed", expectedEnabled: current.expectedEnabled === true,
-    startedAt: current.startedAt, finishedAt: timestamp,
-    exitCode: 14, code: "verification_timeout"
   }
   return current
 }

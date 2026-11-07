@@ -24,9 +24,16 @@ shellcheck \
 
 omarchy_path=${OMARCHY_PATH:-/home/panda/.local/share/omarchy-overlay}
 qmllint_bin=${QMLLINT:-/usr/lib/qt6/bin/qmllint}
+shell_root=${OMARCHY_SHELL_ROOT:-$omarchy_path/shell}
+qml_import_args=(-I "$shell_root")
+if [[ -n ${QML_TOOLING_IMPORT_ROOT:-} ]]; then
+  qml_import_args=(--bare -I "$QML_TOOLING_IMPORT_ROOT" -I "$shell_root" -I . -I /usr/lib/qt6/qml)
+fi
 if [[ -x "$qmllint_bin" ]]; then
-  "$qmllint_bin" -I "$omarchy_path/shell" -I . -i qmldir \
-    -i "$omarchy_path/shell/Commons/qmldir" -i "$omarchy_path/shell/Ui/qmldir" ./*.qml
+  "$qmllint_bin" "${qml_import_args[@]}" -I . -i "$plugin_dir/qmldir" \
+    -i "$shell_root/Commons/qmldir" -i "$shell_root/Ui/qmldir" ./*.qml
+  python3 "$plugin_dir/scripts/check-qml-lint-controls.py" --qmllint "$qmllint_bin" \
+    --shell-root "$shell_root" --policy "$plugin_dir/.qmllint.ini"
 else
   printf 'Qt 6 qmllint unavailable; production QML lint is covered by the dedicated CI job.\n'
 fi

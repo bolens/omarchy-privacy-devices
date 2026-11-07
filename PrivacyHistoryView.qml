@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 
@@ -23,7 +24,7 @@ ColumnLayout {
   RowLayout {
     Layout.fillWidth: true
     Button { iconText: "󰁍"; tooltipText: "Back"; horizontalPadding: Style.spacing.controlGap; onClicked: view.controller.showActivity() }
-    Text { Layout.fillWidth: true; text: "Activity history"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
+    Text { Layout.fillWidth: true; text: "Activity history"; textFormat: Text.PlainText; color: Commons.Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.title; font.weight: Font.DemiBold }
     Button {
       visible: view.controller.historyPresentationEnabled && view.privacyService && view.privacyService.displayHistory.length > 0
       text: view.controller.confirmationPending === "history" ? "Confirm clear" : "Clear history"
@@ -53,7 +54,7 @@ ColumnLayout {
           Layout.alignment: Qt.AlignBottom
           implicitHeight: Math.max(3, 46 * (view.controller.historyTrend.maximum > 0 ? modelData.count / view.controller.historyTrend.maximum : 0))
           radius: Math.min(width / 2, Style.cornerRadius)
-          color: modelData.count > 0 ? view.controller.activeThemeColor : Util.alpha(Color.muted, 0.18)
+          color: modelData.count > 0 ? view.controller.activeThemeColor : Util.alpha(Commons.Color.muted, 0.18)
           opacity: modelData.count > 0 ? 0.78 : 1
           ToolTip.text: modelData.count + (modelData.count === 1 ? " completed session" : " completed sessions")
           ToolTip.visible: trendHover.hovered
@@ -61,7 +62,7 @@ ColumnLayout {
         }
       }
     }
-    Text { Layout.fillWidth: true; text: view.controller.historyTrend.total + (view.controller.historyTrend.total === 1 ? " completed session across this period" : " completed sessions across this period"); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; horizontalAlignment: Text.AlignHCenter }
+    Text { Layout.fillWidth: true; text: view.controller.historyTrend.total + (view.controller.historyTrend.total === 1 ? " completed session across this period" : " completed sessions across this period"); textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; horizontalAlignment: Text.AlignHCenter }
     Repeater {
       model: view.controller.historySummaryRows
       delegate: Rectangle {
@@ -82,8 +83,8 @@ ColumnLayout {
           ColumnLayout {
             Layout.fillWidth: true
             spacing: Style.spacing.xs
-            Text { Layout.fillWidth: true; text: Model.label(summarySurface.modelData.kind) + " · " + summarySurface.modelData.count + (summarySurface.modelData.count === 1 ? " session" : " sessions") + " · " + Model.formatDuration(summarySurface.modelData.durationMs); textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * view.controller.popupItemScale; font.weight: Font.DemiBold; elide: Text.ElideRight }
-            Text { Layout.fillWidth: true; text: summarySurface.modelData.applications.join(", "); textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; text: Model.label(summarySurface.modelData.kind) + " · " + summarySurface.modelData.count + (summarySurface.modelData.count === 1 ? " session" : " sessions") + " · " + Model.formatDuration(summarySurface.modelData.durationMs); textFormat: Text.PlainText; color: Commons.Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * view.controller.popupItemScale; font.weight: Font.DemiBold; elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; text: summarySurface.modelData.applications.join(", "); textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
             Text { visible: summarySurface.modelData.newApplications.length > 0; Layout.fillWidth: true; text: "New in retained history: " + summarySurface.modelData.newApplications.join(", "); textFormat: Text.PlainText; color: view.controller.itemColor(view.controller.item(summarySurface.modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
           }
         }
@@ -98,7 +99,7 @@ ColumnLayout {
       id: historySearch
       Layout.fillWidth: true
       placeholderText: "Search history"
-      foreground: Color.popups.text
+      foreground: Commons.Color.popups.text
       accent: view.controller.activeThemeColor
       font.family: Style.font.family
       onTextChanged: view.controller.historyQuery = text
@@ -169,7 +170,7 @@ ColumnLayout {
     visible: !view.controller.historyPresentationEnabled
     Layout.fillWidth: true
     PanelSectionHeader { Layout.fillWidth: true; text: "History is off" }
-    Text { Layout.fillWidth: true; text: "Enable history to keep completed activity on this device for up to seven days."; textFormat: Text.PlainText; color: Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
+    Text { Layout.fillWidth: true; text: "Enable history to keep completed activity on this device for up to seven days."; textFormat: Text.PlainText; color: Commons.Color.muted; font.family: Style.font.family; font.pixelSize: Style.font.caption; wrapMode: Text.WordWrap }
     Button { id: historyDisabledSettingsButton; text: "Open monitoring settings"; bordered: true; background: Util.alpha(view.controller.activeThemeColor, 0.06); onClicked: view.controller.showGlobalSettings("monitoring", "private-data") }
   }
 
@@ -212,11 +213,11 @@ ColumnLayout {
             RowLayout {
               Layout.fillWidth: true
               spacing: Style.spacing.sm
-              Text { Layout.fillWidth: true; text: historySurface.modelData.application || "Unknown application"; textFormat: Text.PlainText; color: Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * view.controller.popupItemScale; font.weight: Font.DemiBold; elide: Text.ElideRight }
+              Text { Layout.fillWidth: true; text: historySurface.modelData.application || "Unknown application"; textFormat: Text.PlainText; color: Commons.Color.popups.text; font.family: Style.font.family; font.pixelSize: Style.font.body * view.controller.popupItemScale; font.weight: Font.DemiBold; elide: Text.ElideRight }
               Text { text: Model.historyPeriodLabel(historySurface.modelData.endedAt, view.controller.durationNow); textFormat: Text.PlainText; color: view.controller.itemColor(view.controller.item(historySurface.modelData.kind)); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; font.weight: Font.DemiBold }
             }
-            Text { Layout.fillWidth: true; text: Model.label(historySurface.modelData.kind) + " · " + Model.formatDuration(historySurface.modelData.durationMs) + " · " + Model.historyAgeLabel(historySurface.modelData.endedAt, view.controller.durationNow) + (historySurface.modelData.confidence && String(historySurface.modelData.confidence).toLowerCase() !== "confirmed" ? " · Inferred" : ""); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, view.controller.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
-            Text { visible: view.controller.popupDensity !== "compact" && Boolean(historySurface.modelData.device); Layout.fillWidth: true; text: view.controller.deviceLabel(historySurface.modelData.device); textFormat: Text.PlainText; color: Color.muted; opacity: Math.max(0.75, view.controller.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
+            Text { Layout.fillWidth: true; text: Model.label(historySurface.modelData.kind) + " · " + Model.formatDuration(historySurface.modelData.durationMs) + " · " + Model.historyAgeLabel(historySurface.modelData.endedAt, view.controller.durationNow) + (historySurface.modelData.confidence && String(historySurface.modelData.confidence).toLowerCase() !== "confirmed" ? " · Inferred" : ""); textFormat: Text.PlainText; color: Commons.Color.muted; opacity: Math.max(0.75, view.controller.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
+            Text { visible: view.controller.popupDensity !== "compact" && Boolean(historySurface.modelData.device); Layout.fillWidth: true; text: view.controller.deviceLabel(historySurface.modelData.device); textFormat: Text.PlainText; color: Commons.Color.muted; opacity: Math.max(0.75, view.controller.popupIdleOpacity); font.family: Style.font.family; font.pixelSize: Style.font.caption * view.controller.popupItemScale; elide: Text.ElideRight }
           }
         }
       }

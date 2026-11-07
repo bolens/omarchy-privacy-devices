@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.settings = {enabledKinds:["location", "screen-recording", "screenshot"]}
     service.parseLocation('{"type":"location-snapshot","active":true,"applications":["Maps","Maps"]}')
     service.handleFallbackSnapshot('{"type":"fallback-snapshot","version":1,"activities":{"screen-recording":["Recorder"],"screenshot":["Shot"]}}')
@@ -34,5 +34,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_FALLBACK_OBSERVATION_COMPOSITION_OK")
     Qt.quit()
-  }
+  })
 }

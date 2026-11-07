@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "cases": {
+    "app/RuntimeServiceTest.qml": {
+      "source_files": {
+        "tests/qml/RuntimeServiceTest.qml": "435faa0441f5443ea13ab139fa513aec93ff29e73ef0b8bc5ab4b3668b506f0d",
+        "Service.qml": "fb375c46436b4d2155800f6869b6ed63a9ec745f10e6cdf1bd03cb998a565c82"
+      },
+      "caller_evidence": [
+        "service.openSettingsOn(\"missing\",\"widgets\")",
+        "service.setModeFor(\"DP-1\", \"invalid\")",
+        "service.updateAppearance([])"
+      ],
+      "expected_qml_messages": {
+        "App Drawer: no live bar widget for monitor: missing": 1,
+        "App Drawer: invalid monitor mode: invalid": 1,
+        "App Drawer: appearance patch must be an object": 1
+      }
+    },
+    "app/RuntimeIpcTest.qml": {
+      "source_files": {
+        "tests/qml/RuntimeIpcTest.qml": "514a88500265c039e39f8ae073eb73030cb8c3d1354641a422460da27109a1ae",
+        "Service.qml": "fb375c46436b4d2155800f6869b6ed63a9ec745f10e6cdf1bd03cb998a565c82"
+      },
+      "caller_evidence": [
+        "{method:\"openMonitorAppearance\",args:[\"missing\"],error:true}",
+        "{method:\"setMonitorMode\",args:[\"DP-1\",\"invalid\"],error:true}",
+        "{method:\"setAppearance\",args:[\"bad-json\"],error:true}",
+        "{method:\"setAppearance\",args:[\"null\"],error:true}"
+      ],
+      "expected_qml_messages": {
+        "App Drawer: no live bar widget for monitor: missing": 1,
+        "App Drawer: invalid monitor mode: invalid": 1,
+        "App Drawer: invalid appearance JSON": 1,
+        "App Drawer: appearance patch must be an object": 1
+      }
+    },
+    "app/RuntimeMonitorStateTest.qml": {
+      "source_files": {
+        "tests/qml/RuntimeMonitorStateTest.qml": "2d54316cce4b001b646cc42ddafeb853df7fb1e79398f6b17e9ff34683244704",
+        "Service.qml": "fb375c46436b4d2155800f6869b6ed63a9ec745f10e6cdf1bd03cb998a565c82"
+      },
+      "caller_evidence": [
+        "service.setModeFor(\"DP-1\",\"invalid\")",
+        "service.modeFor(\"DP-1\") !== \"toggle\""
+      ],
+      "expected_qml_messages": {
+        "App Drawer: invalid monitor mode: invalid": 1
+      }
+    },
+    "app/RuntimeMutationTest.qml": {
+      "source_files": {
+        "tests/qml/RuntimeMutationTest.qml": "bec9c47ed1d984aeeb56484aa9681dfb75b6986bcb980e66b4b1c7fb88b0afc4",
+        "Service.qml": "fb375c46436b4d2155800f6869b6ed63a9ec745f10e6cdf1bd03cb998a565c82"
+      },
+      "caller_evidence": [
+        "\"fixture persistence failure\"",
+        "shellMock.failNext = true",
+        "service.toggleFor(\"DP-1\")"
+      ],
+      "expected_qml_messages": {
+        "App Drawer: fixture persistence failure": 2
+      }
+    },
+    "mmw/RuntimeServiceTest.qml": {
+      "source_files": {
+        "tests/qml/RuntimeServiceTest.qml": "b1a41c67a37c263e977da51b002e2026e277d42006d62ba41777300ec4c5a270",
+        "Service.qml": "7740455622673c141672efec7b6ddb4650a5432bd2840db543ab38f0f42652b2"
+      },
+      "caller_evidence": [
+        "service.openSettingsFor(staleWidget,\"general\")",
+        "service.updateSettings([])",
+        "service.updateSettings({unknown:true})",
+        "service.parseSettingsPayload(\"{\")",
+        "service.parseSettingsPayload(\"x\".repeat(65537))",
+        "service.activate(\"DP-1\",0,\"focus\")",
+        "service.activate(\"DP-1\",99,\"focus\")",
+        "service.activate(\"DP-1\",1,\"invalid\")",
+        "service.workspaceIdsResponse(\"missing\")",
+        "\"simulated write failure\"",
+        "\"removed\""
+      ],
+      "expected_qml_messages": {
+        "Multi-Monitor Workspaces: settings widget is no longer registered": 1,
+        "Multi-Monitor Workspaces: settings payload must be an object": 1,
+        "Multi-Monitor Workspaces: settings payload has no supported keys": 1,
+        "Multi-Monitor Workspaces: invalid settings JSON": 1,
+        "Multi-Monitor Workspaces: settings JSON exceeds 65536 bytes": 1,
+        "Multi-Monitor Workspaces: workspace must be between 1 and 8": 2,
+        "Multi-Monitor Workspaces: invalid workspace action: invalid": 1,
+        "Multi-Monitor Workspaces: no live bar widget for monitor: missing": 1,
+        "Multi-Monitor Workspaces: simulated write failure": 1,
+        "Multi-Monitor Workspaces: plugin entry removed before settings commit": 1
+      }
+    },
+    "p2p/RuntimeSettingsLoadingFailureTest.qml": {
+      "source_files": {
+        "tests/qml/RuntimeSettingsLoadingFailureTest.qml": "a74fce2b890399f4e522d8af69c17bcdb791ce8e01ab9e372e3c2510c41f649d",
+        "BarWidget.qml": "62e53ef8d8c84e90becd558fabf367e9863e68b795026f9319758cab5eda13d1"
+      },
+      "caller_evidence": [
+        "settingsSurfaceSource: Qt.resolvedUrl(\"tests/fixtures/does-not-exist.qml\")",
+        "widget.settingsErrorText === \"Unable to load P2P settings interface\"",
+        "if (widget.settingsIndicatorVisible || widget.visibleErrorText !== \"Unable to load P2P settings interface\")",
+        "if (!widget.settingsSurfaceLoaded || widget.settingsIndicatorVisible || widget.settingsErrorText !== \"\")"
+      ],
+      "expected_exact_warning_lines": {
+        "WARN scene: @tests/fixtures/does-not-exist.qml[-1:-1]: File not found": 1
+      }
+    }
+  }
+}

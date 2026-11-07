@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.settings = {audioControlBackend:"pactl", recordingBackend:"wf-recorder", screenshotBackend:"grim-satty"}
     if (JSON.stringify(service.audioToggleCommand("microphone")) !== JSON.stringify(["pactl", "set-source-mute", "@DEFAULT_SOURCE@", "toggle"])
         || JSON.stringify(service.audioToggleCommand("audio-output")) !== JSON.stringify(["pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle"]))
@@ -34,5 +34,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_BACKEND_COMMAND_SELECTION_OK")
     Qt.quit()
-  }
+  })
 }

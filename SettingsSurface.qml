@@ -2,11 +2,12 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import qs.Commons
+import qs.Commons as Commons
 
 Rectangle {
   id: surface
   default property alias content: surfaceColumn.data
-  property color accent: Color.muted
+  property color accent: Commons.Color.muted
 
   Layout.fillWidth: true
   implicitHeight: surfaceColumn.implicitHeight + Style.spacing.md * 2

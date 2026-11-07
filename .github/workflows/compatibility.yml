@@ -35,7 +35,7 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: basecamp/omarchy
+          repository: omacom/omarchy
           ref: ${{ matrix.omarchy-ref }}
           path: .omarchy
           persist-credentials: false
@@ -43,5 +43,5 @@ jobs:
         run: |
           docker run --rm --volume "$GITHUB_WORKSPACE:/source:ro" \
             --tmpfs /workspace:rw,exec,nosuid,size=512m --workdir /workspace \
-            ghcr.io/bolens/omarchy-plugin-ci@sha256:293b0457198085de5df26519dd4aa336202495c080d253b71ac30e7d8e8d3851 \
-            bash -lc 'cp -a /source/. /workspace && npm ci --ignore-scripts && tests/run_all.sh && QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy scripts/lint-qml'
+            ghcr.io/bolens/omarchy-plugin-ci@sha256:af5a6ae41d7c531e18fc0a2f260af8abafa4b0f5e5c9b224fda9f86d3af84b6b \
+            bash -lc 'cp -a /source/. /workspace && npm ci --ignore-scripts && QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy bash scripts/with-qml-imports.sh .omarchy/shell bash -c "tests/run_all.sh && scripts/lint-qml"'

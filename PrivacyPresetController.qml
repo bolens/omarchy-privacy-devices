@@ -40,7 +40,7 @@ Item {
 
   function observedState(values) {
     var observed = {}
-    for (var index = 0; index < values.length; index++) observed[values[index].kind] = values[index].enabled === true
+    for (let index = 0; index < values.length; index++) observed[values[index].kind] = values[index].enabled === true
     return observed
   }
 
@@ -79,7 +79,7 @@ Item {
     var next = Model.nextPrivacyPresetAction(queue, activeKind)
     if (next.action === "wait") return
     if (next.action === "complete") {
-      var outcome = Model.privacyPresetOutcome(results)
+      let outcome = Model.privacyPresetOutcome(results)
       operationState = outcome.state
       if (!restoring && outcome.changed) {
         undoAvailable = true

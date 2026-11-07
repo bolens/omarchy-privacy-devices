@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import qs.Commons
+import qs.Commons as Commons
 import "Model.js" as Model
 
 Item {
@@ -34,12 +34,12 @@ Item {
   }
 
   function themeColor(role, activeFallback) {
-    if (role === "bar-active") return Color.bar.active
-    if (role === "urgent") return Color.urgent
-    if (role === "accent") return Color.accent
-    if (role === "foreground") return host.bar ? host.bar.foreground : Color.foreground
-    if (role === "muted") return Color.muted
-    return activeFallback ? Color.bar.active : Color.muted
+    if (role === "bar-active") return Commons.Color.bar.active
+    if (role === "urgent") return Commons.Color.urgent
+    if (role === "accent") return Commons.Color.accent
+    if (role === "foreground") return host.bar ? host.bar.foreground : Commons.Color.foreground
+    if (role === "muted") return Commons.Color.muted
+    return activeFallback ? Commons.Color.bar.active : Commons.Color.muted
   }
 
   function deviceDiagnostic(kind) {
@@ -87,8 +87,8 @@ Item {
 
   function itemColor(entry) {
     var state = itemVisualState(entry)
-    if (state === "unavailable") return Color.urgent
-    if (state === "pending") return Color.accent
+    if (state === "unavailable") return Commons.Color.urgent
+    if (state === "pending") return Commons.Color.accent
     var roles = host.setting("itemColorRoles", {}) || {}
     var override = roles[entry.kind] || {}
     if (state === "blocked-active") return themeColor(String(override.blocked || host.setting("blockedActiveColorRole", "urgent")), true)
@@ -103,12 +103,12 @@ Item {
 
   function orderedKinds() {
     var result = []
-    for (var index = 0; index < host.configuredOrder.length; index++) {
-      var kind = host.configuredOrder[index]
+    for (let index = 0; index < host.configuredOrder.length; index++) {
+      let kind = host.configuredOrder[index]
       if (kindEnabled(kind) && result.indexOf(kind) === -1) result.push(kind)
     }
-    for (var fallbackIndex = 0; fallbackIndex < Model.KINDS.length; fallbackIndex++) {
-      var fallbackKind = Model.KINDS[fallbackIndex]
+    for (let fallbackIndex = 0; fallbackIndex < Model.KINDS.length; fallbackIndex++) {
+      let fallbackKind = Model.KINDS[fallbackIndex]
       if (kindEnabled(fallbackKind) && result.indexOf(fallbackKind) === -1) result.push(fallbackKind)
     }
     return result

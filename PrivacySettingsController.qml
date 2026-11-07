@@ -3,7 +3,7 @@ import QtQuick
 import "Model.js" as Model
 
 Item {
-  id: controller
+  id: settingsControl
 
   required property var host
   property bool mutationPending: false
@@ -22,7 +22,7 @@ Item {
     var previous = host.settings
     var clean = Model.sanitizeSettings(candidate)
     var entry = {id: host.moduleName}
-    for (var sanitizedKey in clean) entry[sanitizedKey] = clean[sanitizedKey]
+    for (let sanitizedKey in clean) entry[sanitizedKey] = clean[sanitizedKey]
     host.settings = entry
     host.syncService()
     mutationPending = true
@@ -53,20 +53,20 @@ Item {
   Timer {
     id: mutationGuard
     interval: 2000
-    onTriggered: controller.mutationPending = false
+    onTriggered: settingsControl.mutationPending = false
   }
 
   PrivacySettingsMutationController {
     id: mutation
-    onCommitRequested: function(settings) { controller.commit(settings) }
+    onCommitRequested: function(settings) { settingsControl.commit(settings) }
   }
 
   PrivacySettingsTransferController {
     id: transfer
     helper: String(Qt.resolvedUrl("privacy-settings")).replace(/^file:\/\//, "")
-    onSucceeded: function(mode, payload) { controller.handleTransfer(mode, payload) }
+    onSucceeded: function(mode, payload) { settingsControl.handleTransfer(mode, payload) }
     onFailed: function(_mode, detail) { result.fail(detail) }
   }
 
-  PrivacySettingsTransferResult { id: result; controller: controller.host }
+  PrivacySettingsTransferResult { id: result; controller: settingsControl.host }
 }

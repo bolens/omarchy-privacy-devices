@@ -83,7 +83,7 @@ jobs:
       - name: Check out Omarchy validator and shell imports
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: basecamp/omarchy
+          repository: omacom/omarchy
           ref: 13f18b2cb7286fb54f87daf571a031aa6af3d8f0 # v4.0.1
           path: .omarchy
           persist-credentials: false
@@ -149,7 +149,7 @@ jobs:
       - name: Check out Omarchy shell imports
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: basecamp/omarchy
+          repository: omacom/omarchy
           ref: 13f18b2cb7286fb54f87daf571a031aa6af3d8f0 # v4.0.1
           path: .omarchy
           persist-credentials: false
@@ -158,8 +158,8 @@ jobs:
           docker run --rm \
             --volume "$GITHUB_WORKSPACE:/workspace:ro" \
             --workdir /workspace \
-            ghcr.io/bolens/omarchy-plugin-ci@sha256:293b0457198085de5df26519dd4aa336202495c080d253b71ac30e7d8e8d3851 \
-            bash -lc 'QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy scripts/lint-qml'
+            ghcr.io/bolens/omarchy-plugin-ci@sha256:af5a6ae41d7c531e18fc0a2f260af8abafa4b0f5e5c9b224fda9f86d3af84b6b \
+            bash -lc 'QMLLINT=/usr/lib/qt6/bin/qmllint OMARCHY_PATH=.omarchy bash scripts/with-qml-imports.sh .omarchy/shell scripts/lint-qml'
   plugin-result:
     name: Plugin
     needs: [changes, plugin-fast, plugin-qml]

@@ -5,9 +5,14 @@ repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 qml_lint=${QMLLINT:-/usr/lib/qt6/bin/qmllint}
 [[ -x "$qml_lint" ]] || { printf 'Qt 6 qmllint not found: %s\n' "$qml_lint" >&2; exit 1; }
 import_args=()
-
-if [[ -n ${OMARCHY_PATH:-} ]]; then
-  import_args=(-I "$OMARCHY_PATH/shell" -i "$OMARCHY_PATH/shell/Commons/qmldir" -i "$OMARCHY_PATH/shell/Ui/qmldir")
+shell_root=${OMARCHY_SHELL_ROOT:-}
+if [[ -z $shell_root && -n ${OMARCHY_PATH:-} ]]; then shell_root=$OMARCHY_PATH/shell; fi
+if [[ -n $shell_root ]]; then
+  import_args=(-I "$shell_root" -i "$shell_root/Commons/qmldir" -i "$shell_root/Ui/qmldir")
+fi
+if [[ -n ${QML_TOOLING_IMPORT_ROOT:-} ]]; then
+  [[ -n $shell_root ]] || { printf 'Prepared Omarchy imports are required.\n' >&2; exit 1; }
+  import_args=(--bare -I "$QML_TOOLING_IMPORT_ROOT" -I "$shell_root" -I /usr/lib/qt6/qml -i "$shell_root/Commons/qmldir" -i "$shell_root/Ui/qmldir")
 fi
 
 mapfile -t qml_files < <(
@@ -15,5 +20,23 @@ mapfile -t qml_files < <(
   printf '%s\n' ./*.qml ./tests/qml/*.qml | sort
 )
 
-cd "$repo_dir"
-exec "$qml_lint" "${import_args[@]}" -i "$repo_dir/qmldir" "${qml_files[@]}"
+# Runtime harnesses resolve plugin components and Model.js beside their entry
+# point, just as tests/run_qml_runtime.sh arranges them. Lint the same topology.
+lint_dir=$(mktemp -d "${TMPDIR:-/tmp}/privacy-qml-lint.XXXXXX")
+trap 'rm -rf -- "$lint_dir"' EXIT
+find "$repo_dir" -maxdepth 1 -type f -exec cp -- '{}' "$lint_dir/" \;
+for index in "${!qml_files[@]}"; do
+  source_file=${qml_files[$index]}
+  if [[ $source_file == ./tests/qml/* ]]; then
+    target_name=${source_file##*/}
+    [[ ! -e $lint_dir/$target_name ]] || { printf 'Duplicate QML lint target: %s\n' "$target_name" >&2; exit 1; }
+    cp -- "$repo_dir/$source_file" "$lint_dir/$target_name"
+    qml_files[index]=$target_name
+  fi
+done
+
+cd "$lint_dir"
+"$qml_lint" "${import_args[@]}" -I . -i "$lint_dir/qmldir" "${qml_files[@]}"
+
+python3 "$repo_dir/scripts/check-qml-lint-controls.py" --qmllint "$qml_lint" \
+  --shell-root "$shell_root" --policy "$repo_dir/.qmllint.ini"

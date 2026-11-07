@@ -73,11 +73,11 @@ const barEntryPoint = bar.trimStart()
 assert.match(serviceEntryPoint, /^(?:pragma ComponentBehavior: Bound\n)?import[\s\S]*?\nItem\s*\{/, "the service entry point must remain an embeddable Item")
 assert.doesNotMatch(serviceEntryPoint, /\nShellRoot\s*\{/, "the service entry point must not create a second shell root")
 assert.doesNotMatch(barEntryPoint, /\nShellRoot\s*\{/, "the bar entry point must not create a second shell root")
-assert.match(bar, /PrivacyHistoryView\s*\{[\s\S]*?id:\s*historyView[\s\S]*?controller:\s*root/,
+assert.match(bar, /PrivacyHistoryView\s*\{[\s\S]*?id:\s*historyView[\s\S]*?controller:\s*privacyWidget/,
   "the bar must delegate history composition through the existing controller contract")
 assert.match(historyView, /required property var controller[\s\S]*?readonly property alias searchControl:[\s\S]*?readonly property var filterControls:/,
   "history composition must expose only the controls required by behavior tests and IPC")
-assert.match(bar, /PrivacyActivityView\s*\{[\s\S]*?id:\s*activityView[\s\S]*?controller:\s*root/,
+assert.match(bar, /PrivacyActivityView\s*\{[\s\S]*?id:\s*activityView[\s\S]*?controller:\s*privacyWidget/,
   "the bar must delegate activity composition through the existing controller contract")
 assert.match(activityView, /required property var controller[\s\S]*?readonly property alias presetFeedbackSurface:/,
   "scrollable activity composition must expose its tested feedback control")
@@ -85,7 +85,7 @@ assert.match(activityHeader, /required property var controller[\s\S]*?readonly p
   "the fixed activity header must expose its tested action control")
 assert.match(activityHeader, /readonly property bool narrow:[\s\S]*?Rectangle \{[\s\S]*?visible: !header\.narrow/,
   "the activity header must yield its status badge before narrow actions overflow")
-assert.match(bar, /PrivacyDeviceView\s*\{[\s\S]*?id:\s*deviceView[\s\S]*?controller:\s*root/,
+assert.match(bar, /PrivacyDeviceView\s*\{[\s\S]*?id:\s*deviceView[\s\S]*?controller:\s*privacyWidget/,
   "the bar must delegate device settings composition through the existing controller contract")
 assert.match(deviceView, /DeviceSettingsEditor\s*\{[\s\S]*?function syncEditors\(\)/,
   "device settings composition must own editable-field synchronization")
@@ -93,7 +93,7 @@ assert.match(deviceView, /Loader\s*\{\s*id:\s*backendSettings[\s\S]*?active:[\s\
   "the device view must delegate backend editing through the existing controller contract")
 assert.match(backendView, /required property var controller[\s\S]*?function syncEditors\(\)/,
   "backend composition must own synchronization for every custom command field")
-assert.match(bar, /PrivacySettingsController\s*\{\s*id:\s*settingsController[\s\S]*?host:\s*root/,
+assert.match(bar, /PrivacySettingsController\s*\{\s*id:\s*settingsController[\s\S]*?host:\s*privacyWidget/,
   "BarWidget must delegate settings orchestration through one controller")
 assert.match(settingsController, /required property var host[\s\S]*?PrivacySettingsMutationController[\s\S]*?PrivacySettingsTransferController/,
   "settings persistence and private transfer lifecycles must share one owner")
@@ -105,7 +105,7 @@ assert.match(service, /PrivacyAudioEndpointController\s*\{\s*id:\s*audioEndpoint
   "the service must delegate audio endpoint process ownership through one controller")
 assert.match(audioEndpointController, /required property var host[\s\S]*?function refresh\(kind\)[\s\S]*?id:\s*listProcess[\s\S]*?id:\s*setProcess/,
   "audio endpoint inventory and mutations must share one queue owner")
-assert.match(bar, /PrivacyDeviceSettingsController\s*\{\s*id:\s*deviceSettingsController[\s\S]*?host:\s*root/,
+assert.match(bar, /PrivacyDeviceSettingsController\s*\{\s*id:\s*deviceSettingsController[\s\S]*?host:\s*privacyWidget/,
   "BarWidget must delegate per-device settings policy through one controller")
 assert.match(deviceSettingsController, /required property var host[\s\S]*?function resetItemSettings\(kind\)[\s\S]*?function resetAllDeviceSettings\(kind\)/,
   "device overrides and scoped reset policy must share one owner")
@@ -119,11 +119,11 @@ assert.match(captureController, /required property var host[\s\S]*?function open
   "capture authorization, panel routing, state reset, and expiry must share one owner")
 assert.match(captureController, /function scrollSettings\(requestOwner, screenName, position\)[\s\S]*?target\.applySettingsScroll\(requested\)/,
   "capture settings scroll must validate ownership and route to the monitor-specific panel")
-assert.match(bar, /PrivacyPresentationController\s*\{\s*id:\s*presentationController[\s\S]*?host:\s*root/,
+assert.match(bar, /PrivacyPresentationController\s*\{\s*id:\s*presentationController[\s\S]*?host:\s*privacyWidget/,
   "BarWidget must delegate service-to-visual projection through one controller")
 assert.match(presentationController, /required property var host[\s\S]*?function item\(kind\)[\s\S]*?function itemColor\(entry\)[\s\S]*?function itemTooltip\(entry\)/,
   "activity projection, semantic colors, and tooltip policy must share one owner")
-assert.match(bar, /PrivacyPopupNavigationController\s*\{\s*id:\s*navigationController[\s\S]*?host:\s*root/,
+assert.match(bar, /PrivacyPopupNavigationController\s*\{\s*id:\s*navigationController[\s\S]*?host:\s*privacyWidget/,
   "BarWidget must delegate popup navigation through one controller")
 assert.match(navigationController, /required property var host[\s\S]*?function showSettings\(page, section\)[\s\S]*?function handleRequest\(\)[\s\S]*?function closeCurrentLayer\(\)/,
   "popup modes, deep links, request routing, and dismissal must share one owner")
@@ -363,7 +363,7 @@ assert.match(captureController, /function scrollSettings\(requestOwner, screenNa
   "capture scrolling must remain owner- and monitor-scoped")
 assert.match(service, /function scrollSettings\(owner: string, screenName: string, position: string\)[\s\S]*?scrollCaptureSettings\(owner, screenName, position\)/,
   "capture IPC must expose deterministic settings scrolling")
-assert.match(bar, /presentationScreen:\s*root\.QsWindow\.window[\s\S]*?presentationScreenName[\s\S]*?updateBarPresentation\(presentationScreenName/,
+assert.match(bar, /presentationScreen:\s*HostProtocol\.windowScreen\(privacyWidget\.QsWindow\.window\)[\s\S]*?presentationScreenName[\s\S]*?updateBarPresentation\(presentationScreenName/,
   "bar render acknowledgements must use the window's actual output")
 assert.match(bar, /settingsSection:\s*view === "settings" \? globalSettingsSection : ""/,
   "bar render acknowledgements must describe the displayed navigation section")
@@ -516,7 +516,7 @@ assert.match(notificationController, /function requestDevice\(kind\)[\s\S]*?Mode
 assert.match(service, /function openHistory\(\): string[\s\S]*?requestPopupView\("history", ""\)/,
   "history IPC must use the singleton service's focused-monitor routing")
 assert.doesNotMatch(bar, /target:\s*"privacy-devices-settings"/, "per-monitor widgets must not compete for settings IPC ownership")
-assert.match(bar, /onPrivacyServiceChanged:\s*Qt\.callLater\(function\(\)\s*\{\s*if \(!root\) return[\s\S]*?root\.syncService\(\)/,
+assert.match(bar, /onPrivacyServiceChanged:\s*Qt\.callLater\(function\(\)\s*\{\s*if \(!privacyWidget\) return[\s\S]*?privacyWidget\.syncService\(\)/,
   "deferred service synchronization must ignore a widget destroyed before the callback runs")
 assert.match(notificationController, /id:\s*flushTimer[\s\S]*?interval:\s*400/, "activity notifications must use a bounded coalescing window")
 assert.match(notificationController, /interval:\s*5000[\s\S]*?activityInitialized = true/,
@@ -543,25 +543,25 @@ assert.match(transactionController, /controller\.transition\(kind, \{type: "time
 assert.doesNotMatch(service, /fallbackMicrophoneMuted\s*=\s*!fallbackMicrophoneMuted/, "controls must preserve the last observed microphone state while verification is pending")
 assert.doesNotMatch(service, /fallbackOutputMuted\s*=\s*!fallbackOutputMuted/, "controls must preserve the last observed output state while verification is pending")
 assert.match(bar, /pixelAligned:\s*true/, "popup scrolling should remain pixel aligned")
-assert.match(bar, /onMovementEnded:\s*root\.flushDeferredItems\(\)/, "deferred row updates must flush when scrolling ends")
+assert.match(bar, /onMovementEnded:\s*privacyWidget\.flushDeferredItems\(\)/, "deferred row updates must flush when scrolling ends")
 assert.match(bar, /function syncDisplayedItems\(\)[\s\S]*?contentFlick\.moving && Model\.activityCriticalStateEquivalent\(displayedActivityItems, next\)/,
   "scroll deferral must use the behavior-tested critical-state policy")
 assert.doesNotMatch(bar, /function activityStateChanged\(/,
   "QML must not retain a second untested presentation-state policy")
-assert.match(bar, /onCloseRequested:\s*root\.closeCurrentLayer\(\)/, "Escape must invoke layered popup dismissal")
+assert.match(bar, /onCloseRequested:\s*privacyWidget\.closeCurrentLayer\(\)/, "Escape must invoke layered popup dismissal")
 assert.match(navigationController, /function closeCurrentLayer\(\)[\s\S]*?Model\.popupDismissalAction\(editingKind, showingGlobalSettings, showingHistory\)/,
   "layered dismissal must use the behavior-tested priority policy")
-assert.match(bar, /Item\s*\{[\s\S]*?id:\s*popupLayout[\s\S]*?PrivacyActivityHeader[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
+assert.match(bar, /Item\s*\{[\s\S]*?id:\s*popupContentLayout[\s\S]*?PrivacyActivityHeader[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?text: "Keyboard: ↑\/↓ select · Enter open · H history · S settings · R refresh · Esc close"/,
   "the activity header and footer must remain outside the scrollable content viewport")
-assert.match(bar, /configuredPopupHeight:[\s\S]*?popupMaxHeight", 620[\s\S]*?popupViewportHeight:[\s\S]*?popupContentRevision[\s\S]*?contentFlick\.contentHeight[\s\S]*?desiredPopupHeight:[\s\S]*?contentHeight:\s*fittedContentHeight\(root\.desiredPopupHeight, root\.configuredPopupHeight\)/,
+assert.match(bar, /configuredPopupHeight:[\s\S]*?popupMaxHeight", 620[\s\S]*?popupViewportHeight:[\s\S]*?popupContentRevision[\s\S]*?contentFlick\.contentHeight[\s\S]*?desiredPopupHeight:[\s\S]*?contentHeight:\s*fittedContentHeight\(privacyWidget\.desiredPopupHeight, privacyWidget\.configuredPopupHeight\)/,
   "popup height must follow content up to the configured cap without collapsing its viewport")
-assert.match(bar, /id:\s*globalSettingsPageLoader[\s\S]*?onLoaded:[\s\S]*?Qt\.callLater\(function\(\) \{ root\.popupContentRevision \+= 1 \}\)/,
+assert.match(bar, /id:\s*globalSettingsPageLoader[\s\S]*?onLoaded:[\s\S]*?Qt\.callLater\(function\(\) \{ privacyWidget\.popupContentRevision \+= 1 \}\)/,
   "lazy settings pages must publish their completed content height to the outer popup")
 assert.match(bar, /PrivacySettingsNavigation[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?tooltipText:\s*"Reset all global settings"/,
   "global settings navigation and reset actions must remain outside the scroll viewport")
 assert.match(bar, /id:\s*contentViewportFrame[\s\S]*?implicitHeight:\s*0[\s\S]*?anchors\.top:\s*popupHeaderChrome\.bottom[\s\S]*?anchors\.bottom:\s*popupFooterChrome\.top/,
   "long settings pages must not contribute their implicit height to the fixed panel layout")
-assert.match(bar, /id:\s*popupLayout[\s\S]*?implicitHeight:\s*root\.desiredPopupHeight/,
+assert.match(bar, /id:\s*popupContentLayout[\s\S]*?implicitHeight:\s*privacyWidget\.desiredPopupHeight/,
   "the panel layout must report the same content-fitted height as its outer frame")
 assert.match(bar, /Item\s*\{[\s\S]*?id:\s*contentViewportFrame[\s\S]*?implicitHeight:\s*0[\s\S]*?Flickable\s*\{[\s\S]*?id:\s*contentFlick[\s\S]*?anchors\.fill:\s*parent/,
   "the scroll viewport must be isolated from page-content implicit sizing")

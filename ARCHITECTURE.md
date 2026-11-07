@@ -116,7 +116,9 @@ normal operation poll-driven.
   stop, and the first uncertain recovery snapshot is not announced as new
   activity.
 - Control commands are not successful until an observed state matches the
-  requested state; verification has a bounded timeout.
+  requested state before the verification deadline. Probes at or after the
+  deadline fail with the same timeout outcome as the watchdog, regardless of
+  callback order.
 - Per-endpoint audio control re-enumerates PipeWire-Pulse sources or sinks,
   allowlists the exact endpoint name, applies one mute state, and re-reads the
   endpoint before publishing the result.

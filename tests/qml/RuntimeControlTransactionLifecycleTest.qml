@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.settings = {enabledKinds:["screen-recording"], notifyOnControlChanges:false}
 
     service.beginControlTransaction("screen-recording", true)
@@ -40,5 +40,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_CONTROL_TRANSACTION_LIFECYCLE_OK")
     Qt.quit()
-  }
+  })
 }

@@ -18,7 +18,7 @@ QtObject {
     }
     if (mode !== "import" && mode !== "undo") return false
     try {
-      var parsed = JSON.parse(String(payload || ""))
+      let parsed = JSON.parse(String(payload || ""))
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("invalid settings")
       controller.persistSettings(Model.sanitizeSettings(parsed))
       status = mode === "undo" ? "Previous settings restored" : "Settings imported"

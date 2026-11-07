@@ -7,6 +7,13 @@ maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep plugin colors tied to Omarchy’s palette on Qt 6.12.
+
+- Read completed location probe output from its collector so active applications
+  are preserved when the helper finishes.
+
 ## [0.9.16] - 2026-09-01
 
 ### Fixed

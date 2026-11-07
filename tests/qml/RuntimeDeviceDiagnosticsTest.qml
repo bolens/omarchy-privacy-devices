@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import Quickshell
 import QtQuick
-import qs.Commons
+import qs.Commons as Commons
 
 ShellRoot {
   id: root
@@ -13,7 +13,7 @@ ShellRoot {
   }
   QtObject {
     id: controllerMock
-    property color activeThemeColor: Color.accent
+    property color activeThemeColor: Commons.Color.accent
     property var privacyService: serviceMock
     property var diagnosticData: ({
       healthStatus:"unavailable",dependenciesReady:false,
@@ -35,8 +35,8 @@ ShellRoot {
     if (!item) return null
     if (item.objectName === name) return item
     var children = item.children || []
-    for (var index = 0; index < children.length; index++) {
-      var found = descendant(children[index], name)
+    for (let index = 0; index < children.length; index++) {
+      let found = descendant(children[index], name)
       if (found) return found
     }
     return null
@@ -47,7 +47,7 @@ ShellRoot {
     var backend = descendant(diagnostics, "deviceDiagnosticValue-Backend")
     var install = descendant(diagnostics, "deviceDiagnosticsInstallButton")
     if (!status || !backend || !install) throw new Error("device diagnostics are not addressable")
-    if (status.text !== "Monitoring unavailable" || String(status.color).toLowerCase() !== String(Color.urgent).toLowerCase()
+    if (status.text !== "Monitoring unavailable" || String(status.color).toLowerCase() !== String(Commons.Color.urgent).toLowerCase()
         || backend.text !== "GeoClue" || !install.visible || install.tooltipText !== "Install GeoClue support")
       throw new Error("device diagnostics did not reflect degraded dependency state")
     install.clicked()

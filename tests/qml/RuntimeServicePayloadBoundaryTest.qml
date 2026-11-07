@@ -5,7 +5,7 @@ import QtQuick
 ShellRoot {
   Service { id: service }
 
-  Component.onCompleted: {
+  Component.onCompleted: Qt.callLater(function() {
     service.configure({enabledKinds:[], directDeviceMonitoring:false})
 
     service.settings = {enabledKinds:["location"]}
@@ -52,5 +52,5 @@ ShellRoot {
 
     console.log("PRIVACY_QML_SERVICE_PAYLOAD_BOUNDARY_OK")
     Qt.quit()
-  }
+  })
 }
