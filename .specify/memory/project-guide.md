@@ -66,3 +66,13 @@ Regenerate managed files through Spec Kit and verify that project-owned memory s
 updates. Follow `RELEASING.md` for push, merge, release or delivery, and recovery.
 
 The retrospective specification register is [specs/README.md](../../specs/README.md).
+
+## Native CI evidence rules
+
+The tested Woodpecker 3.20.1 configuration places `network_mode: none` directly on the step, with server schema support for that compatibility field. A nested Docker backend option did not enforce isolation. Bind acceptance to the actual pipeline container lifecycle, UID 10042, network mode, CPU quota, memory and swap limits, full runtime inventory and cleanup result.
+
+A Docker workflow container must receive its primary network during creation. Attaching that network later can retain resolver configuration from the initial network. Diagnose the container creation contract before changing host or repository DNS settings.
+
+When overriding NPM user and global configurations, use distinct empty private files. Reusing `/dev/null` for both failed with NPM 11. Install locked dependencies during networked preparation, then validate the prepared dependency tree offline without reinstalling it. Remove invocation-owned configuration and cache scratch on success and failure.
+
+Record final-head checks, ordinary merge, genuine-main checks and selected Pages behavior separately in `specs/005-qml-warning-validation/tasks.md`. A successful PR or merge alone does not complete T016. Preserve explicit qualification limits and leave omitted checks open.

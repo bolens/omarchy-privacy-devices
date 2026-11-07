@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import qs.Commons as Commons
 
 // Isolated process only: exercise the real supported Commons singleton API.
@@ -134,6 +135,7 @@ ShellRoot {
     property var desired: null
     property int phase: 0
     property bool finished: false
+    readonly property StdioCollector fontCollector: Commons.Style.fcMatchProc.stdout as StdioCollector
 
     function groups() {
         return {
@@ -231,10 +233,15 @@ ShellRoot {
         Qt.callLater(test.advance)
     }
     function startupReady() {
+        // The nonempty "monospace" default is not completed font resolution.
+        // Snapshot only after the real collector publishes its finished output.
+        const collector = test.fontCollector
+        const resolved = collector === null ? "" : collector.text.trim()
         return Commons.Color.colorsFile.loaded && Commons.Color.shellFile.loaded
             && Commons.Color.userShellFile.loaded
-            && typeof Commons.Style.resolvedFontFamily === "string"
-            && Commons.Style.resolvedFontFamily.trim().length > 0
+            && collector !== null && collector.waitForEnd
+            && !Commons.Style.fcMatchProc.running && resolved.length > 0
+            && Commons.Style.resolvedFontFamily === resolved
     }
     function advance() {
         if (test.finished) return
@@ -307,6 +314,15 @@ ShellRoot {
         function onFontOverridesChanged() { test.schedule() }
         function onSpacingOverridesChanged() { test.schedule() }
         function onBarOverridesChanged() { test.schedule() }
+    }
+    Connections {
+        target: test.fontCollector
+        function onDataChanged() { test.schedule() }
+        function onStreamFinished() { test.schedule() }
+    }
+    Connections {
+        target: Commons.Style.fcMatchProc
+        function onRunningChanged() { test.schedule() }
     }
     Connections {
         target: Commons.Color
