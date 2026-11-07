@@ -12,4 +12,4 @@ Installation validation alone does not establish feature completion.
 
 - [Native site accessibility audit](004-native-site-audit/spec.md): [plan](004-native-site-audit/plan.md), [tasks](004-native-site-audit/tasks.md).
 
-- [Reliable QML validation and palette compatibility](005-qml-warning-validation/spec.md): [plan](005-qml-warning-validation/plan.md), [acceptance tasks](005-qml-warning-validation/tasks.md).
+- [Reliable QML validation and palette compatibility](005-qml-warning-validation/spec.md): [plan](005-qml-warning-validation/plan.md), [acceptance tasks](005-qml-warning-validation/tasks.md), [delivery evidence](005-qml-warning-validation/tasks.md#accepted-native-delivery-evidence).

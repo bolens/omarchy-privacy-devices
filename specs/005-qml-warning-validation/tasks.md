@@ -34,17 +34,17 @@
 **Independent test**: Source/image identity mismatch fails clearly, and final-head plus genuine-main results identify the accepted inputs.
 
 - [x] T012 [US3] Add changed/missing dependency-source and cleanup/failure-path controls to `tests/test_qml_lint.py`; preserve the validation evidence state rules in `data-model.md`.
-- [ ] T013 [US3] Coordinate accepted immutable CI image publication/adoption in `.woodpecker/` and retained `.github/workflows/` consumers, keeping existing protected/ref-scoped publication.
+- [x] T013 [US3] Coordinate accepted immutable CI image publication/adoption in `.woodpecker/` and retained `.github/workflows/` consumers, keeping existing protected/ref-scoped publication.
 
-- [ ] T017 [US3] Make `scripts/woodpecker-plugin.sh` and `.woodpecker/plugin.yml` require the complete canonical QML runtime suite through an owned nonroot/offline fixture, including strict warning classification, preparation boundaries and failure controls.
+- [x] T017 [US3] Make `scripts/woodpecker-plugin.sh` and `.woodpecker/plugin.yml` require the complete canonical QML runtime suite through an owned nonroot/offline fixture, including strict warning classification, preparation boundaries and failure controls.
 
-- [ ] T018 [US3] Require actual IPC client transport in the native canonical suite: preserve the existing App Drawer and Privacy cases, add bounded production-handler cases only to P2P Services and Multi-Monitor Workspaces, and verify owned registration, responses, negative arguments and cleanup.
+- [x] T018 [US3] Require actual IPC client transport in the native canonical suite: preserve the existing App Drawer and Privacy cases, add bounded production-handler cases only to P2P Services and Multi-Monitor Workspaces, and verify owned registration, responses, negative arguments and cleanup.
 
 ## Phase 6: Delivery
 
 - [x] T014 Update `TESTING.md`, `RELEASING.md` and `CHANGELOG.md` with the supported palette/environment procedure and verified behavior correction.
-- [ ] T015 Run full portable, actual QML/engine, site and retained hosted gates on the independently reviewed final head; append exact results here without marking omitted checks complete.
-- [ ] T016 Merge normally with fresh expected-head/review/check guards, verify genuine-main and selected Pages behavior, and record the accepted revision here.
+- [x] T015 Run full portable, actual QML/engine, site and retained hosted gates on the independently reviewed final head; append exact results here without marking omitted checks complete.
+- [x] T016 Merge normally with fresh expected-head/review/check guards, verify genuine-main and selected Pages behavior, and record the accepted revision here.
 
 ## Dependencies and parallel work
 
@@ -128,3 +128,16 @@ independent of that reference. The source regression reproduces that failure and
 passes with the scalar snapshot. Owned display/audio resources and sockets were
 removed with empty logs. Final complete native and IPC inventories remain
 separate acceptance requirements.
+
+## Accepted native delivery evidence
+
+### Final delivery join, 2026-11-07 UTC
+
+- [Source PR #97](https://github.com/bolens/omarchy-privacy-devices/pull/97) was independently reviewed at head `c8e93394ad21e25a8078dbe7317c6ee6325626b8`, source tree `a5bb01b5a5b4aad2f449abfec5f759c804416b6c`. Normal commit and push hooks passed. All five required final-head checks passed with their required application bindings: [Repository](https://github.com/bolens/omarchy-privacy-devices/actions/runs/42344037069/job/128317932867) (GitHub Actions app 15368); [lint / Source lint](https://github.com/bolens/omarchy-privacy-devices/actions/runs/42344037094/job/128317780508) (GitHub Actions app 15368); [Development environment](https://github.com/bolens/omarchy-privacy-devices/actions/runs/42344039984/job/128318930146) (GitHub Actions app 15368); [ci/woodpecker/pr/plugin](https://woodpecker.bolens.dev/repos/25/pipeline/13/1); [ci/woodpecker/pr/site](https://woodpecker.bolens.dev/repos/25/pipeline/13/2).
+- [Native PR pipeline 13](https://woodpecker.bolens.dev/repos/25/pipeline/13) passed plugin and site validation, including all 76 registered runtime cases with their warning, natural-exit and cleanup contracts. Full-source-reviewed acceptance bound the offline container to this exact head and workload: UID 10042, network mode `none`, a quota of 2 CPUs and 6 GiB RAM (6442450944 bytes). `MemorySwap` equaled the RAM limit, allowing no swap. The public toolchain was pinned to `ghcr.io/bolens/omarchy-plugin-ci@sha256:af5a6ae41d7c531e18fc0a2f260af8abafa4b0f5e5c9b224fda9f86d3af84b6b`.
+- Manual qualification separately covered all 120 strict targets and 76 runtime cases for unchanged QML input identities. This proof is distinct from the actual native PR pipeline above.
+- The ordinary guarded merge accepted [`09f9e54448614de3a692011628f17fd4d42ac61a`](https://github.com/bolens/omarchy-privacy-devices/commit/09f9e54448614de3a692011628f17fd4d42ac61a) with branch protections unchanged. Genuine-main [native pipeline 14](https://woodpecker.bolens.dev/repos/25/pipeline/14) then passed both plugin and site workflows for that exact commit, event `push`, branch `main`. Its 76 distinct runtime cases passed their warning, natural-exit and cleanup contracts.
+- Retained hosted workflows all passed on that exact main revision: [Pages](https://github.com/bolens/omarchy-privacy-devices/actions/runs/42344543873), [Source lint](https://github.com/bolens/omarchy-privacy-devices/actions/runs/42344544332), [Changelog](https://github.com/bolens/omarchy-privacy-devices/actions/runs/42344543944), [CI](https://github.com/bolens/omarchy-privacy-devices/actions/runs/42344544010), [Development environment](https://github.com/bolens/omarchy-privacy-devices/actions/runs/42344543860). Linux and macOS native development-environment checks passed; Linux Docker/editor checks passed. macOS Docker/editor checks were explicitly inapplicable and skipped. The retained hosted Plugin/QML jobs were also skipped by the migration routing; Woodpecker supplied the actual plugin/QML execution.
+- [Pages deployment 7617300679](https://github.com/bolens/omarchy-privacy-devices/actions/runs/42344543873/job/128319316984) succeeded for the same main revision. Read-only browser verification at 2026-11-07T05:53:14.021940+00:00 of the [published site](https://michael.bolens.dev/omarchy-privacy-devices/) observed the title “Privacy Devices for Omarchy” and heading “Know what your devices are doing.” The [changelog](https://michael.bolens.dev/omarchy-privacy-devices/changelog/) showed “Changelog · Privacy Devices” and the unreleased entries: Keep plugin colors tied to Omarchy’s palette on Qt 6.12. Read completed location probe output from its collector so active applications are preserved when the helper finishes.
+
+T013, T017, T018, T015 and T016 are complete for this accepted revision. Earlier observations above remain historical evidence; their pending-delivery statements describe those earlier observations. This closeout records the existing 005 feature and does not introduce a new specification.
