@@ -294,3 +294,19 @@ Update native, retained release-validation and compatibility image digests only
 after the actual published image has passed admission. Keep these maintainer
 helpers out of the release archive through the existing `scripts/` and `tests/`
 export exclusions; release validation still checks the actual distributable.
+
+## Additive native repository checks
+
+The credential-free `repository` workflow adds the existing shared Source lint,
+workflow security, changelog, HTML/XML and documentation-link policies on each
+PR, main push and manual native run. It builds/tests the site for link discovery;
+the separate `site` workflow retains the actual Lighthouse accessibility audit.
+Privacy-specific issue-form, release metadata and docs checks remain mandatory
+where applicable. Run `bash scripts/woodpecker-repository.sh` in the documented
+Linux tooling container to reproduce the public-tool bootstrap and checks.
+
+Existing GitHub requirements remain active during this additive delivery. Do not
+retire `Repository` or `lint / Source lint` until exact-head native PR and genuine
+main proof is accepted and protected checks are migrated separately. Preserve
+`ci.yml`'s reusable release-validation interface and all release, platform and
+Pages deployment boundaries. No future pipeline or merge is accepted by this text.

@@ -6,6 +6,10 @@ See the [documentation index](DOCUMENTATION.md) for topic ownership and the
 maintainer guides that define release and validation procedures.
 
 ## [Unreleased]
+### Added
+
+- Add native repository policy checks alongside the existing protected GitHub checks.
+
 
 ### Fixed
 

@@ -10,3 +10,12 @@ Requested migration, specified before implementation delivery.
 - Keep GitHub repository/security/browser/platform/release checks until their
   equivalent migration and protected-check cutover are separately verified.
 - Prove an actual native PR and genuine main run before calling delivery done.
+
+## Repository policy extension, specified 2026-11-07
+
+Add credential-free, always-selected PR/main/manual repository policy using the
+same pinned shared source/workflow policy, changelog validator and per-repository
+HTML/XML/Lychee policy. Keep the accepted offline QML runtime separate. Every
+validator failure must fail this workflow; Tidy warnings alone remain nonfatal.
+Retained GitHub requirements and reusable release calls remain unchanged until
+separate observed native PR/main evidence and Root's protected-check cutover.

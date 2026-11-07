@@ -368,3 +368,32 @@ or deprecation warnings fail. The palette contract checks all 87 declared token
 fields plus eleven inherited object names, stable identities, readonly owners,
 permitted child writes and reactive restoration. A missing harness, marker or
 cleanup result fails validation.
+
+## Additive native repository checks
+
+The credential-free `repository` workflow adds the existing shared Source lint,
+workflow security, changelog, HTML/XML and documentation-link policies on each
+PR, main push and manual native run. It builds/tests the site for link discovery;
+the separate `site` workflow retains the actual Lighthouse accessibility audit.
+Privacy-specific issue-form, release metadata and docs checks remain mandatory
+where applicable. Run `bash scripts/woodpecker-repository.sh` in the documented
+Linux tooling container to reproduce the public-tool bootstrap and checks.
+
+Existing GitHub requirements remain active during this additive delivery. Do not
+retire `Repository` or `lint / Source lint` until exact-head native PR and genuine
+main proof is accepted and protected checks are migrated separately. Preserve
+`ci.yml`'s reusable release-validation interface and all release, platform and
+Pages deployment boundaries. No future pipeline or merge is accepted by this text.
+
+### Native workflow groups and local commands
+
+| Workflow | Group | Local entrypoint | PR status |
+|---|---|---|---|
+| `plugin.yml` | Portable plugin, strict Qt/QML and owned runtime/IPC | `scripts/woodpecker-plugin.sh --prepare` then `--offline` in its qualified container | `ci/woodpecker/pr/plugin` |
+| `site.yml` | Site build/test and real accessibility browser audit | `npm run build:site`, `npm run test:site`, `node scripts/audit-site.mjs` in its qualified browser container | `ci/woodpecker/pr/site` |
+| `repository.yml` | Source/workflow policy and document integrity | `scripts/woodpecker-repository.sh --policy` and `--documents`; default `--all` runs both | `ci/woodpecker/pr/repository` (pending delivery proof) |
+
+Workflow filenames own status identity; descriptive kebab-case step names group
+checks within each workflow. The new repository group publishes no artifacts or
+releases. Existing plugin/site status aliases and separate GitHub release/Pages
+authorities stay unchanged. Run local commands from the repository root.
