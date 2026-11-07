@@ -182,7 +182,7 @@ class Contracts(unittest.TestCase):
         self.assertEqual(result['kill']['exit'], 255)
         self.assertIn('ConnectionRefusedError', result['kill']['stdout'])
         self.assertEqual(result['marker_count'], 1)
-        self.assertEqual(result['owned_config_absence']['checked_config_path'], str(path))
+        self.assertEqual(result['owned_config_absence']['checked_config_path'], str(path.resolve()))
 
     def test_dynamic_canonical_inventory_and_palette(self):
         for repo, limit in [('app',8),('p2p',4),('mmw',8),('privacy',12)]:
