@@ -15,6 +15,8 @@ function fixture(seed, fault='') {
     let quits=0;
     const Style={resolvedFontFamily:"Resolved family "+seed, fontBaseSize:seed, fontOverrides:{caption:seed+2}, spacingOverrides:{md:seed+4},
         barOverrides:{'size-horizontal':seed+7}, barScaleWithFont:seed%2===0};
+    const collector={waitForEnd:true,text:Style.resolvedFontFamily};
+    Style.fcMatchProc={stdout:collector,running:false};
     Object.defineProperty(Style,'fontScale',{get(){return Math.max(1/12,this.fontBaseSize/12);}});
     const Color={colorsFile:{loaded:true},shellFile:{loaded:true},userShellFile:{loaded:true},foreground:color('#203040'),shellValues:{'bar.text':'#102030','menu.text':'#998877'}};
     if(fault==='live-color-wrapper') {
@@ -36,6 +38,7 @@ function fixture(seed, fault='') {
         if(field==='caption' && fault==='stale-binding') return seed+2;
         return Style.fontOverrides[field] || Style.fontBaseSize;
     }});
+    Object.defineProperty(groups['Style.font'],'resolvedFamily',{enumerable:true,get(){return Style.resolvedFontFamily;}});
     Object.defineProperty(groups['Style.spacing'],'md',{enumerable:true,get(){return Style.spacingOverrides.md;}});
     Object.defineProperty(groups['Style.bar'],'sizeHorizontal',{enumerable:true,get(){return Math.max(1,Math.round(Style.barOverrides['size-horizontal']*(Style.barScaleWithFont?Style.fontScale:1)));}});
     for(const name of ['bar','popups','tooltip','notifications','menu','polkit','lock','imagePicker']) {
@@ -49,7 +52,7 @@ function fixture(seed, fault='') {
     if(fault==='missing-field') delete groups['Color.menu'].scrim;
     if(fault==='extra-field') groups['Color.menu'].unexpected=color('#ffffff');
     if(fault==='wrong-type') groups['Style.font'].family=123;
-    const test={inventory,originalObjects:{},originalFields:{},saved:null,desired:null,phase:0,finished:false};
+    const test={inventory,originalObjects:{},originalFields:{},saved:null,desired:null,phase:0,finished:false,fontCollector:collector};
     const context=vm.createContext({test,Commons:{Style,Color},Qt:{callLater(fn){if(!queue.includes(fn))queue.push(fn);},binding(fn){return {binding:fn};},quit(){quits++;}},console:{log(message){marks.push(message);}}});
     for(const item of functions){vm.runInContext(item.source,context);test[item.name]=context[item.name];}
     return {test,Style,Color,groups,marks,get quits(){return quits;},run(){
@@ -98,10 +101,50 @@ check('all three file loads required, partial event does not mutate',()=>{
  assert.equal(f.run(),false);assert.equal(f.test.phase,0);assert.equal(f.test.saved,null);
  f.Color.userShellFile.loaded=true;assert.equal(f.run(),true);
 });
-check('empty font resolution waits for actual resolved event state',()=>{
- const f=fixture(12);f.Style.resolvedFontFamily='  ';
+check('empty font resolution waits for matching completed collector state',()=>{
+ const f=fixture(12);f.Style.resolvedFontFamily='  ';f.test.fontCollector.text='  ';
  assert.equal(f.run(),false);assert.equal(f.test.saved,null);
- f.Style.resolvedFontFamily='Some other resolved family';assert.equal(f.run(),true);
+ const resolved='Some other resolved family';
+ f.test.fontCollector.text=resolved+'\n';f.Style.resolvedFontFamily=resolved;
+ f.Style.fcMatchProc.running=false;
+ assert.equal(f.run(),true);
+ assert.equal(f.test.originalFields['Style.font'].resolvedFamily,resolved);
+});
+check('delayed actual font resolution waits before snapshot and completes one roundtrip',()=>{
+ const f=fixture(12), collector=f.test.fontCollector;
+ assert.equal(f.Style.fcMatchProc.stdout,collector);
+ f.Style.resolvedFontFamily='monospace';collector.text='';f.Style.fcMatchProc.running=true;
+ const refs={font:f.Style.fontOverrides,space:f.Style.spacingOverrides,bar:f.Style.barOverrides,colors:f.Color.shellValues};
+ const before=f.test.fields();
+ assert.equal(f.run(),false);assert.equal(f.test.phase,0);assert.equal(f.test.saved,null);assert.equal(f.test.desired,null);
+ assert.deepEqual(f.test.fields(),before);assert.equal(Object.keys(f.test.originalObjects).length,0);
+ assert.equal(f.quits,0);assert.deepEqual(f.marks,[]);
+ const resolved='DejaVu Sans Mono';
+ collector.text=resolved+'\n';f.Style.resolvedFontFamily=resolved;f.Style.fcMatchProc.running=false;
+ assert.equal(f.run(),true);assert.equal(f.test.phase,3);
+ assert.equal(f.test.originalFields['Style.font'].resolvedFamily,resolved);
+ assert.equal(JSON.stringify(f.test.fields()),JSON.stringify(f.test.originalFields));
+ assert.equal(f.Style.fontBaseSize,12);assert.equal(f.Style.fontOverrides,refs.font);
+ assert.equal(f.Style.spacingOverrides,refs.space);assert.equal(f.Style.barOverrides,refs.bar);assert.equal(f.Color.shellValues,refs.colors);
+ assert.equal(f.quits,1);assert.deepEqual(f.marks,['PALETTE_QML_CONTRACT_OK']);
+ // A further event cannot repeat the completed transaction or its marker.
+ assert.equal(f.run(),true);assert.equal(f.quits,1);assert.equal(f.marks.length,1);
+});
+for(const state of ['never-started-empty','in-flight-cached-text','mismatched-output','stream-not-final','null-collector']) check('font readiness rejects '+state,()=>{
+ const f=fixture(12), collector=f.test.fontCollector;
+ if(state==='never-started-empty')collector.text='';
+ else if(state==='in-flight-cached-text')f.Style.fcMatchProc.running=true;
+ else if(state==='mismatched-output')collector.text='Another resolved font';
+ else if(state==='stream-not-final')collector.waitForEnd=false;
+ else {f.test.fontCollector=null;f.Style.fcMatchProc.stdout=null;}
+ const before=f.test.fields(), refs={font:f.Style.fontOverrides,colors:f.Color.shellValues};
+ assert.equal(f.run(),false);assert.equal(f.test.phase,0);assert.equal(f.test.saved,null);assert.equal(f.test.desired,null);
+ assert.deepEqual(f.test.fields(),before);assert.equal(f.Style.fontOverrides,refs.font);assert.equal(f.Color.shellValues,refs.colors);
+ assert.equal(f.quits,0);assert.deepEqual(f.marks,[]);
+ // Matching completed real output satisfies readiness after each rejected state.
+ f.test.fontCollector=collector;f.Style.fcMatchProc.stdout=collector;
+ collector.waitForEnd=true;collector.text=f.Style.resolvedFontFamily;f.Style.fcMatchProc.running=false;
+ assert.equal(f.run(),true);assert.equal(f.quits,1);assert.deepEqual(f.marks,['PALETTE_QML_CONTRACT_OK']);
 });
 check('all readiness signal handlers schedule without polling or success on failure',()=>{
  for(const file of ['colorsFile','shellFile','userShellFile']) {
