@@ -3,6 +3,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const os = require("node:os");
 
 const root = path.resolve(__dirname, "..");
 const rootGuides = [
@@ -24,16 +25,33 @@ for (const guide of rootGuides) {
   assert.match(content, /\(DOCUMENTATION\.md\)/, `${guide} must link back to the documentation index`);
 }
 
-const markdownFiles = [];
-function collect(directory) {
+function collect(directory, repositoryRoot = directory, files = []) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     if ([".git", "node_modules", "_site"].includes(entry.name)) continue;
+    if (directory === repositoryRoot && entry.name === ".woodpecker-qml-input") continue;
     const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory()) collect(absolute);
-    else if (entry.name.endsWith(".md")) markdownFiles.push(absolute);
+    if (entry.isDirectory()) collect(absolute, repositoryRoot, files);
+    else if (entry.name.endsWith(".md")) files.push(absolute);
   }
+  return files;
 }
-collect(root);
+
+// Ignore only the prepared supplier at the checkout root. Maintained nested
+// directories, including one with the same basename, retain their link checks.
+const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "privacy-doc-scope-"));
+try {
+  for (const relative of ["README.md", "docs/guide.md", "docs/.woodpecker-qml-input/owned.md", ".woodpecker-qml-input/omarchy/AGENTS.md"]) {
+    const absolute = path.join(fixture, relative);
+    fs.mkdirSync(path.dirname(absolute), { recursive: true });
+    fs.writeFileSync(absolute, "[fixture](missing.md)\n");
+  }
+  assert.deepEqual(collect(fixture).map(file => path.relative(fixture, file)).sort(),
+    ["README.md", "docs/.woodpecker-qml-input/owned.md", "docs/guide.md"]);
+} finally {
+  fs.rmSync(fixture, { recursive: true, force: true });
+}
+
+const markdownFiles = collect(root);
 
 for (const file of markdownFiles) {
   const content = fs.readFileSync(file, "utf8");

@@ -93,9 +93,33 @@ class NativeQmlContract(unittest.TestCase):
             script.write_bytes((ROOT / "scripts/woodpecker-plugin.sh").read_bytes())
             bindir = root / "bin"
             bindir.mkdir()
-            fakegit = bindir / "git"
-            fakegit.write_text('#!/bin/sh\nif [ "$1" = init ]; then mkdir -p "$3/.git"; fi\nif [ "$3" = rev-parse ]; then printf "%s\\n" 13f18b2cb7286fb54f87daf571a031aa6af3d8f0; fi\n')
-            fakegit.chmod(0o700)
+            # Exercise real sparse fetch, immutable revision and blob/working-file
+            # verification. Only the copied script uses this disposable supplier.
+            supplier = root / "supplier"
+            (supplier / "shell").mkdir(parents=True)
+            (supplier / "bin").mkdir()
+            (supplier / "shell/Fixture.qml").write_text("import QtQuick\nItem {}\n")
+            validator = supplier / "bin/omarchy-plugin-validate"
+            validator.write_text("#!/bin/sh\necho 'Preparation must not execute this fixture validator' >&2\nexit 99\n")
+            validator.chmod(0o755)
+            # Git's surrounding pre-commit context must never select the real
+            # checkout's index, objects or worktree inside this supplier fixture.
+            git_env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+            git_env.update({"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"})
+            def fixture_git(*args):
+                return subprocess.run(["git", "-C", str(supplier), *args], check=True,
+                                      text=True, capture_output=True, timeout=10, env=git_env).stdout.strip()
+            fixture_git("init", "--quiet")
+            fixture_git("add", "shell", "bin")
+            fixture_git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                        "commit", "--quiet", "-m", "Fixture supplier")
+            revision = fixture_git("rev-parse", "HEAD")
+            source = script.read_text()
+            self.assertEqual(source.count("omarchy_revision=13f18b2cb7286fb54f87daf571a031aa6af3d8f0"), 1)
+            self.assertEqual(source.count("https://github.com/omacom/omarchy.git"), 1)
+            script.write_text(source.replace("omarchy_revision=13f18b2cb7286fb54f87daf571a031aa6af3d8f0",
+                                             "omarchy_revision=" + revision)
+                              .replace("https://github.com/omacom/omarchy.git", supplier.as_uri()))
             captured = root / "npm-call.json"
             temporary = root / "temporary"
             temporary.mkdir(mode=0o700)
@@ -120,8 +144,8 @@ for key in ("NPM_TOKEN", "NODE_AUTH_TOKEN", "npm_config_registry", "NPM_CONFIG_R
                 + ("Path('node_modules').mkdir()\nPath('node_modules/readable').write_text('public')\n" if exit_code == 0 else "")
                 + f"sys.exit({exit_code})\n")
             fakenpm.chmod(0o700)
-            result = subprocess.run(["bash", str(script), "--prepare"], text=True, capture_output=True, timeout=3,
-                                    umask=0o077, env={**os.environ, "PATH": str(bindir) + ":/usr/bin:/bin", "TMPDIR": str(temporary),
+            result = subprocess.run(["bash", str(script), "--prepare"], text=True, capture_output=True, timeout=10,
+                                    umask=0o077, env={**git_env, "PATH": str(bindir) + os.pathsep + os.environ["PATH"], "TMPDIR": str(temporary),
                                                      "NPM_TOKEN": "ambient-fixture", "NODE_AUTH_TOKEN": "ambient-fixture",
                                                      "NPM_CONFIG_REGISTRY": "https://invalid.example", "npm_config_registry": "https://invalid.example"})
             self.assertEqual(result.returncode, exit_code, result.stderr)
