@@ -14,7 +14,7 @@
     "test:site": "node tests/site.test.js"
   },
   "devDependencies": {
-    "jsdom": "30.1.0",
-    "lighthouse": "13.5.0"
+    "jsdom": "30.1.3",
+    "lighthouse": "13.6.0"
   }
 }
