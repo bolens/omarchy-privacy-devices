@@ -20,6 +20,42 @@ run_public_npm() (
     NPM_CONFIG_GLOBALCONFIG="$npm_config_dir/global.npmrc" npm "$@"
 )
 
+# Require the complete immutable import/validator closure before going offline.
+# Disabling lazy fetch makes missing promised objects fail instead of using CI's
+# network accidentally. The offline container enforces the network boundary too.
+verify_omarchy_input() {
+  [[ $(git -C "$omarchy_dir" rev-parse HEAD) == "$omarchy_revision" ]]
+  [[ -d "$omarchy_dir/shell" && -x "$omarchy_dir/bin/omarchy-plugin-validate" ]]
+  local object_types
+  object_types=$(GIT_NO_LAZY_FETCH=1 git -C "$omarchy_dir" ls-tree -r --format='%(objectname)' HEAD -- shell bin |
+    GIT_NO_LAZY_FETCH=1 git -C "$omarchy_dir" cat-file --batch-check='%(objecttype)' | sort -u)
+  [[ "$object_types" == blob ]]
+  GIT_NO_LAZY_FETCH=1 python3 - "$omarchy_dir" <<'PYTHON'
+import hashlib
+import pathlib
+import stat
+import subprocess
+import sys
+
+root = pathlib.Path(sys.argv[1])
+entries = subprocess.check_output([
+    "git", "-C", str(root), "ls-tree", "-rz", "HEAD", "--", "shell", "bin"
+])
+for entry in entries.split(b"\0"):
+    if not entry:
+        continue
+    metadata, name = entry.split(b"\t", 1)
+    mode, kind, expected = metadata.split()
+    path = root / name.decode()
+    info = path.lstat()
+    if kind != b"blob" or mode not in (b"100644", b"100755") or not stat.S_ISREG(info.st_mode):
+        raise SystemExit(f"Invalid prepared Omarchy file: {name.decode()}")
+    content = path.read_bytes()
+    actual = hashlib.sha1(b"blob " + str(len(content)).encode() + b"\0" + content).hexdigest().encode()
+    if actual != expected or bool(info.st_mode & 0o111) != (mode == b"100755"):
+        raise SystemExit(f"Prepared Omarchy bytes or mode differ: {name.decode()}")
+PYTHON
+}
 case "${1:-}" in
   --prepare)
     [[ $# == 1 ]] || exit 2
@@ -30,9 +66,13 @@ case "${1:-}" in
     umask 022
     mkdir -m 755 -- "$input_dir"
     git init --quiet "$omarchy_dir"
-    GIT_TERMINAL_PROMPT=0 git -C "$omarchy_dir" fetch --quiet --depth 1 https://github.com/omacom/omarchy.git "$omarchy_revision"
+    git -C "$omarchy_dir" remote add origin https://github.com/omacom/omarchy.git
+    git -C "$omarchy_dir" config remote.origin.promisor true
+    git -C "$omarchy_dir" config remote.origin.partialclonefilter blob:none
+    git -C "$omarchy_dir" sparse-checkout set --cone shell bin
+    GIT_TERMINAL_PROMPT=0 git -C "$omarchy_dir" fetch --quiet --no-tags --filter=blob:none --depth 1 origin "$omarchy_revision"
     git -C "$omarchy_dir" checkout --quiet --detach FETCH_HEAD
-    [[ $(git -C "$omarchy_dir" rev-parse HEAD) == "$omarchy_revision" ]]
+    verify_omarchy_input
     # Install exact public locked site-test dependencies before the offline step.
     run_public_npm ci --ignore-scripts
     exit 0
@@ -54,7 +94,8 @@ export RUNNER_TEMP="$scratch" HOME="$scratch/home"
 export XDG_CONFIG_HOME="$scratch/config" XDG_CACHE_HOME="$scratch/cache" XDG_STATE_HOME="$scratch/state"
 export PYTHONPYCACHEPREFIX="$scratch/pycache"
 mkdir -m 700 -- "$HOME" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" "$XDG_STATE_HOME"
-[[ $(git -C "$omarchy_dir" rev-parse HEAD) == "$omarchy_revision" ]]
+export GIT_NO_LAZY_FETCH=1
+verify_omarchy_input
 python3 scripts/prepare-qml-imports.py --source-shell "$omarchy_dir/shell" --output "$scratch/qml-shell"
 python3 scripts/prepare-qml-tooling.py --output "$scratch/qml-tooling"
 export OMARCHY_PATH="$omarchy_dir" OMARCHY_SHELL_ROOT="$scratch/qml-shell"

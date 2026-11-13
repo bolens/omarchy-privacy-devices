@@ -169,15 +169,15 @@ Protected `main` requires an up-to-date pull request, resolved conversations and
 these five check contexts on the reviewed candidate:
 
 - `Repository` (GitHub Actions app 15368).
-- `lint / Source lint` (GitHub Actions app 15368).
+- `ci/woodpecker/pr/repository`.
 - `Development environment` (GitHub Actions app 15368).
 - `ci/woodpecker/pr/plugin`.
 - `ci/woodpecker/pr/site`.
 
 Require every context before an ordinary squash merge; missing, pending or failed
-checks do not authorize a bypass. Woodpecker plugin and site results cover their
-native suites separately. They do not replace retained GitHub repository, source
-lint, development-environment, platform or signed-release validation, and none of
+checks do not authorize a bypass. Woodpecker plugin, site and repository results
+cover their native suites separately. They do not replace retained GitHub repository,
+development-environment, platform or signed-release validation, and none of
 these CI results establishes physical desktop behavior.
 
 ## Observe the exact merged candidate
@@ -206,9 +206,9 @@ gh api "repos/$repo/commits/$release_sha/status" \
 
 An absent run or status is pending evidence; inspect the matching push event
 before proceeding. Do not replace missing results with a fixed sleep or retry
-count. Watch the exact Source lint and development-environment run IDs from the
-same commit as well. Require successful `Repository`, `lint / Source lint` and
-`Development environment` check runs from app 15368, plus successful
+count. Watch the exact development-environment run ID from the same commit as
+well. Require successful `Repository` and `Development environment` check runs
+from app 15368, plus successful `ci/woodpecker/push/repository`,
 `ci/woodpecker/push/plugin` and `ci/woodpecker/push/site` statuses. A PR success
 belongs to its PR head and does not establish acceptance of the squash SHA.
 Retain the commit, run URLs and native pipeline URLs. Fix a failed merged
@@ -216,14 +216,14 @@ candidate through a new pull request before tagging.
 
 ## Source lint
 
-The Source lint workflow checks maintained python, javascript files selected by
+The native repository pipeline checks maintained python, javascript files selected by
 [`.github/source-lint.json`](.github/source-lint.json) on every pull request
 and push to `main`. Existing native checks remain part of the merge gate.
 Use the [shared local reproduction instructions](https://github.com/bolens/.github/blob/7603518f305fb76f7bb1b9979f2692521f633b82/docs/source-lint.md)
 with the same tooling revision pinned in
-[the workflow](.github/workflows/source-lint.yml). Review exclusions when adding
+[the native policy helper](scripts/woodpecker-repository.sh). Review exclusions when adding
 source files; generated and imported files retain their native validation.
-Require the new check to pass on the current PR head before merging.
+Require the native repository check to pass on the current PR head before merging.
 
 ## Woodpecker plugin validation
 
@@ -242,19 +242,22 @@ suite on pull requests and pushes to `main`. Its pinned toolchain and v4.0.1
 imports also serve retained GitHub callers. Preparation runs
 `bash scripts/woodpecker-plugin.sh --prepare` to fetch immutable public imports
 and install the tracked locked site-test dependencies with `npm ci --ignore-scripts`.
+Preparation fetches the pinned Omarchy revision with a blob-filtered cone
+checkout of the complete `shell` and `bin` trees. It verifies required objects
+and working files before offline validation, where lazy fetching is disabled.
 The required `--offline` phase runs as container user 10042 with networking
-disabled; the Qt toolchain is already in the image. Neither phase
-receives publishing secrets.
+disabled. The Qt toolchain is already in the image. Neither phase receives
+publishing secrets.
 
 Require `ci/woodpecker/pr/plugin` for ordinary pull requests, alongside the
-existing Repository, source-lint, and development-environment checks. GitHub
+native repository, retained Repository, and development-environment checks. GitHub
 retains full plugin validation for reusable callers by default through the typed
 `release_validation` input; the signed-release workflow explicitly enables it.
 Ordinary PR and main workflows skip the duplicate hosted plugin jobs.
 
-Repository links, HTML/XML, workflow security, compatibility
-canaries, macOS, development-image builds, Pages, and signed release publication
-retain their existing GitHub workflows. Native plugin success does not prove live
+Repository links, HTML/XML and source/workflow policy also run in the native
+repository pipeline. Compatibility canaries, macOS, development-image builds,
+Pages and signed release publication retain their existing GitHub workflows. Native plugin success does not prove live
 desktop behavior. No version or release is created by CI.
 
 ## Woodpecker site accessibility
@@ -295,7 +298,7 @@ after the actual published image has passed admission. Keep these maintainer
 helpers out of the release archive through the existing `scripts/` and `tests/`
 export exclusions; release validation still checks the actual distributable.
 
-## Additive native repository checks
+## Native repository checks
 
 The credential-free `repository` workflow adds the existing shared Source lint,
 workflow security, changelog, HTML/XML and documentation-link policies on each
@@ -305,8 +308,9 @@ Privacy-specific issue-form, release metadata and docs checks remain mandatory
 where applicable. Run `bash scripts/woodpecker-repository.sh` in the documented
 Linux tooling container to reproduce the public-tool bootstrap and checks.
 
-Existing GitHub requirements remain active during this additive delivery. Do not
-retire `Repository` or `lint / Source lint` until exact-head native PR and genuine
-main proof is accepted and protected checks are migrated separately. Preserve
+The duplicate GitHub Source lint workflow is disabled after accepted native PR
+and genuine-main proof. Protected `main` requires `ci/woodpecker/pr/repository`
+in its place. The hosted `Repository` and `Development environment` checks remain
+required alongside the native plugin and site checks. Preserve
 `ci.yml`'s reusable release-validation interface and all release, platform and
 Pages deployment boundaries. No future pipeline or merge is accepted by this text.

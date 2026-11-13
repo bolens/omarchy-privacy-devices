@@ -254,20 +254,24 @@ See the [documentation index](DOCUMENTATION.md),
 ShellCheck, behavior, strict QML controls and complete canonical headless runtime
 suite on pull requests and pushes to `main`. Its pinned toolchain and v4.0.1
 imports also serve retained GitHub callers. Preparation runs
-`bash scripts/woodpecker-plugin.sh --prepare` to fetch only immutable public
-imports. The required `--offline` phase runs as container user 10042 with
-networking disabled; test dependencies are already in the image. Neither phase
-receives publishing secrets.
+`bash scripts/woodpecker-plugin.sh --prepare` to fetch immutable public imports
+and install the tracked locked site-test dependencies with `npm ci --ignore-scripts`.
+Preparation fetches the pinned Omarchy revision with a blob-filtered
+cone checkout of the complete `shell` and `bin` trees. It verifies the required
+objects and working files before offline validation. Lazy fetching is disabled
+during that validation. The required `--offline` phase runs as container user
+10042 with networking disabled. The image supplies the Qt toolchain and plugin
+test tools. Neither phase receives publishing secrets.
 
 Require `ci/woodpecker/pr/plugin` for ordinary pull requests, alongside the
-existing Repository, source-lint, and development-environment checks. GitHub
+native repository, retained Repository, and development-environment checks. GitHub
 retains full plugin validation for reusable callers by default through the typed
 `release_validation` input; the signed-release workflow explicitly enables it.
 Ordinary PR and main workflows skip the duplicate hosted plugin jobs.
 
-Repository links, HTML/XML, workflow security, compatibility
-canaries, macOS, development-image builds, Pages, and signed release publication
-retain their existing GitHub workflows. Native plugin success does not prove live
+Repository links, HTML/XML and source/workflow policy also run in the native
+repository pipeline. Compatibility canaries, macOS, development-image builds,
+Pages and signed release publication retain their existing GitHub workflows. Native plugin success does not prove live
 desktop behavior. No version or release is created by CI.
 
 The pre-push hook defaults to deterministic checks even on a graphical desktop.
@@ -369,7 +373,7 @@ fields plus eleven inherited object names, stable identities, readonly owners,
 permitted child writes and reactive restoration. A missing harness, marker or
 cleanup result fails validation.
 
-## Additive native repository checks
+## Native repository checks
 
 The credential-free `repository` workflow adds the existing shared Source lint,
 workflow security, changelog, HTML/XML and documentation-link policies on each
@@ -379,9 +383,10 @@ Privacy-specific issue-form, release metadata and docs checks remain mandatory
 where applicable. Run `bash scripts/woodpecker-repository.sh` in the documented
 Linux tooling container to reproduce the public-tool bootstrap and checks.
 
-Existing GitHub requirements remain active during this additive delivery. Do not
-retire `Repository` or `lint / Source lint` until exact-head native PR and genuine
-main proof is accepted and protected checks are migrated separately. Preserve
+The duplicate GitHub Source lint workflow is disabled after accepted native PR
+and genuine-main proof. Protected `main` requires `ci/woodpecker/pr/repository`
+in its place. The hosted `Repository` and `Development environment` checks remain
+required alongside the native plugin and site checks. Preserve
 `ci.yml`'s reusable release-validation interface and all release, platform and
 Pages deployment boundaries. No future pipeline or merge is accepted by this text.
 
@@ -391,7 +396,7 @@ Pages deployment boundaries. No future pipeline or merge is accepted by this tex
 |---|---|---|---|
 | `plugin.yml` | Portable plugin, strict Qt/QML and owned runtime/IPC | `scripts/woodpecker-plugin.sh --prepare` then `--offline` in its qualified container | `ci/woodpecker/pr/plugin` |
 | `site.yml` | Site build/test and real accessibility browser audit | `npm run build:site`, `npm run test:site`, `node scripts/audit-site.mjs` in its qualified browser container | `ci/woodpecker/pr/site` |
-| `repository.yml` | Source/workflow policy and document integrity | `scripts/woodpecker-repository.sh --policy` and `--documents`; default `--all` runs both | `ci/woodpecker/pr/repository` (pending delivery proof) |
+| `repository.yml` | Source/workflow policy and document integrity | `scripts/woodpecker-repository.sh --policy` and `--documents`; default `--all` runs both | `ci/woodpecker/pr/repository` |
 
 Workflow filenames own status identity; descriptive kebab-case step names group
 checks within each workflow. The new repository group publishes no artifacts or
