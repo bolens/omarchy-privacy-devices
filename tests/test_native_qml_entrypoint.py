@@ -145,7 +145,7 @@ for key in ("NPM_TOKEN", "NODE_AUTH_TOKEN", "npm_config_registry", "NPM_CONFIG_R
                 + f"sys.exit({exit_code})\n")
             fakenpm.chmod(0o700)
             result = subprocess.run(["bash", str(script), "--prepare"], text=True, capture_output=True, timeout=10,
-                                    umask=0o077, env={**git_env, "PATH": str(bindir) + ":/usr/bin:/bin", "TMPDIR": str(temporary),
+                                    umask=0o077, env={**git_env, "PATH": str(bindir) + os.pathsep + os.environ["PATH"], "TMPDIR": str(temporary),
                                                      "NPM_TOKEN": "ambient-fixture", "NODE_AUTH_TOKEN": "ambient-fixture",
                                                      "NPM_CONFIG_REGISTRY": "https://invalid.example", "npm_config_registry": "https://invalid.example"})
             self.assertEqual(result.returncode, exit_code, result.stderr)
