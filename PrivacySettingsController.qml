@@ -29,10 +29,13 @@ Item {
     mutationGuard.restart()
     try {
       if (!host.bar || !host.bar.shell || typeof host.bar.shell.updateEntryInline !== "function") throw new Error("shell settings API unavailable")
-      host.bar.shell.updateEntryInline(host.moduleName, entry)
+      if (host.bar.shell.updateEntryInline(host.moduleName, entry) === false)
+        throw new Error("host rejected the privacy settings write")
       mutation.complete(true)
       Qt.callLater(function() { if (!host.opened) host.open() })
     } catch (error) {
+      mutationGuard.stop()
+      mutationPending = false
       host.settings = previous
       host.syncService()
       mutation.complete(false, String(error && error.message ? error.message : error))
