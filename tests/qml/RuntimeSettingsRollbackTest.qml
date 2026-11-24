@@ -13,7 +13,7 @@ ShellRoot {
       if (!widget.showIdle || !widget.showControls) throw new Error("failed persistence did not restore prior widget settings")
       if (service.settings.showIdle !== true || service.settings.showControls !== true)
         throw new Error("failed persistence did not restore prior service configuration")
-      var expected = root.phase === 0 ? "fixture persistence rejected" : "host rejected the privacy settings write"
+      const expected = root.phase === 0 ? "fixture persistence rejected" : "host rejected the privacy settings write"
       if (widget.settingsMutationMessage.indexOf(expected) < 0)
         throw new Error("failed persistence did not expose actionable feedback")
       if (root.phase === 0) shellMock.returnFalse = true
