@@ -8,15 +8,17 @@ ShellRoot {
   property int successfulWrites: 0
 
   function verifyMutationState() {
-    if (root.phase === 0) {
+    if (root.phase < 2) {
       if (widget.settingsMutationMessage.indexOf("Settings update failed") !== 0) return
       if (!widget.showIdle || !widget.showControls) throw new Error("failed persistence did not restore prior widget settings")
       if (service.settings.showIdle !== true || service.settings.showControls !== true)
         throw new Error("failed persistence did not restore prior service configuration")
-      if (widget.settingsMutationMessage.indexOf("fixture persistence rejected") < 0)
+      var expected = root.phase === 0 ? "fixture persistence rejected" : "host rejected the privacy settings write"
+      if (widget.settingsMutationMessage.indexOf(expected) < 0)
         throw new Error("failed persistence did not expose actionable feedback")
-      shellMock.rejectWrites = false
-      root.phase = 1
+      if (root.phase === 0) shellMock.returnFalse = true
+      else { shellMock.rejectWrites = false; shellMock.returnFalse = false }
+      root.phase++
       widget.persistSettings({showIdle:false})
       return
     }
@@ -31,8 +33,10 @@ ShellRoot {
   QtObject {
     id: shellMock
     property bool rejectWrites: true
+    property bool returnFalse: false
     function serviceFor(id) { return id === "io.github.bolens.privacy-devices" ? service : null }
     function updateEntryInline(_id, _settings) {
+      if (returnFalse) return false
       if (rejectWrites) throw new Error("fixture persistence rejected")
       root.successfulWrites++
     }
