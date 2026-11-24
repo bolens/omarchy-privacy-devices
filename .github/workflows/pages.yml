@@ -30,8 +30,11 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
       pages: write
       id-token: write
+    env:
+      PAGES_ARTIFACT_NAME: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -55,9 +58,33 @@ jobs:
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        id: pages-artifact
         with:
+          name: ${{ env.PAGES_ARTIFACT_NAME }}
           path: _site
 
+      - name: Wait for uploaded artifact metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGES_ARTIFACT_ID: ${{ steps.pages-artifact.outputs.artifact_id }}
+        run: |
+          for attempt in {1..20}; do
+            if metadata=$(gh api --paginate --slurp "/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100"); then
+              if jq -e '[.[] | .artifacts[] | select(.name == env.PAGES_ARTIFACT_NAME)] as $matches
+                | ($matches | length) == 1
+                  and ($matches[0].id | tostring) == env.PAGES_ARTIFACT_ID
+                  and $matches[0].expired == false
+                  and $matches[0].size_in_bytes > 0' <<<"$metadata" >/dev/null; then
+                exit 0
+              fi
+            fi
+            echo "Waiting for Pages artifact metadata (attempt $attempt/20)."
+            sleep 3
+          done
+          echo "Uploaded Pages artifact was not uniquely visible before deployment." >&2
+          exit 1
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}
