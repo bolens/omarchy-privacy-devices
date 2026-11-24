@@ -9,6 +9,8 @@ maintainer guides that define release and validation procedures.
 
 ### Fixed
 
+- Keep Pages deployments tied to the current workflow attempt and wait for uploaded artifact metadata.
+
 - Restore widget and service settings when the scoped host rejects a save, and report failure instead of claiming changes were applied.
 ### Added
 
